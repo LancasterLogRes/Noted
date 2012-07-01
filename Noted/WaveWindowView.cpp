@@ -61,17 +61,23 @@ void WaveWindowView::doRender(QImage& _img)
 		QPainter p(&_img);
 		p.fillRect(rect(), Qt::white);
 
-		QVector<QLine> pps;
-		pps.reserve(windowSize - 1);
-		unsigned off = c()->isZeroPhase() ? windowSize / 2 : 0;
-		for (unsigned i = 1; i < windowSize; ++i)
-			pps.push_back(QLine((i - 1) * w / windowSize, (h + h * data[(i - 1 + off) % windowSize] * wf[(i - 1 + off) % windowSize]) / 2, i * w / windowSize, (h + h * data[(i + off) % windowSize] * wf[(i + off) % windowSize]) / 2));
-
 		p.setPen(QColor(224, 224, 224));
 		p.drawLine(0, h / 2, w, h / 2);
 
-		p.setPen(QColor(0, 0, 255));
-		p.drawLines(pps);
+		unsigned off = c()->isZeroPhase() ? windowSize / 2 : 0;
+		for (unsigned i = 0; i < windowSize; ++i)
+		{
+			p.fillRect(i * w / windowSize, h / 2, max<int>(1, (i + 1) * w / windowSize - i * w / windowSize), h * data[(i + off) % windowSize] * wf[(i + off) % windowSize] / -2, QColor(224, 224, 255));
+			//p.setPen();
+			//p.drawLine(QLine((i - 1) * w / windowSize, (h - h * data[(i - 1 + off) % windowSize] * wf[(i - 1 + off) % windowSize]) / 2, i * w / windowSize, (h - h * data[(i + off) % windowSize] * wf[(i + off) % windowSize]) / 2));
+			if (i)
+			{
+				p.setPen(QColor(224, 224, 224));
+				p.drawLine(QLine((i - 1) * w / windowSize, (h - h * wf[(i - 1 + off) % windowSize]) / 2, i * w / windowSize, (h - h * wf[(i + off) % windowSize]) / 2));
+				p.setPen(QColor(0, 0, 127));
+				p.drawLine(QLine((i - 1) * w / windowSize, (h - h * data[(i - 1 + off) % windowSize]) / 2, i * w / windowSize, (h - h * data[(i + off) % windowSize]) / 2));
+			}
+		}
 
 		p.setPen(QColor(127, 127, 255));
 		p.drawLine(0, (h + h * rms / 65536) / 2, w, (h + h * rms / 65536) / 2);
