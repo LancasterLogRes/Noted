@@ -110,6 +110,7 @@ public:
 
 public slots:
 	void on_actOpen_activated();
+	void on_actQuit_activated();
 	void on_actPlay_changed();
 	void on_actPanic_activated();
 	void on_actFollow_changed();

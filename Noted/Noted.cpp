@@ -115,6 +115,11 @@ Noted::Noted(QWidget* _p) :
 	resumeWork();
 
 	readSettings();
+
+	setCorner(Qt::TopLeftCorner, Qt::LeftDockWidgetArea);
+	setCorner(Qt::BottomLeftCorner, Qt::LeftDockWidgetArea);
+	setCorner(Qt::TopRightCorner, Qt::RightDockWidgetArea);
+	setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
 }
 
 Noted::~Noted()
@@ -642,6 +647,11 @@ void Noted::on_actNewEvents_activated()
 {
 	EventsEditor* ev = new EventsEditor(ui->dataDisplay);
 	addTimeline(ev);
+}
+
+void Noted::on_actQuit_activated()
+{
+	QApplication::quit();
 }
 
 void Noted::on_actOpenEvents_activated()

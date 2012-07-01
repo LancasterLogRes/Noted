@@ -1,10 +1,4 @@
-#pragma once
-
-#include "Global.h"
-#include "Algorithms.h"
-#include "Angular.h"
-#include "BoolArray.h"
-#include "Color.h"/* BEGIN COPYRIGHT
+/* BEGIN COPYRIGHT
 	*
 	* This file is part of Noted.
 	*
@@ -24,7 +18,13 @@
 	* along with Noted.  If not, see <http://www.gnu.org/licenses/>.
 	*/
 
+#pragma once
 
+#include "Global.h"
+#include "Algorithms.h"
+#include "Angular.h"
+#include "BoolArray.h"
+#include "Color.h"
 #include "FFTW.h"
 #include "GraphParameters.h"
 #include "Peaks.h"

@@ -187,9 +187,13 @@ struct Name \
 #define LIGHTBOX_STRUCT_INTERNALS(N, ...) \
 	LIGHTBOX_STRUCT_INTERNALS_ ## N (__VA_ARGS__)
 
+#if defined(LIGHTBOX_SHARED_LIBRARY)
 #define LIGHTBOX_FINILIZING_LIBRARY \
 	extern "C" { __attribute__ ((visibility ("default"))) bool* g_lightboxFinilized = nullptr; } \
 	struct LightboxFinilizer { LightboxFinilizer() { std::cerr << "Finilizer()" << std::endl; } ~LightboxFinilizer() { std::cerr << "~Finilizer()" << std::endl; if (g_lightboxFinilized) *g_lightboxFinilized = true; } } g_lightboxFinilizer;
+#else
+#define LIGHTBOX_FINILIZING_LIBRARY
+#endif
 
 typedef int16_t v4hi __attribute__ ((vector_size (8)));
 typedef float v4sf __attribute__ ((vector_size (16)));
