@@ -1,0 +1,28 @@
+Noted!
+
+Copyright Lancaster Logic Response, 2011-2012.
+
+   BUILDING
+
+   Generic instructions:
+
+Noted is written in C++, according to the latest standard, C++11. This means you'll need a relatively recent compiler (GCC 4.7 is tested).
+
+Noted uses the Qt cross-platform toolkit as a GUI and its bundled build tool, 'qmake', to handling building. This makes the build instructions little more than "qmake && make" (though Qt Creator, the IDE is a good choice if you want to do any development). However there are a number of dependencies that must be installed and configured first:
+
+- Qt; tested against 4.8.1. The qmake from this should be in your environment.
+
+- Portaudio; tested against 1.9. Should be in the system's include/library path (generally the way with Linux distributions; noted/Audio/Audio.pro may need tweaking otherwise).
+
+- FFTW; tested against 3.3.0. Should be in the system's include/library path (generally the way with Linux distributions; noted/Common/Common.pro may need tweaking otherwise).
+
+- Boost; tested against 1.48. Should be in the system's include/library path (generally the way with Linux distributions; noted/Common.primay need tweaking otherwise).
+
+
+   Debian & derivatives (Ubuntu &c.):
+
+You can use the package manager to grab and install all of the dependencies you'll need with:
+
+sudo apt-get install libboost1.48-dev libboost-system1.48-dev portaudio19-dev libqt4-dev libfftw3-dev
+
+-- Gavin Wood <gavin@lancasterlogicresponse.com> 

@@ -1,0 +1,10 @@
+Plugin stuff
+  Resume/suspend on worker thread shouldn't require killing existing work.
+  Reload button, load status & time of last load indication.
+
+Core
+  Prototype acausal EC API.
+  Record mode (inactive).
+  Through mode (active, no recording).
+  Optimise for Events interrogation.
+

@@ -1,0 +1,42 @@
+Noted!
+
+Copyright Lancaster Logic Response, 2011-2012.
+
+   CODING
+
+   Style
+
+Noted! aims to have a collaborative development model. To help everyone get along better a set of coding guidelines have been devised; see CodingStandards.txt. There is also an astyle configuration file to get astyle to (mostly) properly format any imported files.
+
+A simple unit testing framework is in place under Common/UnitTest*
+
+Finally, the repository should always build.
+
+
+   Project Layout
+
+A number of projects come under the Noted umbrella:
+
+Common - where all the stuff that everything needs goes; data types like Time and Color, general algorithms &c.
+Test - runs unit tests in Common.
+Audio - simple C++ interface for audio I/O via Portaudio.
+EventsEditor - specialised module used by Noted for it's GUI event stream editor.
+EventCompiler - base API library to be used/linked against when writing EventCompiler modules.
+ExampleEventCompiler - an example of an EventCompiler module.
+Noted - the main program code of the application.
+NotedPlugin - base API library to be used/linked against when writing Noted plugins.
+TestPlugin - a not-especially functional example of a plugin for Noted.
+PluginTest - a Noted plugin loader/unloader to test that the plugin can be properly unloaded.
+
+
+   Development Gotchas
+
+Coding dynamically-loaded shared-libraries (whether Noted plugins or event compilers), which is what most development should be focused around, has a number of issues, even on relatively sensible platforms like Linux/GCC. One of the basic problems is with unloading a dynamically-loaded library, especially having compiled with GCC on linux:
+
+*** Unload will silently fail (and cause no end of difficulties) if any symbols from the plugin are left referenced in the main program. GCC will leave referenced symbols from the plugin if you *ever* make use of a static-declared variable in a function or pass to the main program a lambda expression declared from within a function. 
+
+There is a program, PluginTest, that can be used to make sure your plugin loads and unloads properly; you might also check the standard error output.
+
+There is also an issue with unloading a library that has used Qt's OpenGL widget class directly. Don't use Qt's OpenGL module from within a plugin. As a workaround, use NotedFace's addGLWidget() which allows you pass a proxy class. GL calls may be made from a shared library without issue.
+
+-- Gavin Wood <gavin@lancasterlogicresponse.com> 
