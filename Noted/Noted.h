@@ -240,4 +240,5 @@ private:
 	CausalAnalysisPtr m_compileEventsAnalysis;
 	CausalAnalysisPtr m_collateEventsAnalysis;
 	int m_eventsViewsDone;
+	std::map<float, std::vector<float> > m_collatedGraphEvents;
 };

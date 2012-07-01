@@ -149,4 +149,9 @@ inline float decayed(float _f, Time _p, Time _hl)
 	return _f / exp2(double(_p) / _hl);
 }
 
+inline float ofHalfLife(Time _halfLife, Time _unit)
+{
+	return 1.f / exp2(double(_unit) / _halfLife);
+}
+
 }

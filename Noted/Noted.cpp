@@ -410,17 +410,13 @@ StreamEvent Noted::eventOf(EventType _et, float _nature, Time _t) const
 			ev->x_events.lock();
 		for (int i = windowIndex(_t); i >= 0; --i)
 			foreach (EventsView* ev, evs)
-			{
 				if (i < ev->m_events.size())
-				{
 					foreach (StreamEvent const& e, ev->m_events[i])
 						if (e.type == _et && (e.nature == _nature || !careAboutNature))
 						{
 							ret = e;
 							goto OK;
 						}
-				}
-			}
 		OK:
 		foreach (EventsView* ev, evs)
 			ev->x_events.unlock();
@@ -442,11 +438,9 @@ QVector<StreamEvent> Noted::eventsOf(EventType _et, float _nature, Time _t) cons
 		for (int i = windowIndex(_t); i >= 0 && ret.isEmpty(); --i)
 			foreach (EventsView* ev, evs)
 				if (i < ev->m_events.size())
-				{
 					foreach (StreamEvent const& e, ev->m_events[i])
 						if (e.type == _et && (e.nature == _nature || !careAboutNature))
 							ret.push_back(e);
-				}
 		foreach (EventsView* ev, evs)
 			ev->x_events.unlock();
 	}
