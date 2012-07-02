@@ -6,7 +6,7 @@
 
 TARGET = Noted
 TEMPLATE = app
-QT       += core gui xml
+QT       += core gui xml opengl
 CONFIG += qt
 
 include ( ../Common.pri )
