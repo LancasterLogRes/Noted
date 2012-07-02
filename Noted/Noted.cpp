@@ -728,6 +728,8 @@ void Noted::on_hopSlider_valueChanged(int)
 	on_sampleRate_currentIndexChanged(0);
 }
 
+class Sleeper: QThread { public: using QThread::usleep; };
+
 bool Noted::work()
 {
 	if (m_dataStatus < Fresh)
@@ -736,7 +738,7 @@ bool Noted::work()
 	{
 		bool worked = false;
 		{
-			QMutexLocker l(&x_timelines);
+            QMutexLocker l(&x_timelines);
 			foreach (Timeline* t, m_timelines)
 				if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
 					if (pt->rejigRender())
@@ -744,7 +746,7 @@ bool Noted::work()
 		}
 		if (!worked)
 		{
-			usleep(100000);
+            Sleeper::usleep(100000);
 		}
 	}
 	return true;

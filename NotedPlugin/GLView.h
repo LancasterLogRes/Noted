@@ -27,6 +27,8 @@ class QWidget;
 class GLView
 {
 public:
+    virtual ~GLView() {}
+
 	virtual void initializeGL() {}
 	virtual void resizeGL(int, int) {}
 	virtual void paintGL() {}

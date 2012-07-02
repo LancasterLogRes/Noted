@@ -47,7 +47,7 @@ inline std::pair<typename T::value_type, typename T::value_type> range(T const& 
 template <class T>
 inline std::pair<T, T> range(T const* _begin, T const* _end)
 {
-	auto ret = make_pair(*_begin, *_begin);
+    auto ret = std::make_pair(*_begin, *_begin);
 	for (auto i = _begin; i != _end; ++i)
 	{
 		ret.first = std::min(ret.first, *i);

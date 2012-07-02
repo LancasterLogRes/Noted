@@ -104,7 +104,7 @@ public:
 	void suspendWork();
 	void resumeWork();
 
-	QWidget::event;
+    using QWidget::event;
 
 	void updateGraphs(std::vector<std::shared_ptr<Lightbox::AuxGraphsSpec> > const& _specs);
 

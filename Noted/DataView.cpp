@@ -163,7 +163,7 @@ public:
 		}
 	}
 
-	Grapher::drawLineGraph;
+    using Grapher::drawLineGraph;
 	template <class _T>
 	void drawLineGraph(vector<_T> const& _data, size_t _off, QColor _color, QBrush const& _fillToZero = Qt::NoBrush, float _width = 0.f) const
 	{

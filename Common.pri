@@ -2,6 +2,9 @@
 
 DESTDIR = $$OUT_PWD/../built
 
+CONFIG += no_include_pwd
+CONFIG -= uic
+
 !force_shared:!force_static {
     embedded: CONFIG += force_static
     !embedded: CONFIG += force_shared
@@ -18,7 +21,8 @@ CONFIG(release, debug|release) {
 
 CONFIG(debug, debug|release) {
     CONFIG -= release ndebug
-    QMAKE_CXXFLAGS += -DDEBUG -g3 -fno-inline -O0 -Wall -fPIC
+    QMAKE_CXXFLAGS += -DDEBUG -g3 -fno-inline -O0 -Wall
+    !win32: QMAKE_CXXFLAGS += -fPIC
     system (echo "Debug build")
 }
 
@@ -43,5 +47,14 @@ embedded: QMAKE_CXXFLAGS += -march=btver1 -mtune=btver1
 QMAKE_CXXFLAGS_WARN_ON += -Wno-parentheses
 
 INCLUDEPATH += $$IN_PWD
-DEPENDPATH = $INCLUDEPATH
+win32 {
+    BOOST = C:/boost_1_50_0
+    FFTW = C:/Lightbox/fftw
+    PORTAUDIO = C:/Lightbox/portaudio
+    LIBS += -L$$BOOST/stage/lib -Wl,-rpath,$$BOOST/stage/lib -L$$FFTW -Wl,-rpath,$$FFTW -L$$PORTAUDIO/lib/.libs -Wl,-rpath,$$PORTAUDIO/lib/.libs
+    INCLUDEPATH += $$BOOST $$FFTW $$PORTAUDIO/include
+}
+
 LIBS += -L$$DESTDIR -Wl,-rpath,$$DESTDIR
+DEPENDPATH = $INCLUDEPATH
+

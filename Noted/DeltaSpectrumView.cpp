@@ -109,7 +109,7 @@ void DeltaSpectrumView::doRender(QImage& _img)
 
 			int phaseChangeSamples = (2 * s / c()->hopSamples());
 			float standingWavePhaseChange = float(i % phaseChangeSamples) * 2 * Pi / phaseChangeSamples;
-			if (standingWavePhaseChange > M_PI)
+			if (standingWavePhaseChange > Pi)
 				standingWavePhaseChange = 2 * Pi - standingWavePhaseChange;	// cyclic reflection
 
 			float changeOverStandingWaveSqr = sqr((dp - standingWavePhaseChange) / Pi);

@@ -4,9 +4,9 @@ SUBDIRS = \
     EventCompiler \
     ExampleEventCompiler \
     NotedPlugin \
-    TestPlugin \
-    PluginTest \
-    Test \
     EventsEditor \
     Audio \
-    Noted
+    Noted \
+    TestPlugin \
+    PluginTest \
+    Test

@@ -6,12 +6,15 @@
 
 TARGET = Noted
 TEMPLATE = app
-QT       += core gui xml network opengl
+QT       += core gui xml
 CONFIG += qt
 
 include ( ../Common.pri )
 
-LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin -lfftw3f
+CONFIG += uic
+LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin
+linux: LIBS += -lfftw3f
+win32: LIBS += -lfftw3f-3
 
 SOURCES += main.cpp\
     Noted.cpp \

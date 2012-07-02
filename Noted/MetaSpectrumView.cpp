@@ -107,10 +107,10 @@ void MetaSpectrumView::doRender(QImage& _img)
 			int x = 24 + i * w / s;
 			int y = h - h * mag[i] / sc + ho;
 			float dp = abs(phase[i] - phase[i - 1]);	// delta-phase
-			if (dp > M_PI)
-				dp = 2 * M_PI - dp;	// cyclic reflection
-			dp /= M_PI;	// normalize
-			p.fillRect(lx, 0, x - lx + 1, (dp * h) / 5, QBrush(QColor::fromHsvF(phase[i] / (M_PI * 2), 0.25f, 0.9f)));
+			if (dp > Pi)
+				dp = 2 * Pi - dp;	// cyclic reflection
+			dp /= Pi;	// normalize
+			p.fillRect(lx, 0, x - lx + 1, (dp * h) / 5, QBrush(QColor::fromHsvF(phase[i] / (Pi * 2), 0.25f, 0.9f)));
 			pps.push_back(QLine(lx, ly, x, y));
 			p.setPen(Qt::NoPen);
 			p.setBrush(QColor::fromHsvF(0, 0, 0.75f + 0.25f * dp));

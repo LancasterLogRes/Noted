@@ -25,4 +25,42 @@ You can use the package manager to grab and install all of the dependencies you'
 
 sudo apt-get install libboost1.48-dev libboost-system1.48-dev portaudio19-dev libqt4-dev libfftw3-dev
 
+   Windows (with minGW):
+
+You'll need to download and install all components for a working minGW first. It's found at:
+
+http://sourceforge.net/projects/mingw/files/Installer/mingw-get-inst/
+
+You'll also need to download and install the Qt Windows libraries and IDE:
+
+http://qt.nokia.com/downloads (making sure to get the minGW versions).
+
+Configure Qt Creator pointing it at the minGW installation and Qt installations you just made.
+
+Next you'll need to download and install boost:
+
+http://www.boost.org/users/download/
+
+Unpack and compile it to somewhere sensible ("C:\boost", perhaps). In any case, remember where the directory is. Compilation is a slightly tedious affair - use the Windows command line (cmd.exe) to execute "bootstrap.bat" in boost's path, then switch to the msys shell to do the actual build, executing "bjam toolset=gcc" in boost's path.
+
+Edit Noted/Common.pri and find the line beginning "BOOST ="; edit it so the path afterwards is the freshly installed boost's directory.
+
+Next, download the latest (stable) Portaudio v19. You can get it from:
+
+http://www.portaudio.com/download.html
+
+Building can be done in msys with:
+
+./configure --with-winapi=directx,wmme,wasapi,wdmks --with-dxdir=/c/DXSDK/Feb2010 && make
+
+Make sure you have the latest DirectX SDK installed, and if the path is different to C:\DXSDK\Feb2010, then change the configure line accordingly. Make sure the path has no spaces in it.
+
+NB. Make sure the msys's "awk" utility is used over minGW's (delete minGW/bin/awk.exe).
+
+Finally, get FFTW 3 from here:
+
+http://www.fftw.org/install/windows.html
+
+Having unpacked it somewhere sensible, you'll need to configure Noted with the directory into which you unpacked it. Go into Noted/Common.pri and change the line beginning with "FFTW = " so it ends with the correct path.
+
 -- Gavin Wood <gavin@lancasterlogicresponse.com> 

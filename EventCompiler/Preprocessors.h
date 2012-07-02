@@ -224,7 +224,7 @@ public:
 		m_acc = max<float>(m_acc * m_factor, _PP::get());
 	}
 
-	_PP::changed;
+    using _PP::changed;
 
 	float get() const { return m_acc; }
 
@@ -359,7 +359,7 @@ public:
 	}
 
 	vector<float> const& get() const { return m_lastAc; }
-	_PP::changed;
+    using _PP::changed;
 
 	unsigned best() const
 	{
@@ -411,7 +411,7 @@ public:
 			assert(isFinite(m_data[0]));
 		}
 	}
-	_PP::changed;
+    using _PP::changed;
 
 	vector<float> const& get() const { return m_data; }
 
@@ -480,7 +480,7 @@ public:
 			m_last = _PP::get();
 		}
 	}
-	_PP::changed;
+    using _PP::changed;
 
 	float get() const { return m_delta; }
 

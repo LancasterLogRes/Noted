@@ -48,7 +48,7 @@ public:
 	/// Called from the GUI thread.
 	void updateIfNeeded() { if (m_needsUpdate) update(); m_needsUpdate = false; }
 
-	Prerendered::event;
+    using Prerendered::event;
 
 public slots:
 	void sourceChanged();

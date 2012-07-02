@@ -3,6 +3,7 @@ CONFIG	-= qt
 TEMPLATE = lib
 
 LIBS += -lportaudio
+
 include ( ../Common.pri )
 
 SOURCES += \

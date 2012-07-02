@@ -72,15 +72,15 @@ void SpectraView::doRender(QImage& _img, int _dx, int _dw)
 //								mmj = j;
 							}
 #if 0
-						if (mmp < 0.f || mmp > M_PI * 2)
+						if (mmp < 0.f || mmp > Pi * 2)
 							qDebug() << "Gaa! Phase out of range! (" << mmp << ")";
 						if (di <= 2)
-							_img.setPixel(x, y, QColor::fromHsvF(qMax(0.f, qMin(1.f, mmp / float(M_PI * 2))), qMax(0.f, qMin(1.f, 1.f + log(mm + 0.0001f) / 4.f)), 1.f).rgb());
+							_img.setPixel(x, y, QColor::fromHsvF(qMax(0.f, qMin(1.f, mmp / float(Pi * 2))), qMax(0.f, qMin(1.f, 1.f + log(mm + 0.0001f) / 4.f)), 1.f).rgb());
 						else if (di >= 4)
 							_img.setPixel(x, y, QColor::fromHsvF(0, 0, 1.f - qMax(0.f, qMin(1.f, sqrt(mm)))).rgb());
 						else
 						{
-							QRgb c1 = QColor::fromHsvF(qMax(0.f, qMin(1.f, mmp / float(M_PI * 2))), qMax(0.f, qMin(1.f, 1.f + log(mm + 0.0001f) / 4.f)), 1.f).rgb();
+							QRgb c1 = QColor::fromHsvF(qMax(0.f, qMin(1.f, mmp / float(Pi * 2))), qMax(0.f, qMin(1.f, 1.f + log(mm + 0.0001f) / 4.f)), 1.f).rgb();
 							QRgb c2 = QColor::fromHsvF(0, 0, 1.f - qMax(0.f, qMin(1.f, sqrt(mm)))).rgb();
 							float f = (di - 2) / 2;
 							_img.setPixel(x, y, qRgb(lerp(f, qRed(c1), qRed(c2)), lerp(f, qGreen(c1), qGreen(c2)), lerp(f, qBlue(c1), qBlue(c2))));
@@ -91,7 +91,7 @@ void SpectraView::doRender(QImage& _img, int _dx, int _dw)
 //						int samplesPerPhaseCycle = bc / phaseChanges;
 
 //						float standingWavePhaseChange = float(mmj % phaseChanges) * 2 * Pi / phaseChangeSamples;
-//						if (standingWavePhaseChange > M_PI)
+//						if (standingWavePhaseChange > Pi)
 //							standingWavePhaseChange = 2 * Pi - standingWavePhaseChange;	// cyclic reflection
 //						standingWavePhaseChange = 0;
 //						float expectedUnitChange = 1.f - (mmj % samplesPerPhaseCycle) / float(samplesPerPhaseCycle);

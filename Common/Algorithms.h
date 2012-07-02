@@ -177,7 +177,7 @@ typename element_of<_A>::type packCombine(_A const& _a, _B const& _b, unsigned _
 	{
 		_A a = _a;
 		_B b = _b;
-		_A ae = next(a, _s);
+        _A ae = std::next(a, _s);
 		for (; a != ae; ++a, ++b)
 		{
 			at[0] = *a;
@@ -233,13 +233,13 @@ typename element_of<_A>::type packCombine(_A const& _a, _B const& _b, unsigned _
 	{
 		_A a = _a;
 		_B b = _b;
-		_A ae = next(a, _s);
+        _A ae = std::next(a, _s);
 
 		if (_s > 7)
 		{
-			_A ap3 = next(a, 3);
-			_B bp3 = next(b, 3);
-			_A aem3 = next(a, _s - 3);
+            _A ap3 = std::next(a, 3);
+            _B bp3 = std::next(b, 3);
+            _A aem3 = std::next(a, _s - 3);
 			for (; ap3 < aem3;)
 			{
 				bool agood = (&*a + 3 == &*ap3) && (intptr_t(&*a) & 15) == 0;
@@ -393,7 +393,7 @@ void packTransform(_A _a, _B _b, unsigned _s, _Fxform const& _xform)
 	{
 		_A a = _a;
 		_B b = _b;
-		_A ae = next(a, _s);
+        _A ae = std::next(a, _s);
 		for (; a != ae; ++a, ++b)
 		{
 			at[0] = *a;
@@ -452,15 +452,15 @@ void packTransform(_A _a, _B _b, unsigned _s, _Fxform const& _xform)
 	{
 		_A a = _a;
 		_B b = _b;
-		_A ae = next(a, _s);
-		_A ae4 = next(a, _s & ~3u);
+        _A ae = std::next(a, _s);
+        _A ae4 = std::next(a, _s & ~3u);
 
 		for (; a != ae4;)
 		{
-			bool agood = (&*a + 3 == &*next(a, 3)) && (intptr_t(&*a) & VectorSizeLess1) == 0;
+            bool agood = (&*a + 3 == &*std::next(a, 3)) && (intptr_t(&*a) & VectorSizeLess1) == 0;
 			if (agood)
 			{
-				bool bgood = (&*b + 3 == &*next(b, 3)) && (intptr_t(&*b) & VectorSizeLess1) == 0;
+                bool bgood = (&*b + 3 == &*std::next(b, 3)) && (intptr_t(&*b) & VectorSizeLess1) == 0;
 				if (bgood)
 				{
 					_xform(*(VectorType*)&*a, *(VectorType const*)&*b);
@@ -556,7 +556,7 @@ void autocross(_It _begin, int _s, _F const& _f, unsigned _maxPeriod, unsigned _
 	_It ap = _begin;
 	for (int p = 0; p < rs; ++p, ++ap)
 		// Add new, subtract old.
-		_ret[p] += (_f(next(_begin, _s - p), next(ap, _s - p), _movingBy) - _f(_begin, ap, _movingBy)) / (_s - p);
+        _ret[p] += (_f(std::next(_begin, _s - p), std::next(ap, _s - p), _movingBy) - _f(_begin, ap, _movingBy)) / (_s - p);
 }
 
 template <class _F, class _U>

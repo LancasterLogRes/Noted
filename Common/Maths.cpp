@@ -35,11 +35,11 @@ std::vector<float> Lightbox::windowFunction(unsigned _size, WindowFunction _f, f
 		break;
 	case HammingWindow:
 		for (unsigned i = 0; i < _size; ++i)
-			ret[i] = .54f - .46f * cos(2.f * M_PI * float(i) / float(_size - 1));
+            ret[i] = .54f - .46f * cos(2.f * Pi * float(i) / float(_size - 1));
 		break;
 	case HannWindow:
 		for (unsigned i = 0; i < _size; ++i)
-			ret[i] = .5f * (1.f - cos(2.f * M_PI * float(i) / float(_size - 1)));
+            ret[i] = .5f * (1.f - cos(2.f * Pi * float(i) / float(_size - 1)));
 		break;
 	case TukeyWindow:
 	{
@@ -47,7 +47,7 @@ std::vector<float> Lightbox::windowFunction(unsigned _size, WindowFunction _f, f
 		float OmaNo2 = (1.f - a) * _size / 2.f;
 
 		for (unsigned i = 0; i < _size / 2; ++i)
-			ret[_size - 1 - i] = ret[i] = (i < OmaNo2) ? .5f * (1.f - cos(M_PI * float(i) / OmaNo2)) : 1.f;
+            ret[_size - 1 - i] = ret[i] = (i < OmaNo2) ? .5f * (1.f - cos(Pi * float(i) / OmaNo2)) : 1.f;
 		break;
 	}
 	case GaussianWindow:
@@ -62,7 +62,7 @@ std::vector<float> Lightbox::windowFunction(unsigned _size, WindowFunction _f, f
 	case KaiserWindow:
 	{
 		float a = _parameter;//3.f;
-		float const pa = M_PI * a;
+        float const pa = Pi * a;
 		float const ToNm1 = 2.f / float(_size - 1);
 		float const jpa = io(pa);
 		for (unsigned i = 0; i < _size / 2; ++i)
@@ -76,7 +76,7 @@ std::vector<float> Lightbox::windowFunction(unsigned _size, WindowFunction _f, f
 		float a1 = .5f;
 		float a2 = a / 2.f;
 		for (unsigned i = 0; i < _size; ++i)
-			ret[i] = a0 - a1 * cos(2.f * M_PI * float(i) / (_size - 1)) + a2 * cos(4.f * M_PI * float(i) / (_size - 1));
+            ret[i] = a0 - a1 * cos(2.f * Pi * float(i) / (_size - 1)) + a2 * cos(4.f * Pi * float(i) / (_size - 1));
 		break;
 	}
 	default:;

@@ -11,6 +11,6 @@ QT       += core gui opengl
 
 include ( ../Common.pri )
 
-LIBS += -lCommon -lNotedPlugin -lfftw3f -lboost_system
+LIBS += -lCommon -lNotedPlugin -lboost_system
 
 SOURCES += main.cpp

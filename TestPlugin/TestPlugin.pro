@@ -11,7 +11,8 @@ QT += core gui opengl xml
 
 CONFIG += force_shared
 include ( ../Common.pri )
-LIBS += -lCommon -lGLU -lNotedPlugin
+LIBS += -lCommon -lNotedPlugin
+linux: LIBS += -lGLU
 
 SOURCES += TestPlugin.cpp
 HEADERS += TestPlugin.h

@@ -23,7 +23,6 @@
 #include <QtOpenGL>
 #include <fstream>
 #include <boost/thread.hpp>
-#include <boost/asio.hpp>
 #include <boost/array.hpp>
 #include <boost/system/system_error.hpp>
 #include <cassert>

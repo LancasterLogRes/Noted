@@ -20,14 +20,12 @@
 
 #include <cmath>
 #include <unistd.h>
-using namespace std;
-
 #include <boost/thread/mutex.hpp>
-
+#include <boost/system/config.hpp>
 #include <fftw3.h>
-
 #include "Maths.h"
 #include "FFTW.h"
+using namespace std;
 using namespace Lightbox;
 
 FFTW::FFTW(unsigned _arity): m_arity(_arity), m_plan(nullptr)
@@ -65,9 +63,9 @@ void FFTW::process()
 		float p = (re * re + im * im) / float(m_arity);
 		float m = (isFinite(p) && p != 0.f) ? sqrt(p) : 0;
 		m_mag[i] = m;
-		m_phase[i] = atan2(re, im) + M_PI;
-		while (m_phase[i] >= M_PI * 2)
-			m_phase[i] -= M_PI * 2;
+        m_phase[i] = atan2(re, im) + Pi;
+        while (m_phase[i] >= Pi * 2)
+            m_phase[i] -= Pi * 2;
 /*		if (m_phase[i] < 0)
 			cerr << "!!! Bad output phase " << m_phase[i] << endl;
 		if (m_mag[i] < -1.f || m_mag[i] > 1.f)

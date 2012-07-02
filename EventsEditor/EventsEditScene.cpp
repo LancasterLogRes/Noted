@@ -189,7 +189,7 @@ void EventsEditScene::saveTo(QString _filename) const
 	using boost::property_tree::ptree;
 	ptree pt;
 	Time last = -1000000000;
-	ptree* lt;
+    ptree* lt = nullptr;
 	foreach (QGraphicsItem* it, items(Qt::AscendingOrder))
 		if (auto sei = dynamic_cast<StreamEventItem*>(it))
 		{

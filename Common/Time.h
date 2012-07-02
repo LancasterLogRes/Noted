@@ -23,6 +23,7 @@
 #include <cmath>
 #include <sstream>
 #include <string>
+#include <cstdlib>
 #include <cstdint>
 #include <limits>
 #include <sys/time.h>
@@ -140,8 +141,8 @@ inline float oscillator(Time _t, Time _cycle, float _min = 0.f, float _max = 1.f
 
 inline float random(Time _t, float _min = 0.f, float _max = 1.f)
 {
-	::srandom(_t);
-	return ::random() / double(RAND_MAX) * (_max - _min) + _min;
+    ::srand(_t);
+    return ::rand() / double(RAND_MAX) * (_max - _min) + _min;
 }
 
 inline float decayed(float _f, Time _p, Time _hl)
