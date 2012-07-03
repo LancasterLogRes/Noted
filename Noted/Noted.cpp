@@ -484,7 +484,14 @@ void Noted::updateWindowTitle()
 
 void Noted::on_addLibrary_clicked()
 {
-	QString fn = QFileDialog::getOpenFileName(this, "Add extension library", QDir::currentPath(), "Dynamic library (*.so);;");
+#if defined(Q_OS_LINUX)
+    QString filter = "*.so";
+#elif defined(Q_OS_MAC)
+    QString filter = "*.dylib";
+#elif defined(Q_OS_WIN)
+    QString filter = "*.dll";
+#endif
+    QString fn = QFileDialog::getOpenFileName(this, "Add extension library", QDir::currentPath(), QString("Dynamic library (%1);;").arg(filter));
 	addLibrary(fn);
 }
 
@@ -549,7 +556,7 @@ void Noted::readSettings()
 
 	if (settings.contains("duration"))
 	{
-		m_duration = settings.value("duration").toLongLong();
+        m_duration = max<int>(settings.value("duration").toLongLong(), 1);
 		m_offset = settings.value("offset").toLongLong();
 		m_fineCursor = settings.value("cursor").toLongLong();
 	}
@@ -1166,7 +1173,7 @@ bool Noted::isVisible(Lightbox::StreamEvent const& _e) const
 
 int Noted::activeWidth() const
 {
-	return ui->dataDisplay->width();
+    return max<int>(1, ui->dataDisplay->width());
 }
 
 bool Noted::cursorEvent(QEvent* _e, int _i)
@@ -1231,6 +1238,9 @@ void Noted::paintCursor(QPainter& _p, int _id) const
 	QRect r;
 	QRect o;
 	tie(r, o) = cursorGeoOffset(_id);
+    _p.setCompositionMode(QPainter::CompositionMode_Source);
+    _p.fillRect(QRect(0, 0, r.width(), r.height()), Qt::transparent);
+    _p.setCompositionMode(QPainter::CompositionMode_SourceOver);
 	_p.translate(o.topLeft());
 	_p.setRenderHint(QPainter::Antialiasing, false);
 	if (!r.width())

@@ -37,7 +37,7 @@ class NotedGLWidget: public QGLWidget
 {
 public:
 	NotedGLWidget(GLView* _v, QWidget* _p): QGLWidget(_p), m_v(_v) {}
-	~NotedGLWidget() { delete m_v; }
+    virtual ~NotedGLWidget() { delete m_v; }
 
 	virtual void initializeGL() { m_v->initializeGL(); }
 	virtual void resizeGL(int _w, int _h) { m_v->resizeGL(_w, _h); }

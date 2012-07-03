@@ -72,7 +72,7 @@ public:
 
 	inline Lightbox::Time hop() const { return Lightbox::toBase(hopSamples(), rate()); }
 	inline Lightbox::Time windowSize() const { return Lightbox::toBase(windowSizeSamples(), rate()); }
-	inline int screenWidth(Lightbox::Time _t) const { return (_t * activeWidth() + timelineDuration() / 2) / timelineDuration(); }
+    inline int screenWidth(Lightbox::Time _t) const { return samples() ? (_t * activeWidth() + timelineDuration() / 2) / timelineDuration() : 0; }
 	inline Lightbox::Time durationOf(int _screenWidth) const { return _screenWidth * timelineDuration() / activeWidth(); }
 	inline int xOf(Lightbox::Time _t) const { return screenWidth(_t - timelineOffset()); }
 	inline int cursorX() const { return xOf(cursor()); }

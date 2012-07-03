@@ -67,8 +67,14 @@ void PrerenderedTimeline::wheelEvent(QWheelEvent* _e)
 {
 	// Want to keep timeOf(_e->x()) constant.
 	Lightbox::Time t = timeOfReal(_e->x());
-	c()->setDuration(timelineDuration() * exp(_e->delta() / (QApplication::keyboardModifiers() & Qt::ControlModifier ? 2400.0 : QApplication::keyboardModifiers() & Qt::ShiftModifier ? 24 : 240.0)));
-	c()->setOffset(t - _e->x() * (timelineDuration() / c()->activeWidth()));
+#ifdef Q_OS_MAC
+#define CORRECT_SIGN -
+#else
+#define CORRECT_SIGN
+#endif
+    c()->setDuration(timelineDuration() * exp(CORRECT_SIGN _e->delta() / (QApplication::keyboardModifiers() & Qt::ControlModifier ? 2400.0 : QApplication::keyboardModifiers() & Qt::ShiftModifier ? 24 : 240.0)));
+#undef CORRECT_SIGN
+    c()->setOffset(t - _e->x() * (timelineDuration() / c()->activeWidth()));
 }
 
 void PrerenderedTimeline::sourceChanged()

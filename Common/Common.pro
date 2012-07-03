@@ -11,7 +11,7 @@ include ( ../Common.pri )
 
 LIBS += -lboost_system
 win32: LIBS += -lfftw3f-3
-linux: LIBS += -lfftw3f
+linux|mac: LIBS += -lfftw3f
 
 SOURCES += Common.cpp \
     FFTW.cpp \

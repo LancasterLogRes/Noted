@@ -45,7 +45,7 @@ Page::Page(IndexLevel const& _ii, QString const& _filename, bool _allowCreate, u
 		}
 		m_mapping = m_file.map(0, m_file.size());
 		m_sizeof = m_file.size();
-		assert(m_mapping);
+        assert(!_size || m_mapping);
 	}
 }
 
