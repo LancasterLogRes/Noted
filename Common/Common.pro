@@ -10,8 +10,8 @@ TEMPLATE = lib
 include ( ../Common.pri )
 
 LIBS += -lboost_system
+unix: LIBS += -lfftw3f
 win32: LIBS += -lfftw3f-3
-linux|mac: LIBS += -lfftw3f
 
 SOURCES += Common.cpp \
     FFTW.cpp \
