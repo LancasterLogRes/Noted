@@ -13,7 +13,7 @@ include ( ../Common.pri )
 
 CONFIG += uic
 LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin
-linux: LIBS += -lfftw3f
+unix: LIBS += -lfftw3f
 win32: LIBS += -lfftw3f-3
 
 SOURCES += main.cpp\
