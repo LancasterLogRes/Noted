@@ -147,7 +147,7 @@ Noted::~Noted()
 
 void Noted::on_actAbout_activated()
 {
-	QMessageBox::about(this, "About Noted!", "<h1>Noted!</h1>Copyright Â©2011, 2012 Lancaster Logic Response Limited. This code is released under version 2 of the GNU General Public Licence.");
+    QMessageBox::about(this, "About Noted!", "<h1>Noted!</h1>Copyright ©2011, 2012 Lancaster Logic Response Limited. This code is released under version 2 of the GNU General Public Licence.");
 }
 
 void Noted::updateAudioDevices()
@@ -296,6 +296,8 @@ void Noted::unload(LibraryPtr const& _dl)
 				delete ui->eventCompilersList->findItems(QString::fromStdString(f.first), 0).front();
 			}
 			_dl->cf.clear();
+            foreach (auto w, findChildren<DataView*>())
+                w->checkSpec();
 		}
 		else if (_dl->auxFace && _dl->aux.lock()) // check if we're a plugin's auxilliary
 		{
@@ -855,10 +857,10 @@ bool Noted::serviceAudio()
 			} catch (...) {}
 		}
 		int sams = m_audioHeader->dataBytes / m_audioHeader->bytesPerFrame;
-		if (m_alsa && m_fineCursor < toBase(sams, m_audioHeader->rate) - toBase(m_alsa->frames(), m_alsa->rate()))
+        if (m_alsa)
 		{
 			vector<int16_t> out(m_alsa->frames() * m_alsa->channels());
-			if (m_fineCursor >= 0)
+            if (m_fineCursor >= 0 && m_fineCursor < toBase(sams, m_audioHeader->rate) - toBase(m_alsa->frames(), m_alsa->rate()))
 			{
 				auto d = [=](int i){ return *(int16_t const*)(m_audioData + (fromBase(m_fineCursor, m_audioHeader->rate) + i) * m_audioHeader->bytesPerFrame); };
 				unsigned s = sams;
@@ -875,13 +877,7 @@ bool Noted::serviceAudio()
 			setCursor(m_fineCursor + toBase(m_alsa->frames(), m_alsa->rate()));
 			return true;
 		}
-		else
-		{
-			ui->actPlay->setChecked(false);
-			setCursor(0);
-			m_alsa.reset();
-		}
-	}
+    }
 	else
 	{
 		if (m_alsa)
@@ -1137,11 +1133,16 @@ void Noted::timerEvent(QTimerEvent*)
 	}
 	if (m_cursorDirty)
 	{
-		ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(m_fineCursor, toBase(samples(), m_rate), 0, 0).c_str());
+        if (m_fineCursor >= duration())
+        {
+            // Played to end of audio
+            setCursor(0);
+            ui->actPlay->setChecked(false);
+        }
+        ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(m_fineCursor, toBase(samples(), m_rate), 0, 0).c_str());
 		m_cursorDirty = false;
 		if (ui->actFollow->isChecked() && (m_fineCursor < m_offset || m_fineCursor > m_offset + m_duration * 7 / 8))
 			setOffset(m_fineCursor - m_duration / 8);
-
 		emit cursorChanged();
 	}
 }
@@ -1301,9 +1302,11 @@ void Noted::rejigAudio()
 
 	if (proceedTo(ResamplingAudio, Dirty))
 	{
-		if (!resampleWave([&](int _progress){return carryOn("Resampling Wave", _progress, ResamplingAudio);}))
+        qDebug() << "Resampling wave...";
+        if (!resampleWave([&](int _progress){return carryOn("Resampling Wave", _progress, ResamplingAudio);}))
 			proceedTo(Fresh, ResamplingAudio);
-		if (m_duration == 1)
+        qDebug() << "OK.";
+        if (m_duration == 1)
 		{
 			m_fineCursor = 0;
 			normalizeView();
@@ -1312,8 +1315,10 @@ void Noted::rejigAudio()
 
 	if (proceedTo(RejiggingSpectra, ResamplingAudio))
 	{
+        qDebug() << "Rejigging spectra...";
 		rejigSpectra([&](int _progress){return carryOn("Rejigging Spectra", _progress, RejiggingSpectra);});
-		m_toBeAnalyzed.insert(nullptr);
+        qDebug() << "OK.";
+        m_toBeAnalyzed.insert(nullptr);
 	}
 
 	if (proceedTo(Analyzing, RejiggingSpectra))

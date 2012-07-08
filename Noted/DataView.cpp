@@ -44,6 +44,14 @@ DataView::DataView(QWidget* _parent, QString const& _name):
 	rejig();
 }
 
+void DataView::checkSpec()
+{
+    if (!m_spec.lock())
+        m_spec.reset();
+    if (!m_xRangeSpec.lock())
+        m_xRangeSpec.reset();
+}
+
 QColor toQColor(Color _c, uint8_t _a = 255)
 {
 	return QColor(_c.r(), _c.g(), _c.b(), _a);

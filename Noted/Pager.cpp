@@ -90,7 +90,7 @@ QString PagerBase::filename(IndexLevel _il) const
 	QString f = (QDir::tempPath() + "/Noted-%1").arg(m_fingerprint, 8, 16);
 	if (!QFile::exists(f))
 		QDir().mkpath(f);
-	return (f + "/%2@%3*%4^%5").arg(m_type).arg(_il.index).arg(m_itemsPerPage).arg(_il.level);
+    return (f + "/%2@%3x%4^%5").arg(m_type).arg(_il.index).arg(m_itemsPerPage).arg(_il.level);
 }
 
 bool PagerBase::ensureMapped(IndexLevel _il) const

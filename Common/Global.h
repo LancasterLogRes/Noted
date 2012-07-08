@@ -32,11 +32,10 @@
 
 /// Define an enumeration together with a output stream operator. The values may not be assigned integers explicitly.
 #define LIGHTBOX_ENUM_TOSTRING(Name, ...) \
-	static char const* g_lightbox_namesOf ## Name = #__VA_ARGS__;\
-	static std::string g_lightbox_upperNamesOf ## Name = boost::algorithm::to_upper_copy(std::string(#__VA_ARGS__));\
+    static std::string g_lightbox_upperNamesOf ## Name;\
 	inline std::string toString(Name _n)\
 	{\
-		return ::Lightbox::afterComma(g_lightbox_namesOf ## Name, (uint16_t)_n);\
+        return ::Lightbox::afterComma(#__VA_ARGS__, (uint16_t)_n);\
 	}\
 	template <class T> inline T& operator<<(T& _o, Name _e)\
 	{\
@@ -45,9 +44,11 @@
 	inline Name to ## Name(std::string const& _s, bool _caseSensitive = true)\
 	{\
 		std::string ucs = boost::algorithm::to_upper_copy(_s);\
+        if (g_lightbox_upperNamesOf ## Name.empty())\
+            g_lightbox_upperNamesOf ## Name = boost::algorithm::to_upper_copy(std::string(#__VA_ARGS__));\
 		for (unsigned i = 0; ; ++i)\
 		{\
-			std::string s = ::Lightbox::afterComma(_caseSensitive ? g_lightbox_namesOf ## Name : g_lightbox_upperNamesOf ## Name.c_str(), i);\
+            std::string s = ::Lightbox::afterComma(_caseSensitive ? #__VA_ARGS__ : g_lightbox_upperNamesOf ## Name.c_str(), i);\
 			if (s.empty())\
 				return Name(0);\
 			else if ((_caseSensitive ? _s : ucs) == s)\
@@ -269,6 +270,12 @@ private:
 	_T* m_data;
 	unsigned m_count;
 	std::shared_ptr<void> m_lock;
+};
+
+class NullOutputStream
+{
+public:
+    template <class T> NullOutputStream& operator<<(T const&) { return *this; }
 };
 
 }

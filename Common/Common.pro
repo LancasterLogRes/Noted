@@ -9,9 +9,10 @@ TARGET = Common
 TEMPLATE = lib
 include ( ../Common.pri )
 
-LIBS += -lboost_system
-unix: LIBS += -lfftw3f
-win32: LIBS += -lfftw3f-3
+# required for non-windows platforms, it seems...
+!win32: LIBS += -lboost_system
+
+LIBS += -l$$FFTW3F_LIB
 
 SOURCES += Common.cpp \
     FFTW.cpp \

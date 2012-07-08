@@ -12,9 +12,7 @@ CONFIG += qt
 include ( ../Common.pri )
 
 CONFIG += uic
-LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin
-unix: LIBS += -lfftw3f
-win32: LIBS += -lfftw3f-3
+LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin -l$$FFTW3_LIB
 
 SOURCES += main.cpp\
     Noted.cpp \

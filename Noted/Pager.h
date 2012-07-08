@@ -25,8 +25,11 @@
 #include <QMutex>
 #include <QMultiMap>
 #include <QHash>
+#include <QDebug>
 #include <Common/Time.h>
 #include "Page.h"
+
+#define cbug Lightbox::NullOutputStream()
 
 class PagerBase
 {
@@ -81,8 +84,8 @@ public:
 			return Lightbox::foreign_vector<_T>();
 	}
 
-	template <class _Base, class _Sum, class _Divide, class _Done, class _CarryOn>
-	void fill(_Base _base, _Sum _sum, _Divide _divide, _Done _done, _CarryOn _carryOn, unsigned _items)
+    template <class _Base, class _Acc, class _Distill, class _Done, class _CarryOn>
+    void fill(_Base _base, _Acc _accumulate, _Distill _distill, _Done _done, _CarryOn _carryOn, unsigned _items)
 	{
 		if (_items)
 		{
@@ -92,24 +95,33 @@ public:
 			{
 				for (unsigned item = 0; item < _items && _carryOn(item * 100 / _items); ++item)
 				{
+                    cbug << "Item:" << item << " (" << levels.size() << " levels)";
 					unsigned leveledItem = item;	// the same at the base level, but itemsPerPage times smaller at each higher level.
 					for (int l = 0; ; ++l)
 					{
 						// ASSERTION: We have data ready for a finished entry at level 'l'.
 						// i is the index, in terms of elements at the current level (i.e. p ^ l real observations per 1 i).
 
+                        assert(levels[l]->data<_T>().data());
 						_T* sd = levels[l]->data<_T>().data() + leveledItem % m_itemsPerPage * m_itemLength;
 
 						// Record the data that's ready...
 						if (l)
-							// If it's not the bottom level, then the data that's ready has been accumulated in-place; we need to divide it.
-							_divide(sd);
-						else
-							_base(leveledItem, sd);
+                        {
+                            // If it's not the bottom level, then the data that's ready has been accumulated in-place; we need to divide it.
+                            _distill(sd);
+                        }
+                        else
+                        {
+                            _base(leveledItem, sd);
+                        }
 
 						// Early out if we were only here to tie up loose pages and we're on the last page.
 						if (leveledItem == _items - 1 && levels.size() == l + 1)
+                        {
+                            cbug << "   " << l << (l ? "/" : "B");
 							break;
+                        }
 
 						// Accumulate into the next-higher level:
 
@@ -118,11 +130,15 @@ public:
 						{
 							assert(levels.size() == l + 1);
 							levels.push_back(page(IndexLevel(0, levels.size())));
-						}
+                            cbug << "   " << l << (l ? "/" : "B") << " => " << (l+1);
+                        }
+                        else
+                            cbug << "   " << l << (l ? "/" : "B") << " +> " << (l+1);
 
 						// Accumulate the (now-recorded) data from this level to the next-higher level.
-						_T* sdh = levels[l + 1]->data<_T>().data() + leveledItem / m_itemsPerPage % m_itemsPerPage * m_itemLength;
-						_sum(sd, sdh, leveledItem % m_itemsPerPage);
+                        assert(levels[l + 1]->data<_T>().data());
+                        _T* sdh = levels[l + 1]->data<_T>().data() + leveledItem / m_itemsPerPage % m_itemsPerPage * m_itemLength;
+                        _accumulate(sd, sdh, leveledItem % m_itemsPerPage);
 
 						// Move onto the next higher level when this level's Page is complete.
 						// (Meaning that the accumulation at the next-higher level is finished).
@@ -151,3 +167,5 @@ public:
 		--m_topLevel;
 	}
 };
+
+#undef cbug

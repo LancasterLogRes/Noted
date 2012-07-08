@@ -160,10 +160,10 @@ bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
 
 		unsigned inFrames = dataBytes / m_audioHeader->bytesPerFrame;
 		Time inPeriod = toBase(1, m_audioHeader->rate);
-		m_samples = fromBase(toBase(inFrames, m_audioHeader->rate), m_rate);
-		unsigned outBlocks = (m_samples + m_blockSamples - 1) / m_blockSamples;
 
-		m_audioData = m_audioFile.map(sizeof(WavHeader), dataBytes);
+        qDebug() << "Opened wav...";
+        m_audioData = m_audioFile.map(sizeof(WavHeader), dataBytes);
+        qDebug() << "Mapped at " << hex << (intptr_t)m_audioData;
 		auto sampleAt = [=](unsigned _i) -> int16_t { return (_i < dataBytes) ? *(int16_t const*)(m_audioData + _i) : 0; };
 
 //		float rpb4[4] = { 1.f / m_pageBlocks, 1.f / m_pageBlocks, 1.f / m_pageBlocks, 1.f / m_pageBlocks };
@@ -181,11 +181,17 @@ bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
 		};
 
 		pair<int16_t, int16_t> r = range((int16_t*)m_audioData, (int16_t*)(m_audioData + inFrames * m_audioHeader->bytesPerFrame));
-		float factor = m_normalize ? 1 / max<float>(abs(r.first), abs(r.second)) : (1 / 32768.f);
+        qDebug() << "Range: " << r.first << r.second;
+        float factor = m_normalize ? 1 / max<float>(abs(r.first), abs(r.second)) : (1 / 32768.f);
+        qDebug() << "factor" << factor;
 
 		QMutexLocker l(&x_wave);
-		m_wave.init(calculateWaveFingerprint(), m_pageBlocks, m_blockSamples);
-		if (m_audioHeader->rate == m_rate)
+        m_samples = fromBase(toBase(inFrames, m_audioHeader->rate), m_rate);
+        m_wave.init(calculateWaveFingerprint(), m_pageBlocks, m_blockSamples);
+        qDebug() << "init done";
+
+        unsigned outBlocks = (m_samples + m_blockSamples - 1) / m_blockSamples;
+        if (m_audioHeader->rate == m_rate)
 		{
 			// Just copy across...
 			auto baseF = [&](unsigned blockIndex, float* page)
@@ -193,7 +199,8 @@ bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
 				for (unsigned i = 0; i < m_blockSamples; ++i)
 					page[i] = sampleAt((i + blockIndex * m_blockSamples) * m_audioHeader->bytesPerFrame) * factor;
 			};
-			m_wave.fill(baseF, accF, distillF, [](){}, _carryOn, outBlocks);
+            qDebug() << "fill, no resample";
+            m_wave.fill(baseF, accF, distillF, [](){}, _carryOn, outBlocks);
 		}
 		else
 		{
@@ -208,7 +215,9 @@ bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
 					page[i] = lerp(x, *(int16_t*)(m_audioData + j * m_audioHeader->bytesPerFrame), sampleAt((j + 1) * m_audioHeader->bytesPerFrame)) * factor;
 				}
 			};
-			m_wave.fill(baseF, accF, distillF, [](){}, _carryOn, outBlocks);
+            qDebug() << "Filling pager...";
+            m_wave.fill(baseF, accF, distillF, [](){}, _carryOn, outBlocks);
+            qDebug() << "Full.";
 		}
 	}
 	else
@@ -218,8 +227,10 @@ bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
 
 void NotedBase::rejigSpectra(std::function<bool(int)> const& _carryOn)
 {
+    qDebug() << "### Locking...";
 	QMutexLocker l(&x_spectra);
-	if (samples())
+    qDebug() << "### Locked.";
+    if (samples())
 	{
 		m_spectra.init(calculateSpectraFingerprint(m_wave.fingerprint()), m_pageSpectra, spectrumSize() * 3);
 
@@ -235,6 +246,7 @@ void NotedBase::rejigSpectra(std::function<bool(int)> const& _carryOn)
 		{
 			float* b = fftw.in();
 			foreign_vector<float> win = waveWindow(index);
+            assert(win.data());
 			float* d = win.data();
 			float* w = m_windowFunction.data();
 			unsigned off = m_zeroPhase ? m_windowSizeSamples / 2 : 0;
@@ -254,7 +266,9 @@ void NotedBase::rejigSpectra(std::function<bool(int)> const& _carryOn)
 		};
 		auto divideF = [&](float* sd)
 		{
-			packTransform(sd, ss3, [&](v4sf& a){ a /= *(v4sf*)p4; });
+            for (unsigned i = 0; i < ss3; ++i)
+                sd[i] /= p4[0];
+//          packTransform(sd, ss3, [&](v4sf& a){ a = a / *(v4sf*)p4; });
 		};
 		auto doneF = [&]() { lp = fftw.phase(); };
 
@@ -263,5 +277,6 @@ void NotedBase::rejigSpectra(std::function<bool(int)> const& _carryOn)
 	else
 	{
 		m_spectra.fillFromExisting();
-	}
+    }
+    qDebug() << "### Leaving?";
 }
