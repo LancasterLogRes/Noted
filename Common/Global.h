@@ -90,7 +90,7 @@
 	bool operator<(Name const& _c) const { return M1 < _c.M1 || (M1 == _c.M1 && (M2 < _c.M2 || (M2 == _c.M2 && M3 < _c.M3))); } \
 	bool operator==(Name const& _c) const { return _c.M1 == M1 && _c.M2 == M2 && _c.M3 == M3; } \
 	bool operator!=(Name const& _c) const { return !operator==(_c); } \
-	template <class S> friend S& operator<<(S& _out, Name const& _this) { return _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ")"; } \
+    template <class S> friend S& operator<<(S& _out, Name const& _this) { _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ")"; return _out; } \
 	operator std::tuple<T1, T2, T3>() const { return std::make_tuple(M1, M2, M3); }
 
 #define LIGHTBOX_STRUCT_BASE_3(Name, T1, M1, T2, M2, T3, M3) \
