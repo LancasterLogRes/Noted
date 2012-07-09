@@ -74,7 +74,7 @@ private:
 		m_lastLastBL = m_lastBL;
 		m_lastBL = beatLikelihood;
 
-		if (highEnergy.changed())
+//		if (highEnergy.changed())
 		{
 			// If the historical graph has changed, record the latest graph.
 			ret.push_back(StreamEvent(HistoryComment, 1.0, 0.1f, hop(), new AuxFloatVector(highEnergy.get().data(), highEnergy.get().size())));

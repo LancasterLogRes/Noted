@@ -21,9 +21,11 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <cstdint>
 #include <tuple>
+#include <functional>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
@@ -278,4 +280,23 @@ public:
     template <class T> NullOutputStream& operator<<(T const&) { return *this; }
 };
 
+extern bool g_debugEnabled[256];
+extern std::function<void(std::string const&, unsigned char)> g_debugPost;
+
+template <unsigned char _Id = 0, bool _AutoSpacing = true>
+class DebugOutputStream
+{
+public:
+    DebugOutputStream(char const* _start = "    ") { sstr << _start; }
+    ~DebugOutputStream() { g_debugPost(sstr.str(), _Id); }
+    template <class T> DebugOutputStream& operator<<(T const& _t) { if (_AutoSpacing && sstr.str().size() && sstr.str().back() != ' ') sstr << " "; sstr << _t; return *this; }
+    std::stringstream sstr;
+};
+
 }
+
+// Dirties the global namespace, but oh so convenient...
+#define cdebug Lightbox::DebugOutputStream<0, true>("--- ")
+#define cbug(X) Lightbox::DebugOutputStream<X>("--- ")
+#define cnote Lightbox::DebugOutputStream<255, true>("### ")
+#define cwarn Lightbox::DebugOutputStream<255, true>("*** ")

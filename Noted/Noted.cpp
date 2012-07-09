@@ -290,9 +290,13 @@ void Noted::unload(LibraryPtr const& _dl)
 			foreach (auto f, _dl->cf)
 			{
 				m_initEvents.clear();
+                qDebug() << "Killing events views...";
 				foreach (EventsView* ev, eventsViews())
 					if (ev->name() == QString::fromStdString(f.first))
-						delete ev;
+                    {
+                        qDebug() << "Killing.";
+                        delete ev;
+                    }
 				delete ui->eventCompilersList->findItems(QString::fromStdString(f.first), 0).front();
 			}
 			_dl->cf.clear();
@@ -766,7 +770,12 @@ void Noted::suspendWork()
 	if (m_workerThread)
 	{
 		noteDataChanged(Dirty);
-		for (m_workerThread->quit(); !m_workerThread->wait(1000); m_workerThread->terminate()) {}
+        m_workerThread->quit();
+        if (!m_workerThread->wait(5000))
+        {
+            m_workerThread->terminate();
+            qWarning() << "Worker thread not responding. Terminating. If it had a lock, everything will break.";
+        }
 	}
 }
 

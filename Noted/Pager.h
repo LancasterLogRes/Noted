@@ -29,8 +29,6 @@
 #include <Common/Time.h>
 #include "Page.h"
 
-#define cbug Lightbox::NullOutputStream()
-
 class PagerBase
 {
 public:
@@ -95,7 +93,7 @@ public:
 			{
 				for (unsigned item = 0; item < _items && _carryOn(item * 100 / _items); ++item)
 				{
-                    cbug << "Item:" << item << " (" << levels.size() << " levels)";
+                    cbug(4) << "Item:" << item << " (" << levels.size() << " levels)";
 					unsigned leveledItem = item;	// the same at the base level, but itemsPerPage times smaller at each higher level.
 					for (int l = 0; ; ++l)
 					{
@@ -119,7 +117,7 @@ public:
 						// Early out if we were only here to tie up loose pages and we're on the last page.
 						if (leveledItem == _items - 1 && levels.size() == l + 1)
                         {
-                            cbug << "   " << l << (l ? "/" : "B");
+                            cbug(4) << "   " << l << (l ? "/" : "B");
 							break;
                         }
 
@@ -130,10 +128,10 @@ public:
 						{
 							assert(levels.size() == l + 1);
 							levels.push_back(page(IndexLevel(0, levels.size())));
-                            cbug << "   " << l << (l ? "/" : "B") << " => " << (l+1);
+                            cbug(4) << "   " << l << (l ? "/" : "B") << " => " << (l+1);
                         }
                         else
-                            cbug << "   " << l << (l ? "/" : "B") << " +> " << (l+1);
+                            cbug(4) << "   " << l << (l ? "/" : "B") << " +> " << (l+1);
 
 						// Accumulate the (now-recorded) data from this level to the next-higher level.
                         assert(levels[l + 1]->data<_T>().data());
@@ -163,9 +161,8 @@ public:
 	void fillFromExisting()
 	{
 		m_topLevel = 1;
-		for (; page(IndexLevel(0, m_topLevel))->alreadyExisted(); ++m_topLevel)
+        for (; page(IndexLevel(0, m_topLevel), false)->alreadyExisted(); ++m_topLevel)
 		--m_topLevel;
 	}
 };
 
-#undef cbug

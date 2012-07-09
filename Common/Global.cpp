@@ -27,6 +27,21 @@ using namespace std;
 #include "Global.h"
 using namespace Lightbox;
 
+namespace Lightbox
+{
+
+bool g_debugEnabled[256] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true};
+
+void simpleDebugOut(std::string const& _s, unsigned char _id)
+{
+    if (g_debugEnabled[_id])
+        std::cout << _s << std::endl << std::flush;
+}
+
+std::function<void(std::string const&, unsigned char)> g_debugPost = simpleDebugOut;
+
+}
+
 string Lightbox::afterComma(char const* _s, unsigned _i)
 {
 	while (_i && *_s)

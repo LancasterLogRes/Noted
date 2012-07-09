@@ -276,7 +276,7 @@ void NotedBase::rejigSpectra(std::function<bool(int)> const& _carryOn)
 	}
 	else
 	{
-		m_spectra.fillFromExisting();
+        m_spectra.fillFromExisting();
     }
     qDebug() << "### Leaving?";
 }

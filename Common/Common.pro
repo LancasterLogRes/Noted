@@ -12,7 +12,13 @@ include ( ../Common.pri )
 # required for non-windows platforms, it seems...
 !win32: LIBS += -lboost_system
 
-LIBS += -l$$FFTW3F_LIB
+# for windows, it doesn't seem to find libboost_system, so we do it manually.
+win32 {
+	debug: LIBS += -lboost_system-mgw46-mt-d-1_50
+	release: LIBS += -lboost_system-mgw46-mt-1_50
+}
+
+LIBS += -l$$FFTW3_LIB
 
 SOURCES += Common.cpp \
     FFTW.cpp \
