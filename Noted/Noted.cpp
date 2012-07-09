@@ -27,7 +27,6 @@
 #include <functional>
 #include <boost/variant.hpp>
 #include <boost/foreach.hpp>
-#include <QDebug>
 #include <QtGui>
 #include <QtXml>
 #include <QtOpenGL>
@@ -52,6 +51,8 @@
 
 using namespace std;
 using namespace Lightbox;
+
+ostream& operator<<(ostream& _out, QString const& _s) { return _out << _s.toLocal8Bit().data(); }
 
 template <class _T, class _U>
 void catenate(_T& _target, _U const& _extra)
@@ -120,10 +121,13 @@ Noted::Noted(QWidget* _p) :
 	setCorner(Qt::BottomLeftCorner, Qt::LeftDockWidgetArea);
 	setCorner(Qt::TopRightCorner, Qt::RightDockWidgetArea);
 	setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
+
+    g_debugPost = [&](std::string const& _s, int _id){ info(_s.c_str(), _id); };
 }
 
 Noted::~Noted()
 {
+    g_debugPost = simpleDebugOut;
 	foreach (Cursor* c, findChildren<Cursor*>())
 		c->hide();
 
@@ -171,7 +175,7 @@ void Noted::addLibrary(QString const& _name)
 
 void Noted::load(LibraryPtr const& _dl)
 {
-	qDebug() << "Loading:" << _dl->name;
+    cnote << "Loading:" << _dl->name;
 	m_libraryWatcher.addPath(_dl->name);
 	if (QLibrary::isLibrary(_dl->name))
 	{
@@ -185,7 +189,7 @@ void Noted::load(LibraryPtr const& _dl)
 			typedef NotedPlugin*(*pf_t)(NotedFace*);
 			if (cf_t cf = (cf_t)_dl->l.resolve("eventCompilerFactories"))
 			{
-				qDebug() << "LOAD" << _dl->name << " [ECF]";
+                cnote << "LOAD" << _dl->name << " [ECF]";
 				_dl->cf = cf();
 				foreach (auto f, _dl->cf)
 				{
@@ -194,11 +198,11 @@ void Noted::load(LibraryPtr const& _dl)
 					ui->eventCompilersList->addItem(li);
 					noteEventCompilersChanged();
 				}
-				qDebug() << _dl->cf.size() << " event compiler factories";
+                cnote << _dl->cf.size() << " event compiler factories";
 			}
 			else if (pf_t np = (pf_t)_dl->l.resolve("newPlugin"))
 			{
-				qDebug() << "LOAD" << _dl->name << " [PLUGIN]";
+                cnote << "LOAD" << _dl->name << " [PLUGIN]";
 				_dl->p = shared_ptr<NotedPlugin>(np(this));
 
 				foreach (auto lib, m_libraries)
@@ -222,7 +226,7 @@ void Noted::load(LibraryPtr const& _dl)
 						{
 							_dl->auxFace = f;
 							_dl->aux = lib->p;
-							qDebug() << "LOAD" << _dl->name << " [AUX:" << lib->name << "]";
+                            cnote << "LOAD" << _dl->name << " [AUX:" << lib->name << "]";
 							goto LOADED;
 						}
 						else
@@ -237,7 +241,7 @@ void Noted::load(LibraryPtr const& _dl)
 		}
 		else
 		{
-			qDebug() << "ERROR on load: " << _dl->l.errorString();
+            cnote << "ERROR on load: " << _dl->l.errorString();
 		}
 	}
 	else if (QFile::exists(_dl->name))
@@ -290,11 +294,11 @@ void Noted::unload(LibraryPtr const& _dl)
 			foreach (auto f, _dl->cf)
 			{
 				m_initEvents.clear();
-                qDebug() << "Killing events views...";
+                cdebug << "Killing events views...";
 				foreach (EventsView* ev, eventsViews())
 					if (ev->name() == QString::fromStdString(f.first))
                     {
-                        qDebug() << "Killing.";
+                        cdebug << "Killing.";
                         delete ev;
                     }
 				delete ui->eventCompilersList->findItems(QString::fromStdString(f.first), 0).front();
@@ -311,7 +315,7 @@ void Noted::unload(LibraryPtr const& _dl)
 			_dl->aux.lock()->removeDeadAuxes();
 			_dl->aux.reset();
 		}
-		qDebug() << "UNLOAD" << _dl->name;
+        cnote << "UNLOAD" << _dl->name;
 		_dl->unload();
 	}
 	m_libraryWatcher.removePath(_dl->name);
@@ -542,7 +546,7 @@ void Noted::readSettings()
 		DO(normalize, setChecked, toBool);
 	}
 
-	if (settings.contains("realtimeGraph"))
+    if (settings.contains("playRate"))
 	{
 		DO(playChunkSamples, setValue, toInt);
 		DO(playChunks, setValue, toInt);
@@ -552,7 +556,7 @@ void Noted::readSettings()
 #undef DO
 	if (settings.contains("eventViews"))
 		foreach (QString n, settings.value("eventViews").toStringList())
-		{
+        {
 			EventsView* ev = new EventsView(ui->dataDisplay);
 			ev->m_eventCompiler = newEventCompiler(n);
 			addTimeline(ev);
@@ -562,9 +566,9 @@ void Noted::readSettings()
 
 	if (settings.contains("duration"))
 	{
-        m_duration = max<int>(settings.value("duration").toLongLong(), 1);
+        m_duration = max<Time>(settings.value("duration").toLongLong(), 1);
 		m_offset = settings.value("offset").toLongLong();
-		m_fineCursor = settings.value("cursor").toLongLong();
+        m_fineCursor = settings.value("cursor").toLongLong();
 	}
 
 	foreach (QString s, settings.value("dataViews").toStringList())
@@ -640,7 +644,7 @@ void Noted::writeSettings()
 	settings.setValue("fileName", m_audioFile.fileName());
 	settings.setValue("duration", (qlonglong)m_duration);
 	settings.setValue("offset", (qlonglong)m_offset);
-	settings.setValue("cursor", (qlonglong)m_fineCursor);
+    settings.setValue("cursor", (qlonglong)m_fineCursor);
 }
 
 void Noted::on_addEventsView_clicked()
@@ -948,7 +952,7 @@ void Noted::on_actPanic_activated()
 bool Noted::proceedTo(DataStatus _s, DataStatus _from)
 {
 	QMutexLocker l(&m_lock);
-	qDebug() << "STATUS" << m_dataStatus << "--> (" << _s << "from" << _from << ") =" << ((m_dataStatus == _from) ? _s : m_dataStatus);
+    cnote << "STATUS" << m_dataStatus << "--> (" << _s << "from" << _from << ") =" << ((m_dataStatus == _from) ? _s : m_dataStatus);
 	if (m_dataStatus != _from)
 		return false;
 	m_dataStatus = _s;
@@ -958,7 +962,7 @@ bool Noted::proceedTo(DataStatus _s, DataStatus _from)
 void Noted::noteDataChanged(DataStatus _s)
 {
 	QMutexLocker l(&m_lock);
-	qDebug() << "STATUS" << m_dataStatus << "<--" << _s << "=" << ((m_dataStatus > _s) ? _s : m_dataStatus);
+    cnote << "STATUS" << m_dataStatus << "<--" << _s << "=" << ((m_dataStatus > _s) ? _s : m_dataStatus);
 	if (m_dataStatus > _s)
 		m_dataStatus = _s;
 }
@@ -1121,7 +1125,7 @@ void Noted::timerEvent(QTimerEvent*)
 		if (m_dataStatus == Fresh)
 		{
 			m_dataStatus = Clean;
-			qDebug() << "DATA" << Fresh << " cleans to " << Clean;
+            cnote << "DATA" << Fresh << " cleans to " << Clean;
 			emit audioChanged();
 			m_cursorDirty = true;
 			updateEventStuff();
@@ -1134,12 +1138,22 @@ void Noted::timerEvent(QTimerEvent*)
 			ui->statusBar->findChild<QLabel*>("alsa")->setText(QString("%1 %2# @ %3Hz, %4x%5 frames").arg(m_alsa->deviceName().c_str()).arg(m_alsa->channels()).arg(m_alsa->rate()).arg(m_alsa->periods()).arg(m_alsa->frames()));
 		else
 			ui->statusBar->findChild<QLabel*>("alsa")->setText("No audio");
-
-		QMutexLocker l(&x_timelines);
-		foreach (Timeline* t, m_timelines)
-			if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
-				pt->updateIfNeeded();
-	}
+        {
+            QMutexLocker l(&x_timelines);
+            foreach (Timeline* t, m_timelines)
+                if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
+                    pt->updateIfNeeded();
+        }
+        {
+            QMutexLocker l(&x_infos);
+            if (m_infos.size())
+            {
+                m_info += m_infos;
+                ui->infoView->setHtml(m_info);
+                m_infos.clear();
+            }
+        }
+    }
 	if (m_cursorDirty)
 	{
         if (m_fineCursor >= duration())
@@ -1238,9 +1252,17 @@ pair<QRect, QRect> Noted::cursorGeoOffset(int _id) const
 	return make_pair(geo, canvas);
 }
 
+void Noted::info(QString const& _info, int _id)
+{
+    QString color = (_id == 255) ? "#700" : (_id == 254) ? "#007" : (_id == 253) ? "#440" : "#fff";
+    QMutexLocker l(&x_infos);
+    m_infos += "<div style=\"margin-top: 1px;\"><span style=\"background-color:" + color + ";\">&nbsp;</span>" + Qt::escape(_info) + "</div>";
+}
+
 void Noted::info(QString const& _info)
 {
-	ui->infoView->setHtml(ui->infoView->toHtml() + "<div>" + _info + "</div>");
+    QMutexLocker l(&x_infos);
+    m_infos += "<div style=\"margin-top: 1px;\"><span style=\"background-color:gray;\">&nbsp;</span>" + _info + "</div>";
 }
 
 void Noted::paintCursor(QPainter& _p, int _id) const
@@ -1311,10 +1333,8 @@ void Noted::rejigAudio()
 
 	if (proceedTo(ResamplingAudio, Dirty))
 	{
-        qDebug() << "Resampling wave...";
         if (!resampleWave([&](int _progress){return carryOn("Resampling Wave", _progress, ResamplingAudio);}))
 			proceedTo(Fresh, ResamplingAudio);
-        qDebug() << "OK.";
         if (m_duration == 1)
 		{
 			m_fineCursor = 0;
@@ -1324,9 +1344,7 @@ void Noted::rejigAudio()
 
 	if (proceedTo(RejiggingSpectra, ResamplingAudio))
 	{
-        qDebug() << "Rejigging spectra...";
 		rejigSpectra([&](int _progress){return carryOn("Rejigging Spectra", _progress, RejiggingSpectra);});
-        qDebug() << "OK.";
         m_toBeAnalyzed.insert(nullptr);
 	}
 

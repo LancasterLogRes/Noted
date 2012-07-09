@@ -74,8 +74,9 @@ public:
 
 	virtual int activeWidth() const;
 	virtual bool isPlaying() const { return !!m_alsa; }
-	virtual void info(QString const& _info);
-	virtual Lightbox::Time timelineOffset() const { return m_offset; }
+    virtual void info(QString const& _info);
+    void info(QString const& _info, int _id);
+    virtual Lightbox::Time timelineOffset() const { return m_offset; }
 	virtual Lightbox::Time timelineDuration() const { return m_duration; }
 	virtual Lightbox::Time cursor() const { return m_fineCursor / hop() * hop(); }
 
@@ -241,4 +242,8 @@ private:
 	CausalAnalysisPtr m_collateEventsAnalysis;
 	int m_eventsViewsDone;
 	std::map<float, std::vector<float> > m_collatedGraphEvents;
+
+    QMutex x_infos;
+    QString m_info;
+    QString m_infos;
 };

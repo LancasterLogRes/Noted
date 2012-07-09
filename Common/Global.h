@@ -283,6 +283,8 @@ public:
 extern bool g_debugEnabled[256];
 extern std::function<void(std::string const&, unsigned char)> g_debugPost;
 
+void simpleDebugOut(std::string const&, unsigned char);
+
 template <unsigned char _Id = 0, bool _AutoSpacing = true>
 class DebugOutputStream
 {
@@ -296,7 +298,8 @@ public:
 }
 
 // Dirties the global namespace, but oh so convenient...
-#define cdebug Lightbox::DebugOutputStream<0, true>("--- ")
-#define cbug(X) Lightbox::DebugOutputStream<X>("--- ")
-#define cnote Lightbox::DebugOutputStream<255, true>("### ")
-#define cwarn Lightbox::DebugOutputStream<255, true>("*** ")
+#define cbug(X) Lightbox::DebugOutputStream<X>()
+#define csbug(X) Lightbox::DebugOutputStream<X, false>()
+#define cdebug Lightbox::DebugOutputStream<253, true>()
+#define cnote Lightbox::DebugOutputStream<254, true>()
+#define cwarn Lightbox::DebugOutputStream<255, true>()

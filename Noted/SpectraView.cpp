@@ -36,7 +36,7 @@ Lightbox::Time SpectraView::period() const { return c()->windowSize(); }
 void SpectraView::doRender(QImage& _img, int _dx, int _dw)
 {
 //	int w = width();
-	int h = height();
+    int h = _img.height();
 	unsigned bc = c()->spectrumSize();
 	unsigned s = c()->hops();
 	NotedFace* br = dynamic_cast<NotedFace*>(c());
