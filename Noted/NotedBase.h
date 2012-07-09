@@ -57,14 +57,6 @@ public:
 	virtual Lightbox::foreign_vector<float> phaseSpectrum(int _i, int _n, bool _force = false) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, _force, spectrumSize(), spectrumSize()); }
 	virtual Lightbox::foreign_vector<float> deltaPhaseSpectrum(int _i, int _n, bool _force = false) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, _force, spectrumSize() * 2, spectrumSize()); }
 
-	// StreamEvent stuff - would be nice to have this in a separate module/plugin.
-	virtual std::vector<float> graphEvents(float _nature) const = 0;
-	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity(), Lightbox::Time _t = Lightbox::UndefinedTime) const = 0;
-	virtual QVector<Lightbox::StreamEvent> eventsOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity(), Lightbox::Time _t = 0) const = 0;
-	virtual QVector<Lightbox::StreamEvent> initEventsOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity()) const = 0;
-	virtual bool isVisible(Lightbox::StreamEvent const& _e) const = 0;
-	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name) = 0;
-
 protected:
 	bool resampleWave(std::function<bool(int)> const& _carryOn);
 	void rejigSpectra(std::function<bool(int)> const& _carryOn);

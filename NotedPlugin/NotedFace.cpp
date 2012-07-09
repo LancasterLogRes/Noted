@@ -35,7 +35,6 @@ NotedFace::NotedFace(QWidget* _p):
 	QMainWindow					(_p),
 	m_rate						(1),
 	m_hopSamples				(2),
-	m_windowSizeSamples			(2),
 	m_samples					(0),
 	m_zeroPhase					(false),
 	m_normalize					(false)

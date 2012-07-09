@@ -35,9 +35,90 @@
 using namespace std;
 using namespace Lightbox;
 
-EventsView::EventsView(QWidget* _parent):
+// TODO: Properties editor. (Make general Properties edit widget?)
+
+// TODO: Events export. Fix for individual EventsViews.
+/*	QString fn = QFileDialog::getSaveFileName(this, "Save a series of events", QDir::currentPath(), "Native format (*.events);;XML format (*.xml);;CSV format (*.csv *.txt)");
+	ofstream out;
+	out.open(fn.toLocal8Bit(), ios::trunc);
+	if (out)
+	{
+		Time t = 0;
+		QVariant v = ui->dataToExport->itemData(ui->dataToExport->currentIndex());
+		foreach (StreamEvents se, m_events)
+		{
+			int timeout = 0;
+			foreach (StreamEvent e, se)
+				if (eventVisible(v, e))
+				{
+					if (!timeout++)
+					{
+						if (fn.endsWith(".xml"))
+							out << QString("<events time=\"%1\">").arg(toSeconds(t)).toStdString() << endl;
+						else if (!fn.endsWith(".events"))
+							out << toSeconds(t);
+					}
+					if (fn.endsWith(".events"))
+						out << t << " " << (int)e.type << " " << e.strength << " " << e.nature << endl;
+					else if (fn.endsWith(".xml"))
+						out << QString("<event type=\"%1\" strength=\"%2\" nature=\"%3\" />").arg(toString(e.type).c_str()).arg(e.strength).arg(e.nature).arg(e.subNature).toStdString() << endl;
+					else
+				}
+						out << " " << e.strength;
+			if (timeout)
+			{
+				if (fn.endsWith(".xml"))
+					out << QString("</events>").toStdString() << endl;
+				else if (!fn.endsWith(".events"))
+					out << endl;
+			}
+			t += hop();
+		}
+	}*/
+
+void updateCombo(QComboBox* _box, set<float> const& _natures, set<EventType> _types)
+{
+	QString s =  _box->currentText();
+	_box->clear();
+	foreach (float n, _natures)
+	{
+		QPixmap pm(16, 16);
+		pm.fill(QColor::fromHsvF(n, 0.5, 0.85));
+		_box->insertItem(_box->count(), pm, QString("Graph events of nature %1").arg(n), n);
+	}
+	_box->insertItem(_box->count(), "All Graph events", true);
+	foreach (EventType e, _types)
+		_box->insertItem(_box->count(), QString("All %1 events").arg(toString(e).c_str()), int(e));
+	_box->insertItem(_box->count(), "All non-Graph events", false);
+	_box->insertItem(_box->count(), "All events");
+	for (int i = 0; i < _box->count(); ++i)
+		if (_box->itemText(i) == s)
+		{
+			_box->setCurrentIndex(i);
+			goto OK;
+		}
+	_box->setCurrentIndex(_box->count() - 1);
+	OK:;
+}
+
+void EventsView::updateEventTypes()
+{
+	set<float> natures;
+	set<EventType> types;
+	QMutexLocker l(&x_events);
+	foreach (auto es, m_events)
+		foreach (auto e, es)
+			if (e.type >= Graph)
+				natures.insert(e.nature);
+			else
+				types.insert(e.type);
+	updateCombo(m_selection, natures, types);
+}
+
+EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	PrerenderedTimeline	(_parent),
-	m_use		(nullptr)
+	m_eventCompiler		(_ec),
+	m_use				(nullptr)
 {
 	connect(c(), SIGNAL(eventsChanged()), this, SLOT(sourceChanged()));
 	auto oe = []() -> QGraphicsEffect* { auto ret = new QGraphicsOpacityEffect; ret->setOpacity(0.7); return ret; };
@@ -91,11 +172,23 @@ void EventsView::onUseChanged()
 	c()->noteEventCompilersChanged();
 }
 
-void EventsView::initEvents()
+void EventsView::clearEvents()
 {
 	QMutexLocker l(&x_events);
+	m_initEvents.clear();
 	m_events.clear();
 	m_current.clear();
+}
+
+vector<float> EventsView::graphEvents(float _nature) const
+{
+	QMutexLocker l(&x_events);
+	vector<float> ret;
+	foreach (auto es, m_events)
+		foreach (auto e, es)
+			if (e.type >= Graph && e.nature == _nature)
+				ret.push_back(e.strength);
+	return ret;
 }
 
 Lightbox::StreamEvents EventsView::events(int _i) const
@@ -109,21 +202,16 @@ Lightbox::StreamEvents EventsView::events(int _i) const
 	return StreamEvents();
 }
 
-void EventsView::shiftEvents(unsigned _n)
-{
-	QMutexLocker l(&x_events);
-	m_events.erase(m_events.begin(), next(m_events.begin(), _n));
-}
-
 void EventsView::appendEvents(StreamEvents const& _se)
 {
 	QMutexLocker l(&x_events);
 	m_events.push_back(_se);
 }
 
-void EventsView::edit()
+void EventsView::setInitEvents(StreamEvents const& _se)
 {
-	dynamic_cast<Noted*>(c())->newEventsEdit(this);
+	QMutexLocker l(&x_events);
+	m_initEvents = _se;
 }
 
 void EventsView::duplicate()
@@ -154,8 +242,6 @@ void EventsView::save()
 void EventsView::restore()
 {
 	m_eventCompiler = c()->newEventCompiler(m_name);
-
-	//TODO: Noted should rejig our events.
 }
 
 void EventsView::doRender(QImage& _img, int _dx, int _dw)

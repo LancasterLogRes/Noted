@@ -26,19 +26,19 @@ using namespace std;
 using namespace Lightbox;
 
 CompileEventsView::CompileEventsView(EventsView* _ev):
-	CausalAnalysis(QString("Compiling %1 events").arg(_ev->m_eventCompiler.name().c_str())),
+	CausalAnalysis(QString("Compiling %1 events").arg(_ev->niceName())),
 	m_ev(_ev)
 {
 }
 
 void CompileEventsView::init(bool _willRecord)
 {
-	m_ev->initEvents();
-	if (!m_ev->m_eventCompiler.isNull())
+	m_ev->clearEvents();
+	if (!m_ev->eventCompiler().isNull())
 	{
 		auto ises = m_ev->m_eventCompiler.init(m_ev->c()->spectrumSize(), m_ev->c()->hop(), toBase(2, m_ev->c()->rate()));
 		if (_willRecord)
-			dynamic_cast<Noted*>(m_ev->c())->appendInitEvents(ises);
+			m_ev->setInitEvents(ises);
 	}
 }
 

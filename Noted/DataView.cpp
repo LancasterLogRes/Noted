@@ -46,10 +46,10 @@ DataView::DataView(QWidget* _parent, QString const& _name):
 
 void DataView::checkSpec()
 {
-    if (!m_spec.lock())
-        m_spec.reset();
-    if (!m_xRangeSpec.lock())
-        m_xRangeSpec.reset();
+	if (!m_spec.lock())
+		m_spec.reset();
+	if (!m_xRangeSpec.lock())
+		m_xRangeSpec.reset();
 }
 
 QColor toQColor(Color _c, uint8_t _a = 255)
@@ -59,11 +59,10 @@ QColor toQColor(Color _c, uint8_t _a = 255)
 
 shared_ptr<AuxGraphsSpec> DataView::findSpec(QString const& _n) const
 {
-	QVector<StreamEvent> ses = c()->initEventsOf(GraphSpecComment);
-	foreach (StreamEvent const& se, ses)
+	foreach (StreamEvent const& se, c()->initEventsOf(GraphSpecComment))
 		if (shared_ptr<AuxGraphsSpec> ags = dynamic_pointer_cast<AuxGraphsSpec>(se.aux()))
 			if (_n == QString::fromStdString(ags->name))
-				return dynamic_pointer_cast<AuxGraphsSpec>(se.aux());
+				return ags;
 	return shared_ptr<AuxGraphsSpec>();
 }
 
@@ -171,7 +170,7 @@ public:
 		}
 	}
 
-    using Grapher::drawLineGraph;
+	using Grapher::drawLineGraph;
 	template <class _T>
 	void drawLineGraph(vector<_T> const& _data, size_t _off, QColor _color, QBrush const& _fillToZero = Qt::NoBrush, float _width = 0.f) const
 	{

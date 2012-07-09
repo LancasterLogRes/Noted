@@ -34,39 +34,49 @@
 #include <QPainter>
 
 class QPushButton;
+class CompileEventsView;
 
 class EventsView: public PrerenderedTimeline, public EventsStore
 {
 	Q_OBJECT
+	friend class CompileEventsView;
 
 public:
-	explicit EventsView(QWidget* _parent = 0);
+	EventsView(QWidget* _parent = 0, Lightbox::EventCompiler const& _c = Lightbox::EventCompiler());
 	~EventsView();
 
 	void save();
 	void restore();
 	QString name() const;
+	virtual QString niceName() const { return name(); }
 
-	void initEvents();
-	void shiftEvents(unsigned _n);
+	Lightbox::EventCompiler const& eventCompiler() const { return m_eventCompiler; }
+
+	QMutex* mutex() const { return &x_events; }
+	void clearEvents();
+	void setInitEvents(Lightbox::StreamEvents const& _se);
 	void appendEvents(Lightbox::StreamEvents const& _se);
 	virtual Lightbox::StreamEvents events(int _i) const;
+	virtual Lightbox::StreamEvents initEvents() const { return m_initEvents; }
+	std::vector<float> graphEvents(float _nature) const;
+
+	void updateEventTypes();
+
+public slots:
+	void duplicate();
+	void onUseChanged();
+
+private:
+	virtual void doRender(QImage& _img, int _dx, int _dw);
 
 	Lightbox::EventCompiler m_eventCompiler;
+
+	Lightbox::StreamEvents m_initEvents;
 	QList<Lightbox::StreamEvents> m_events;
 	mutable QMutex x_events;
 
 	Lightbox::StreamEvents m_current;
 	QComboBox* m_selection;
-
-public slots:
-	void duplicate();
-	void edit();
-
-	void onUseChanged();
-
-private:
-	virtual void doRender(QImage& _img, int _dx, int _dw);
 
 	QString m_name;
 	QPushButton* m_use;

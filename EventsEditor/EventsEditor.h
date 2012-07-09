@@ -41,7 +41,8 @@ class EventsEditor: public QGraphicsView, public EventsStore, public Timeline
 
 public:
 	EventsEditor(QWidget* _parent, QString _filename = "");
-	
+
+	virtual QString niceName() const { return m_filename; }
 	virtual QWidget* widget() { return this; }
 
 	QString queryFilename();

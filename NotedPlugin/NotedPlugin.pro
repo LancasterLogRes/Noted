@@ -14,20 +14,20 @@ include ( ../Common.pri )
 LIBS += -lCommon -lEventCompiler
 
 SOURCES += Timeline.cpp \
-    PrerenderedTimeline.cpp \
-    NotedFace.cpp \
-    NotedPlugin.cpp \
-    Prerendered.cpp \
-    GLView.cpp \
-    AcausalAnalysis.cpp \
-    CausalAnalysis.cpp
+	PrerenderedTimeline.cpp \
+	NotedFace.cpp \
+	NotedPlugin.cpp \
+	Prerendered.cpp \
+	AcausalAnalysis.cpp \
+	CausalAnalysis.cpp \
+    QGLWidgetProxy.cpp
 
 HEADERS  += Timeline.h \
-    PrerenderedTimeline.h \
-    NotedFace.h \
-    NotedPlugin.h \
-    Prerendered.h \
-    GLView.h \
-    CausalAnalysis.h \
-    AcausalAnalysis.h \
-    AuxLibraryFace.h
+	PrerenderedTimeline.h \
+	NotedFace.h \
+	NotedPlugin.h \
+	Prerendered.h \
+	CausalAnalysis.h \
+	AcausalAnalysis.h \
+	AuxLibraryFace.h \
+    QGLWidgetProxy.h

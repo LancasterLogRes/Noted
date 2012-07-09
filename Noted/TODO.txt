@@ -1,5 +1,4 @@
 Plugin stuff
-  Resume/suspend on worker thread shouldn't require killing existing work.
   Reload button, load status & time of last load indication.
 
 Core

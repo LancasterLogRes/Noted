@@ -46,7 +46,9 @@ void PagerBase::init(uint32_t _fp, unsigned _itemsPerPage, unsigned _itemLength,
 
 std::pair<PagePtr, unsigned> PagerBase::item(int _index, int _number, bool _force) const
 {
-	// TODO: make appropriate mean
+	// COULDDO: make appropriate mean.
+	// OPTIMIZE: could all be done asynch.
+
 	if (!m_fileSize)
 		return make_pair(PagePtr(), 0u);
 
@@ -56,11 +58,8 @@ std::pair<PagePtr, unsigned> PagerBase::item(int _index, int _number, bool _forc
 	il.index = (_index / levelFactor) / m_itemsPerPage;
 	unsigned elementIndex = (_index / levelFactor) % m_itemsPerPage;
 
-	if (_force || true)// always force for now.
-	{
-		if (!ensureMapped(il))
-			return make_pair(PagePtr(), 0u);
-	}
+	if (!ensureMapped(il))
+		return make_pair(PagePtr(), 0u);
 
 	{
 		QMutexLocker l(&x_mapped);
@@ -71,7 +70,6 @@ std::pair<PagePtr, unsigned> PagerBase::item(int _index, int _number, bool _forc
 		}
 	}
 
-	// TODO: put it on the queue.
 	return item(_index, _number * m_itemsPerPage, il.level >= m_topLevel - 1);
 }
 
@@ -90,7 +88,7 @@ QString PagerBase::filename(IndexLevel _il) const
 	QString f = (QDir::tempPath() + "/Noted-%1").arg(m_fingerprint, 8, 16);
 	if (!QFile::exists(f))
 		QDir().mkpath(f);
-    return (f + "/%2@%3x%4^%5").arg(m_type).arg(_il.index).arg(m_itemsPerPage).arg(_il.level);
+	return (f + "/%2@%3x%4^%5").arg(m_type).arg(_il.index).arg(m_itemsPerPage).arg(_il.level);
 }
 
 bool PagerBase::ensureMapped(IndexLevel _il) const

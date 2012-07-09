@@ -35,7 +35,7 @@
 #include <Common/Common.h>
 #include <EventCompiler/EventCompiler.h>
 
-#include "GLView.h"
+#include "QGLWidgetProxy.h"
 #include "CausalAnalysis.h"
 #include "AcausalAnalysis.h"
 
@@ -63,16 +63,16 @@ public:
 	virtual Lightbox::Time cursor() const = 0;
 
 	virtual unsigned hopSamples() const { return m_hopSamples; }
-	virtual unsigned windowSizeSamples() const { return m_windowSizeSamples; }
+	virtual unsigned windowSizeSamples() const { return m_windowFunction.size(); }
 	virtual unsigned rate() const { return m_rate; }
-	virtual unsigned spectrumSize() const { return m_windowSizeSamples / 2 + 1; }
+	virtual unsigned spectrumSize() const { return m_windowFunction.size() / 2 + 1; }
 	virtual std::vector<float> const& windowFunction() const { return m_windowFunction; }
 	virtual bool isZeroPhase() const { return m_zeroPhase; }
 	virtual unsigned samples() const { return m_samples; }
 
 	inline Lightbox::Time hop() const { return Lightbox::toBase(hopSamples(), rate()); }
 	inline Lightbox::Time windowSize() const { return Lightbox::toBase(windowSizeSamples(), rate()); }
-    inline int screenWidth(Lightbox::Time _t) const { return samples() ? (_t * activeWidth() + timelineDuration() / 2) / timelineDuration() : 0; }
+	inline int screenWidth(Lightbox::Time _t) const { return samples() ? (_t * activeWidth() + timelineDuration() / 2) / timelineDuration() : 0; }
 	inline Lightbox::Time durationOf(int _screenWidth) const { return _screenWidth * timelineDuration() / activeWidth(); }
 	inline int xOf(Lightbox::Time _t) const { return screenWidth(_t - timelineOffset()); }
 	inline int cursorX() const { return xOf(cursor()); }
@@ -91,12 +91,10 @@ public:
 	virtual Lightbox::foreign_vector<float> phaseSpectrum(int _i, int _n, bool _force = false) const = 0;
 	virtual Lightbox::foreign_vector<float> deltaPhaseSpectrum(int _i, int _n, bool _force = false) const = 0;
 
+	virtual QList<EventsStore*> eventsStores() const = 0;
 	virtual std::vector<float> graphEvents(float _nature) const = 0;
 	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity(), Lightbox::Time _t = Lightbox::UndefinedTime) const = 0;
-	virtual QVector<Lightbox::StreamEvent> eventsOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity(), Lightbox::Time _t = 0) const = 0;
-	virtual QVector<Lightbox::StreamEvent> initEventsOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity()) const = 0;
-	virtual Lightbox::StreamEvents eventsAt(int _index) const = 0;
-	virtual std::vector<EventsStore*> eventsStores() const = 0;
+	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity()) const = 0;
 	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name) = 0;
 
 	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a) = 0;
@@ -107,11 +105,10 @@ public:
 	inline void noteEventCompilersChanged() { noteLastValidIs(nullptr); }
 	inline void notePluginDataChanged() { noteLastValidIs(collateEventsAnalysis()); }
 
-	virtual bool isVisible(Lightbox::StreamEvent const& _e) const = 0;
 	virtual bool isPlaying() const = 0;
 
 	virtual void addTimeline(Timeline* _p) = 0;
-	virtual QWidget* addGLWidget(GLView* _v, QWidget* _p = nullptr) = 0;
+	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;
 	virtual void info(QString const& _info) = 0;
 
 public slots:
@@ -134,7 +131,6 @@ protected:
 
 	unsigned m_rate;
 	unsigned m_hopSamples;
-	unsigned m_windowSizeSamples;
 	unsigned m_samples;
 	bool m_zeroPhase;
 	bool m_normalize;
@@ -168,10 +164,8 @@ public:
 
 	virtual std::vector<float> graphEvents(float) const { return std::vector<float>(); }
 	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType, float = std::numeric_limits<float>::infinity(), Lightbox::Time = Lightbox::UndefinedTime) const { return Lightbox::StreamEvent(); }
-	virtual QVector<Lightbox::StreamEvent> eventsOf(Lightbox::EventType, float = std::numeric_limits<float>::infinity(), Lightbox::Time = 0) const { return QVector<Lightbox::StreamEvent>(); }
-	virtual QVector<Lightbox::StreamEvent> initEventsOf(Lightbox::EventType, float = std::numeric_limits<float>::infinity()) const { return QVector<Lightbox::StreamEvent>(); }
-	virtual Lightbox::StreamEvents eventsAt(int) const { return Lightbox::StreamEvents(); }
-	virtual std::vector<EventsStore*> eventsStores() const { return std::vector<EventsStore*>(); }
+	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType, float = std::numeric_limits<float>::infinity()) const { return Lightbox::StreamEvents(); }
+	virtual QList<EventsStore*> eventsStores() const { return QList<EventsStore*>(); }
 	virtual Lightbox::EventCompiler newEventCompiler(QString const&) { return Lightbox::EventCompiler(); }
 
 	virtual void noteLastValidIs(AcausalAnalysisPtr const&) {}
@@ -179,13 +173,11 @@ public:
 	virtual CausalAnalysisPtr collateEventsAnalysis() const { return nullptr; }
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&) { return AcausalAnalysisPtrs(); }
 
-	virtual bool isVisible(Lightbox::StreamEvent const&) const { return false; }
-
 	virtual bool isPlaying() const { return false; }
 
 	virtual void timelineDead(Timeline*) {}
 	virtual void addTimeline(Timeline*) {}
-	virtual QWidget* addGLWidget(GLView*) { return nullptr; }
+	virtual QWidget* addGLWidget(QGLWidgetProxy*) { return nullptr; }
 
 	virtual void setCursor(qint64) {}
 	virtual void setOffset(qint64) {}

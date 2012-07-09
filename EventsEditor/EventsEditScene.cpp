@@ -71,7 +71,6 @@ void EventsEditScene::copyFrom(EventsStore* _ev)
 
 void EventsEditScene::rejigEvents()
 {
-	// TODO: Update links for Spike/Chains
 	SpikeChainItem* lastSCI = nullptr;
 	StreamEventItem* lastPSI = nullptr;
 	SustainItem* lastSI = nullptr;
@@ -132,8 +131,6 @@ void EventsEditScene::rejigEvents()
 			delete c;
 		else if (auto c = dynamic_cast<PeriodBarItem*>(it))
 			delete c;
-
-	// TODO: Move everything to correct vertical position & round everything off horizontally.
 }
 
 void EventsEditScene::wheelEvent(QGraphicsSceneWheelEvent* _wheelEvent)
@@ -189,7 +186,7 @@ void EventsEditScene::saveTo(QString _filename) const
 	using boost::property_tree::ptree;
 	ptree pt;
 	Time last = -1000000000;
-    ptree* lt = nullptr;
+	ptree* lt = nullptr;
 	foreach (QGraphicsItem* it, items(Qt::AscendingOrder))
 		if (auto sei = dynamic_cast<StreamEventItem*>(it))
 		{

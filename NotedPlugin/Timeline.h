@@ -32,6 +32,7 @@ class EventsStore
 public:
 	virtual ~EventsStore() {}
 
+	virtual QString niceName() const = 0;
 	virtual Lightbox::StreamEvents events(int _i) const = 0;
 };
 

@@ -22,12 +22,12 @@
 
 #include <QGLWidget>
 
-#include <NotedPlugin/GLView.h>
+#include <NotedPlugin/QGLWidgetProxy.h>
 
 class NotedGLWidget: public QGLWidget
 {
 public:
-	NotedGLWidget(GLView* _v, QWidget* _p): QGLWidget(QGLFormat(QGL::SampleBuffers), _p), m_v(_v) { m_v->m_widget = this; startTimer(15); }
+	NotedGLWidget(QGLWidgetProxy* _v, QWidget* _p): QGLWidget(QGLFormat(QGL::SampleBuffers), _p), m_v(_v) { m_v->m_widget = this; startTimer(15); }
 	~NotedGLWidget() { delete m_v; }
 
 	virtual void initializeGL() { m_v->initializeGL(); }
@@ -42,5 +42,5 @@ public:
 	virtual void timerEvent(QTimerEvent*) { updateGL(); }
 
 private:
-	GLView* m_v;
+	QGLWidgetProxy* m_v;
 };

@@ -18,25 +18,4 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-class QMouseEvent;
-class QWheelEvent;
-class QWidget;
-
-class GLView
-{
-public:
-    virtual ~GLView() {}
-
-	virtual void initializeGL() {}
-	virtual void resizeGL(int, int) {}
-	virtual void paintGL() {}
-
-	virtual void mousePressEvent(QMouseEvent*) {}
-	virtual void mouseReleaseEvent(QMouseEvent*) {}
-	virtual void mouseMoveEvent(QMouseEvent*) {}
-	virtual void wheelEvent(QWheelEvent*) {}
-
-	QWidget* m_widget;
-};
+#include "QGLWidgetProxy.h"

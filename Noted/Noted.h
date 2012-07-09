@@ -21,6 +21,7 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <vector>
 
 #include <Audio/Capture.h>
@@ -55,6 +56,7 @@ class EventsEditor;
 class CompileEvents;
 class CollateEvents;
 class Cursor;
+class QComboBox;
 
 bool eventVisible(QVariant const& _v, Lightbox::StreamEvent const& _e);
 
@@ -67,6 +69,7 @@ class Noted: public NotedBase
 	friend class Cursor;
 
 public:
+	// TODO: Sort these out properly so that workers terminate and pause in a proper fashion.
 	enum DataStatus { Dirty, ResamplingAudio, RejiggingSpectra, Analyzing, Fresh = 0xfffffffc, Clean, Streaming, Suspended };
 
 	explicit Noted(QWidget* parent = nullptr);
@@ -74,9 +77,9 @@ public:
 
 	virtual int activeWidth() const;
 	virtual bool isPlaying() const { return !!m_alsa; }
-    virtual void info(QString const& _info);
-    void info(QString const& _info, int _id);
-    virtual Lightbox::Time timelineOffset() const { return m_offset; }
+	virtual void info(QString const& _info);
+	void info(QString const& _info, int _id);
+	virtual Lightbox::Time timelineOffset() const { return m_offset; }
 	virtual Lightbox::Time timelineDuration() const { return m_duration; }
 	virtual Lightbox::Time cursor() const { return m_fineCursor / hop() * hop(); }
 
@@ -85,27 +88,19 @@ public:
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&);
 	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a);
 
-	virtual QWidget* addGLWidget(GLView* _v, QWidget* _p = nullptr);
+	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr);
 	virtual void addTimeline(Timeline* _tl);
 
-	// API TODO: work out what to keep
-	virtual bool isVisible(Lightbox::StreamEvent const& _e) const;
+	virtual QList<EventsStore*> eventsStores() const;
 	virtual std::vector<float> graphEvents(float _nature) const;
 	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType _et, float _nature, Lightbox::Time _t = Lightbox::UndefinedTime) const;
-	virtual QVector<Lightbox::StreamEvent> eventsOf(Lightbox::EventType _et, float _nature, Lightbox::Time _t = 0) const;
-	virtual QVector<Lightbox::StreamEvent> initEventsOf(Lightbox::EventType _et, float _nature) const;
-	virtual Lightbox::StreamEvents eventsAt(int _index) const;
-	virtual std::vector<EventsStore*> eventsStores() const;
-	virtual QList<EventsView*> eventsViews() const;
-	virtual QList<EventsEditor*> eventsEditors() const;
-	virtual void newEventsEdit(EventsView* _copy);
 	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name);
-	void appendInitEvents(Lightbox::StreamEvents const& _ses);
+	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity()) const;
 
 	void suspendWork();
 	void resumeWork();
 
-    using QWidget::event;
+	using QWidget::event;
 
 	void updateGraphs(std::vector<std::shared_ptr<Lightbox::AuxGraphsSpec> > const& _specs);
 
@@ -122,8 +117,10 @@ public slots:
 	void on_actViewAll_activated() { normalizeView(); }
 	void on_actRedoEvents_activated() { noteEventCompilersChanged(); }
 	void on_actNewEvents_activated();
+	void on_actNewEventsFrom_activated();
 	void on_actOpenEvents_activated();
 	void on_actAbout_activated();
+	void on_clearInfo_clicked();
 
 	void on_windowSizeSlider_valueChanged(int = 0);
 	void on_hopSlider_valueChanged(int = 0);
@@ -132,7 +129,6 @@ public slots:
 	void on_zeroPhase_toggled(bool = false) { noteAudioParametersChanged(); }
 	void on_normalize_toggled(bool = false) { noteAudioParametersChanged(); }
 	void on_addEventsView_clicked();
-	void on_exportEvents_clicked();
 	void on_addLibrary_clicked();
 	void on_killLibrary_clicked();
 
@@ -156,6 +152,8 @@ signals:
 	void viewSizesChanged();
 
 private:
+	QList<EventsView*> eventsViews() const;
+
 	void updateEventStuff();
 
 	void changeEvent(QEvent *e);
@@ -187,7 +185,7 @@ private:
 	void setAudio(QString const& _filename);
 
 	// Just for Timeline class.
-	virtual void timelineDead(Timeline* _tl) { QMutexLocker l(&x_timelines); m_timelines.remove(_tl); }
+	virtual void timelineDead(Timeline* _tl);
 
 	Ui::Noted* ui;
 
@@ -234,7 +232,9 @@ private:
 	QSet<QString> m_dirtyLibraries;
 	QFileSystemWatcher m_libraryWatcher;
 
-	Lightbox::StreamEvents m_initEvents;
+	void clearEventsCache();	// Call when eventsStores() or any of them have changed.
+	mutable bool d_initEvents;
+	mutable Lightbox::StreamEvents m_initEvents;
 
 	std::set<AcausalAnalysisPtr> m_toBeAnalyzed;
 
@@ -243,7 +243,7 @@ private:
 	int m_eventsViewsDone;
 	std::map<float, std::vector<float> > m_collatedGraphEvents;
 
-    QMutex x_infos;
-    QString m_info;
-    QString m_infos;
+	QMutex x_infos;
+	QString m_info;
+	QString m_infos;
 };
