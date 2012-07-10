@@ -122,7 +122,7 @@ signals:
 	void cursorChanged();
 	void offsetChanged();
 	void durationChanged();
-	void audioChanged();
+	void analysisFinished();
 	void eventsChanged();
 	void analysisFinished();
 

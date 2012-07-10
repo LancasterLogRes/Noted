@@ -105,6 +105,17 @@ public:
 	void updateGraphs(std::vector<std::shared_ptr<Lightbox::AuxGraphsSpec> > const& _specs);
 
 public slots:
+	virtual void updateWindowTitle();
+
+	virtual void addLibrary(QString const& _name);
+	virtual void reloadLibrary(QString const& _name);
+	virtual void onLibraryChange(QString const& _name);
+
+	virtual void setCursor(qint64 _c);
+	virtual void setOffset(qint64 _o) { if (m_offset != _o) { m_offset = _o; emit offsetChanged(); } }
+	virtual void setDuration(qint64 _d) { if (m_duration != _d) { m_duration = _d; emit durationChanged(); } }
+
+private slots:
 	void on_actOpen_activated();
 	void on_actQuit_activated();
 	void on_actPlay_changed();
@@ -132,29 +143,16 @@ public slots:
 	void on_addLibrary_clicked();
 	void on_killLibrary_clicked();
 
-	virtual void addLibrary(QString const& _name);
-	virtual void reloadLibrary(QString const& _name);
-	virtual void onLibraryChange(QString const& _name);
-
-	virtual void setCursor(qint64 _c);
-
-	void newDataView(QString const& _n);
-
 	void onDataViewDockClosed();
-
-	virtual void updateWindowTitle();
-
-	void normalizeView() { setOffset(duration() * -0.025); setDuration(duration() / .95); }
-	virtual void setOffset(qint64 _o) { if (m_offset != _o) { m_offset = _o; emit offsetChanged(); } }
-	virtual void setDuration(qint64 _d) { if (m_duration != _d) { m_duration = _d; emit durationChanged(); } }
+	void updateEventStuff();
 
 signals:
 	void viewSizesChanged();
 
 private:
-	QList<EventsView*> eventsViews() const;
+	void newDataView(QString const& _n);
 
-	void updateEventStuff();
+	QList<EventsView*> eventsViews() const;
 
 	void changeEvent(QEvent *e);
 	void timerEvent(QTimerEvent*);
@@ -198,6 +196,7 @@ private:
 	int m_progress;
 	bool m_cursorDirty;
 
+	void normalizeView() { setOffset(duration() * -0.025); setDuration(duration() / .95); }
 	Lightbox::Time m_fineCursor;
 	Lightbox::Time m_offset;
 	Lightbox::Time m_duration;

@@ -29,7 +29,7 @@ using namespace Lightbox;
 
 WaveOverview::WaveOverview(QWidget* _parent): Prerendered(_parent)
 {
-	connect(c(), SIGNAL(audioChanged()), SLOT(rerender()));
+	connect(c(), SIGNAL(analysisFinished()), SLOT(rerender()));
 }
 
 int WaveOverview::xOf(Lightbox::Time _t)

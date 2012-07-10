@@ -32,8 +32,8 @@ PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop): Pr
 {
 	connect(c(), SIGNAL(offsetChanged()), this, SLOT(update()));
 	connect(c(), SIGNAL(durationChanged()), this, SLOT(update()));
-	connect(c(), SIGNAL(audioChanged()), this, SLOT(sourceChanged()));
-	connect(c(), SIGNAL(audioChanged()), this, SLOT(update()));
+	connect(c(), SIGNAL(analysisFinished()), this, SLOT(sourceChanged()));
+	connect(c(), SIGNAL(analysisFinished()), this, SLOT(update()));
 	initTimeline(c());
 }
 

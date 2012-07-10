@@ -107,6 +107,7 @@ Noted::Noted(QWidget* _p) :
 	}
 
 	connect(&m_libraryWatcher, SIGNAL(fileChanged(QString)), this, SLOT(onLibraryChange(QString)));
+	connect(this, SIGNAL(analysisFinished()), SLOT(updateEventStuff()));
 
 	foreach (CurrentView* v, findChildren<CurrentView*>())
 		connect(this, SIGNAL(cursorChanged()), v, SLOT(check()));
@@ -895,7 +896,7 @@ void Noted::setAudio(QString const& _filename)
 	m_offset = 0;
 	m_duration = 1;
 
-	emit audioChanged();
+	emit analysisFinished();
 
 	m_audioFile.unmap((uint8_t*)m_audioHeader);
 	m_audioHeader = nullptr;
@@ -993,10 +994,8 @@ void Noted::timerEvent(QTimerEvent*)
 		{
 			m_dataStatus = Clean;
 			cnote << "DATA" << Fresh << " cleans to " << Clean;
-			emit audioChanged();
-			m_cursorDirty = true;
-			updateEventStuff();
 			emit analysisFinished();
+			m_cursorDirty = true;
 		}
 
 		statusBar()->showMessage(msg);
