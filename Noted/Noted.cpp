@@ -295,13 +295,10 @@ void Noted::unload(LibraryPtr const& _dl)
 			clearEventsCache();
 			foreach (auto f, _dl->cf)
 			{
-				cdebug << "Killing events views...";
+				// NOTE: A bit messy, this?
 				foreach (EventsView* ev, eventsViews())
 					if (ev->name() == QString::fromStdString(f.first))
-					{
-						cdebug << "Killing.";
-						delete ev;
-					}
+						ev->save();
 				delete ui->eventCompilersList->findItems(QString::fromStdString(f.first), 0).front();
 			}
 			_dl->cf.clear();
@@ -488,10 +485,13 @@ void Noted::on_addLibrary_clicked()
 
 void Noted::on_killLibrary_clicked()
 {
-	QString s = ui->loadedLibraries->currentItem()->data(Qt::UserRole).toString();
-	delete ui->loadedLibraries->currentItem();
-	m_dirtyLibraries.insert(s);
-	reloadDirties();
+	if (ui->loadedLibraries->currentItem())
+	{
+		QString s = ui->loadedLibraries->currentItem()->data(Qt::UserRole).toString();
+		delete ui->loadedLibraries->currentItem();
+		m_dirtyLibraries.insert(s);
+		reloadDirties();
+	}
 }
 
 void Noted::readBaseSettings(QSettings& _s)
@@ -722,10 +722,10 @@ void Noted::suspendWork()
 	{
 		noteDataChanged(Dirty);
 		m_workerThread->quit();
-		if (!m_workerThread->wait(5000))
+		while (!m_workerThread->wait(1000))
 		{
-			m_workerThread->terminate();
-			qWarning() << "Worker thread not responding. Terminating. If it had a lock, everything will break.";
+//			m_workerThread->terminate();
+			qWarning() << "Worker thread not responding :-(";
 		}
 	}
 }
@@ -1024,11 +1024,6 @@ void Noted::timerEvent(QTimerEvent*)
 					ui->infoView->verticalScrollBar()->setValue(ui->infoView->verticalScrollBar()->maximum());
 			}
 		}
-	}
-
-	if (i % 60 == 0 && !isPlaying())
-	{
-		updateAudioDevices();
 	}
 
 	if (m_cursorDirty)

@@ -142,9 +142,11 @@ private slots:
 	void on_addEventsView_clicked();
 	void on_addLibrary_clicked();
 	void on_killLibrary_clicked();
+	void on_refreshAudioDevices_clicked() { updateAudioDevices(); }
 
 	void onDataViewDockClosed();
 	void updateEventStuff();
+	void updateAudioDevices();
 
 signals:
 	void viewSizesChanged();
@@ -205,7 +207,6 @@ private:
 	WorkerThread* m_alsaThread;
 	std::shared_ptr<Audio::Playback> m_alsa;
 	std::shared_ptr<Audio::Capture> m_capture;
-	void updateAudioDevices();
 
 	struct Library;
 	typedef std::shared_ptr<Library> LibraryPtr;

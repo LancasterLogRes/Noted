@@ -61,7 +61,7 @@ uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const
 	return ret;
 }
 
-bool NotedBase::waveBlock(Time _from, Time _duration, Lightbox::foreign_vector<float> o_toFill, bool) const
+bool NotedBase::waveBlock(Time _from, Time _duration, Lightbox::foreign_vector<float> o_toFill) const
 {
 	QMutexLocker l(&x_wave);
 	IndexLevel il(-1, 0);
@@ -125,21 +125,21 @@ Lightbox::foreign_vector<float> NotedBase::waveWindow(int _window) const
 	if (hop < 0)
 	{
 		shared_ptr<vector<float> > data = make_shared<vector<float> >(m_windowFunction.size(), 0.f);
-		auto i = m_wave.item(0, 0, true, 0, m_windowFunction.size() + hop * m_hopSamples);
+		auto i = m_wave.item(0, 0, 0, m_windowFunction.size() + hop * m_hopSamples);
 		memcpy(data->data() + m_windowFunction.size() - i.count(), i.data(), i.count() * sizeof(float));
 		return foreign_vector<float>(data->data(), m_windowFunction.size()).tied(data);
 	}
 	else if ((hop * m_hopSamples) / (m_pageBlocks * m_blockSamples) == (hop * m_hopSamples + m_windowFunction.size() - 1) / (m_pageBlocks * m_blockSamples))
 		// same page - just return
-		return m_wave.item(hop * m_hopSamples / m_blockSamples, 0, true, hop * m_hopSamples % m_blockSamples, m_windowFunction.size());
+		return m_wave.item(hop * m_hopSamples / m_blockSamples, 0, hop * m_hopSamples % m_blockSamples, m_windowFunction.size());
 	else
 	{
 		// differing pages - need to create vector<float> and copy.
 		shared_ptr<vector<float> > data = make_shared<vector<float> >(m_windowFunction.size());
 		int length1 = m_pageBlocks * m_blockSamples - hop * m_hopSamples % (m_pageBlocks * m_blockSamples);
-		auto i1 = m_wave.item(hop * m_hopSamples / m_blockSamples, 0, true, hop * m_hopSamples % m_blockSamples, length1);
+		auto i1 = m_wave.item(hop * m_hopSamples / m_blockSamples, 0, hop * m_hopSamples % m_blockSamples, length1);
 		memcpy(data->data(), i1.data(), length1 * sizeof(float));
-		auto i2 = m_wave.item((hop * m_hopSamples / (m_blockSamples * m_pageBlocks) + 1) * m_pageBlocks, 0, true, 0, m_windowFunction.size() - length1);
+		auto i2 = m_wave.item((hop * m_hopSamples / (m_blockSamples * m_pageBlocks) + 1) * m_pageBlocks, 0, 0, m_windowFunction.size() - length1);
 		if (i2)
 			memcpy(data->data() + length1, i2.data(), (m_windowFunction.size() - length1) * sizeof(float));
 		return foreign_vector<float>(data->data(), m_windowFunction.size()).tied(data);

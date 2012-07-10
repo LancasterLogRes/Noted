@@ -47,9 +47,9 @@ void CompileEventsView::process(unsigned _i, Lightbox::Time)
 	vector<float> mag(noted()->spectrumSize());
 	vector<float> phase(noted()->spectrumSize());
 	{
-		if (auto mf = noted()->magSpectrum(_i, 1, true))
+		if (auto mf = noted()->magSpectrum(_i, 1))
 			memcpy(mag.data(), mf.data(), sizeof(float) * mag.size());
-		if (auto pf = noted()->phaseSpectrum(_i, 1, true))
+		if (auto pf = noted()->phaseSpectrum(_i, 1))
 			memcpy(phase.data(), pf.data(), sizeof(float) * phase.size());
 	}
 	m_ev->m_current = m_ev->m_eventCompiler.compile(mag, phase, vector<float>());

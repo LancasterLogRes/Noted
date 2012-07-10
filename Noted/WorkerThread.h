@@ -29,6 +29,7 @@ class WorkerThread: public QThread
 public:
 	WorkerThread(): QThread(0), m_quitting(false) {}
 	void quit() { m_quitting = true; }
+	void start(Priority _p = InheritPriority) { m_quitting = false; QThread::start(_p); }
 
 protected:
 	bool m_quitting;
@@ -39,7 +40,7 @@ class TypedWorkerThread: public WorkerThread
 {
 public:
 	TypedWorkerThread(_F const& _f): m_f(_f) {}
-	virtual void run() { m_quitting = false; while (!m_quitting) { if (!m_f()) m_quitting = true; } }
+	virtual void run() { while (!m_quitting) { if (!m_f()) m_quitting = true; } }
 
 private:
 	_F m_f;

@@ -94,11 +94,11 @@ void DeltaSpectrumView::doRender(QImage& _img)
 			p.drawLine(24 + (r + incr) * w / nyquist, h, 24 + (r + incr / 2) * w / nyquist, h / 2);
 		}
 
-		int lx;
-		int ly;
-		int ldsy;
-		int lddsy;
-		float pdRms;
+		int lx = 0;
+		int ly = 0;
+		int ldsy = 0;
+		int lddsy = 0;
+		float pdRms = 0.f;
 		for (int i = 0; i < (int)s; ++i)
 		{
 			float dp = Lightbox::withReflection(abs(phase[i] - lPhase[i]));		// delta-phase

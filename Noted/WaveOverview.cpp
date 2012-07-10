@@ -65,7 +65,7 @@ void WaveOverview::doRender(QImage& _img)
 	int wx = w * .025;
 
 	vector<float> wave(ww);
-	bool isAbsolute = c()->waveBlock(Time(0), c()->duration(), foreign_vector<float>(wave.data(), wave.size()), true);
+	bool isAbsolute = c()->waveBlock(Time(0), c()->duration(), foreign_vector<float>(wave.data(), wave.size()));
 
 	_img.fill(Qt::white);
 

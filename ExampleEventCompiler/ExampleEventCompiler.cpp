@@ -36,22 +36,22 @@ public:
 	LIGHTBOX_EVENTCOMPILER_PREPROCESSORS(highEnergy);
 
 private:
-	Historied<Decayed<HighEnergy> > highEnergy;
+	Historied<HighEnergy> highEnergy;
 
 	virtual StreamEvents init()
 	{
 		StreamEvents ret;
 		unsigned const c_historySize = FromMsecs<100>::value / hop();
-		highEnergy.Decayed::setFactor(ofHalfLife(FromMsecs<25>::value, hop()));
 		highEnergy.setHistory(c_historySize);
 
-		AuxGraphsSpec* ags = new AuxGraphsSpec("History", ms, id, msL);
+/*		AuxGraphsSpec* ags = new AuxGraphsSpec("History", ms, id, msL);
 		ags->addGraph(GraphSpec(0.1f, HistoryComment, LineChart, Color::fromHsp(0.1f * 360, 255, 255), 0, toSeconds(hop())));
-		ret.push_back(StreamEvent(GraphSpecComment, ags));
+		ret.push_back(StreamEvent(GraphSpecComment, ags));*/
 
 		m_maxBeatLikelihood = 0.0f;
 		m_lastBL = 0.f;
 		m_lastLastBL = 0.f;
+		m_decayedBL = 0.f;
 		return ret;
 	}
 
@@ -60,24 +60,45 @@ private:
 		StreamEvents ret;
 
 		// Graph the latest values directly (on the timeline).
-		ret.push_back(StreamEvent(Graph, highEnergy.HighEnergy::get(), 0.1f));	// orange
+//		ret.push_back(StreamEvent(Graph, highEnergy.HighEnergy::get(), 0.1f));	// orange
 
-		float beatLikelihood = highEnergy.Decayed::get();
+		Gaussian distro;
+		distro.mean = mean(highEnergy.getVector());
+		distro.sigma = max(.05f, sigma(highEnergy.getVector(), distro.mean));
+
+		float prob = (distro.mean > 0.01) ? normal(highEnergy.HighEnergy::get(), distro) : 1.f;
+		float beatLikelihood = -log(prob);
+		ret.push_back(StreamEvent(Graph, beatLikelihood, 0.9f));
+		ret.push_back(StreamEvent(Graph, m_decayedBL, 0.5f));
+
 		if (beatLikelihood < m_lastBL && m_lastBL > m_lastLastBL)
 		{
-			// Just past a peak
-			m_maxBeatLikelihood = max(m_maxBeatLikelihood, m_lastBL);
-			float recentLowest = range(highEnergy.getVector()).first;
-			if (m_lastBL > m_maxBeatLikelihood / 4 && recentLowest < m_lastBL / 10)
-				ret.push_back(StreamEvent(Spike, (m_lastBL - m_maxBeatLikelihood / 4) / (m_maxBeatLikelihood * 3 / 4), 0.1));
+			if (beatLikelihood < m_lastBL * .95)
+			{
+				// Just past a peak
+				m_maxBeatLikelihood = max(m_maxBeatLikelihood, m_lastBL);
+				if (m_lastBL > m_decayedBL && m_lastBL / m_maxBeatLikelihood > 0.0625)
+					ret.push_back(StreamEvent(Spike, m_lastBL / m_maxBeatLikelihood, 0.1));
+				m_decayedBL = max(m_decayedBL, m_lastBL * 5);
+				m_lastLastBL = m_lastBL;
+				m_lastBL = beatLikelihood;
+			}
+			else
+			{
+				// Ignore this sample for purposes of peak-finding - it's too shallow a peak.
+			}
 		}
-		m_lastLastBL = m_lastBL;
-		m_lastBL = beatLikelihood;
+		else
+		{
+			m_lastLastBL = m_lastBL;
+			m_lastBL = beatLikelihood;
+		}
+		m_decayedBL = decayed(m_decayedBL, hop(), FromMsecs<40>::value);
 
 //		if (highEnergy.changed())
 		{
 			// If the historical graph has changed, record the latest graph.
-			ret.push_back(StreamEvent(HistoryComment, 1.0, 0.1f, hop(), new AuxFloatVector(highEnergy.get().data(), highEnergy.get().size())));
+//			ret.push_back(StreamEvent(HistoryComment, 1.0, 0.1f, hop(), new AuxFloatVector(highEnergy.get().data(), highEnergy.get().size())));
 		}
 
 		return ret;
@@ -86,6 +107,7 @@ private:
 	float m_maxBeatLikelihood;
 	float m_lastBL;
 	float m_lastLastBL;
+	float m_decayedBL;
 };
 
 LIGHTBOX_EVENTCOMPILER(BeatDetector);

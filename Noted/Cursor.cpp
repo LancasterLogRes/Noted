@@ -30,7 +30,7 @@ using namespace std;
 Cursor::Cursor(Noted* _c, int _id): QWidget(_c, Qt::FramelessWindowHint|Qt::Tool), m_c(_c), m_id(_id)
 {
 #if !defined(Q_OS_WIN)
-    setWindowHint(Qt::WindowStaysOnBottomHint);
+	setWindowFlags(windowFlags() | Qt::WindowStaysOnBottomHint);
 #endif
     setStyleSheet("background:transparent;");
 	setAttribute(Qt::WA_TranslucentBackground, true);

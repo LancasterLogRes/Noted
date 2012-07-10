@@ -49,8 +49,8 @@ void SpectraView::doRender(QImage& _img, int _dx, int _dw)
 //			float di = float(timeOf(x + 1) - timeOf(x)) / c()->hop();
 			if (fi >= 0 && ti < (int)s)
 			{
-				auto ms = br->magSpectrum(fi, ti - fi, true);
-				auto dps = br->deltaPhaseSpectrum(fi, 1, true);
+				auto ms = br->magSpectrum(fi, ti - fi);
+				auto dps = br->deltaPhaseSpectrum(fi, 1);
 
 				if (ms && dps)
 				{

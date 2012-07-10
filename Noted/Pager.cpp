@@ -44,7 +44,7 @@ void PagerBase::init(uint32_t _fp, unsigned _itemsPerPage, unsigned _itemLength,
 	m_fileSize = _typeSize * m_itemsPerPage * m_itemLength;
 }
 
-std::pair<PagePtr, unsigned> PagerBase::item(int _index, int _number, bool _force) const
+std::pair<PagePtr, unsigned> PagerBase::item(int _index, int _number) const
 {
 	// COULDDO: make appropriate mean.
 	// OPTIMIZE: could all be done asynch.
@@ -70,7 +70,8 @@ std::pair<PagePtr, unsigned> PagerBase::item(int _index, int _number, bool _forc
 		}
 	}
 
-	return item(_index, _number * m_itemsPerPage, il.level >= m_topLevel - 1);
+	// desperate if il.level >= m_topLevel - 1
+	return item(_index, _number * m_itemsPerPage);
 }
 
 void PagerBase::refreshLtuHAVELOCK(PagePtr const& _p, bool _force) const

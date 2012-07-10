@@ -52,10 +52,10 @@ public:
 	~NotedBase();
 
 	virtual Lightbox::foreign_vector<float> waveWindow(int _window) const;
-	virtual bool waveBlock(Lightbox::Time _from, Lightbox::Time _duration, Lightbox::foreign_vector<float> o_toFill, bool _forceBest = false) const;
-	virtual Lightbox::foreign_vector<float> magSpectrum(int _i, int _n, bool _force = false) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, _force, 0, spectrumSize()); }
-	virtual Lightbox::foreign_vector<float> phaseSpectrum(int _i, int _n, bool _force = false) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, _force, spectrumSize(), spectrumSize()); }
-	virtual Lightbox::foreign_vector<float> deltaPhaseSpectrum(int _i, int _n, bool _force = false) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, _force, spectrumSize() * 2, spectrumSize()); }
+	virtual bool waveBlock(Lightbox::Time _from, Lightbox::Time _duration, Lightbox::foreign_vector<float> o_toFill) const;
+	virtual Lightbox::foreign_vector<float> magSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, 0, spectrumSize()); }
+	virtual Lightbox::foreign_vector<float> phaseSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, spectrumSize(), spectrumSize()); }
+	virtual Lightbox::foreign_vector<float> deltaPhaseSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, spectrumSize() * 2, spectrumSize()); }
 
 protected:
 	bool resampleWave(std::function<bool(int)> const& _carryOn);

@@ -35,6 +35,8 @@
 using namespace std;
 using namespace Lightbox;
 
+// TODO: A label wouldn't go amiss.
+
 // TODO: Properties editor. (Make general Properties edit widget?)
 
 // TODO: Events export. Fix for individual EventsViews.
@@ -146,19 +148,13 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	d->setGraphicsEffect(oe());
 	connect(d, SIGNAL(clicked()), SLOT(duplicate()));
 
-	QPushButton* e = new QPushButton(this);
-	e->setGeometry(75, 0, 23, 23);
-	e->setText("E");
-	e->setGraphicsEffect(oe());
-	connect(e, SIGNAL(clicked()), SLOT(edit()));
-
 	m_use = new QPushButton(this);
 	m_use->setGeometry(100, 0, 23, 23);
 	m_use->setText("U");
 	m_use->setGraphicsEffect(oe());
 	m_use->setCheckable(true);
 	m_use->setChecked(true);
-	connect(e, SIGNAL(toggled(bool)), SLOT(onUseChanged()));
+	connect(m_use, SIGNAL(toggled(bool)), SLOT(onUseChanged()));
 
 	c()->noteEventCompilersChanged();
 }
@@ -237,6 +233,7 @@ void EventsView::save()
 	// Have to clear at the moment, since auxilliary StreamEvent data can have hooks into the shared library that will be unloaded.
 	QMutexLocker l(&x_events);
 	m_events.clear();
+	m_initEvents.clear();
 }
 
 void EventsView::restore()

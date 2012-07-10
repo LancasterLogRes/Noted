@@ -40,7 +40,7 @@ public:
 
 protected:
 	void init(uint32_t _fp, unsigned _itemsPerPage, unsigned _itemLength, unsigned _typeSize);
-	std::pair<PagePtr, unsigned> item(int _index, int _number, bool _force) const;
+	std::pair<PagePtr, unsigned> item(int _index, int _number) const;
 
 	QString filename(IndexLevel _il) const;
 	void refreshLtuHAVELOCK(PagePtr const& _p, bool _force = false) const;
@@ -70,9 +70,9 @@ public:
 		PagerBase::init(_fp, _itemsPerPage, _itemLength, sizeof(_T));
 	}
 
-	Lightbox::foreign_vector<_T> item(int _index, int _number, bool _force, int _off = 0, int _trim = -1) const
+	Lightbox::foreign_vector<_T> item(int _index, int _number, int _off = 0, int _trim = -1) const
 	{
-		auto p = PagerBase::item(_index, _number, _force);
+		auto p = PagerBase::item(_index, _number);
 		if (_trim == -1)
 			_trim = m_itemLength;
 		PagePtr const& pp = p.first;
