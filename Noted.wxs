@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Product Id="6abc6712-f297-4b0a-a5d4-cf7d1ee06598" Name="Noted!" Language="1033" Version="1.0.0.0" Manufacturer="Lancaster Logic Response" UpgradeCode="fb7b785e-9034-4e7a-9e2b-158de9f2dad8">
+        <Package InstallerVersion="200" Compressed="yes" Description="An extensible audio analysis and notation tool for music." Platform="x64" />
+	<WixVariable Id="WixUILicenseRtf" Value="GPLv2.rtf" />
+        <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFilesFolder">
+                <Directory Id="INSTALLLOCATION" Name="Noted">
+                    <Component Id="DISTRIB" DiskId="1" Guid="88E9F7D4-F05D-4288-B0BD-7F59843291CD">
+                        <File Id="LIBFFTW3F_3.DLL" Name="libfftw3f-3.dll" Source="..\distrib\libfftw3f-3.dll" />
+                        <File Id="LIBFTDI.DLL" Name="libftdi.dll" Source="..\distrib\libftdi.dll" />
+                        <File Id="LIBGCC_S_DW2_1.DLL" Name="libgcc_s_dw2-1.dll" Source="..\distrib\libgcc_s_dw2-1.dll" />
+                        <File Id="LIBPORTAUDIO_2.DLL" Name="libportaudio-2.dll" Source="..\distrib\libportaudio-2.dll" />
+                        <File Id="LIBSTDC___6.DLL" Name="libstdc++-6.dll" Source="..\distrib\libstdc++-6.dll" />
+                        <File Id="LIBUSB_1.0.DLL" Name="libusb-1.0.dll" Source="..\distrib\libusb-1.0.dll" />
+                        <File Id="QTCORE4.DLL" Name="QtCore4.dll" Source="..\distrib\QtCore4.dll" />
+                        <File Id="QTGUI4.DLL" Name="QtGui4.dll" Source="..\distrib\QtGui4.dll" />
+                        <File Id="QTOPENGL4.DLL" Name="QtOpenGL4.dll" Source="..\distrib\QtOpenGL4.dll" />
+                        <File Id="QTXML4.DLL" Name="QtXml4.dll" Source="..\distrib\QtXml4.dll" />
+                    </Component>
+                    <Component Id="ENTOURAGE" DiskId="1" Guid="3D06386E-B677-401A-8487-D0A883380687">
+                        <File Id="AUDIO.DLL" Name="Audio.dll" Source="..\Noted-Release\built\Audio.dll" />
+                        <File Id="COMMON.DLL" Name="Common.dll" Source="..\Noted-Release\built\Common.dll" />
+                        <File Id="EVENTCOMPILER.DLL" Name="EventCompiler.dll" Source="..\Noted-Release\built\EventCompiler.dll" />
+                        <File Id="EVENTREADER.DLL" Name="EventReader.dll" Source="..\Noted-Release\built\EventReader.dll" />
+                        <File Id="EVENTSEDITOR.DLL" Name="EventsEditor.dll" Source="..\Noted-Release\built\EventsEditor.dll" />
+                        <File Id="EXAMPLEEVENTCOMPILER.DLL" Name="ExampleEventCompiler.dll" Source="..\Noted-Release\built\ExampleEventCompiler.dll" />
+                        <File Id="NOTEDPLUGIN.DLL" Name="NotedPlugin.dll" Source="..\Noted-Release\built\NotedPlugin.dll" />
+                    </Component>
+                    <Component Id="APP" DiskId="1" Guid="BBD8CED4-10BC-49E5-8854-C6562D03C3AE">
+                        <File Id="NOTED.EXE" Name="Noted.exe" Source="..\Noted-Release\built\Noted.exe" />
+                        <Shortcut Id="desktopShortcut" Directory="DesktopFolder" Name="Noted!" WorkingDirectory="INSTALLDIR" Advertise="yes" Icon="Noted.ico" IconIndex="0" />
+                        <Shortcut Id="ExeShortcut" Directory="ProgramMenuDir" Name="Noted!" WorkingDirectory="INSTALLDIR" Advertise="yes" Icon="Noted.ico" IconIndex="0" />
+                    </Component>
+                </Directory>
+            </Directory>
+            <Directory Id="DesktopFolder" />
+            <Directory Id="ProgramMenuFolder">
+                <Directory Id="ProgramMenuDir" Name="Noted!">
+                    <Component Id="StartMenuShortcuts" Guid="B51C9610-C947-40CB-9B7E-24B723918647">
+                        <RemoveFolder Id="ProgramMenuDir" On="uninstall" />
+                        <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Type="string" Value="" />
+                        <Shortcut Id="UninstallProduct" Name="Uninstall Noted!" Description="Uninstalls the application" Target="[System64Folder]msiexec.exe" Arguments="/x [ProductCode]" />
+                    </Component>
+                </Directory>
+            </Directory>
+        </Directory>
+        <Feature Id="MAIN" Title="Noted!" Level="1">
+            <ComponentRef Id="DISTRIB" />
+            <ComponentRef Id="ENTOURAGE" />
+            <ComponentRef Id="APP" />
+            <ComponentRef Id="StartMenuShortcuts" />
+        </Feature>
+        <UI />
+        <UIRef Id="WixUI_Minimal" />
+	<Icon Id="Noted.ico" SourceFile="Noted\Noted.ico" />
+    </Product>
+</Wix>

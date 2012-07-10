@@ -26,12 +26,12 @@ int main(int argc, char *argv[])
 {
 	if (!Lightbox::UnitTesting<100>::go())
 		return -1;
-    QApplication a(argc, argv);
-    Noted w;
+	QApplication a(argc, argv);
+	Noted w;
 #if defined(Q_WS_S60)
-    w.showMaximized();
+	w.showMaximized();
 #else
-    w.show();
+	w.show();
 #endif
-    return a.exec();
+	return a.exec();
 }

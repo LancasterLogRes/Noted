@@ -13,10 +13,6 @@
   <property name="windowTitle">
    <string>Noted!</string>
   </property>
-  <property name="windowIcon">
-   <iconset>
-    <normaloff>Icon.png</normaloff>Icon.png</iconset>
-  </property>
   <property name="tabShape">
    <enum>QTabWidget::Triangular</enum>
   </property>

@@ -124,7 +124,6 @@ signals:
 	void durationChanged();
 	void analysisFinished();
 	void eventsChanged();
-	void analysisFinished();
 
 protected:
 	virtual void timelineDead(Timeline* _tl) = 0;

@@ -75,6 +75,7 @@ Noted::Noted(QWidget* _p) :
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
 
 	ui->setupUi(this);
+	setWindowIcon(QIcon(":/Noted.png"));
 
 	updateAudioDevices();
 
@@ -625,7 +626,8 @@ void Noted::writeSettings()
 
 void Noted::on_addEventsView_clicked()
 {
-	addTimeline(new EventsView(ui->dataDisplay, newEventCompiler(ui->eventCompilersList->currentItem()->data(0).toString())));
+	if (ui->eventCompilersList->currentItem())
+		addTimeline(new EventsView(ui->dataDisplay, newEventCompiler(ui->eventCompilersList->currentItem()->data(0).toString())));
 }
 
 void Noted::on_actNewEvents_activated()
