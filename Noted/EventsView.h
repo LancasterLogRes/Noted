@@ -65,6 +65,7 @@ public:
 public slots:
 	void duplicate();
 	void onUseChanged();
+	void exportEvents();
 
 private:
 	virtual void doRender(QImage& _img, int _dx, int _dw);

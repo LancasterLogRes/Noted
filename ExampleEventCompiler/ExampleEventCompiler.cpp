@@ -133,7 +133,7 @@ private:
 		if (total)
 			centroid /= total;
 
-		ret.push_back(StreamEvent(Graph, m_last, 0.f));	// orange
+		ret.push_back(StreamEvent(Graph, centroid, 0.f));	// orange
 
 		return ret;
 	}
