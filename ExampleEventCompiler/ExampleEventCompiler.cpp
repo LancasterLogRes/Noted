@@ -68,6 +68,7 @@ private:
 
 		float prob = (distro.mean > 0.01) ? normal(highEnergy.HighEnergy::get(), distro) : 1.f;
 		float beatLikelihood = -log(prob);
+		ret.push_back(StreamEvent(Graph, highEnergy.HighEnergy::get(), 0.0f));
 		ret.push_back(StreamEvent(Graph, beatLikelihood, 0.9f));
 		ret.push_back(StreamEvent(Graph, m_decayedBL, 0.5f));
 
@@ -78,7 +79,7 @@ private:
 				// Just past a peak
 				m_maxBeatLikelihood = max(m_maxBeatLikelihood, m_lastBL);
 				if (m_lastBL > m_decayedBL && m_lastBL / m_maxBeatLikelihood > 0.0625)
-					ret.push_back(StreamEvent(Spike, m_lastBL / m_maxBeatLikelihood, 0.1));
+					ret.push_back(StreamEvent(Spike, m_lastBL / m_maxBeatLikelihood, 0.1, 0, nullptr, -1, Dull, 0.f));
 				m_decayedBL = max(m_decayedBL, m_lastBL * 5);
 				m_lastLastBL = m_lastBL;
 				m_lastBL = beatLikelihood;
@@ -111,3 +112,31 @@ private:
 };
 
 LIGHTBOX_EVENTCOMPILER(BeatDetector);
+
+class Centroid: public EventCompilerImpl
+{
+private:
+	virtual StreamEvents init()
+	{
+		StreamEvents ret;
+		return ret;
+	}
+
+	virtual StreamEvents compile(Time, vector<float> const& _mag, vector<float> const&, std::vector<float> const&)
+	{
+		StreamEvents ret;
+
+		float centroid = 0.f;
+		float total = 0.f;
+		for (unsigned i = 0; i < _mag.size(); ++i)
+			total += sqr(_mag[i]), centroid += sqr(_mag[i]) * i;
+		if (total)
+			centroid /= total;
+
+		ret.push_back(StreamEvent(Graph, m_last, 0.f));	// orange
+
+		return ret;
+	}
+};
+
+LIGHTBOX_EVENTCOMPILER(Centroid);

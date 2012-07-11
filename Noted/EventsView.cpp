@@ -161,6 +161,7 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 
 EventsView::~EventsView()
 {
+	clearEvents();
 }
 
 void EventsView::onUseChanged()
