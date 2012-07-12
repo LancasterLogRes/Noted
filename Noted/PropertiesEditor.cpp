@@ -26,85 +26,137 @@ using namespace std;
 using namespace Lightbox;
 
 PropertiesEditor::PropertiesEditor(QWidget* _p):
-	QWidget(_p)
+	QTableWidget(_p)
 {
-	new QGridLayout(this);
+	horizontalHeader()->setStretchLastSection(true);
+	horizontalHeader()->hide();
+	setColumnCount(1);
+	setSortingEnabled(false);
+	setShowGrid(false);
 }
 
 PropertiesEditor::~PropertiesEditor()
 {
 }
 
-void PropertiesEditor::setPropertyMap(Lightbox::Properties const& _properties)
+void PropertiesEditor::setProperties(Lightbox::Properties const& _properties)
 {
 	m_properties = _properties;
 	updateWidgets();
 }
 
-template <class _Looker>
-typename _Looker::Returns doTyped(Property const& _p, void* _o, _Looker& _l)
+struct Populator
 {
-	string n(_p.type->name());
-#define	DO(X) if (n == typeid(X).name()) { X x; X& rx = _p.get<X>(_o, x); return _l(rx); }
-#include "DoTypes.h"
-#undef DO
-	return typename _Looker::Returns(0);
+	typedef QWidget* Returns;
+	QObject* changeCollater;
+
+	// Numeric types...
+	template <class _T> QWidget* operator()(_T _l)
+	{
+		if (std::numeric_limits<_T>::is_integer)
+		{
+			QSpinBox* w = new QSpinBox;
+			w->setMinimum(std::numeric_limits<_T>::min());
+			w->setMaximum(std::numeric_limits<_T>::max());
+			w->setValue(_l);
+			if (changeCollater)
+				changeCollater->connect(w, SIGNAL(editingFinished()), SLOT(onChanged()));
+			return w;
+		}
+		else
+		{
+			QDoubleSpinBox* w = new QDoubleSpinBox;
+			w->setDecimals(std::numeric_limits<_T>::digits10 - 1);
+			w->setRange(-100.f, 100.f);
+			w->setValue(_l);
+			if (changeCollater)
+				changeCollater->connect(w, SIGNAL(editingFinished()), SLOT(onChanged()));
+			return w;
+		}
+	}
+	QWidget* operator()(bool _b)
+	{
+		QPushButton* w = new QPushButton("Enable");
+		w->setCheckable(true);
+		w->setChecked(_b);
+		if (changeCollater)
+			changeCollater->connect(w, SIGNAL(toggled(bool)), SLOT(onChanged()));
+		return w;
+	}
+	QWidget* operator()(string const& _s)
+	{
+		QLineEdit* w = new QLineEdit;
+		w->setText(_s.c_str());
+		if (changeCollater)
+			changeCollater->connect(w, SIGNAL(editingFinished()), SLOT(onChanged()));
+		return w;
+	}
+};
+
+struct Changer
+{
+	QObject* sender;
+
+	// Numeric types...
+	template <class _T> _T operator()(_T) const
+	{
+		QSpinBox* w = dynamic_cast<QSpinBox*>(sender);
+		return w->value();
+	}
+	float operator()(float) const { return (float)operator()(double(0)); }
+	double operator()(double) const
+	{
+		QDoubleSpinBox* w = dynamic_cast<QDoubleSpinBox*>(sender);
+		assert(w);
+		return w->value();
+	}
+	bool operator()(bool) const
+	{
+		QPushButton* w = dynamic_cast<QPushButton*>(sender);
+		assert(w);
+		return w->isChecked();
+	}
+	string operator()(string const&) const
+	{
+		QLineEdit* w = dynamic_cast<QLineEdit*>(sender);
+		assert(w);
+		return w->text().toStdString();
+	}
+};
+
+void PropertiesEditor::onChanged()
+{
+	QString n = sender()->objectName();
+	Changer c = { sender() };
+	if (m_properties.typedSet(n.toStdString(), c))
+		emit changed();
 }
 
 void PropertiesEditor::updateWidgets()
 {
-	foreach (auto i, findChildren<QWidget*>())
-		delete i;
-
-	struct Populator
-	{
-		typedef QWidget* Returns;
-		QWidget* operator()(bool _b)
-		{
-			QPushButton* w = new QPushButton("Enable");
-			w->setCheckable(true);
-			w->setChecked(_b);
-			return w;
-		}
-		QWidget* operator()(unsigned char _l) { return operator()((unsigned long long)_l); }
-		QWidget* operator()(unsigned short _l) { return operator()((unsigned long long)_l); }
-		QWidget* operator()(unsigned _l) { return operator()((unsigned long long)_l); }
-		QWidget* operator()(unsigned long _l) { return operator()((unsigned long long)_l); }
-		QWidget* operator()(signed char _l) { return operator()((signed long long)_l); }
-		QWidget* operator()(signed short _l) { return operator()((signed long long)_l); }
-		QWidget* operator()(signed _l) { return operator()((signed long long)_l); }
-		QWidget* operator()(signed long _l) { return operator()((signed long long)_l); }
-		QWidget* operator()(unsigned long long _l) { return operator()((signed long long)_l); }
-		QWidget* operator()(signed long long _l)
-		{
-			QSpinBox* w = new QSpinBox;
-			w->setValue(_l);
-			return w;
-		}
-		QWidget* operator()(double _d)
-		{
-			QDoubleSpinBox* w = new QDoubleSpinBox;
-			w->setValue(_d);
-			return w;
-		}
-		QWidget* operator()(string const& _s)
-		{
-			QLineEdit* w = new QLineEdit;
-			w->setText(_s.c_str());
-			return w;
-		}
-	} pop;
-
+	setRowCount(0);
 	int r = 0;
-	foreach (auto i, m_properties)
+	QStringList headerLabels;
+	auto names = m_properties.names();
+	setRowCount(names.size());
+	for (auto i: names)
 	{
-		dynamic_cast<QGridLayout*>(layout())->addWidget(new QLabel(QString::fromStdString(i.first)), r, 0);
-		// Big long type lookup...
-		if (QWidget* w = doTyped(i.second, m_object, pop))
+		headerLabels.append(i.c_str());
+		Populator pop = { this };
+		if (QWidget* w = m_properties.typedGet(i, pop))
 		{
-			dynamic_cast<QGridLayout*>(layout())->addWidget(w, r, 1);
+			setCellWidget(r, 0, w);
+			setRowHeight(r, verticalHeader()->minimumSectionSize());
+			w->setObjectName(i.c_str());
+		}
+		else
+		{
+			auto it = new QTableWidgetItem(QString("<%1>").arg(m_properties.typeinfo(i).name()));
+			it->setFlags(Qt::NoItemFlags);
+			setItem(r, 0, it);
 		}
 		++r;
 	}
+	setVerticalHeaderLabels(headerLabels);
 }
 

@@ -24,19 +24,27 @@
 #include <QtGui>
 #include <EventCompiler/StreamEvent.h>
 
+#include "PropertiesEditor.h"
 #include "Noted.h"
 #include "EventsView.h"
 
 using namespace std;
 using namespace Lightbox;
 
-// TODO: Properties editor. (Make general Properties edit widget?)
+// TODO: PropertyMap editor. (Make general PropertyMap edit widget?)
 
 EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
-	PrerenderedTimeline	(_parent),
+	PrerenderedTimeline	(new QSplitter(_parent)),
 	m_eventCompiler		(_ec),
 	m_use				(nullptr)
 {
+	m_actualWidget = dynamic_cast<QSplitter*>(parentWidget());
+	m_propertiesEditor = new PropertiesEditor(m_actualWidget);
+	m_actualWidget->addWidget(this);
+	m_actualWidget->addWidget(m_propertiesEditor);
+	m_propertiesEditor->setProperties(m_eventCompiler.properties());
+	connect(m_propertiesEditor, SIGNAL(changed()), c(), SLOT(noteEventCompilersChanged()));
+
 	connect(c(), SIGNAL(eventsChanged()), this, SLOT(sourceChanged()));
 	auto oe = []() -> QGraphicsEffect* { auto ret = new QGraphicsOpacityEffect; ret->setOpacity(0.7); return ret; };
 
@@ -81,6 +89,9 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 
 EventsView::~EventsView()
 {
+	QWidget* w = parentWidget();
+	setParent(0);
+	delete w;
 	clearEvents();
 }
 
@@ -160,6 +171,7 @@ void EventsView::save()
 void EventsView::restore()
 {
 	m_eventCompiler = c()->newEventCompiler(m_name);
+	m_propertiesEditor->updateWidgets();
 }
 
 void EventsView::exportEvents()

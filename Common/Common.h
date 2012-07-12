@@ -28,7 +28,7 @@
 #include "FFTW.h"
 #include "GraphParameters.h"
 #include "Peaks.h"
-#include "Properties.h"
+#include "PropertyMap.h"
 #include "Statistics.h"
 #include "StreamIO.h"
 #include "Time.h"

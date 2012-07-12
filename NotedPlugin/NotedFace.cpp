@@ -44,3 +44,5 @@ NotedFace::NotedFace(QWidget* _p):
 NotedFace::~NotedFace()
 {
 }
+
+// TODO: Change screenDuration (or whatever it is) to pixelDuration and offset should be done from left border of Noted window.

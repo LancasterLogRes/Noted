@@ -25,6 +25,7 @@
 #include <exception>
 
 #include <Common/Global.h>
+#include <Common/PropertyMap.h>
 #include "EventCompilerImpl.h"
 #include "EventCompilerLibrary.h"
 
@@ -38,6 +39,7 @@ public:
 
 	StreamEvents init(unsigned _bands, Time _hop, Time _nyquist) { if (m_impl) { m_impl->m_t = 0; m_impl->m_bands = _bands; m_impl->m_hop = _hop; m_impl->m_nyquist = _nyquist; m_impl->initPres(); return m_impl->init(); } return StreamEvents(); }
 	StreamEvents compile(std::vector<float> const& _mag, std::vector<float> const& _phase, std::vector<float> const& _wave) { if (m_impl) { m_impl->executePres(m_impl->m_t, _mag, _phase, _wave); auto ret = m_impl->compile(m_impl->m_t, _mag, _phase, _wave); m_impl->m_t += m_impl->m_hop; return ret; } else return StreamEvents(); }
+	TypedProperties<EventCompilerImpl> properties() { return m_impl ? TypedProperties<EventCompilerImpl>(m_impl->propertyMap(), m_impl) : TypedProperties<EventCompilerImpl>(); }
 
 	std::string name() const { return m_impl ? demangled(typeid(*m_impl).name()) : ""; }
 	template <class T> bool isA() const { return !!dynamic_cast<T*>(m_impl.get()); }

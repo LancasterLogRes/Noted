@@ -28,7 +28,7 @@ class ProcessEventCompiler: public Lightbox::EventCompilerImpl
 public:
 	ProcessEventCompiler(QString const& _program): m_s(&m_p), m_program(_program) {}
 	std::string arguments;
-	LIGHTBOX_EVENTCOMPILER_PROPERTIES(arguments);
+	LIGHTBOX_PROPERTIES(arguments);
 
 	virtual Lightbox::StreamEvents init()
 	{

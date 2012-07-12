@@ -26,18 +26,17 @@
 #include <boost/variant.hpp>
 
 #include <Common/Global.h>
-#include <Common/Properties.h>
+#include <Common/PropertyMap.h>
 #include <Common/Time.h>
 #include "StreamEvent.h"
 
 namespace Lightbox
 {
 
-#define LIGHTBOX_EVENTCOMPILER_STATE(...) LIGHTBOX_STATE(EventCompilerImpl, __VA_ARGS__)
-#define LIGHTBOX_EVENTCOMPILER_PROPERTIES(...) LIGHTBOX_PROPERTIES(EventCompilerImpl, __VA_ARGS__)
-#define LIGHTBOX_EVENTCOMPILER_PREPROCESSORS(...) \
+#define LIGHTBOX_PREPROCESSORS(...) \
 	virtual void initPres() { Initer(this) , __VA_ARGS__; } \
-	virtual void executePres(Time _t, std::vector<float> const& _mag, std::vector<float> const& _phase, std::vector<float> const& _wave) { Executor(this, _t, _mag, _phase, _wave) , __VA_ARGS__; }
+	virtual void executePres(Time _t, std::vector<float> const& _mag, std::vector<float> const& _phase, std::vector<float> const& _wave) { Executor(this, _t, _mag, _phase, _wave) , __VA_ARGS__; } \
+	class Lightbox_Preprocessors_Macro_End {}
 
 class EventCompiler;
 class EventCompilerImpl;
@@ -65,6 +64,9 @@ class EventCompilerImpl
 	friend class EventCompiler;
 
 public:
+	typedef EventCompilerImpl LIGHTBOX_STATE_BaseClass;		// Used by the LIGHTBOX_STATE State collector.
+	typedef EventCompilerImpl LIGHTBOX_PROPERTIES_BaseClass;	// Used for the LIGHTBOX_PROPERTIES Properties collector.
+
 	EventCompilerImpl() {}
 	virtual ~EventCompilerImpl() {}
 
@@ -76,6 +78,7 @@ public:
 
 	virtual StreamEvents init() { return StreamEvents(); }
 	virtual StreamEvents compile(Time _t, std::vector<float> const& _mag, std::vector<float> const& _phase, std::vector<float> const& _wave) { (void)_t; (void)_mag; (void)_phase; (void)_wave; return StreamEvents(); }
+	virtual PropertyMap propertyMap() const { return NullPropertyMap; }
 
 protected:
 	virtual void initPres() {}

@@ -30,7 +30,6 @@ SOURCES += Common.cpp \
     Time.cpp
 HEADERS += Common.h Global.h \
     Time.h \
-    Properties.h \
     GraphParameters.h \
     WavHeader.h \
     Algorithms.h \
@@ -43,4 +42,6 @@ HEADERS += Common.h Global.h \
     StreamIO.h \
     Statistics.h \
     Peaks.h \
-    Flags.h
+    Flags.h \
+    PropertyMap.h \
+    DoTypes.h

@@ -152,7 +152,7 @@ Noted::~Noted()
 
 void Noted::on_actAbout_activated()
 {
-	QMessageBox::about(this, "About Noted!", "<h1>Noted!</h1>Copyright ©2011, 2012 Lancaster Logic Response Limited. This code is released under version 2 of the GNU General Public Licence.");
+	QMessageBox::about(this, "About Noted!", "<h1>Noted!</h1>Copyright &copyright;2011, 2012 Lancaster Logic Response Limited. This code is released under version 2 of the GNU General Public Licence.");
 }
 
 void Noted::updateAudioDevices()

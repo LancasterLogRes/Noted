@@ -102,9 +102,6 @@ public:
 	virtual CausalAnalysisPtr collateEventsAnalysis() const = 0;
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&) = 0;
 
-	inline void noteEventCompilersChanged() { noteLastValidIs(nullptr); }
-	inline void notePluginDataChanged() { noteLastValidIs(collateEventsAnalysis()); }
-
 	virtual bool isPlaying() const = 0;
 
 	virtual void addTimeline(Timeline* _p) = 0;
@@ -117,6 +114,9 @@ public slots:
 	virtual void setDuration(qint64 _d) = 0;
 
 	virtual void updateWindowTitle() = 0;
+
+	inline void noteEventCompilersChanged() { noteLastValidIs(nullptr); }
+	inline void notePluginDataChanged() { noteLastValidIs(collateEventsAnalysis()); }
 
 signals:
 	void cursorChanged();

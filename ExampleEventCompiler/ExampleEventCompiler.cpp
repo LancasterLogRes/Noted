@@ -33,7 +33,12 @@ string msL(float _x, float _y) { return toString(round(_x * 1000)) + "ms (" + to
 class BeatDetector: public EventCompilerImpl
 {
 public:
-	LIGHTBOX_EVENTCOMPILER_PREPROCESSORS(highEnergy);
+	BeatDetector(): halfLife(0.02) {}
+
+	LIGHTBOX_PREPROCESSORS(highEnergy);
+	LIGHTBOX_PROPERTIES(halfLife);
+
+	double halfLife;
 
 private:
 	Historied<HighEnergy> highEnergy;
@@ -94,7 +99,7 @@ private:
 			m_lastLastBL = m_lastBL;
 			m_lastBL = beatLikelihood;
 		}
-		m_decayedBL = decayed(m_decayedBL, hop(), FromMsecs<40>::value);
+		m_decayedBL = decayed(m_decayedBL, hop(), fromSeconds(halfLife));
 
 //		if (highEnergy.changed())
 		{

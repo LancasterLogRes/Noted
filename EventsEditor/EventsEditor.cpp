@@ -29,11 +29,11 @@ using namespace std;
 using namespace Lightbox;
 
 EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
-	QGraphicsView	(_parent),
-	m_c				(nullptr),
-	m_filename		(_filename),
-	m_lastTimerDirty(true),
-	m_eventsDirty	(true)
+	QGraphicsView		(_parent),
+	m_c					(nullptr),
+	m_filename			(_filename),
+	m_lastTimerDirty	(true),
+	m_eventsDirty		(true)
 {
 	setFrameShape(NoFrame);
 
@@ -99,6 +99,13 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 	startTimer(500);
 
 	initTimeline(c());
+}
+
+EventsEditor::~EventsEditor()
+{
+	QMutexLocker l(&x_events);
+	m_events.clear();
+	c()->noteEventCompilersChanged();
 }
 
 void EventsEditor::save(QSettings& _s) const

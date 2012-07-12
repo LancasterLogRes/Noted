@@ -58,8 +58,7 @@ HEADERS  += Noted.h \
 	CompileEvents.h \
 	CollateEvents.h \
 	CompileEventsView.h \
-    PropertiesEditor.h \
-    DoTypes.h
+    PropertiesEditor.h
 
 FORMS    += Noted.ui
 

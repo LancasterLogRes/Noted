@@ -43,9 +43,9 @@ namespace Lightbox
 template <class _T>
 inline unsigned maxInRange(_T const& _t)
 {
-	unsigned ret = -1;
-	for (unsigned i = 0; i < _t.size(); ++i)
-		if (ret == -1 || _t[ret] < _t[i])
+	unsigned ret = (unsigned)-1;
+	for (unsigned i = 0; i < (unsigned)_t.size(); ++i)
+		if (ret == (unsigned)-1 || _t[ret] < _t[i])
 			ret = i;
 	return ret;
 }

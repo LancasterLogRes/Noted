@@ -20,10 +20,10 @@
 
 #pragma once
 
-#include <QWidget>
-#include <Common/Properties.h>
+#include <QTableWidget>
+#include <Common/PropertyMap.h>
 
-class PropertiesEditor: public QWidget
+class PropertiesEditor: public QTableWidget
 {
 	Q_OBJECT
 
@@ -31,14 +31,16 @@ public:
 	explicit PropertiesEditor(QWidget* _p = nullptr);
 	~PropertiesEditor();
 	
-	void setPropertyMap(Lightbox::Properties const& _properties);
-	Lightbox::Properties const& propertyMap() { return m_properties; }
+	void setProperties(Lightbox::Properties const& _properties);
 
 signals:
 	void changed();
 
 public slots:
 	void updateWidgets();
+
+private slots:
+	void onChanged();
 
 private:
 	Lightbox::Properties m_properties;

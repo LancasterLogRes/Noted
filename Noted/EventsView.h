@@ -32,7 +32,9 @@
 #include <QFrame>
 #include <QPaintEvent>
 #include <QPainter>
+#include <QSplitter>
 
+class PropertiesEditor;
 class QPushButton;
 class CompileEventsView;
 
@@ -44,6 +46,8 @@ class EventsView: public PrerenderedTimeline, public EventsStore
 public:
 	EventsView(QWidget* _parent = 0, Lightbox::EventCompiler const& _c = Lightbox::EventCompiler());
 	~EventsView();
+
+	virtual QWidget* widget() { return m_actualWidget; }
 
 	void save();
 	void restore();
@@ -71,6 +75,9 @@ private:
 	virtual void doRender(QImage& _img, int _dx, int _dw);
 
 	Lightbox::EventCompiler m_eventCompiler;
+
+	QSplitter* m_actualWidget;
+	PropertiesEditor* m_propertiesEditor;
 
 	Lightbox::StreamEvents m_initEvents;
 	QList<Lightbox::StreamEvents> m_events;
