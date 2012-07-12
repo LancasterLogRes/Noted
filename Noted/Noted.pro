@@ -33,7 +33,8 @@ SOURCES += main.cpp\
 	NotedBase.cpp \
 	Page.cpp \
 	Pager.cpp \
-	CompileEventsView.cpp
+	CompileEventsView.cpp \
+    PropertiesEditor.cpp
 
 HEADERS  += Noted.h \
 	WaveView.h \
@@ -56,7 +57,9 @@ HEADERS  += Noted.h \
 	Pager.h \
 	CompileEvents.h \
 	CollateEvents.h \
-	CompileEventsView.h
+	CompileEventsView.h \
+    PropertiesEditor.h \
+    DoTypes.h
 
 FORMS    += Noted.ui
 

@@ -64,9 +64,9 @@ struct Property
 	}
 };
 
-typedef std::unordered_map<std::string, Property> PropertyMap;
+typedef std::unordered_map<std::string, Property> Properties;
 
-static const PropertyMap NullPropertyMap;
+static const Properties NullPropertyMap;
 
 #define LIGHTBOX_MEMBERS(COLLECTOR, ...) \
 	template <class C> char const* COLLECTOR(C& _c) const \
@@ -77,7 +77,7 @@ static const PropertyMap NullPropertyMap;
 
 #define LIGHTBOX_S_P_AUX(N, Base, ...) \
 	LIGHTBOX_MEMBERS(_collect_ ## N, __VA_ARGS__) \
-	virtual Lightbox::PropertyMap N() const \
+	virtual Lightbox::Properties N() const \
 	{ \
 		if (m_lightbox_properties.empty()) \
 		{ \
@@ -85,7 +85,7 @@ static const PropertyMap NullPropertyMap;
 		} \
 		return m_lightbox_properties; \
 	} \
-	mutable Lightbox::PropertyMap m_lightbox_properties;
+	mutable Lightbox::Properties m_lightbox_properties;
 
 //foreach (auto p, m_lightbox_properties) std::cerr << p.first << ", " << p.second.offset << " " << Lightbox::demangled(p.second.type->name()) << endl;
 
@@ -104,11 +104,11 @@ public:
 		return *this;
 	}
 
-	template <class T, class F> static PropertyMap populate(T const& _c, F const& _f)
+	template <class T, class F> static Properties populate(T const& _c, F const& _f)
 	{
 		PropertyCatcher pc((intptr_t(&_c)));
 		char const* ns = _f(pc);
-		PropertyMap ret;
+		Properties ret;
 		int j = 0;
 		int n = 0;
 		for (int i = 0; ; ++i)
