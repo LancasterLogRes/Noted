@@ -28,7 +28,7 @@ using namespace std;
 #include "NotedFace.h"
 #include "PrerenderedTimeline.h"
 
-PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop): Prerendered(_p), m_draggingTime(Lightbox::UndefinedTime), m_cursorSizeIsHop(_cursorSizeIsHop), m_renderedOffset(0), m_renderedDuration(0)
+PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop): Prerendered(_p), m_draggingTime(Lightbox::UndefinedTime), m_cursorSizeIsHop(_cursorSizeIsHop), m_renderedOffset(0), m_renderedPixelDuration(0)
 {
 	connect(c(), SIGNAL(offsetChanged()), this, SLOT(update()));
 	connect(c(), SIGNAL(durationChanged()), this, SLOT(update()));
@@ -44,9 +44,9 @@ PrerenderedTimeline::~PrerenderedTimeline()
 void PrerenderedTimeline::mousePressEvent(QMouseEvent* _e)
 {
 	if (_e->button() == Qt::LeftButton)
-		c()->setCursor(timeOfReal(_e->x()));
+		c()->setCursor(c()->timeOf(_e->x()));
 	else if (_e->button() == Qt::MiddleButton)
-		m_draggingTime = timeOfReal(_e->x());
+		m_draggingTime = c()->timeOf(_e->x());
 }
 
 void PrerenderedTimeline::mouseReleaseEvent(QMouseEvent* _e)
@@ -58,23 +58,23 @@ void PrerenderedTimeline::mouseReleaseEvent(QMouseEvent* _e)
 void PrerenderedTimeline::mouseMoveEvent(QMouseEvent* _e)
 {
 	if (m_draggingTime != Lightbox::UndefinedTime && _e->buttons() & Qt::MiddleButton)
-		c()->setOffset(m_draggingTime - _e->x() * (timelineDuration() / c()->activeWidth()));
+		c()->setTimelineOffset(m_draggingTime - _e->x() * c()->pixelDuration());
 	else if (_e->buttons() & Qt::LeftButton)
-		c()->setCursor(timeOfReal(_e->x()));
+		c()->setCursor(c()->timeOf(_e->x()));
 }
 
 void PrerenderedTimeline::wheelEvent(QWheelEvent* _e)
 {
 	// Want to keep timeOf(_e->x()) constant.
-	Lightbox::Time t = timeOfReal(_e->x());
+	Lightbox::Time t = c()->timeOf(_e->x());
 #ifdef Q_OS_MAC
 #define CORRECT_SIGN -
 #else
 #define CORRECT_SIGN
 #endif
-    c()->setDuration(timelineDuration() * exp(CORRECT_SIGN _e->delta() / (QApplication::keyboardModifiers() & Qt::ControlModifier ? 2400.0 : QApplication::keyboardModifiers() & Qt::ShiftModifier ? 24 : 240.0)));
+	c()->setPixelDuration(c()->pixelDuration() * exp(CORRECT_SIGN _e->delta() / (QApplication::keyboardModifiers() & Qt::ControlModifier ? 2400.0 : QApplication::keyboardModifiers() & Qt::ShiftModifier ? 24 : 240.0)));
 #undef CORRECT_SIGN
-    c()->setOffset(t - _e->x() * (timelineDuration() / c()->activeWidth()));
+	c()->setTimelineOffset(t - _e->x() * pixelDuration());
 }
 
 void PrerenderedTimeline::sourceChanged()
@@ -90,13 +90,17 @@ void PrerenderedTimeline::paintEvent(QPaintEvent*)
 		QMutexLocker l(&m_lock);
 		if (m_rendered.width())
 		{
-			Time d = timelineDuration();
-			Time o = timelineOffset();
-			int at = ((m_renderedOffset - o) * width() + sign(m_renderedOffset - o) * d / 2) / d;
-			int w = m_renderedDuration * width() / d;
-			if (at == 0 && m_renderedOffset != o)
+			Time o = c()->earliestVisible();
+			Time d = c()->pixelDuration();
+
+			QRect r(0, 0, 0, height());
+			Time relativeOffset = m_renderedOffset - o;
+			r.setX((relativeOffset + sign(relativeOffset) * d / 2) / d);
+			r.setWidth((m_renderedPixelDuration * m_rendered.width()) / d);
+			if (r.x() == 0 && m_renderedOffset != o)
 				qDebug() << "Stange -> zero drawing offset, but have ro=" << m_renderedOffset << " and need o=" << o;
-			p.drawImage(QRect(at, 0, w, height()), m_rendered);
+
+			p.drawImage(r, m_rendered);
 			if (!m_overlay.isNull())
 				p.drawImage(0, 0, m_overlay);
 		}
@@ -105,12 +109,12 @@ void PrerenderedTimeline::paintEvent(QPaintEvent*)
 
 bool PrerenderedTimeline::rejigRender()
 {
-	m_renderingOffset  = timelineOffset();
-	m_renderingDuration = timelineDuration();
+	m_renderingOffset  = c()->earliestVisible();
+	m_renderingPixelDuration = c()->pixelDuration();
 	int w = width();
 	int h = height();
 	//qDebug() << size() << m_rendered.size();
-	if (w && h && (m_renderedOffset != m_renderingOffset || m_renderedDuration != m_renderingDuration || size() != m_rendered.size() || m_sourceChanged) && c()->samples())
+	if (w && h && (m_renderedOffset != m_renderingOffset || m_renderedPixelDuration != m_renderingPixelDuration || height() != m_rendered.height() || width() > m_rendered.width() || m_sourceChanged) && c()->samples())
 	{
 		{
 			QMutexLocker l(&m_lock);
@@ -121,10 +125,10 @@ bool PrerenderedTimeline::rejigRender()
 
 		{
 			QPainter p(&img);
-			GraphParameters<double> nor(make_pair(m_renderingOffset, m_renderingOffset + m_renderingDuration), width() / 80, toBase(1, 1000000));
+			GraphParameters<double> nor(make_pair(m_renderingOffset, m_renderingOffset + m_renderingPixelDuration * width()), width() / 80, toBase(1, 1000000));
 			for (Time t = nor.from; t < nor.to; t += nor.incr)
 			{
-				int x = xOf(t);
+				int x = renderingPositionOf(t);
 				if (nor.isMajor(t))
 				{
 					p.setPen(QColor(160, 160, 160));
@@ -140,26 +144,28 @@ bool PrerenderedTimeline::rejigRender()
 			}
 		}
 
-		if (m_renderedDuration == m_renderingDuration && size() == m_rendered.size() && !m_sourceChanged)
+		if (m_renderedPixelDuration == m_renderingPixelDuration && height() == m_rendered.height() && !m_sourceChanged)
 		{
 			if (m_renderingOffset < m_renderedOffset)
 			{
+				assert(width() == m_rendered.width());	// currently can't handle changes in width when the new offset is earlier.
 				// |//////|----------|
 				//    rW       kW
 				Time rerenderPeriod = m_renderedOffset - m_renderingOffset;
-				int rerenderWidth = min<int>(w, (rerenderPeriod * w + m_renderedDuration / 2) / m_renderedDuration);
+				int rerenderWidth = min<int>(w, (rerenderPeriod + m_renderedPixelDuration / 2) / m_renderedPixelDuration);
 				int keepWidth = w - rerenderWidth;
 				QPainter(&img).drawImage(rerenderWidth, 0, m_rendered, 0, 0, keepWidth, -1);
 				doRender(img, 0, rerenderWidth);
 			}
 			else
 			{
+				// NOTE: Here it may be that rendered & rendering are not equal widths - in which case rW + kW != w.
 				// |----------|//////|
 				//      kW       rW
-				Time rerenderPeriod = m_renderingOffset - m_renderedOffset;
-				int rerenderWidth = min<int>(w, (rerenderPeriod * w + m_renderedDuration / 2) / m_renderedDuration);
+				Time rerenderPeriod = m_renderingOffset + width() * m_renderingPixelDuration - (m_renderedOffset + m_rendered.width() * m_renderedPixelDuration);
+				int rerenderWidth = min<int>(w, (rerenderPeriod + m_renderedPixelDuration / 2) / m_renderedPixelDuration);
 				int keepWidth = w - rerenderWidth;
-				QPainter(&img).drawImage(0, 0, m_rendered, rerenderWidth, 0, keepWidth, -1);
+				QPainter(&img).drawImage(0, 0, m_rendered, (m_renderingOffset - m_renderedOffset + m_renderedPixelDuration / 2) / m_renderedPixelDuration, 0, keepWidth, -1);
 				doRender(img, keepWidth, rerenderWidth);
 			}
 		}
@@ -172,7 +178,7 @@ bool PrerenderedTimeline::rejigRender()
 		QMutexLocker l(&m_lock);
 		m_rendered = img;
 		m_renderedOffset = m_renderingOffset;
-		m_renderedDuration = m_renderingDuration;
+		m_renderedPixelDuration = m_renderingPixelDuration;
 
 		m_needsUpdate = true;
 		return true;
@@ -180,12 +186,12 @@ bool PrerenderedTimeline::rejigRender()
 	return false;
 }
 
-int PrerenderedTimeline::xOf(Lightbox::Time _t) const
+int PrerenderedTimeline::renderingPositionOf(Lightbox::Time _t) const
 {
-	return (_t - m_renderingOffset) * c()->activeWidth() / m_renderingDuration;
+	return (_t - m_renderingOffset + m_renderingPixelDuration / 2) / m_renderingPixelDuration;
 }
 
-Lightbox::Time PrerenderedTimeline::timeOf(int _x) const
+Lightbox::Time PrerenderedTimeline::renderingTimeOf(int _x) const
 {
-	return int64_t(_x) * m_renderingDuration / c()->activeWidth() + m_renderingOffset;
+	return int64_t(_x) * m_renderingPixelDuration + m_renderingOffset;
 }

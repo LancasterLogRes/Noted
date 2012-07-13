@@ -54,8 +54,9 @@ public slots:
 	void sourceChanged();
 
 protected:
-	int xOf(Lightbox::Time _t) const;
-	Lightbox::Time timeOf(int _x) const;
+	/// These two are frozen at the zoom configuration as it was prior to rendering; this is necessary as the real offset/visibleduration may change during rendering (which is happening asynchronously).
+	int renderingPositionOf(Lightbox::Time _t) const;
+	Lightbox::Time renderingTimeOf(int _x) const;
 
 	virtual void doRender(QImage& _img) { doRender(_img, 0, width()); }
 	virtual void doRender(QImage& _img, int _dx, int _dw) = 0;
@@ -71,9 +72,9 @@ protected:
 	Lightbox::Time m_draggingTime;
 	bool m_cursorSizeIsHop;
 	Lightbox::Time m_renderedOffset;
-	Lightbox::Time m_renderedDuration;
+	Lightbox::Time m_renderedPixelDuration;
 	Lightbox::Time m_renderingOffset;
-	Lightbox::Time m_renderingDuration;
+	Lightbox::Time m_renderingPixelDuration;
 	bool m_needsUpdate;
 	bool m_sourceChanged;
 	Lightbox::Time m_lastEnd;

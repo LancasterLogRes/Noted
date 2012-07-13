@@ -66,8 +66,8 @@ Noted::Noted(QWidget* _p) :
 	ui						(new Ui::Noted),
 	m_dataStatus			(Dirty),
 	m_fineCursor			(0),
-	m_offset				(0),
-	m_duration				(1),
+	m_timelineOffset		(0),
+	m_pixelDuration			(1),
 	m_workerThread			(nullptr),
 	m_compileEventsAnalysis	(new CompileEvents),
 	m_collateEventsAnalysis	(new CollateEvents)
@@ -547,8 +547,8 @@ void Noted::readSettings()
 
 	if (settings.contains("duration"))
 	{
-		m_duration = max<Time>(settings.value("duration").toLongLong(), 1);
-		m_offset = settings.value("offset").toLongLong();
+		m_pixelDuration = max<Time>(settings.value("pixelDuration").toLongLong(), 1);
+		m_timelineOffset = settings.value("timelineOffset").toLongLong();
 		m_fineCursor = settings.value("cursor").toLongLong();
 	}
 
@@ -626,8 +626,8 @@ void Noted::writeSettings()
 #undef DO
 
 	settings.setValue("fileName", m_audioFile.fileName());
-	settings.setValue("duration", (qlonglong)m_duration);
-	settings.setValue("offset", (qlonglong)m_offset);
+	settings.setValue("pixelDuration", (qlonglong)m_pixelDuration);
+	settings.setValue("timelineOffset", (qlonglong)m_timelineOffset);
 	settings.setValue("cursor", (qlonglong)m_fineCursor);
 }
 
@@ -849,26 +849,26 @@ QList<EventsView*> Noted::eventsViews() const
 
 void Noted::on_actZoomOut_activated()
 {
-	Time centre = m_offset + m_duration / 2;
-	setDuration(m_duration *= 1.2);
-	setOffset(centre - m_duration / 2);
+	Time centre = m_timelineOffset + m_pixelDuration * activeWidth() / 2;
+	setPixelDuration(m_pixelDuration *= 1.2);
+	setTimelineOffset(centre - m_pixelDuration * activeWidth() / 2);
 }
 
 void Noted::on_actZoomIn_activated()
 {
-	Time centre = m_offset + m_duration / 2;
-	setDuration(m_duration /= 1.2);
-	setOffset(centre - m_duration / 2);
+	Time centre = m_timelineOffset + m_pixelDuration * activeWidth() / 2;
+	setPixelDuration(m_pixelDuration /= 1.2);
+	setTimelineOffset(centre - m_pixelDuration * activeWidth() / 2);
 }
 
 void Noted::on_actPanBack_activated()
 {
-	setOffset(m_offset - m_duration / 2);
+	setTimelineOffset(m_timelineOffset - m_pixelDuration * activeWidth() / 4);
 }
 
 void Noted::on_actPanForward_activated()
 {
-	setOffset(m_offset + m_duration / 2);
+	setTimelineOffset(m_timelineOffset + m_pixelDuration * activeWidth() / 4);
 }
 
 void Noted::on_actPanic_activated()
@@ -879,9 +879,9 @@ void Noted::on_actPanic_activated()
 bool Noted::proceedTo(DataStatus _s, DataStatus _from)
 {
 	QMutexLocker l(&m_lock);
-	cnote << "STATUS" << m_dataStatus << "--> (" << _s << "from" << _from << ") =" << ((m_dataStatus == _from) ? _s : m_dataStatus);
 	if (m_dataStatus != _from)
 		return false;
+	cnote << "STATUS" << m_dataStatus << "--> (" << _s << "from" << _from << ") =" << ((m_dataStatus == _from) ? _s : m_dataStatus);
 	m_dataStatus = _s;
 	return true;
 }
@@ -889,9 +889,11 @@ bool Noted::proceedTo(DataStatus _s, DataStatus _from)
 void Noted::noteDataChanged(DataStatus _s)
 {
 	QMutexLocker l(&m_lock);
-	cnote << "STATUS" << m_dataStatus << "<--" << _s << "=" << ((m_dataStatus > _s) ? _s : m_dataStatus);
 	if (m_dataStatus > _s)
+	{
+		cnote << "STATUS" << m_dataStatus << "<--" << _s << "=" << ((m_dataStatus > _s) ? _s : m_dataStatus);
 		m_dataStatus = _s;
+	}
 }
 
 
@@ -902,8 +904,8 @@ void Noted::setAudio(QString const& _filename)
 	suspendWork();
 
 	m_fineCursor = 0;
-	m_offset = 0;
-	m_duration = 1;
+	m_timelineOffset = 0;
+	m_pixelDuration = 1;
 
 	emit analysisFinished();
 
@@ -1043,8 +1045,8 @@ void Noted::timerEvent(QTimerEvent*)
 		}
 		ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(m_fineCursor, toBase(samples(), m_rate), 0, 0).c_str());
 		m_cursorDirty = false;
-		if (ui->actFollow->isChecked() && (m_fineCursor < m_offset || m_fineCursor > m_offset + m_duration * 7 / 8))
-			setOffset(m_fineCursor - m_duration / 8);
+		if (ui->actFollow->isChecked() && (m_fineCursor < earliestVisible() || m_fineCursor > earliestVisible() + visibleDuration() * 7 / 8))
+			setTimelineOffset(m_fineCursor - visibleDuration() / 8);
 		emit cursorChanged();
 	}
 }
@@ -1105,8 +1107,8 @@ pair<QRect, QRect> Noted::cursorGeoOffset(int _id) const
 	if (_id == 0)
 	{
 		// quite arbitrary limits placed on where the cursor may draw...
-		int f = xOf(cursor() - windowSize() + hop()) - 4;
-		int t = xOf(cursor() + hop()) + 4;
+		int f = positionOf(cursor() - windowSize() + hop()) - 4;
+		int t = positionOf(cursor() + hop()) + 4;
 
 		int cf = clamp(f, 0, ui->dataDisplay->width() - 1);
 		int ct = clamp(t, 0, ui->dataDisplay->width() - 1);
@@ -1115,8 +1117,8 @@ pair<QRect, QRect> Noted::cursorGeoOffset(int _id) const
 	}
 	else if (_id == 1)
 	{
-		int f = ui->overview->xOf(timelineOffset());
-		int t = ui->overview->xOf(timelineOffset() + timelineDuration()) + 2;
+		int f = ui->overview->positionOf(earliestVisible());
+		int t = ui->overview->positionOf(earliestVisible() + visibleDuration()) + 2;
 		int cf = clamp(f, 0, ui->overview->width() - 1);
 		int ct = clamp(t, 0, ui->overview->width() - 1);
 		geo = QRect(mapToGlobal(ui->overview->mapTo(mthis, QPoint(cf, 0))), QSize(ct - cf, ui->overview->height()));
@@ -1124,7 +1126,7 @@ pair<QRect, QRect> Noted::cursorGeoOffset(int _id) const
 	}
 	else if (_id == 2)
 	{
-		int f = ui->overview->xOf(cursor());
+		int f = ui->overview->positionOf(cursor());
 		int cf = clamp(f, 0, ui->overview->width() - 1);
 		geo = QRect(mapToGlobal(ui->overview->mapTo(mthis, QPoint(cf, 0))), QSize(1, ui->overview->height()));
 		canvas = QRect(QPoint(f - cf, 0), geo.size());
@@ -1169,8 +1171,8 @@ void Noted::paintCursor(QPainter& _p, int _id) const
 			{
 				int h = t->widget()->height();
 				QColor cc = t->cursorColor();
-				int x = xOf(t->highlightFrom());
-				int w = screenWidth(t->highlightDuration());
+				int x = positionOf(t->highlightFrom());
+				int w = widthOf(t->highlightDuration());
 				if (w > 2)
 					_p.fillRect(x + 1, y, w - 1, h, QColor(255, 192, 127, 32));
 				cc.setAlpha(128);
@@ -1182,8 +1184,8 @@ void Noted::paintCursor(QPainter& _p, int _id) const
 	}
 	else if (_id == 1)
 	{
-		int f = ui->overview->xOf(timelineOffset());
-		int t = ui->overview->xOf(timelineOffset() + timelineDuration()) + 2;
+		int f = ui->overview->positionOf(earliestVisible());
+		int t = ui->overview->positionOf(earliestVisible() + visibleDuration()) + 2;
 		_p.fillRect(0, 0, t - f, o.height(), QColor(127, 192, 255, 128));
 		_p.setPen(QColor(0, 0, 0, 128));
 		_p.drawLine(0, 0, 0, o.height());
@@ -1220,7 +1222,7 @@ void Noted::rejigAudio()
 	{
 		if (!resampleWave([&](int _progress){return carryOn("Resampling Wave", _progress, ResamplingAudio);}))
 			proceedTo(Fresh, ResamplingAudio);
-		if (m_duration == 1)
+		if (m_pixelDuration == 1)
 		{
 			m_fineCursor = 0;
 			normalizeView();

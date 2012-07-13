@@ -79,8 +79,8 @@ public:
 	virtual bool isPlaying() const { return !!m_alsa; }
 	virtual void info(QString const& _info);
 	void info(QString const& _info, int _id);
-	virtual Lightbox::Time timelineOffset() const { return m_offset; }
-	virtual Lightbox::Time timelineDuration() const { return m_duration; }
+	virtual Lightbox::Time earliestVisible() const { return m_timelineOffset; }
+	virtual Lightbox::Time pixelDuration() const { return m_pixelDuration; }
 	virtual Lightbox::Time cursor() const { return m_fineCursor / hop() * hop(); }
 
 	virtual CausalAnalysisPtr compileEventsAnalysis() const { return m_compileEventsAnalysis; }
@@ -112,8 +112,8 @@ public slots:
 	virtual void onLibraryChange(QString const& _name);
 
 	virtual void setCursor(qint64 _c);
-	virtual void setOffset(qint64 _o) { if (m_offset != _o) { m_offset = _o; emit offsetChanged(); } }
-	virtual void setDuration(qint64 _d) { if (m_duration != _d) { m_duration = _d; emit durationChanged(); } }
+	virtual void setTimelineOffset(qint64 _o) { if (m_timelineOffset != _o) { m_timelineOffset = _o; emit offsetChanged(); } }
+	virtual void setPixelDuration(qint64 _d) { if (m_pixelDuration != _d) { m_pixelDuration = _d; emit durationChanged(); } }
 
 private slots:
 	void on_actOpen_activated();
@@ -198,10 +198,10 @@ private:
 	int m_progress;
 	bool m_cursorDirty;
 
-	void normalizeView() { setOffset(duration() * -0.025); setDuration(duration() / .95); }
+	void normalizeView() { setTimelineOffset(duration() * -0.025); setPixelDuration(duration() / .95 / activeWidth()); }
 	Lightbox::Time m_fineCursor;
-	Lightbox::Time m_offset;
-	Lightbox::Time m_duration;
+	Lightbox::Time m_timelineOffset;
+	Lightbox::Time m_pixelDuration;
 
 	WorkerThread* m_workerThread;
 	WorkerThread* m_alsaThread;

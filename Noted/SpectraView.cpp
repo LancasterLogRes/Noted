@@ -44,8 +44,8 @@ void SpectraView::doRender(QImage& _img, int _dx, int _dw)
 	{
 		for (int x = _dx; x < _dx + _dw; ++x)
 		{
-			int fi = timeOf(x) > 0 ? timeOf(x) / c()->hop() : -1;
-			int ti = qMax<int>(fi + 1, timeOf(x + 1) / c()->hop());
+			int fi = renderingTimeOf(x) > 0 ? renderingTimeOf(x) / c()->hop() : -1;
+			int ti = qMax<int>(fi + 1, renderingTimeOf(x + 1) / c()->hop());
 //			float di = float(timeOf(x + 1) - timeOf(x)) / c()->hop();
 			if (fi >= 0 && ti < (int)s)
 			{

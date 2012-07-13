@@ -34,24 +34,14 @@ void Timeline::initTimeline(NotedFace* _nf)
 	m_nf = _nf;
 }
 
-Lightbox::Time Timeline::timelineOffset() const
+Lightbox::Time Timeline::earliestVisible() const
 {
-	return m_nf->timelineOffset();
+	return m_nf->earliestVisible();
 }
 
-Lightbox::Time Timeline::timelineDuration() const
+Lightbox::Time Timeline::pixelDuration() const
 {
-	return m_nf->timelineDuration();
-}
-
-int Timeline::xOfReal(Lightbox::Time _t) const
-{
-	return m_nf->xOf(_t);
-}
-
-Lightbox::Time Timeline::timeOfReal(int _x) const
-{
-	return _x * (timelineDuration() / m_nf->activeWidth()) + timelineOffset();
+	return m_nf->pixelDuration();
 }
 
 Lightbox::Time Timeline::highlightFrom() const

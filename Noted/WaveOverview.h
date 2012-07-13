@@ -32,7 +32,7 @@ class WaveOverview: public Prerendered
 public:
 	WaveOverview(QWidget* _parent = 0);
 
-	int xOf(Lightbox::Time _t);
+	int positionOf(Lightbox::Time _t);
 	Lightbox::Time timeOf(int _x);
 
 signals:

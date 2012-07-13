@@ -58,8 +58,8 @@ public:
 	virtual bool carryOn(QString const& _msg, int _progress) = 0;
 
 	virtual int activeWidth() const = 0;
-	virtual Lightbox::Time timelineOffset() const = 0;
-	virtual Lightbox::Time timelineDuration() const = 0;
+	virtual Lightbox::Time earliestVisible() const = 0;
+	virtual Lightbox::Time pixelDuration() const = 0;
 	virtual Lightbox::Time cursor() const = 0;
 
 	virtual unsigned hopSamples() const { return m_hopSamples; }
@@ -70,15 +70,15 @@ public:
 	virtual bool isZeroPhase() const { return m_zeroPhase; }
 	virtual unsigned samples() const { return m_samples; }
 
+	inline Lightbox::Time latestVisible() const { return earliestVisible() + visibleDuration(); }
+	inline Lightbox::Time visibleDuration() const { return activeWidth() * pixelDuration(); }
+
 	inline Lightbox::Time hop() const { return Lightbox::toBase(hopSamples(), rate()); }
 	inline Lightbox::Time windowSize() const { return Lightbox::toBase(windowSizeSamples(), rate()); }
-	inline int screenWidth(Lightbox::Time _t) const { return samples() ? (_t * activeWidth() + timelineDuration() / 2) / timelineDuration() : 0; }
-	inline Lightbox::Time durationOf(int _screenWidth) const { return _screenWidth * timelineDuration() / activeWidth(); }
-	inline int xOf(Lightbox::Time _t) const { return screenWidth(_t - timelineOffset()); }
-	inline int cursorX() const { return xOf(cursor()); }
-	inline int windowSizeW() const { return screenWidth(windowSize()); }
-	inline int hopW() const { return screenWidth(hop()); }
-	inline Lightbox::Time timeOf(int _x) const { return durationOf(_x) + timelineOffset(); }
+	inline int widthOf(Lightbox::Time _t) const { return samples() ? (_t + pixelDuration() / 2) / pixelDuration() : 0; }
+	inline Lightbox::Time durationOf(int _screenWidth) const { return _screenWidth * pixelDuration(); }
+	inline int positionOf(Lightbox::Time _t) const { return widthOf(_t - earliestVisible()); }
+	inline Lightbox::Time timeOf(int _x) const { return durationOf(_x) + earliestVisible(); }
 	inline unsigned cursorIndex() const { return windowIndex(cursor()); }
 	inline unsigned windowIndex(Lightbox::Time _t) const { return (_t < 0) ? 0 : std::min<unsigned>(_t / hop(), (samples() - windowSizeSamples()) / hopSamples()); }
 	inline unsigned hops() const { return samples() ? samples() / hopSamples() : 0; }
@@ -110,8 +110,8 @@ public:
 
 public slots:
 	virtual void setCursor(qint64 _c) = 0;
-	virtual void setOffset(qint64 _o) = 0;
-	virtual void setDuration(qint64 _d) = 0;
+	virtual void setTimelineOffset(qint64 _o) = 0;
+	virtual void setPixelDuration(qint64 _d) = 0;
 
 	virtual void updateWindowTitle() = 0;
 
@@ -148,8 +148,8 @@ public:
 	virtual bool carryOn(QString const&, int) { return false; }
 
 	virtual int activeWidth() const { return 0; }
-	virtual Lightbox::Time timelineOffset() const { return 0; }
-	virtual Lightbox::Time timelineDuration() const { return 0; }
+	virtual Lightbox::Time earliestVisible() const { return 0; }
+	virtual Lightbox::Time pixelDuration() const { return 1; }
 	virtual Lightbox::Time cursor() const { return 0; }
 
 	virtual void info(QString const&) {}
@@ -179,8 +179,8 @@ public:
 	virtual QWidget* addGLWidget(QGLWidgetProxy*) { return nullptr; }
 
 	virtual void setCursor(qint64) {}
-	virtual void setOffset(qint64) {}
-	virtual void setDuration(qint64) {}
+	virtual void setTimelineOffset(qint64) {}
+	virtual void setPixelDuration(qint64) {}
 
 	virtual void updateWindowTitle() {}
 };

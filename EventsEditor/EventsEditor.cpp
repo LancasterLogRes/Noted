@@ -142,7 +142,7 @@ void EventsEditor::mouseReleaseEvent(QMouseEvent* _e)
 void EventsEditor::mouseMoveEvent(QMouseEvent* _e)
 {
 	if (m_draggingTime != Lightbox::UndefinedTime && _e->buttons() & Qt::MiddleButton)
-		c()->setOffset(m_draggingTime - _e->x() * (c()->timelineDuration() / c()->activeWidth()));
+		c()->setTimelineOffset(m_draggingTime - _e->x() * c()->pixelDuration());
 	else if (_e->buttons() & Qt::MiddleButton)
 	{
 		setDragMode(QGraphicsView::NoDrag);
@@ -270,8 +270,8 @@ NotedFace* EventsEditor::c() const
 void EventsEditor::onViewParamsChanged()
 {
 	resetTransform();
-	double hopsInWidth = toSeconds(c()->timelineDuration()) * 1000;
-	double hopsFromBeginning = toSeconds(c()->timelineOffset()) * 1000;
+	double hopsInWidth = toSeconds(c()->visibleDuration()) * 1000;
+	double hopsFromBeginning = toSeconds(c()->earliestVisible()) * 1000;
 	setSceneRect(hopsFromBeginning, 0, hopsInWidth, height());
 	scale(width() / hopsInWidth, 1);
 }

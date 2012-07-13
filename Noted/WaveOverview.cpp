@@ -32,7 +32,7 @@ WaveOverview::WaveOverview(QWidget* _parent): Prerendered(_parent)
 	connect(c(), SIGNAL(analysisFinished()), SLOT(rerender()));
 }
 
-int WaveOverview::xOf(Lightbox::Time _t)
+int WaveOverview::positionOf(Lightbox::Time _t)
 {
 	return ((double(_t) / c()->duration()) * .95 + .025) * width();
 }

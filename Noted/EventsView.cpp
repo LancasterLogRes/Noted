@@ -340,9 +340,9 @@ void EventsView::doRender(QImage& _img, int _dx, int _dw)
 		for (int i = 0; i < (int)m_events.size(); ++i)
 		{
 			Time t = i * c()->hop();
-			int px = xOf((i - 1) * c()->hop());
-			int x = xOf(t);
-			int nx = xOf((i + 1) * c()->hop());
+			int px = renderingPositionOf((i - 1) * c()->hop());
+			int x = renderingPositionOf(t);
+			int nx = renderingPositionOf((i + 1) * c()->hop());
 			int mx = (x + nx) / 2;
 			bool inView = nx >= r.left() - 160 && px <= r.right() + 160;
 			{
@@ -466,7 +466,7 @@ void EventsView::doRender(QImage& _img, int _dx, int _dw)
 							case Lightbox::PeriodSet:
 							{
 								p.setPen(cDark);
-								QRect r(x, yBar, xOf(t + e.period) - x, 12);
+								QRect r(x, yBar, renderingPositionOf(t + e.period) - x, 12);
 								p.drawLine(r.left(), r.center().y(), r.right(), r.center().y());
 								p.drawLine(r.topLeft(), r.bottomLeft());
 								p.drawLine(r.topRight(), r.bottomRight());
