@@ -51,6 +51,16 @@ inline unsigned maxInRange(_T const& _t)
 }
 
 template <class _T>
+inline _T maxInRange(_T const& _begin, _T const& _end)
+{
+	_T ret = _begin;
+	for (auto it = _begin + 1; it < _end; ++it)
+		if (*ret < *it)
+			ret = it;
+	return ret;
+}
+
+template <class _T>
 inline unsigned minInRange(_T const& _t)
 {
 	unsigned ret = -1;

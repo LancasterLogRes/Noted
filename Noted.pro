@@ -4,6 +4,7 @@ SUBDIRS = \
     EventCompiler \
     ExampleEventCompiler \
     NotedPlugin \
+    ExamplePlugin \
     EventsEditor \
     Audio \
     Noted \

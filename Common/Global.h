@@ -250,6 +250,9 @@ template <class _T>
 class foreign_vector
 {
 public:
+	typedef _T value_type;
+	typedef _T element_type;
+
 	foreign_vector(): m_data(nullptr), m_count(0) {}
 	foreign_vector(_T* _data, unsigned _count): m_data(_data), m_count(_count) {}
 
@@ -258,6 +261,7 @@ public:
 	_T* data() { return m_data; }
 	_T const* data() const { return m_data; }
 	unsigned count() const { return m_count; }
+	unsigned size() const { return m_count; }
 	foreign_vector& tied(std::shared_ptr<void> const& _lock) { m_lock = _lock; return *this; }
 
 	_T* begin() { return m_data; }

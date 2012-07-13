@@ -41,6 +41,7 @@
 #include "EventsView.h"
 #include "WorkerThread.h"
 #include "ProcessEventCompiler.h"
+#include "PropertiesEditor.h"
 #include "Cursor.h"
 #include "CompileEvents.h"
 #include "CollateEvents.h"
@@ -211,6 +212,16 @@ void Noted::load(LibraryPtr const& _dl)
 						load(lib);
 
 				// load state.
+				if (_dl->p->propertyMap().size())
+				{
+					auto propsDock = new QDockWidget(_dl->name + " Properties", this);
+					propsDock->setObjectName(_dl->name);
+					auto pe = new PropertiesEditor(propsDock);
+					pe->setProperties(Members<NotedPlugin>(_dl->p->propertyMap(), _dl->p));
+					propsDock->setWidget(pe);
+					propsDock->setFeatures(propsDock->features()|QDockWidget::DockWidgetVerticalTitleBar);
+					addDockWidget(Qt::RightDockWidgetArea, propsDock);
+				}
 				QSettings s("LancasterLogicResponse", "Noted");
 				readBaseSettings(s);
 				_dl->p->readSettings(s);
@@ -219,23 +230,23 @@ void Noted::load(LibraryPtr const& _dl)
 			{
 				foreach (auto lib, m_libraries)
 					if (lib->p)
-					{
-						shared_ptr<AuxLibraryFace> f = shared_ptr<AuxLibraryFace>(lib->p->newAuxLibrary());
-						// tentatively add it, so the library can use it transparently.
-						lib->p->m_auxLibraries.append(f);
-						if (f->load(_dl->l))
+						if (auto f = shared_ptr<AuxLibraryFace>(lib->p->newAuxLibrary()))
 						{
-							_dl->auxFace = f;
-							_dl->aux = lib->p;
-							cnote << "LOAD" << _dl->name << " [AUX:" << lib->name << "]";
-							goto LOADED;
+							// tentatively add it, so the library can use it transparently.
+							lib->p->m_auxLibraries.append(f);
+							if (f->load(_dl->l))
+							{
+								_dl->auxFace = f;
+								_dl->aux = lib->p;
+								cnote << "LOAD" << _dl->name << " [AUX:" << lib->name << "]";
+								goto LOADED;
+							}
+							else
+							{
+								f.reset();
+								lib->p->removeDeadAuxes();
+							}
 						}
-						else
-						{
-							f.reset();
-							lib->p->removeDeadAuxes();
-						}
-					}
 				_dl->unload();
 				LOADED:;
 			}
@@ -281,6 +292,10 @@ void Noted::unload(LibraryPtr const& _dl)
 			QSettings s("LancasterLogicResponse", "Noted");
 			writeBaseSettings(s);
 			_dl->p->writeSettings(s);
+
+			// kill the properties dock if there is one.
+			delete findChild<QDockWidget*>(_dl->name);
+
 			// unload dependents.
 			foreach (auto l, m_libraries)
 				if (l->auxFace && l->aux.lock() == _dl->p)
