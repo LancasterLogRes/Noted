@@ -46,10 +46,10 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	connect(c(), SIGNAL(eventsChanged()), this, SLOT(sourceChanged()));
 	auto oe = []() -> QGraphicsEffect* { auto ret = new QGraphicsOpacityEffect; ret->setOpacity(0.7); return ret; };
 
-	QLabel* l = new QLabel(this);
-	l->setGeometry(0, 0, 98, 16);
-	l->setStyleSheet("background: white");
-	l->setText(name());
+	m_label = new QLabel(this);
+	m_label->setGeometry(0, 0, 98, 16);
+	m_label->setStyleSheet("background: white");
+	m_label->setText(name());
 
 	QPushButton* b = new QPushButton(this);
 	b->setGeometry(0, 18, 23, 23);
@@ -174,6 +174,7 @@ void EventsView::restore()
 	m_eventCompiler = c()->newEventCompiler(m_savedName);
 	m_eventCompiler.properties().deserialize(m_savedProperties);
 	m_propertiesEditor->setProperties(m_eventCompiler.properties());
+	m_label->setText(name());
 }
 
 void EventsView::readSettings(QSettings& _s, QString const& _id)

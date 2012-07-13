@@ -36,6 +36,7 @@
 
 class PropertiesEditor;
 class QPushButton;
+class QLabel;
 class QSettings;
 class CompileEventsView;
 
@@ -84,6 +85,7 @@ private:
 	PropertiesEditor* m_propertiesEditor;
 	QComboBox* m_selection;
 	QPushButton* m_use;
+	QLabel* m_label;
 
 	Lightbox::StreamEvents m_initEvents;
 	QList<Lightbox::StreamEvents> m_events;

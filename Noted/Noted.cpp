@@ -496,7 +496,6 @@ void Noted::on_killLibrary_clicked()
 
 void Noted::readBaseSettings(QSettings& _s)
 {
-	restoreGeometry(_s.value("geometry").toByteArray());
 	restoreState(_s.value("windowState").toByteArray());
 	foreach (QSplitter* s, findChildren<QSplitter*>())
 		s->restoreState(_s.value(s->objectName() + "State").toByteArray());
@@ -504,7 +503,6 @@ void Noted::readBaseSettings(QSettings& _s)
 
 void Noted::writeBaseSettings(QSettings& _s)
 {
-	_s.setValue("geometry", saveGeometry());
 	_s.setValue("windowState", saveState());
 	foreach (QSplitter* s, findChildren<QSplitter*>())
 		_s.setValue(s->objectName() + "State", s->saveState());
@@ -513,6 +511,7 @@ void Noted::writeBaseSettings(QSettings& _s)
 void Noted::readSettings()
 {
 	QSettings settings("LancasterLogicResponse", "Noted");
+	restoreGeometry(settings.value("geometry").toByteArray());
 	if (settings.contains("libraries"))
 		foreach (QString n, settings.value("libraries").toStringList())
 			addLibrary(n);
@@ -629,6 +628,8 @@ void Noted::writeSettings()
 	settings.setValue("pixelDuration", (qlonglong)m_pixelDuration);
 	settings.setValue("timelineOffset", (qlonglong)m_timelineOffset);
 	settings.setValue("cursor", (qlonglong)m_fineCursor);
+
+	settings.setValue("geometry", saveGeometry());
 }
 
 void Noted::on_addEventsView_clicked()
@@ -1098,6 +1099,8 @@ bool Noted::cursorEvent(QEvent* _e, int _i)
 	}
 	return false;
 }
+
+// TODO: cursors of _id==0 should be per-Timeline, not handled by Noted at all.
 
 pair<QRect, QRect> Noted::cursorGeoOffset(int _id) const
 {

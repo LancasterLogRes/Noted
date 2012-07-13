@@ -69,7 +69,7 @@ class Noted: public NotedBase
 	friend class Cursor;
 
 public:
-	// TODO: Sort these out properly so that workers terminate and pause in a proper fashion.
+	// TODO: sort these out properly so that workers terminate and pause in a proper fashion.
 	enum DataStatus { Dirty, ResamplingAudio, RejiggingSpectra, Analyzing, Fresh = 0xfffffffc, Clean, Streaming, Suspended };
 
 	explicit Noted(QWidget* parent = nullptr);
