@@ -189,6 +189,7 @@ void Noted::load(LibraryPtr const& _dl)
 		{
 			typedef EventCompilerFactories&(*cf_t)();
 			typedef NotedPlugin*(*pf_t)(NotedFace*);
+			typedef char const*(*pnf_t)();
 			if (cf_t cf = (cf_t)_dl->l.resolve("eventCompilerFactories"))
 			{
 				cnote << "LOAD" << _dl->name << " [ECF]";
@@ -212,19 +213,22 @@ void Noted::load(LibraryPtr const& _dl)
 						load(lib);
 
 				// load state.
-				if (_dl->p->propertyMap().size())
+				char const* name = ((pnf_t)_dl->l.resolve("pluginName"))();
+				QSettings s("LancasterLogicResponse", "Noted");
+				readBaseSettings(s);
+				_dl->p->readSettings(s);
+				Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p);
+				props.deserialize(s.value(QString(name) + "/properties").toString().toStdString());
+				if (props.size())
 				{
-					auto propsDock = new QDockWidget(_dl->name + " Properties", this);
+					auto propsDock = new QDockWidget(QString("%1 Properties").arg(name), this);
 					propsDock->setObjectName(_dl->name);
 					auto pe = new PropertiesEditor(propsDock);
-					pe->setProperties(Members<NotedPlugin>(_dl->p->propertyMap(), _dl->p));
+					pe->setProperties(props);
 					propsDock->setWidget(pe);
 					propsDock->setFeatures(propsDock->features()|QDockWidget::DockWidgetVerticalTitleBar);
 					addDockWidget(Qt::RightDockWidgetArea, propsDock);
 				}
-				QSettings s("LancasterLogicResponse", "Noted");
-				readBaseSettings(s);
-				_dl->p->readSettings(s);
 			}
 			else
 			{
@@ -292,6 +296,11 @@ void Noted::unload(LibraryPtr const& _dl)
 			QSettings s("LancasterLogicResponse", "Noted");
 			writeBaseSettings(s);
 			_dl->p->writeSettings(s);
+
+			typedef char const*(*pnf_t)();
+			char const* name = ((pnf_t)_dl->l.resolve("pluginName"))();
+			Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p);
+			s.setValue(QString(name) + "/properties", QString::fromStdString(props.serialized()));
 
 			// kill the properties dock if there is one.
 			delete findChild<QDockWidget*>(_dl->name);

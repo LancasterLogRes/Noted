@@ -129,7 +129,7 @@ private:
 	NotedFace* m_c;
 };
 
-ExamplePlugin::ExamplePlugin(NotedFace* _c): NotedPlugin(_c)
+ExamplePlugin::ExamplePlugin(NotedFace* _c): NotedPlugin(_c), scale(2.f), bias(0.5f)
 {
 	m_vizDock = new QDockWidget("Viz", _c);
 	m_vizDock->setWidget(_c->addGLWidget(new TestGLView(this), m_vizDock));

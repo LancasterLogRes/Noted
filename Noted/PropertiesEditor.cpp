@@ -60,7 +60,7 @@ struct Populator
 			w->setMaximum(std::numeric_limits<_T>::max());
 			w->setValue(_l);
 			if (changeCollater)
-				changeCollater->connect(w, SIGNAL(editingFinished()), SLOT(onChanged()));
+				changeCollater->connect(w, SIGNAL(valueChanged(int)), SLOT(onChanged()));
 			return w;
 		}
 		else
@@ -70,7 +70,7 @@ struct Populator
 			w->setRange(-100.f, 100.f);
 			w->setValue(_l);
 			if (changeCollater)
-				changeCollater->connect(w, SIGNAL(editingFinished()), SLOT(onChanged()));
+				changeCollater->connect(w, SIGNAL(valueChanged(double)), SLOT(onChanged()));
 			return w;
 		}
 	}
