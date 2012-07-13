@@ -33,7 +33,7 @@ string msL(float _x, float _y) { return toString(round(_x * 1000)) + "ms (" + to
 class BeatDetector: public EventCompilerImpl
 {
 public:
-	BeatDetector(): halfLife(0.02) {}
+	BeatDetector(): halfLife(0.01) {}
 
 	LIGHTBOX_PREPROCESSORS(highEnergy);
 	LIGHTBOX_PROPERTIES(halfLife);

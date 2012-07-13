@@ -42,6 +42,17 @@ template <class T> std::string toString(T const& _t)
 	return ss.str();
 }
 
+std::string toString(double _d);
+std::string toString(float _f);
+inline std::string toString(std::string const& _s) { return "\"" + _s + "\""; }
+
+template <class T> void fromString(T& _t, std::string const& _s)
+{
+	std::istringstream ss(_s);
+	ss >> _t;
+}
+void fromString(std::string& _t, std::string const& _s);
+
 template <class S, class T> struct StreamOut { static S& bypass(S& _out, T const& _t) { return _out << _t; } };
 
 template <class S, class T>

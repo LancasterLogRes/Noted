@@ -24,9 +24,8 @@
 #include <cstdlib>
 #include <unordered_map>
 #include <boost/variant.hpp>
-
 #include <Common/Global.h>
-#include <Common/PropertyMap.h>
+#include <Common/MemberCollection.h>
 #include <Common/Time.h>
 #include "StreamEvent.h"
 
@@ -65,7 +64,7 @@ class EventCompilerImpl
 
 public:
 	typedef EventCompilerImpl LIGHTBOX_STATE_BaseClass;		// Used by the LIGHTBOX_STATE State collector.
-	typedef EventCompilerImpl LIGHTBOX_PROPERTIES_BaseClass;	// Used for the LIGHTBOX_PROPERTIES Properties collector.
+	typedef EventCompilerImpl LIGHTBOX_PROPERTIES_BaseClass;	// Used for the LIGHTBOX_PROPERTIES Members collector.
 
 	EventCompilerImpl() {}
 	virtual ~EventCompilerImpl() {}
@@ -78,7 +77,8 @@ public:
 
 	virtual StreamEvents init() { return StreamEvents(); }
 	virtual StreamEvents compile(Time _t, std::vector<float> const& _mag, std::vector<float> const& _phase, std::vector<float> const& _wave) { (void)_t; (void)_mag; (void)_phase; (void)_wave; return StreamEvents(); }
-	virtual PropertyMap propertyMap() const { return NullPropertyMap; }
+	virtual MemberMap propertyMap() const { return NullMemberMap; }
+	virtual MemberMap stateMap() const { return NullMemberMap; }
 
 protected:
 	virtual void initPres() {}

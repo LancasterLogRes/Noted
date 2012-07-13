@@ -21,7 +21,7 @@
 #pragma once
 
 #include <QTableWidget>
-#include <Common/PropertyMap.h>
+#include <Common/Members.h>
 
 class PropertiesEditor: public QTableWidget
 {
@@ -31,7 +31,7 @@ public:
 	explicit PropertiesEditor(QWidget* _p = nullptr);
 	~PropertiesEditor();
 	
-	void setProperties(Lightbox::Properties const& _properties);
+	void setProperties(Lightbox::VoidMembers const& _properties);
 
 signals:
 	void changed();
@@ -43,6 +43,6 @@ private slots:
 	void onChanged();
 
 private:
-	Lightbox::Properties m_properties;
+	Lightbox::VoidMembers m_properties;
 	void* m_object;
 };

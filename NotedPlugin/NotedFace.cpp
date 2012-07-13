@@ -45,4 +45,4 @@ NotedFace::~NotedFace()
 {
 }
 
-// TODO: Change screenDuration (or whatever it is) to pixelDuration and offset should be done from left border of Noted window.
+// TODO: Change timelineDuration (or whatever it is) to pixelDuration and offset should be done from left border of Noted window.

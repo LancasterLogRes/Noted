@@ -39,7 +39,7 @@ PropertiesEditor::~PropertiesEditor()
 {
 }
 
-void PropertiesEditor::setProperties(Lightbox::Properties const& _properties)
+void PropertiesEditor::setProperties(Lightbox::VoidMembers const& _properties)
 {
 	m_properties = _properties;
 	updateWidgets();

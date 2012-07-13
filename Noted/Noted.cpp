@@ -535,9 +535,13 @@ void Noted::readSettings()
 		DO(playDevice, setCurrentIndex, toInt);
 	}
 #undef DO
-	if (settings.contains("eventViews"))
-		foreach (QString n, settings.value("eventViews").toStringList())
-			addTimeline(new EventsView(ui->dataDisplay, newEventCompiler(n)));
+	if (settings.contains("eventsViews"))
+		for (int i = 0; i < settings.value("eventsViews").toInt(); ++i)
+		{
+			EventsView* ev = new EventsView(ui->dataDisplay);
+			ev->readSettings(settings, QString("eventsView%1").arg(i));
+			addTimeline(ev);
+		}
 
 	setAudio(settings.value("fileName").toString());
 
@@ -588,10 +592,13 @@ void Noted::writeSettings()
 
 	writeBaseSettings(settings);
 
-	QStringList evns;
+	int evc = 0;
 	foreach (EventsView* ev, eventsViews())
-		evns.append(ev->name());
-	settings.setValue("eventViews", evns);
+	{
+		ev->writeSettings(settings, QString("eventsView%1").arg(evc));
+		++evc;
+	}
+	settings.setValue("eventsViews", evc);
 
 	QStringList eds;
 	QString s;

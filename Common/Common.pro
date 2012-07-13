@@ -43,5 +43,7 @@ HEADERS += Common.h Global.h \
     Statistics.h \
     Peaks.h \
     Flags.h \
-    PropertyMap.h \
-    DoTypes.h
+    DoTypes.h \
+    MemberCollection.h \
+    MemberMap.h \
+    Members.h

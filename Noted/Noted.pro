@@ -34,7 +34,7 @@ SOURCES += main.cpp\
 	Page.cpp \
 	Pager.cpp \
 	CompileEventsView.cpp \
-    PropertiesEditor.cpp
+        PropertiesEditor.cpp
 
 HEADERS  += Noted.h \
 	WaveView.h \

@@ -31,7 +31,7 @@
 using namespace std;
 using namespace Lightbox;
 
-// TODO: PropertyMap editor. (Make general PropertyMap edit widget?)
+// TODO: Store/reload properties.
 
 EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	PrerenderedTimeline	(new QSplitter(_parent)),
@@ -159,7 +159,10 @@ QString EventsView::name() const
 void EventsView::save()
 {
 	if (!m_eventCompiler.isNull())
-		m_name = name();
+	{
+		m_savedName = name();
+		m_savedProperties = m_eventCompiler.properties().serialized();
+	}
 	m_eventCompiler = EventCompiler();
 
 	// Have to clear at the moment, since auxilliary StreamEvent data can have hooks into the shared library that will be unloaded.
@@ -170,8 +173,22 @@ void EventsView::save()
 
 void EventsView::restore()
 {
-	m_eventCompiler = c()->newEventCompiler(m_name);
-	m_propertiesEditor->updateWidgets();
+	m_eventCompiler = c()->newEventCompiler(m_savedName);
+	m_eventCompiler.properties().deserialize(m_savedProperties);
+	m_propertiesEditor->setProperties(m_eventCompiler.properties());
+}
+
+void EventsView::readSettings(QSettings& _s, QString const& _id)
+{
+	m_savedName = _s.value(_id + "/name").toString();
+	m_savedProperties = _s.value(_id + "/properties").toString().toStdString();
+	restore();
+}
+
+void EventsView::writeSettings(QSettings& _s, QString const& _id)
+{
+	_s.setValue(_id + "/name", name());
+	_s.setValue(_id + "/properties", QString::fromStdString(m_eventCompiler.properties().serialized()));
 }
 
 void EventsView::exportEvents()

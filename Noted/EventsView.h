@@ -36,6 +36,7 @@
 
 class PropertiesEditor;
 class QPushButton;
+class QSettings;
 class CompileEventsView;
 
 class EventsView: public PrerenderedTimeline, public EventsStore
@@ -48,6 +49,9 @@ public:
 	~EventsView();
 
 	virtual QWidget* widget() { return m_actualWidget; }
+
+	void readSettings(QSettings& _s, QString const& _id);
+	void writeSettings(QSettings& _s, QString const& _id);
 
 	void save();
 	void restore();
@@ -78,14 +82,15 @@ private:
 
 	QSplitter* m_actualWidget;
 	PropertiesEditor* m_propertiesEditor;
+	QComboBox* m_selection;
+	QPushButton* m_use;
 
 	Lightbox::StreamEvents m_initEvents;
 	QList<Lightbox::StreamEvents> m_events;
 	mutable QMutex x_events;
 
 	Lightbox::StreamEvents m_current;
-	QComboBox* m_selection;
 
-	QString m_name;
-	QPushButton* m_use;
+	QString m_savedName;
+	std::string m_savedProperties;
 };
