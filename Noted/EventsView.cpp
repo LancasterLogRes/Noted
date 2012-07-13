@@ -31,8 +31,6 @@
 using namespace std;
 using namespace Lightbox;
 
-// TODO: Store/reload properties.
-
 EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	PrerenderedTimeline	(new QSplitter(_parent)),
 	m_eventCompiler		(_ec),
