@@ -34,8 +34,8 @@ public:
 	class IncorrectNumberOfFrames: public std::exception {};
 
 	Playback(int _device = -1, int _channels = 1, int _rate = -1, unsigned long _frames = 1024, int _periods = -1, char const* _elem = "");
-	void write(std::vector<int16_t> const& _frame);
-	void write(int16_t const* _frame);
+	void write(std::vector<float> const& _frame);
+	void write(float const* _frame);
 
 	static std::map<int, std::string> devices() { return Common::devices(true); }
 };

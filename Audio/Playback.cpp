@@ -29,26 +29,23 @@ using namespace Audio;
 Playback::Playback(int _device, int _channels, int _rate, unsigned long _frames, int _periods, char const*)
 {
 	init();
-/*
-	int numDevices = Pa_GetDeviceCount();
-	for (int i = 0; i < numDevices; ++i)
-	{
-		PaDeviceInfo const* deviceInfo = Pa_GetDeviceInfo(i);
-		PaHostApiInfo const* apiInfo = Pa_GetHostApiInfo(deviceInfo->hostApi);
-		cerr << apiInfo->name << "/" << deviceInfo->name << ": " << (deviceInfo->defaultLowOutputLatency * 1000) << " ms; " << deviceInfo->defaultSampleRate << " Hz; #" << deviceInfo->maxOutputChannels << ((Pa_GetDefaultOutputDevice() == i) ? "[DEFAULT]" : "") << endl;
-	}*/
 
 	m_params = new PaStreamParameters;
 
-	m_params->device = (_device == -1) ? Pa_GetDefaultOutputDevice() : _device;
-	m_device = m_params->device;
+	m_device = m_params->device = (_device == -1) ? Pa_GetDefaultOutputDevice() : _device;
 	PaDeviceInfo const* deviceInfo = Pa_GetDeviceInfo(m_device);
+	if (!deviceInfo)
+	{
+		m_device = m_params->device = Pa_GetDefaultOutputDevice();
+		deviceInfo = Pa_GetDeviceInfo(m_device);
+	}
+
 	PaHostApiInfo const* apiInfo = Pa_GetHostApiInfo(deviceInfo->hostApi);
 	m_deviceName = string(apiInfo->name) + "/" + deviceInfo->name;
 
 	m_params->channelCount = _channels;
 	m_channels = m_params->channelCount;
-	m_params->sampleFormat = paInt16;
+	m_params->sampleFormat = paInt16 | paNonInterleaved;
 
 	m_rate = (_rate == -1) ? deviceInfo->defaultSampleRate : _rate;
 	m_frames = _frames;
@@ -63,25 +60,42 @@ Playback::Playback(int _device, int _channels, int _rate, unsigned long _frames,
 	m_rate = si->sampleRate;
 	m_periods = si->outputLatency / m_frames * si->sampleRate;
 
-//	cerr << "Device " << Pa_GetDeviceInfo(m_device)->name << " open: " << m_frames << " x" << m_periods << " @" << m_rate << "Hz, " << m_channels << "#" << endl;
-
 	if (int err = Pa_StartStream(m_stream))
 		throw Exception(err);
 }
 
-void Playback::write(vector<int16_t> const& _frame)
+void Playback::write(vector<float> const& _frame)
 {
 	if (_frame.size() != m_frames * m_channels)
 		throw IncorrectNumberOfFrames();
 	write(_frame.data());
 }
 
-void Playback::write(int16_t const* _frame)
+void Playback::write(float const* _frame)
 {
-	if (int rc = Pa_WriteStream(m_stream, _frame, m_frames))
+	void const* buffers[m_channels];
+	int rc;
+	if ((m_params->sampleFormat & paInt16) == paInt16)
+	{
+		int cf = m_channels * m_frames;
+		int16_t buffer[cf];
+		for (int i = 0; i < cf; ++i)
+			buffer[i] = _frame[i] * 32767;
+		for (unsigned i = 0; i < m_channels; ++i)
+			buffers[i] = buffer + m_frames * i;
+		rc = Pa_WriteStream(m_stream, buffers, m_frames);
+	}
+	else
+	{
+		for (unsigned i = 0; i < m_channels; ++i)
+			buffers[i] = _frame + m_frames * i;
+		rc = Pa_WriteStream(m_stream, buffers, m_frames);
+	}
+	if (rc)
 	{
 		if (rc == paOutputUnderflowed)
 		{
+			cerr << "*** AUDIO: Buffer underrun." << endl;
 			Pa_StopStream(m_stream);
 			Pa_StartStream(m_stream);
 		}

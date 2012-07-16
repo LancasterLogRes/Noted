@@ -76,7 +76,7 @@ public:
 	~Noted();
 
 	virtual int activeWidth() const;
-	virtual bool isPlaying() const { return !!m_alsa; }
+	virtual bool isPlaying() const { return !!m_playback; }
 	virtual void info(QString const& _info);
 	void info(QString const& _info, int _id);
 	virtual Lightbox::Time earliestVisible() const { return m_timelineOffset; }
@@ -205,7 +205,13 @@ private:
 
 	WorkerThread* m_workerThread;
 	WorkerThread* m_alsaThread;
-	std::shared_ptr<Audio::Playback> m_alsa;
+	std::shared_ptr<Audio::Playback> m_playback;
+	Lightbox::Time m_fineCursorWas;
+	Lightbox::Time m_nextResample;
+
+	bool m_goingForward;
+	void* m_resampler;
+
 	std::shared_ptr<Audio::Capture> m_capture;
 
 	struct Library;

@@ -49,7 +49,7 @@ NotedBase::~NotedBase()
 
 uint32_t NotedBase::calculateWaveFingerprint() const
 {
-	return uint32_t(qHash(m_audioFile.fileName())) ^ (m_normalize ? 0 : 42) ^ m_blockSamples;
+	return uint32_t(qHash(m_sourceFileName)) ^ (m_normalize ? 0 : 42) ^ m_blockSamples;
 }
 
 uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const
@@ -148,64 +148,10 @@ Lightbox::foreign_vector<float> NotedBase::waveWindow(int _window) const
 	}
 }
 
-template <class _T>
-void valcpy(_T* _d, _T const* _s, unsigned _n, unsigned _dstride = 1, unsigned _sstride = 1)
-{
-	if (_sstride == 1 && _dstride == 1)
-	{
-		if (_d != _s)
-			memcpy(_d, _s, sizeof(_T) * _n);
-	}
-	else
-	{
-		// can't do an in-place valcpy if deststride is greater than srcstride - we'd override our src data before we've used it.
-		assert(_d != _s || _dstride < _sstride);
-		if (_sstride == 1)
-		{
-			unsigned i = 0;
-			for (; i < _n; i += 4)
-			{
-				_d[i * _dstride] = _s[i];
-				_d[(i + 1) * _dstride] = _s[(i + 1)];
-				_d[(i + 2) * _dstride] = _s[(i + 2)];
-				_d[(i + 3) * _dstride] = _s[(i + 3)];
-			}
-			for (; i < _n; ++i)
-				_d[i * _dstride] = _s[i];
-		}
-		else if (_dstride == 1)
-		{
-			unsigned i = 0;
-			for (; i < _n; i += 4)
-			{
-				_d[i] = _s[i * _sstride];
-				_d[(i + 1)] = _s[(i + 1) * _sstride];
-				_d[(i + 2)] = _s[(i + 2) * _sstride];
-				_d[(i + 3)] = _s[(i + 3) * _sstride];
-			}
-			for (; i < _n; ++i)
-				_d[i] = _s[i * _sstride];
-		}
-		else
-		{
-			unsigned i = 0;
-			for (; i < _n; i += 4)
-			{
-				_d[i * _dstride] = _s[i * _sstride];
-				_d[(i + 1) * _dstride] = _s[(i + 1) * _sstride];
-				_d[(i + 2) * _dstride] = _s[(i + 2) * _sstride];
-				_d[(i + 3) * _dstride] = _s[(i + 3) * _sstride];
-			}
-			for (; i < _n; ++i)
-				_d[i * _dstride] = _s[i * _sstride];
-		}
-	}
-}
-
 bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
 {
 	SF_INFO info;
-	m_sndfile = sf_open(m_audioFile.fileName().toLocal8Bit().data(), SFM_READ, &info);
+	m_sndfile = sf_open(m_sourceFileName.toLocal8Bit().data(), SFM_READ, &info);
 	if (m_sndfile)
 	{
 		QMutexLocker l(&x_wave);
@@ -269,8 +215,11 @@ bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
 					pagePos += resample_process(resampler, factor, buffer + bufferPos, m_blockSamples - bufferPos, blockIndex == outBlocks - 1, &used, page + pagePos, m_blockSamples - pagePos);
 					bufferPos += used;
 				}
+				for (unsigned i = 0; i < m_blockSamples; ++i)
+					page[i] = clamp(page[i], -1.f, 1.f);
 			};
 			m_wave.fill(baseF, accF, distillF, [](){}, _carryOn, outBlocks);
+			resample_close(resampler);
 		}
 		sf_close(m_sndfile);
 	}

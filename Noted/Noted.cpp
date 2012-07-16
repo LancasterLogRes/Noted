@@ -27,6 +27,7 @@
 #include <functional>
 #include <boost/variant.hpp>
 #include <boost/foreach.hpp>
+#include <libresample.h>
 #include <QtGui>
 #include <QtXml>
 #include <QtOpenGL>
@@ -61,6 +62,9 @@ Noted::Noted(QWidget* _p):
 	m_timelineOffset		(0),
 	m_pixelDuration			(1),
 	m_workerThread			(nullptr),
+	m_fineCursorWas			(UndefinedTime),
+	m_nextResample			(UndefinedTime),
+	m_resampler				(nullptr),
 	m_compileEventsAnalysis	(new CompileEvents),
 	m_collateEventsAnalysis	(new CollateEvents)
 {
@@ -478,7 +482,7 @@ void Noted::addTimeline(Timeline* _tl)
 
 void Noted::updateWindowTitle()
 {
-	QString t = (m_audioFile.isOpen() ? m_audioFile.fileName() : QString("New Recording"));
+	QString t = m_sourceFileName.isEmpty() ? QString("New Recording") : m_sourceFileName;
 	foreach (auto l, m_libraries)
 		if (l->p)
 			t = l->p->titleAmendment(t);
@@ -639,7 +643,7 @@ void Noted::writeSettings()
 	DO(playDevice, currentIndex);
 #undef DO
 
-	settings.setValue("fileName", m_audioFile.fileName());
+	settings.setValue("fileName", m_sourceFileName);
 	settings.setValue("pixelDuration", (qlonglong)m_pixelDuration);
 	settings.setValue("timelineOffset", (qlonglong)m_timelineOffset);
 	settings.setValue("cursor", (qlonglong)m_fineCursor);
@@ -813,42 +817,120 @@ void Noted::on_actPlay_changed()
 	}
 }
 
+// _dest[0] = _dest[1] = _source[0];
+// _dest[2] = _dest[3] = _source[1];
+// ...
+// _dest[2*(n-1)] = _dest[2*(n-1)+1] = _source[n-1];
+template <class _T>
+void valfan2(_T* _dest, _T const* _source, unsigned _n)
+{
+	unsigned nLess4 = _n - 4;
+	if (_dest + 2 * _n < _source || _source + _n < _dest)
+	{
+		// separate
+		unsigned i = 0;
+		for (; i < nLess4; i += 4)
+		{
+			_dest[2 * i] = _dest[2 * (i + 0) + 1] = _source[i];
+			_dest[2 * (i + 1)] = _dest[2 * (i + 1) + 1] = _source[i + 1];
+			_dest[2 * (i + 2)] = _dest[2 * (i + 2) + 1] = _source[i + 2];
+			_dest[2 * (i + 3)] = _dest[2 * (i + 3) + 1] = _source[i + 3];
+		}
+		for (; i < _n; ++i)
+			_dest[2 * i] = _dest[2 * i + 1] = _source[i];
+	}
+	else
+	{
+		// overlapping; assert we're the same - we can't handle any other situation.
+		assert(_dest == _source);
+		// do it backwards.
+		int i = _n - 4;
+		for (; i >= 0; i -= 4)
+		{
+			_dest[2 * (i + 3)] = _dest[2 * (i + 3) + 1] = _source[i + 3];
+			_dest[2 * (i + 2)] = _dest[2 * (i + 2) + 1] = _source[i + 2];
+			_dest[2 * (i + 1)] = _dest[2 * (i + 1) + 1] = _source[i + 1];
+			_dest[2 * i] = _dest[2 * (i + 0) + 1] = _source[i];
+		}
+		for (; i >= 0; --i)
+			_dest[2 * i] = _dest[2 * i + 1] = _source[i];
+	}
+}
+
 bool Noted::serviceAudio()
 {
-	if (ui->actPlay->isChecked() && m_audioHeader)
+	if (ui->actPlay->isChecked())
 	{
-		if (!m_alsa)
+		if (!m_playback)
 		{
 			try {
-				m_alsa = shared_ptr<Audio::Playback>(new Audio::Playback(ui->playDevice->itemData(ui->playDevice->currentIndex()).toInt(), 2, (ui->playRate->currentText() == "Default") ? -1 : ui->playRate->currentText().section(' ', 0, 0).toInt(), ui->playChunkSamples->value(), (ui->playChunks->value() == 2) ? -1 : ui->playChunks->value()));
+				int rate = -1;														// Default device rate.
+				if (ui->playRate->currentIndex() == ui->playRate->count() - 1)		// Working rate.
+					rate = m_rate;
+				else if (ui->playRate->currentIndex() < ui->playRate->count() - 2)	// Specified rate.
+					ui->playRate->currentText().section(' ', 0, 0).toInt();
+				m_playback = shared_ptr<Audio::Playback>(new Audio::Playback(ui->playDevice->itemData(ui->playDevice->currentIndex()).toInt(), 2, rate, ui->playChunkSamples->value(), (ui->playChunks->value() == 2) ? -1 : ui->playChunks->value()));
 			} catch (...) {}
 		}
-		int sams = m_audioHeader->dataBytes / m_audioHeader->bytesPerFrame;
-		if (m_alsa)
+		if (m_playback)
 		{
-			vector<int16_t> out(m_alsa->frames() * m_alsa->channels());
-			if (m_fineCursor >= 0 && m_fineCursor < toBase(sams, m_audioHeader->rate) - toBase(m_alsa->frames(), m_alsa->rate()))
+			unsigned f = m_playback->frames();
+			unsigned r = m_playback->rate();
+			vector<float> output(f * m_playback->channels());
+			if (m_fineCursor >= 0 && m_fineCursor < duration())
 			{
-				auto d = [=](int i){ return *(int16_t const*)(m_audioData + (fromBase(m_fineCursor, m_audioHeader->rate) + i) * m_audioHeader->bytesPerFrame); };
-				unsigned s = sams;
-				unsigned r = m_alsa->rate();
-				unsigned f = m_alsa->frames();
-				if (m_alsa->isInterleaved())
-					for (unsigned i = 0; i < f; i++)
-						out[i * 2] = out[i * 2 + 1] = d(qMin(s - 1, i * m_audioHeader->rate / r));
+				if (m_rate == m_playback->rate())
+				{
+					// no resampling necessary
+					waveBlock(m_fineCursor, toBase(f, r), &output);
+				}
 				else
-					for (unsigned i = 0; i < f; i++)
-						out[i] = out[i + f] = d(qMin(s - 1, i * m_audioHeader->rate / r));
+				{
+					vector<float> source(f);
+					double factor = double(m_playback->rate()) / m_rate;
+					if (m_fineCursorWas != m_fineCursor || !m_resampler)
+					{
+						// restart resampling.
+						if (m_resampler)
+							resample_close(m_resampler);
+						m_resampler = resample_open(1, factor, factor);
+						m_nextResample = m_fineCursor;
+					}
+					m_fineCursorWas = m_fineCursor + toBase(m_playback->frames(), m_playback->rate());
+
+					unsigned outPos = 0;
+					int used = 0;
+					// Try our luck without going to the expensive waveBlock call first.
+					outPos += resample_process(m_resampler, factor, nullptr, 0, 0, &used, &(output[outPos]), f - outPos);
+					while (outPos != f)
+					{
+						// At end of current (input) buffer - refill and reset position.
+						waveBlock(m_nextResample, toBase(f, m_rate), &source);
+						outPos += resample_process(m_resampler, factor, &(source[0]), f, 0, &used, &(output[outPos]), f - outPos);
+						m_nextResample += toBase(used, m_rate);
+					}
+					for (float& f: output)
+						f = clamp(f, -1.f, 1.f);
+				}
+				if (m_playback->isInterleaved())
+					valfan2(&(output[0]), &(output[0]), f);
+				else
+					valcpy(&(output[f]), &(output[0]), f);
 			}
-			m_alsa->write(out);
-			setCursor(m_fineCursor + toBase(m_alsa->frames(), m_alsa->rate()));
+			m_playback->write(output);
+			setCursor(m_fineCursor + toBase(f, r));	// might be different to m_fineCursorWas...
 			return true;
 		}
 	}
 	else
 	{
-		if (m_alsa)
-			m_alsa.reset();
+		if (m_playback)
+			m_playback.reset();
+		if (m_resampler)
+		{
+			resample_close(m_resampler);
+			m_resampler = nullptr;
+		}
 	}
 	return false;
 }
@@ -912,7 +994,6 @@ void Noted::noteDataChanged(DataStatus _s)
 	}
 }
 
-
 void Noted::setAudio(QString const& _filename)
 {
 	if (ui->actPlay->isChecked())
@@ -925,13 +1006,9 @@ void Noted::setAudio(QString const& _filename)
 
 	emit analysisFinished();
 
-	m_audioFile.unmap((uint8_t*)m_audioHeader);
-	m_audioHeader = nullptr;
-	m_audioData = nullptr;
-	m_audioFile.close();
-	m_audioFile.setFileName(_filename);
-	if (!m_audioFile.open(QFile::ReadOnly))
-		m_audioFile.setFileName("");
+	m_sourceFileName = _filename;
+	if (!QFile(m_sourceFileName).open(QFile::ReadOnly))
+		m_sourceFileName.clear();
 	noteDataChanged(Dirty);
 	updateWindowTitle();
 	resumeWork();
@@ -1027,8 +1104,8 @@ void Noted::timerEvent(QTimerEvent*)
 
 		statusBar()->showMessage(msg);
 
-		if (m_alsa)
-			ui->statusBar->findChild<QLabel*>("alsa")->setText(QString("%1 %2# @ %3Hz, %4x%5 frames").arg(m_alsa->deviceName().c_str()).arg(m_alsa->channels()).arg(m_alsa->rate()).arg(m_alsa->periods()).arg(m_alsa->frames()));
+		if (m_playback)
+			ui->statusBar->findChild<QLabel*>("alsa")->setText(QString("%1 %2# @ %3Hz, %4x%5 frames").arg(m_playback->deviceName().c_str()).arg(m_playback->channels()).arg(m_playback->rate()).arg(m_playback->periods()).arg(m_playback->frames()));
 		else
 			ui->statusBar->findChild<QLabel*>("alsa")->setText("No audio");
 		{

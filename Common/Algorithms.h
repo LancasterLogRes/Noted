@@ -40,6 +40,61 @@
 namespace Lightbox
 {
 
+template <class _T>
+void valcpy(_T* _d, _T const* _s, unsigned _n, unsigned _dstride = 1, unsigned _sstride = 1)
+{
+	if (_sstride == 1 && _dstride == 1)
+	{
+		if (_d != _s)
+			memcpy(_d, _s, sizeof(_T) * _n);
+	}
+	else
+	{
+		// can't do an in-place valcpy if deststride is greater than srcstride - we'd override our src data before we've used it.
+		assert(_d != _s || _dstride < _sstride);
+		unsigned nLess4 = _n - 4;
+		if (_sstride == 1)
+		{
+			unsigned i = 0;
+			for (; i < nLess4; i += 4)
+			{
+				_d[i * _dstride] = _s[i];
+				_d[(i + 1) * _dstride] = _s[(i + 1)];
+				_d[(i + 2) * _dstride] = _s[(i + 2)];
+				_d[(i + 3) * _dstride] = _s[(i + 3)];
+			}
+			for (; i < _n; ++i)
+				_d[i * _dstride] = _s[i];
+		}
+		else if (_dstride == 1)
+		{
+			unsigned i = 0;
+			for (; i < nLess4; i += 4)
+			{
+				_d[i] = _s[i * _sstride];
+				_d[(i + 1)] = _s[(i + 1) * _sstride];
+				_d[(i + 2)] = _s[(i + 2) * _sstride];
+				_d[(i + 3)] = _s[(i + 3) * _sstride];
+			}
+			for (; i < _n; ++i)
+				_d[i] = _s[i * _sstride];
+		}
+		else
+		{
+			unsigned i = 0;
+			for (; i < nLess4; i += 4)
+			{
+				_d[i * _dstride] = _s[i * _sstride];
+				_d[(i + 1) * _dstride] = _s[(i + 1) * _sstride];
+				_d[(i + 2) * _dstride] = _s[(i + 2) * _sstride];
+				_d[(i + 3) * _dstride] = _s[(i + 3) * _sstride];
+			}
+			for (; i < _n; ++i)
+				_d[i * _dstride] = _s[i * _sstride];
+		}
+	}
+}
+
 template <class _T, class _U>
 void catenate(_T& _target, _U const& _extra)
 {

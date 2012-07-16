@@ -713,7 +713,7 @@
           </size>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>12</number>
          </property>
          <item>
           <property name="text">
@@ -772,7 +772,12 @@
          </item>
          <item>
           <property name="text">
-           <string>Default</string>
+           <string>Device Default</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Working Rate</string>
           </property>
          </item>
         </widget>

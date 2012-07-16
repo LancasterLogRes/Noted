@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <vector>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -254,6 +255,7 @@ public:
 	typedef _T element_type;
 
 	foreign_vector(): m_data(nullptr), m_count(0) {}
+	foreign_vector(std::vector<_T>* _data): m_data(_data->data()), m_count(_data->size()) {}
 	foreign_vector(_T* _data, unsigned _count): m_data(_data), m_count(_count) {}
 
 	explicit operator bool() const { return m_data && m_count; }

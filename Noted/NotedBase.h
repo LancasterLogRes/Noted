@@ -67,10 +67,8 @@ protected:
 	uint32_t calculateWaveFingerprint() const;
 	uint32_t calculateSpectraFingerprint(uint32_t _base) const;
 
-	QFile m_audioFile;
+	QString m_sourceFileName;
 	SNDFILE* m_sndfile;
-	uint8_t const* m_audioData;
-	Lightbox::WavHeader const* m_audioHeader;
 
 	mutable QMutex x_wave;
 	Pager<float> m_wave;
