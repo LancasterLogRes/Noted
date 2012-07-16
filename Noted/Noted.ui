@@ -502,25 +502,6 @@
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QPushButton" name="normalize">
-           <property name="maximumSize">
-            <size>
-             <width>23</width>
-             <height>23</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>1r</string>
-           </property>
-           <property name="checkable">
-            <bool>true</bool>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
         </layout>
        </item>
        <item row="3" column="0" colspan="3">
@@ -780,6 +761,25 @@
            <string>Working Rate</string>
           </property>
          </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="force16Bit">
+         <property name="maximumSize">
+          <size>
+           <width>23</width>
+           <height>23</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>16</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
         </widget>
        </item>
        <item>

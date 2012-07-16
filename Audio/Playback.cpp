@@ -26,7 +26,7 @@
 using namespace std;
 using namespace Audio;
 
-Playback::Playback(int _device, int _channels, int _rate, unsigned long _frames, int _periods, char const*)
+Playback::Playback(int _device, int _channels, int _rate, unsigned long _frames, int _periods, bool _force16Bit)
 {
 	init();
 
@@ -45,7 +45,7 @@ Playback::Playback(int _device, int _channels, int _rate, unsigned long _frames,
 
 	m_params->channelCount = _channels;
 	m_channels = m_params->channelCount;
-	m_params->sampleFormat = paInt16 | paNonInterleaved;
+	m_params->sampleFormat = (_force16Bit ? paInt16 : paFloat32) | paNonInterleaved;
 
 	m_rate = (_rate == -1) ? deviceInfo->defaultSampleRate : _rate;
 	m_frames = _frames;

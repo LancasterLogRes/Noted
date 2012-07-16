@@ -48,7 +48,7 @@ void valcpy(_T* _d, _T const* _s, unsigned _n, unsigned _dstride = 1, unsigned _
 		if (_d != _s)
 			memcpy(_d, _s, sizeof(_T) * _n);
 	}
-	else
+	else if (n >= 4)
 	{
 		// can't do an in-place valcpy if deststride is greater than srcstride - we'd override our src data before we've used it.
 		assert(_d != _s || _dstride < _sstride);
@@ -93,6 +93,9 @@ void valcpy(_T* _d, _T const* _s, unsigned _n, unsigned _dstride = 1, unsigned _
 				_d[i * _dstride] = _s[i * _sstride];
 		}
 	}
+	else
+		for (unsigned i = 0; i < _n; ++i)
+			_d[i * _dstride] = _s[i * _sstride];
 }
 
 template <class _T, class _U>

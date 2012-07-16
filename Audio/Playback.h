@@ -33,7 +33,7 @@ class Playback: public Common
 public:
 	class IncorrectNumberOfFrames: public std::exception {};
 
-	Playback(int _device = -1, int _channels = 1, int _rate = -1, unsigned long _frames = 1024, int _periods = -1, char const* _elem = "");
+	Playback(int _device = -1, int _channels = 1, int _rate = -1, unsigned long _frames = 1024, int _periods = -1, bool _force16Bit = false);
 	void write(std::vector<float> const& _frame);
 	void write(float const* _frame);
 

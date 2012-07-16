@@ -542,7 +542,6 @@ void Noted::readSettings()
 		DO(hopSlider, setValue, toInt);
 		DO(windowSizeSlider, setValue, toInt);
 		DO(zeroPhase, setChecked, toBool);
-		DO(normalize, setChecked, toBool);
 	}
 
 	if (settings.contains("playRate"))
@@ -551,6 +550,7 @@ void Noted::readSettings()
 		DO(playChunks, setValue, toInt);
 		DO(playRate, setCurrentIndex, toInt);
 		DO(playDevice, setCurrentIndex, toInt);
+		DO(force16Bit, setChecked, toBool);
 	}
 #undef DO
 	if (settings.contains("eventsViews"))
@@ -636,7 +636,7 @@ void Noted::writeSettings()
 	DO(hopSlider, value);
 	DO(windowSizeSlider, value);
 	DO(zeroPhase, isChecked);
-	DO(normalize, isChecked);
+	DO(force16Bit, isChecked);
 	DO(playChunkSamples, value);
 	DO(playChunks, value);
 	DO(playRate, currentIndex);
@@ -869,7 +869,7 @@ bool Noted::serviceAudio()
 					rate = m_rate;
 				else if (ui->playRate->currentIndex() < ui->playRate->count() - 2)	// Specified rate.
 					ui->playRate->currentText().section(' ', 0, 0).toInt();
-				m_playback = shared_ptr<Audio::Playback>(new Audio::Playback(ui->playDevice->itemData(ui->playDevice->currentIndex()).toInt(), 2, rate, ui->playChunkSamples->value(), (ui->playChunks->value() == 2) ? -1 : ui->playChunks->value()));
+				m_playback = shared_ptr<Audio::Playback>(new Audio::Playback(ui->playDevice->itemData(ui->playDevice->currentIndex()).toInt(), 2, rate, ui->playChunkSamples->value(), (ui->playChunks->value() == 2) ? -1 : ui->playChunks->value(), ui->force16Bit->isChecked()));
 			} catch (...) {}
 		}
 		if (m_playback)
@@ -1296,11 +1296,8 @@ void Noted::paintCursor(QPainter& _p, int _id) const
 void Noted::updateParameters()
 {
 	m_hopSamples = ui->hop->value();
-
 	m_windowFunction = Lightbox::windowFunction(ui->windowSize->value(), WindowFunction(ui->windowFunction->currentIndex()));
-
 	m_zeroPhase = ui->zeroPhase->isChecked();
-	m_normalize = ui->normalize->isChecked();
 }
 
 void Noted::clearEventsCache()

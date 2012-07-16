@@ -49,7 +49,7 @@ NotedBase::~NotedBase()
 
 uint32_t NotedBase::calculateWaveFingerprint() const
 {
-	return uint32_t(qHash(m_sourceFileName)) ^ (m_normalize ? 0 : 42) ^ m_blockSamples;
+	return uint32_t(qHash(m_sourceFileName)) ^ m_blockSamples;
 }
 
 uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const

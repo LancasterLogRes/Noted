@@ -134,7 +134,6 @@ protected:
 	unsigned m_hopSamples;
 	unsigned m_samples;
 	bool m_zeroPhase;
-	bool m_normalize;
 	std::vector<float> m_windowFunction;
 };
 
