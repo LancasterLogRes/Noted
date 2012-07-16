@@ -53,16 +53,7 @@
 using namespace std;
 using namespace Lightbox;
 
-ostream& operator<<(ostream& _out, QString const& _s) { return _out << _s.toLocal8Bit().data(); }
-
-template <class _T, class _U>
-void catenate(_T& _target, _U const& _extra)
-{
-	foreach (auto i, _extra)
-		_target.push_back(i);
-}
-
-Noted::Noted(QWidget* _p) :
+Noted::Noted(QWidget* _p):
 	NotedBase				(_p),
 	ui						(new Ui::Noted),
 	m_dataStatus			(Dirty),
@@ -790,7 +781,7 @@ void Noted::on_actFollow_changed()
 
 void Noted::on_actOpen_activated()
 {
-	QString s = QFileDialog::getOpenFileName(this, "Open a Wave File", QDir::homePath(), "*.wav");
+	QString s = QFileDialog::getOpenFileName(this, "Open an audio file", QDir::homePath(), "Microsoft Wave (*.wav *.WAV);;SGI/Apple (*.AIFF *.AIFC *.aiff *.aifc);;Sun/DEC/NeXT (*.AU *.SND *.au *.snd);;Paris Audio File (*.PAF *.paf);;Commodore Amiga (*.IFF *.SVX *.iff *.svx);;Sphere Nist (*.NIST *.nist);;IRCAM (*.SF *.sf);;Creative (*.VOC *.voc);;Soundforge (*.W64 *.w64);;GNU Octave 2.0 (*.MAT4 *.mat4);;GNU Octave 2.1 (*.MAT5 *.mat5);;Portable Voice Format (*.PVF *.pvf);;Fasttracker 2 (*.XI *.xi);;HMM Tool Kit (*.HTK *.htk);;Apple CAF (*.CAF *.caf);;Sound Designer II (*.SD2 *.sd2);;Free Lossless Audio Codec (*.FLAC *.flac);;Ogg Vorbis (*.OGG *.ogg)");
 	if (!s.isNull())
 		setAudio(s);
 }

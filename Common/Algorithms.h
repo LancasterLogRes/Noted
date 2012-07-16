@@ -40,6 +40,13 @@
 namespace Lightbox
 {
 
+template <class _T, class _U>
+void catenate(_T& _target, _U const& _extra)
+{
+	foreach (auto i, _extra)
+		_target.push_back(i);
+}
+
 template <class _T>
 inline unsigned maxInRange(_T const& _t)
 {

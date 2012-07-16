@@ -41,6 +41,8 @@
 
 LIGHTBOX_TEXTUAL_ENUM(AudioStage, Wave, Spectrum);
 
+inline std::ostream& operator<<(std::ostream& _out, QString const& _s) { return _out << _s.toLocal8Bit().data(); }
+
 class Timeline;
 class EventsStore;
 class CausalAnalysis;

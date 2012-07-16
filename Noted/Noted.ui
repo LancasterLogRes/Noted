@@ -370,51 +370,61 @@
             </size>
            </property>
            <property name="currentIndex">
-            <number>5</number>
+            <number>0</number>
            </property>
            <item>
             <property name="text">
-             <string>4000 Hz</string>
+             <string notr="true">4000 Hz</string>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>8000 Hz</string>
+             <string notr="true">8000 Hz</string>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>11025 Hz</string>
+             <string notr="true">11025 Hz</string>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>16000 Hz</string>
+             <string notr="true">16000 Hz</string>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>22050 Hz</string>
+             <string notr="true">22050 Hz</string>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>24000 Hz</string>
+             <string notr="true">24000 Hz</string>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>32000 Hz</string>
+             <string notr="true">32000 Hz</string>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>44100 Hz</string>
+             <string notr="true">44100 Hz</string>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>48000 Hz</string>
+             <string notr="true">48000 Hz</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string notr="true">96000 Hz</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string notr="true">192000 Hz</string>
             </property>
            </item>
           </widget>
@@ -703,51 +713,61 @@
           </size>
          </property>
          <property name="currentIndex">
-          <number>9</number>
+          <number>0</number>
          </property>
          <item>
           <property name="text">
-           <string>4000 Hz</string>
+           <string notr="true">4000 Hz</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>8000 Hz</string>
+           <string notr="true">8000 Hz</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>11025 Hz</string>
+           <string notr="true">11025 Hz</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>16000 Hz</string>
+           <string notr="true">16000 Hz</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>22050 Hz</string>
+           <string notr="true">22050 Hz</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>24000 Hz</string>
+           <string notr="true">24000 Hz</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>32000 Hz</string>
+           <string notr="true">32000 Hz</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>44100 Hz</string>
+           <string notr="true">44100 Hz</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>48000 Hz</string>
+           <string notr="true">48000 Hz</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string notr="true">96000 Hz</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string notr="true">192000 Hz</string>
           </property>
          </item>
          <item>

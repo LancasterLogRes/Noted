@@ -21,6 +21,8 @@
 #include <cstdlib>
 #include <memory>
 #include <unordered_map>
+#include <sndfile.h>
+#include <libresample.h>
 #include <QDebug>
 #include <QtGui>
 #include <Common/Common.h>
@@ -146,27 +148,71 @@ Lightbox::foreign_vector<float> NotedBase::waveWindow(int _window) const
 	}
 }
 
+template <class _T>
+void valcpy(_T* _d, _T const* _s, unsigned _n, unsigned _dstride = 1, unsigned _sstride = 1)
+{
+	if (_sstride == 1 && _dstride == 1)
+	{
+		if (_d != _s)
+			memcpy(_d, _s, sizeof(_T) * _n);
+	}
+	else
+	{
+		// can't do an in-place valcpy if deststride is greater than srcstride - we'd override our src data before we've used it.
+		assert(_d != _s || _dstride < _sstride);
+		if (_sstride == 1)
+		{
+			unsigned i = 0;
+			for (; i < _n; i += 4)
+			{
+				_d[i * _dstride] = _s[i];
+				_d[(i + 1) * _dstride] = _s[(i + 1)];
+				_d[(i + 2) * _dstride] = _s[(i + 2)];
+				_d[(i + 3) * _dstride] = _s[(i + 3)];
+			}
+			for (; i < _n; ++i)
+				_d[i * _dstride] = _s[i];
+		}
+		else if (_dstride == 1)
+		{
+			unsigned i = 0;
+			for (; i < _n; i += 4)
+			{
+				_d[i] = _s[i * _sstride];
+				_d[(i + 1)] = _s[(i + 1) * _sstride];
+				_d[(i + 2)] = _s[(i + 2) * _sstride];
+				_d[(i + 3)] = _s[(i + 3) * _sstride];
+			}
+			for (; i < _n; ++i)
+				_d[i] = _s[i * _sstride];
+		}
+		else
+		{
+			unsigned i = 0;
+			for (; i < _n; i += 4)
+			{
+				_d[i * _dstride] = _s[i * _sstride];
+				_d[(i + 1) * _dstride] = _s[(i + 1) * _sstride];
+				_d[(i + 2) * _dstride] = _s[(i + 2) * _sstride];
+				_d[(i + 3) * _dstride] = _s[(i + 3) * _sstride];
+			}
+			for (; i < _n; ++i)
+				_d[i * _dstride] = _s[i * _sstride];
+		}
+	}
+}
+
 bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
 {
-	m_audioHeader = reinterpret_cast<WavHeader const*>(m_audioFile.map(0, sizeof(WavHeader)));
-	if (m_audioHeader && m_audioHeader->verify() && m_audioHeader->bitsPerSample == 16)	// can't handle anything other than 16 bit wavs for now.
+	SF_INFO info;
+	m_sndfile = sf_open(m_audioFile.fileName().toLocal8Bit().data(), SFM_READ, &info);
+	if (m_sndfile)
 	{
-		unsigned dataBytes = m_audioHeader->dataBytes;
-		if (dataBytes > m_audioFile.size() - sizeof(WavHeader))
-		{
-			qDebug() << "BAD Wav file header. Recovering, though the data may be corrupted.";
-			dataBytes = m_audioFile.size() - sizeof(WavHeader);
-		}
+		QMutexLocker l(&x_wave);
+		m_wave.init(calculateWaveFingerprint(), m_pageBlocks, m_blockSamples);
 
-		unsigned inFrames = dataBytes / m_audioHeader->bytesPerFrame;
-		Time inPeriod = toBase(1, m_audioHeader->rate);
-
-		qDebug() << "Opened wav...";
-		m_audioData = m_audioFile.map(sizeof(WavHeader), dataBytes);
-		qDebug() << "Mapped at " << hex << (intptr_t)m_audioData;
-		auto sampleAt = [=](unsigned _i) -> int16_t { return (_i < dataBytes) ? *(int16_t const*)(m_audioData + _i) : 0; };
-
-//		float rpb4[4] = { 1.f / m_pageBlocks, 1.f / m_pageBlocks, 1.f / m_pageBlocks, 1.f / m_pageBlocks };
+		sf_seek(m_sndfile, 0, SEEK_SET);
+		float buffer[m_blockSamples * info.channels];
 
 		// COULDDO: could only do RMS for first level - for later levels, just do mean
 		// ...or only to max for first level - for later levels, just do mean.
@@ -180,45 +226,53 @@ bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
 //			packTransform(acc, m_blockSamples, [&](v4sf& a){});
 		};
 
-		pair<int16_t, int16_t> r = range((int16_t*)m_audioData, (int16_t*)(m_audioData + inFrames * m_audioHeader->bytesPerFrame));
-		qDebug() << "Range: " << r.first << r.second;
-		float factor = m_normalize ? 1 / max<float>(abs(r.first), abs(r.second)) : (1 / 32768.f);
-		qDebug() << "factor" << factor;
-
-		QMutexLocker l(&x_wave);
-		m_samples = fromBase(toBase(inFrames, m_audioHeader->rate), m_rate);
-		m_wave.init(calculateWaveFingerprint(), m_pageBlocks, m_blockSamples);
-		qDebug() << "init done";
-
-		unsigned outBlocks = (m_samples + m_blockSamples - 1) / m_blockSamples;
-		if (m_audioHeader->rate == m_rate)
+		if (info.samplerate == (int)m_rate)
 		{
 			// Just copy across...
+			m_samples = info.frames;
+			unsigned outBlocks = (m_samples + m_blockSamples - 1) / m_blockSamples;
 			auto baseF = [&](unsigned blockIndex, float* page)
 			{
-				for (unsigned i = 0; i < m_blockSamples; ++i)
-					page[i] = sampleAt((i + blockIndex * m_blockSamples) * m_audioHeader->bytesPerFrame) * factor;
+				(void)blockIndex;
+				unsigned rc = sf_readf_float(m_sndfile, buffer, m_blockSamples);
+				valcpy<float>(page, buffer, rc, 1, info.channels);	// just take the channel 0.
+				memset(page + rc, 0, sizeof(float) * (m_blockSamples - rc));	// zeroify what's left.
 			};
-			qDebug() << "fill, no resample";
 			m_wave.fill(baseF, accF, distillF, [](){}, _carryOn, outBlocks);
 		}
 		else
 		{
 			// Needs a resample
+			double factor = double(m_rate) / info.samplerate;
+			void* resampler = resample_open(1, factor, factor);
+			m_samples = fromBase(toBase(info.frames, info.samplerate), m_rate);
+			unsigned outBlocks = (m_samples + m_blockSamples - 1) / m_blockSamples;
+
+			unsigned bufferPos = m_blockSamples;
+
 			auto baseF = [&](unsigned blockIndex, float* page)
 			{
-				for (unsigned i = 0; i < m_blockSamples; ++i)
+				unsigned pagePos = 0;
+				while (pagePos != m_blockSamples)
 				{
-					unsigned frame = i + blockIndex * m_blockSamples;
-					unsigned j = fromBase(toBase(frame, m_rate), m_audioHeader->rate);
-					unsigned x = float(toBase(frame, m_rate) - toBase(j, m_audioHeader->rate)) / inPeriod;
-					page[i] = lerp(x, *(int16_t*)(m_audioData + j * m_audioHeader->bytesPerFrame), sampleAt((j + 1) * m_audioHeader->bytesPerFrame)) * factor;
+					if (bufferPos == m_blockSamples)
+					{
+						// At end of current (input) buffer - refill and reset position.
+						int rc = sf_readf_float(m_sndfile, buffer, m_blockSamples);
+						if (rc < 0)
+							rc = 0;
+						valcpy<float>(buffer, buffer, rc, 1, info.channels);	// just take the channel 0.
+						memset(buffer + rc, 0, sizeof(float) * (m_blockSamples - rc));	// zeroify what's left.
+						bufferPos = 0;
+					}
+					int used = 0;
+					pagePos += resample_process(resampler, factor, buffer + bufferPos, m_blockSamples - bufferPos, blockIndex == outBlocks - 1, &used, page + pagePos, m_blockSamples - pagePos);
+					bufferPos += used;
 				}
 			};
-			qDebug() << "Filling pager...";
 			m_wave.fill(baseF, accF, distillF, [](){}, _carryOn, outBlocks);
-			qDebug() << "Full.";
 		}
+		sf_close(m_sndfile);
 	}
 	else
 		return false;

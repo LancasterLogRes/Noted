@@ -41,6 +41,9 @@ class EventsView;
 class Noted;
 class NotedBase;
 
+struct SNDFILE_tag;
+typedef struct SNDFILE_tag SNDFILE;
+
 static const std::vector<float> NullVectorFloat;
 
 class NotedBase: public NotedFace
@@ -65,6 +68,7 @@ protected:
 	uint32_t calculateSpectraFingerprint(uint32_t _base) const;
 
 	QFile m_audioFile;
+	SNDFILE* m_sndfile;
 	uint8_t const* m_audioData;
 	Lightbox::WavHeader const* m_audioHeader;
 
