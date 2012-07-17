@@ -49,7 +49,7 @@ NotedBase::~NotedBase()
 
 uint32_t NotedBase::calculateWaveFingerprint() const
 {
-	return uint32_t(qHash(m_sourceFileName)) ^ m_blockSamples;
+	return uint32_t(qHash(m_sourceFileName)) ^ m_rate ^ m_blockSamples;
 }
 
 uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const
@@ -128,7 +128,7 @@ Lightbox::foreign_vector<float> NotedBase::waveWindow(int _window) const
 	{
 		shared_ptr<vector<float> > data = make_shared<vector<float> >(m_windowFunction.size(), 0.f);
 		auto i = m_wave.item(0, 0, 0, m_windowFunction.size() + hop * m_hopSamples);
-		memcpy(data->data() + m_windowFunction.size() - i.count(), i.data(), i.count() * sizeof(float));
+		valcpy(data->data() + m_windowFunction.size() - i.count(), i.data(), i.count());
 		return foreign_vector<float>(data->data(), m_windowFunction.size()).tied(data);
 	}
 	else if ((hop * m_hopSamples) / (m_pageBlocks * m_blockSamples) == (hop * m_hopSamples + m_windowFunction.size() - 1) / (m_pageBlocks * m_blockSamples))
@@ -140,15 +140,15 @@ Lightbox::foreign_vector<float> NotedBase::waveWindow(int _window) const
 		shared_ptr<vector<float> > data = make_shared<vector<float> >(m_windowFunction.size());
 		int length1 = m_pageBlocks * m_blockSamples - hop * m_hopSamples % (m_pageBlocks * m_blockSamples);
 		auto i1 = m_wave.item(hop * m_hopSamples / m_blockSamples, 0, hop * m_hopSamples % m_blockSamples, length1);
-		memcpy(data->data(), i1.data(), length1 * sizeof(float));
+		valcpy(data->data(), i1.data(), length1);
 		auto i2 = m_wave.item((hop * m_hopSamples / (m_blockSamples * m_pageBlocks) + 1) * m_pageBlocks, 0, 0, m_windowFunction.size() - length1);
 		if (i2)
-			memcpy(data->data() + length1, i2.data(), (m_windowFunction.size() - length1) * sizeof(float));
+			valcpy(data->data() + length1, i2.data(), m_windowFunction.size() - length1);
 		return foreign_vector<float>(data->data(), m_windowFunction.size()).tied(data);
 	}
 }
 
-bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
+bool NotedBase::resampleWave()
 {
 	SF_INFO info;
 	m_sndfile = sf_open(m_sourceFileName.toLocal8Bit().data(), SFM_READ, &info);
@@ -184,7 +184,7 @@ bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
 				valcpy<float>(page, buffer, rc, 1, info.channels);	// just take the channel 0.
 				memset(page + rc, 0, sizeof(float) * (m_blockSamples - rc));	// zeroify what's left.
 			};
-			m_wave.fill(baseF, accF, distillF, [](){}, _carryOn, outBlocks);
+			m_wave.fill(baseF, accF, distillF, [](){}, outBlocks);
 		}
 		else
 		{
@@ -218,7 +218,7 @@ bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
 				for (unsigned i = 0; i < m_blockSamples; ++i)
 					page[i] = clamp(page[i], -1.f, 1.f);
 			};
-			m_wave.fill(baseF, accF, distillF, [](){}, _carryOn, outBlocks);
+			m_wave.fill(baseF, accF, distillF, [](){}, outBlocks);
 			resample_close(resampler);
 		}
 		sf_close(m_sndfile);
@@ -237,7 +237,7 @@ void setVector(v4sf& _v, float _f)
 	f[3] = _f;
 }
 
-void NotedBase::rejigSpectra(std::function<bool(int)> const& _carryOn)
+void NotedBase::rejigSpectra()
 {
 	qDebug() << "### Locking...";
 	QMutexLocker l(&x_spectra);
@@ -283,7 +283,7 @@ void NotedBase::rejigSpectra(std::function<bool(int)> const& _carryOn)
 		};
 		auto doneF = [&]() { lp = fftw.phase(); };
 
-		m_spectra.fill(baseF, sumF, divideF, doneF, _carryOn, hops());
+		m_spectra.fill(baseF, sumF, divideF, doneF, hops());
 	}
 	else
 	{

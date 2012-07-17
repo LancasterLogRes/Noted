@@ -57,23 +57,22 @@ public:
 	NotedFace(QWidget* _p);
 	virtual ~NotedFace();
 
-	virtual bool carryOn(QString const& _msg, int _progress) = 0;
-
+	virtual bool carryOn(int _progress) = 0;
 	virtual int activeWidth() const = 0;
-	virtual Lightbox::Time earliestVisible() const = 0;
-	virtual Lightbox::Time pixelDuration() const = 0;
-	virtual Lightbox::Time cursor() const = 0;
 
-	virtual unsigned hopSamples() const { return m_hopSamples; }
-	virtual unsigned windowSizeSamples() const { return m_windowFunction.size(); }
-	virtual unsigned rate() const { return m_rate; }
-	virtual unsigned spectrumSize() const { return m_windowFunction.size() / 2 + 1; }
-	virtual std::vector<float> const& windowFunction() const { return m_windowFunction; }
-	virtual bool isZeroPhase() const { return m_zeroPhase; }
-	virtual unsigned samples() const { return m_samples; }
-
+	inline Lightbox::Time earliestVisible() const { return m_timelineOffset; }
+	inline Lightbox::Time pixelDuration() const { return m_pixelDuration; }
+	inline Lightbox::Time cursor() const { return m_fineCursor / hop() * hop(); }
 	inline Lightbox::Time latestVisible() const { return earliestVisible() + visibleDuration(); }
 	inline Lightbox::Time visibleDuration() const { return activeWidth() * pixelDuration(); }
+
+	inline unsigned hopSamples() const { return m_hopSamples; }
+	inline unsigned windowSizeSamples() const { return m_windowFunction.size(); }
+	inline unsigned rate() const { return m_rate; }
+	inline unsigned spectrumSize() const { return m_windowFunction.size() / 2 + 1; }
+	inline std::vector<float> const& windowFunction() const { return m_windowFunction; }
+	inline bool isZeroPhase() const { return m_zeroPhase; }
+	inline unsigned samples() const { return m_samples; }
 
 	inline Lightbox::Time hop() const { return Lightbox::toBase(hopSamples(), rate()); }
 	inline Lightbox::Time windowSize() const { return Lightbox::toBase(windowSizeSamples(), rate()); }
@@ -99,7 +98,8 @@ public:
 	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity()) const = 0;
 	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name) = 0;
 
-	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a) = 0;
+	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a = nullptr) = 0;
+	virtual AcausalAnalysisPtr spectraAcAnalysis() const = 0;
 	virtual CausalAnalysisPtr compileEventsAnalysis() const = 0;
 	virtual CausalAnalysisPtr collateEventsAnalysis() const = 0;
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&) = 0;
@@ -108,7 +108,7 @@ public:
 
 	virtual void addTimeline(Timeline* _p) = 0;
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;
-	virtual void info(QString const& _info) = 0;
+	virtual void info(QString const& _info, char const* _color = "gray") = 0;
 
 public slots:
 	virtual void setCursor(qint64 _c) = 0;
@@ -117,7 +117,7 @@ public slots:
 
 	virtual void updateWindowTitle() = 0;
 
-	inline void noteEventCompilersChanged() { noteLastValidIs(nullptr); }
+	inline void noteEventCompilersChanged() { noteLastValidIs(spectraAcAnalysis()); }
 	inline void notePluginDataChanged() { noteLastValidIs(collateEventsAnalysis()); }
 
 signals:
@@ -135,6 +135,10 @@ protected:
 	unsigned m_samples;
 	bool m_zeroPhase;
 	std::vector<float> m_windowFunction;
+
+	Lightbox::Time m_fineCursor;
+	Lightbox::Time m_timelineOffset;
+	Lightbox::Time m_pixelDuration;
 };
 
 static const QVector<int16_t> DummyQVectorInt16;
@@ -146,14 +150,14 @@ public:
 	DummyNoted(QWidget* _p = nullptr): NotedFace(_p) {}
 	virtual ~DummyNoted() {}
 
-	virtual bool carryOn(QString const&, int) { return false; }
+	virtual bool carryOn(int) { return false; }
 
 	virtual int activeWidth() const { return 0; }
 	virtual Lightbox::Time earliestVisible() const { return 0; }
 	virtual Lightbox::Time pixelDuration() const { return 1; }
 	virtual Lightbox::Time cursor() const { return 0; }
 
-	virtual void info(QString const&) {}
+	virtual void info(QString const&, char const* = "gray") {}
 
 	virtual Lightbox::foreign_vector<float> waveWindow(int) const { return Lightbox::foreign_vector<float>(); }
 	virtual bool waveBlock(Lightbox::Time, Lightbox::Time, Lightbox::foreign_vector<float>) const { return false; }
@@ -168,7 +172,8 @@ public:
 	virtual QList<EventsStore*> eventsStores() const { return QList<EventsStore*>(); }
 	virtual Lightbox::EventCompiler newEventCompiler(QString const&) { return Lightbox::EventCompiler(); }
 
-	virtual void noteLastValidIs(AcausalAnalysisPtr const&) {}
+	virtual void noteLastValidIs(AcausalAnalysisPtr const& = nullptr) {}
+	virtual AcausalAnalysisPtr spectraAcAnalysis() const { return nullptr; }
 	virtual CausalAnalysisPtr compileEventsAnalysis() const { return nullptr; }
 	virtual CausalAnalysisPtr collateEventsAnalysis() const { return nullptr; }
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&) { return AcausalAnalysisPtrs(); }

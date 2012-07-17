@@ -66,27 +66,25 @@ class Noted: public NotedBase
 
 	friend class CompileEvents;
 	friend class CollateEvents;
+	friend class ResampleWaveAc;
+	friend class SpectraAc;
+	friend class FinishUpAc;
 	friend class Cursor;
 
 public:
-	// TODO: sort these out properly so that workers terminate and pause in a proper fashion.
-	enum DataStatus { Dirty, ResamplingAudio, RejiggingSpectra, Analyzing, Fresh = 0xfffffffc, Clean, Streaming, Suspended };
-
 	explicit Noted(QWidget* parent = nullptr);
 	~Noted();
 
 	virtual int activeWidth() const;
 	virtual bool isPlaying() const { return !!m_playback; }
-	virtual void info(QString const& _info);
+	virtual void info(QString const& _info, char const* _color = "gray");
 	void info(QString const& _info, int _id);
-	virtual Lightbox::Time earliestVisible() const { return m_timelineOffset; }
-	virtual Lightbox::Time pixelDuration() const { return m_pixelDuration; }
-	virtual Lightbox::Time cursor() const { return m_fineCursor / hop() * hop(); }
 
+	virtual AcausalAnalysisPtr spectraAcAnalysis() const { return m_spectraAcAnalysis; }
 	virtual CausalAnalysisPtr compileEventsAnalysis() const { return m_compileEventsAnalysis; }
 	virtual CausalAnalysisPtr collateEventsAnalysis() const { return m_collateEventsAnalysis; }
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&);
-	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a);
+	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a = nullptr);
 
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr);
 	virtual void addTimeline(Timeline* _tl);
@@ -136,9 +134,9 @@ private slots:
 	void on_windowSizeSlider_valueChanged(int = 0);
 	void on_hopSlider_valueChanged(int = 0);
 	void on_sampleRate_currentIndexChanged(int = 0);
-	void on_windowFunction_currentIndexChanged(int = 0) { noteAudioParametersChanged(); }
-	void on_zeroPhase_toggled(bool = false) { noteAudioParametersChanged(); }
-	void on_normalize_toggled(bool = false) { noteAudioParametersChanged(); }
+	void on_windowFunction_currentIndexChanged(int = 0) { noteLastValidIs(nullptr); }
+	void on_zeroPhase_toggled(bool = false) { noteLastValidIs(nullptr); }
+	void on_normalize_toggled(bool = false) { noteLastValidIs(nullptr); }
 	void on_addEventsView_clicked();
 	void on_addLibrary_clicked();
 	void on_killLibrary_clicked();
@@ -173,16 +171,14 @@ private:
 	QRect cursorGeo(int _id) const { return cursorGeoOffset(_id).first; }
 	void paintCursor(QPainter& _p, int _id) const;
 
-	virtual bool carryOn(QString const& _msg, int _progress) { return carryOn(_msg, _progress, Analyzing); }
-	bool proceedTo(DataStatus _s, DataStatus _from);
-	bool carryOn(QString const& _msg, int _progress, DataStatus _mode) { QMutexLocker l(&m_lock); m_showMessage = _msg; m_progress = _progress; return m_dataStatus == _mode; }
-	void noteDataChanged(DataStatus _s);
-	void noteAudioParametersChanged() { noteDataChanged(ResamplingAudio); }
+	virtual bool carryOn(int _progress);
 	void updateParameters();
 	bool serviceAudio();
 	bool work();
 	void rejigAudio();
 	void setAudio(QString const& _filename);
+
+	void normalizeView() { setTimelineOffset(duration() * -0.025); setPixelDuration(duration() / .95 / activeWidth()); }
 
 	// Just for Timeline class.
 	virtual void timelineDead(Timeline* _tl);
@@ -192,31 +188,19 @@ private:
 	QSet<Timeline*> m_timelines;
 	mutable QMutex x_timelines;
 
-	mutable QMutex m_lock;
-	DataStatus m_dataStatus;
-	QString m_showMessage;
-	int m_progress;
+	// Old working stuff...
+	WorkerThread* m_workerThread;
+
 	bool m_cursorDirty;
 
-	void normalizeView() { setTimelineOffset(duration() * -0.025); setPixelDuration(duration() / .95 / activeWidth()); }
-	Lightbox::Time m_fineCursor;
-	Lightbox::Time m_timelineOffset;
-	Lightbox::Time m_pixelDuration;
-
-	WorkerThread* m_workerThread;
-	WorkerThread* m_alsaThread;
+	// Playback...
+	WorkerThread* m_playbackThread;	// TODO: move to its own class.
 	std::shared_ptr<Audio::Playback> m_playback;
 	Lightbox::Time m_fineCursorWas;
 	Lightbox::Time m_nextResample;
-
-	bool m_goingForward;
 	void* m_resampler;
 
-	std::shared_ptr<Audio::Capture> m_capture;
-
-	struct Library;
-	typedef std::shared_ptr<Library> LibraryPtr;
-
+	// Extensions...
 	struct Library
 	{
 		Library(QString const& _name): name(_name) {}
@@ -232,23 +216,30 @@ private:
 
 		void unload();
 	};
+	typedef std::shared_ptr<Library> LibraryPtr;
 	void load(LibraryPtr const& _dl);
 	void unload(LibraryPtr const& _dl);
 	QMap<QString, LibraryPtr> m_libraries;
 	QSet<QString> m_dirtyLibraries;
 	QFileSystemWatcher m_libraryWatcher;
 
+	// Events...
 	void clearEventsCache();	// Call when eventsStores() or any of them have changed.
 	mutable bool d_initEvents;
 	mutable Lightbox::StreamEvents m_initEvents;
 
-	std::set<AcausalAnalysisPtr> m_toBeAnalyzed;
-
+	// Analysis (to be working in general)...
+	std::set<AcausalAnalysisPtr> m_toBeAnalyzed;	// TODO: Needs a lock.
+	bool m_workFinished;
+	AcausalAnalysisPtr m_resampleWaveAcAnalysis;
+	AcausalAnalysisPtr m_spectraAcAnalysis;
+	AcausalAnalysisPtr m_finishUpAcAnalysis;
 	CausalAnalysisPtr m_compileEventsAnalysis;
 	CausalAnalysisPtr m_collateEventsAnalysis;
 	int m_eventsViewsDone;
 	std::map<float, std::vector<float> > m_collatedGraphEvents;
 
+	// Information output...
 	QMutex x_infos;
 	QString m_info;
 	QString m_infos;

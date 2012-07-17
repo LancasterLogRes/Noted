@@ -32,5 +32,5 @@ void AcausalAnalysis::go(NotedFace* _noted, unsigned _from, unsigned _count)
 
 bool AcausalAnalysis::done(unsigned _i)
 {
-	return m_noted->carryOn(m_name, _i * 100 / m_steps);
+	return m_noted->carryOn(_i * 100 / m_steps);
 }

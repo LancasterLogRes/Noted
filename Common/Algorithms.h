@@ -43,12 +43,20 @@ namespace Lightbox
 template <class _T>
 void valcpy(_T* _d, _T const* _s, unsigned _n, unsigned _dstride = 1, unsigned _sstride = 1)
 {
-	if (_sstride == 1 && _dstride == 1)
+	if (!_s)
+	{
+		if (_dstride == 1)
+			memset(_d, 0, _n * sizeof(_T));
+		else
+			for (unsigned i = 0; i < _n; ++i)
+				memset(_d + i * _dstride, 0, sizeof(_T));
+	}
+	else if (_sstride == 1 && _dstride == 1)
 	{
 		if (_d != _s)
 			memcpy(_d, _s, sizeof(_T) * _n);
 	}
-	else if (n >= 4)
+	else if (_n >= 4)
 	{
 		// can't do an in-place valcpy if deststride is greater than srcstride - we'd override our src data before we've used it.
 		assert(_d != _s || _dstride < _sstride);

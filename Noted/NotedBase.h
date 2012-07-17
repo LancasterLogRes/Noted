@@ -61,8 +61,8 @@ public:
 	virtual Lightbox::foreign_vector<float> deltaPhaseSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, spectrumSize() * 2, spectrumSize()); }
 
 protected:
-	bool resampleWave(std::function<bool(int)> const& _carryOn);
-	void rejigSpectra(std::function<bool(int)> const& _carryOn);
+	bool resampleWave();
+	void rejigSpectra();
 
 	uint32_t calculateWaveFingerprint() const;
 	uint32_t calculateSpectraFingerprint(uint32_t _base) const;

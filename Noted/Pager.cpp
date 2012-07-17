@@ -25,6 +25,8 @@
 using namespace std;
 using namespace Lightbox;
 
+// TODO: don't bother explicitly paging; just have flexible mipmapped leveling. One file per level, arbitrary datatype (e.g. float[spectrumSize * 3], float) for units and x4 levels.
+
 PagerBase::PagerBase(QString const& _type):
 	m_fingerprint				(0),
 	m_maxMapped					(512),

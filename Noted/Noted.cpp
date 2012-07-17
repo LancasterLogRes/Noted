@@ -54,17 +54,85 @@
 using namespace std;
 using namespace Lightbox;
 
+class ResampleWaveAc: public AcausalAnalysis
+{
+public:
+	ResampleWaveAc(): AcausalAnalysis("Resampling wave") {}
+
+	virtual void init()
+	{
+	}
+	virtual unsigned prepare(unsigned _from, unsigned _count, Lightbox::Time _hop)
+	{
+		(void)_from; (void)_count; (void)_hop;
+		return 100;
+	}
+	virtual void analyze(unsigned _from, unsigned _count, Lightbox::Time _hop)
+	{
+		(void)_from; (void)_count; (void)_hop;
+		dynamic_cast<Noted*>(noted())->updateParameters();
+		dynamic_cast<Noted*>(noted())->resampleWave();
+		if (dynamic_cast<Noted*>(noted())->m_pixelDuration == 1)
+		{
+			dynamic_cast<Noted*>(noted())->m_fineCursor = 0;
+			dynamic_cast<Noted*>(noted())->normalizeView();
+		}
+	}
+	virtual void fini()
+	{
+	}
+};
+
+// OPTIMIZE: allow reanalysis of spectra to be data-parallelized.
+class SpectraAc: public AcausalAnalysis
+{
+public:
+	SpectraAc(): AcausalAnalysis("Analyzing spectra") {}
+
+	virtual void init()
+	{
+	}
+	virtual unsigned prepare(unsigned _from, unsigned _count, Lightbox::Time _hop)
+	{
+		(void)_from; (void)_count; (void)_hop;
+		return 100;
+	}
+	virtual void analyze(unsigned _from, unsigned _count, Lightbox::Time _hop)
+	{
+		(void)_from; (void)_count; (void)_hop;
+		dynamic_cast<Noted*>(noted())->rejigSpectra();
+	}
+	virtual void fini()
+	{
+	}
+};
+
+class FinishUpAc: public AcausalAnalysis
+{
+public:
+	FinishUpAc(): AcausalAnalysis("Finishing up") {}
+	void fini()
+	{
+		dynamic_cast<Noted*>(noted())->d_initEvents = true;
+		QMutexLocker l(&dynamic_cast<Noted*>(noted())->x_timelines);
+		foreach (Timeline* t, dynamic_cast<Noted*>(noted())->m_timelines)
+			if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
+				pt->sourceChanged();
+		dynamic_cast<Noted*>(noted())->m_workFinished = true;
+	}
+};
+
 Noted::Noted(QWidget* _p):
 	NotedBase				(_p),
 	ui						(new Ui::Noted),
-	m_dataStatus			(Dirty),
-	m_fineCursor			(0),
-	m_timelineOffset		(0),
-	m_pixelDuration			(1),
 	m_workerThread			(nullptr),
 	m_fineCursorWas			(UndefinedTime),
 	m_nextResample			(UndefinedTime),
 	m_resampler				(nullptr),
+	m_workFinished			(false),
+	m_resampleWaveAcAnalysis(new ResampleWaveAc),
+	m_spectraAcAnalysis		(new SpectraAc),
+	m_finishUpAcAnalysis	(new FinishUpAc),
 	m_compileEventsAnalysis	(new CompileEvents),
 	m_collateEventsAnalysis	(new CollateEvents)
 {
@@ -86,7 +154,7 @@ Noted::Noted(QWidget* _p):
 	m_timelines.insert(ui->spectra);
 
 	m_workerThread = createWorkerThread([=](){return work();});
-	m_alsaThread = createWorkerThread([=](){return serviceAudio();});
+	m_playbackThread = createWorkerThread([=](){return serviceAudio();});
 
 	{
 		QLabel* l = new QLabel("No audio");
@@ -98,7 +166,7 @@ Noted::Noted(QWidget* _p):
 	{
 		QLabel* l = new QLabel;
 		l->setObjectName("cursor");
-		l->setAlignment(Qt::AlignRight);
+		l->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
 		l->setMinimumWidth(80);
 		ui->statusBar->addPermanentWidget(l);
 	}
@@ -140,8 +208,8 @@ Noted::~Noted()
 		delete *m_timelines.begin();
 
 	delete m_workerThread;
-	for (m_alsaThread->quit(); !m_alsaThread->wait(1000); m_alsaThread->terminate()) {}
-	delete m_alsaThread;
+	for (m_playbackThread->quit(); !m_playbackThread->wait(1000); m_playbackThread->terminate()) {}
+	delete m_playbackThread;
 
 	delete ui;
 }
@@ -252,7 +320,7 @@ void Noted::load(LibraryPtr const& _dl)
 		}
 		else
 		{
-			cnote << "ERROR on load: " << _dl->l.errorString();
+			cwarn << "ERROR on load: " << _dl->l.errorString();
 		}
 	}
 	else if (QFile::exists(_dl->name))
@@ -266,12 +334,12 @@ void Noted::load(LibraryPtr const& _dl)
 
 void Noted::Library::unload()
 {
-	if (bool** fed = (bool**)l.resolve("g_lightboxFinilized"))
+	if (bool** fed = (bool**)l.resolve("g_lightboxFinalized"))
 	{
-		bool isFinilized = false;
-		*fed = &isFinilized;
+		bool isFinalized = false;
+		*fed = &isFinalized;
 		assert(l.unload());
-		assert(isFinilized);
+		assert(isFinalized);
 	}
 	else
 	{
@@ -697,7 +765,7 @@ void Noted::on_sampleRate_currentIndexChanged(int)
 	m_rate = ui->sampleRate->currentText().left(ui->sampleRate->currentText().size() - 3).toInt();
 	ui->hopPeriod->setText(QString("%1ms %2%").arg(fromBase(toBase(ui->hop->value(), rate()), 100000) / 100.0).arg(((ui->windowSize->value() - ui->hop->value()) * 1000 / ui->windowSize->value()) / 10.0));
 	ui->windowPeriod->setText(QString("%1ms %2Hz").arg(fromBase(toBase(ui->windowSize->value(), rate()), 100000) / 100.0).arg((rate() * 10 / ui->windowSize->value()) / 10.0));
-	noteDataChanged(Dirty);
+	noteLastValidIs(nullptr);
 }
 
 void Noted::on_windowSizeSlider_valueChanged(int)
@@ -723,7 +791,7 @@ void Noted::timelineDead(Timeline* _tl)
 
 bool Noted::work()
 {
-	if (m_dataStatus < Fresh)
+	if (m_toBeAnalyzed.size())
 		rejigAudio();
 	else
 	{
@@ -747,13 +815,9 @@ void Noted::suspendWork()
 {
 	if (m_workerThread)
 	{
-		noteDataChanged(Dirty);
 		m_workerThread->quit();
 		while (!m_workerThread->wait(1000))
-		{
-//			m_workerThread->terminate();
 			qWarning() << "Worker thread not responding :-(";
-		}
 	}
 }
 
@@ -775,8 +839,15 @@ QList<EventsStore*> Noted::eventsStores() const
 
 void Noted::noteLastValidIs(AcausalAnalysisPtr const& _a)
 {
-	m_toBeAnalyzed.insert(_a);
-	noteDataChanged(RejiggingSpectra);
+	// TODO: Lock
+	if (!m_toBeAnalyzed.count(_a))
+	{
+		suspendWork();
+		m_workFinished = false;
+		info(QString("WORK Last valid is now %1").arg(_a ? demangled(typeid(*_a).name()).c_str() : "(None)"));
+		m_toBeAnalyzed.insert(_a);
+		resumeWork();
+	}
 }
 
 void Noted::on_actFollow_changed()
@@ -807,8 +878,8 @@ void Noted::on_actPlay_changed()
 	{
 		ui->dockPlay->setEnabled(false);
 		ui->actOpen->setEnabled(false);
-		if (!m_alsaThread->isRunning())
-			m_alsaThread->start(QThread::TimeCriticalPriority);
+		if (!m_playbackThread->isRunning())
+			m_playbackThread->start(QThread::TimeCriticalPriority);
 	}
 	else
 	{
@@ -974,24 +1045,10 @@ void Noted::on_actPanic_activated()
 	ui->actPlay->setChecked(false);
 }
 
-bool Noted::proceedTo(DataStatus _s, DataStatus _from)
+bool Noted::carryOn(int _progress)
 {
-	QMutexLocker l(&m_lock);
-	if (m_dataStatus != _from)
-		return false;
-	cnote << "STATUS" << m_dataStatus << "--> (" << _s << "from" << _from << ") =" << ((m_dataStatus == _from) ? _s : m_dataStatus);
-	m_dataStatus = _s;
-	return true;
-}
-
-void Noted::noteDataChanged(DataStatus _s)
-{
-	QMutexLocker l(&m_lock);
-	if (m_dataStatus > _s)
-	{
-		cnote << "STATUS" << m_dataStatus << "<--" << _s << "=" << ((m_dataStatus > _s) ? _s : m_dataStatus);
-		m_dataStatus = _s;
-	}
+	WorkerThread::setCurrentProgress(_progress);
+	return !WorkerThread::quitting();
 }
 
 void Noted::setAudio(QString const& _filename)
@@ -1009,7 +1066,8 @@ void Noted::setAudio(QString const& _filename)
 	m_sourceFileName = _filename;
 	if (!QFile(m_sourceFileName).open(QFile::ReadOnly))
 		m_sourceFileName.clear();
-	noteDataChanged(Dirty);
+
+	noteLastValidIs(nullptr);
 	updateWindowTitle();
 	resumeWork();
 }
@@ -1054,8 +1112,6 @@ void Noted::onDataViewDockClosed()
 
 void Noted::updateEventStuff()
 {
-	QMutexLocker l(&m_lock);
-
 	vector< shared_ptr<AuxGraphsSpec> > gspecs;
 	foreach (auto e, initEventsOf(GraphSpecComment))
 		gspecs.push_back(dynamic_pointer_cast<AuxGraphsSpec>(e.aux()));
@@ -1070,16 +1126,8 @@ void Noted::timerEvent(QTimerEvent*)
 	static int i = 0;
 	if (++i % 10 == 0)
 	{
-		QString msg;
-		int prog;
-		{
-			QMutexLocker l(&m_lock);
-			msg = m_showMessage;
-			prog = m_progress;
-		}
-
 		QProgressBar* pb = ui->statusBar->findChild<QProgressBar*>();
-		if (m_progress < 100)
+		if (m_workerThread->progress() < 100)
 		{
 			if (!pb)
 			{
@@ -1089,20 +1137,23 @@ void Noted::timerEvent(QTimerEvent*)
 				pb->setMaximumWidth(128);
 				ui->statusBar->addPermanentWidget(pb);
 			}
-			pb->setValue(prog);
+			pb->setValue(m_workerThread->progress());
+			statusBar()->showMessage(m_workerThread->description());
 		}
 		else if (pb)
 			delete pb;
 
-		if (m_dataStatus == Fresh)
+		if (m_workFinished)
 		{
-			m_dataStatus = Clean;
-			cnote << "DATA" << Fresh << " cleans to " << Clean;
+			m_workFinished = false;
+			info("WORK All finished");
 			emit analysisFinished();
 			m_cursorDirty = true;
+			if (pb)
+				delete pb;
+			m_workerThread->setProgress(100);
+			statusBar()->showMessage("Ready");
 		}
-
-		statusBar()->showMessage(msg);
 
 		if (m_playback)
 			ui->statusBar->findChild<QLabel*>("alsa")->setText(QString("%1 %2# @ %3Hz, %4x%5 frames").arg(m_playback->deviceName().c_str()).arg(m_playback->channels()).arg(m_playback->rate()).arg(m_playback->periods()).arg(m_playback->frames()));
@@ -1233,13 +1284,13 @@ void Noted::info(QString const& _info, int _id)
 {
 	QString color = (_id == 255) ? "#700" : (_id == 254) ? "#007" : (_id == 253) ? "#440" : "#fff";
 	QMutexLocker l(&x_infos);
-	m_infos += "<div style=\"margin-top: 1px;\"><span style=\"background-color:" + color + ";\">&nbsp;</span>" + Qt::escape(_info) + "</div>";
+	m_infos += "<div style=\"margin-top: 1px;\"><span style=\"background-color:" + color + ";\">&nbsp;</span> " + Qt::escape(_info) + "</div>";
 }
 
-void Noted::info(QString const& _info)
+void Noted::info(QString const& _info, char const* _c)
 {
 	QMutexLocker l(&x_infos);
-	m_infos += "<div style=\"margin-top: 1px;\"><span style=\"background-color:gray;\">&nbsp;</span>" + _info + "</div>";
+	m_infos += QString("<div style=\"margin-top: 1px;\"><span style=\"background-color:%1;\">&nbsp;</span> %2</div>").arg(_c).arg(_info);
 }
 
 void Noted::paintCursor(QPainter& _p, int _id) const
@@ -1308,62 +1359,37 @@ void Noted::clearEventsCache()
 
 void Noted::rejigAudio()
 {
-	updateParameters();
+	deque<AcausalAnalysisPtr> todo;	// will become a member.
+	todo.push_back(nullptr);
 
-	if (proceedTo(ResamplingAudio, Dirty))
+	// OPTIMIZE: move into worker code; allow multiple workers.
+	// OPTIMIZE: consider searching tree locally and completely, putting toBeAnalyzed things onto global todo, and skipping through otherwise.
+	// ...keeping search local until RAAs needed to be done are found.
+	while (todo.size())
 	{
-		if (!resampleWave([&](int _progress){return carryOn("Resampling Wave", _progress, ResamplingAudio);}))
-			proceedTo(Fresh, ResamplingAudio);
-		if (m_pixelDuration == 1)
+		AcausalAnalysisPtr aa = todo.front();
+		todo.pop_front();
+		if (m_toBeAnalyzed.count(aa) && aa)
 		{
-			m_fineCursor = 0;
-			normalizeView();
+			WorkerThread::setCurrentDescription(demangled(typeid(*aa).name()).c_str());
+			info(QString("WORKER Working on %1").arg(demangled(typeid(*aa).name()).c_str()));
+			aa->go(this, 0, hops());
+			info(QString("WORKER Finished %1").arg(demangled(typeid(*aa).name()).c_str()));
+			if (WorkerThread::quitting())
+				break;
 		}
-	}
-
-	if (proceedTo(RejiggingSpectra, ResamplingAudio))
-	{
-		rejigSpectra([&](int _progress){return carryOn("Rejigging Spectra", _progress, RejiggingSpectra);});
-		m_toBeAnalyzed.insert(nullptr);
-	}
-
-	if (proceedTo(Analyzing, RejiggingSpectra))
-	{
-		deque<AcausalAnalysisPtr> todo;	// will become a member.
-		todo.push_back(nullptr);
-
-		// OPTIMIZE: move into worker code; allow multiple workers.
-		// OPTIMIZE: consider searching tree locally and completely, putting toBeAnalyzed things onto global todo, and skipping through otherwise.
-		// ...keeping search local until RAAs needed to be done are found.
-		while (todo.size())
+		else if (aa)
 		{
-			AcausalAnalysisPtr aa = todo.front();
-			todo.pop_front();
-			if (m_toBeAnalyzed.count(aa) && aa)
-			{
-				aa->go(this, 0, hops());
-				if (!carryOn("", 0, Analyzing))
-					break;
-			}
-			AcausalAnalysisPtrs ripe = ripeAcausalAnalysis(aa);
-			if (m_toBeAnalyzed.count(aa))
-			{
-				foreach (auto i, ripe)
-					m_toBeAnalyzed.insert(i);
-				m_toBeAnalyzed.erase(aa);
-			}
-			catenate(todo, ripe);
+			info(QString("WORKER Skipping job %1").arg(demangled(typeid(*aa).name()).c_str()));
 		}
-	}
-
-	if (proceedTo(Fresh, Analyzing) && carryOn("Ready", 100, Fresh))
-	{
-		// OPTIMIZE: Move to individual timelines for more immediate view.
-		d_initEvents = true;
-		QMutexLocker l(&x_timelines);
-		foreach (Timeline* t, m_timelines)
-			if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
-				pt->sourceChanged();
+		AcausalAnalysisPtrs ripe = ripeAcausalAnalysis(aa);
+		if (m_toBeAnalyzed.count(aa))
+		{
+			foreach (auto i, ripe)
+				m_toBeAnalyzed.insert(i);
+			m_toBeAnalyzed.erase(aa);
+		}
+		catenate(todo, ripe);
 	}
 }
 
@@ -1372,12 +1398,18 @@ AcausalAnalysisPtrs Noted::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finish
 	AcausalAnalysisPtrs ret;
 
 	if (_finished == nullptr)
+		ret.push_back(m_resampleWaveAcAnalysis);
+	else if (dynamic_cast<ResampleWaveAc*>(&*_finished))
+		ret.push_back(m_spectraAcAnalysis);
+	else if (dynamic_cast<SpectraAc*>(&*_finished))
 		ret.push_back(m_compileEventsAnalysis);
-	else if (dynamic_cast<CompileEvents*>(&*_finished))
+	else if (dynamic_cast<CompileEvents*>(&*_finished) && eventsViews().size())
 		foreach (EventsView* ev, eventsViews())
 			ret.push_back(AcausalAnalysisPtr(new CompileEventsView(ev)));
-	else if (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == eventsViews().size())
+	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !eventsViews().size()) || (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == eventsViews().size()))
 		ret.push_back(m_collateEventsAnalysis);
+	else if (dynamic_cast<CollateEvents*>(&*_finished))
+		ret.push_back(m_finishUpAcAnalysis);
 
 	// Go through all other things that can give CAs; at this point, it's just the plugins
 	AcausalAnalysisPtrs acc;

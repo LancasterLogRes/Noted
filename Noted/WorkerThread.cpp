@@ -18,4 +18,8 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <map>
 #include "WorkerThread.h"
+
+using namespace std;
+

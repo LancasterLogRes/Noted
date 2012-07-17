@@ -193,8 +193,8 @@ struct Name \
 
 #if defined(LIGHTBOX_SHARED_LIBRARY)
 #define LIGHTBOX_FINILIZING_LIBRARY \
-	extern "C" { __attribute__ ((visibility ("default"))) bool* g_lightboxFinilized = nullptr; } \
-	struct LightboxFinalizer { ~LightboxFinalizer() { if (g_lightboxFinilized) *g_lightboxFinilized = true; } } g_lightboxFinalizer;
+	extern "C" { __attribute__ ((visibility ("default"))) bool* g_lightboxFinalized = nullptr; } \
+	struct LightboxFinalizer { ~LightboxFinalizer() { if (g_lightboxFinalized) *g_lightboxFinalized = true; } } g_lightboxFinalizer;
 #else
 #define LIGHTBOX_FINILIZING_LIBRARY
 #endif

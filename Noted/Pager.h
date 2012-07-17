@@ -27,6 +27,7 @@
 #include <QHash>
 #include <QDebug>
 #include <Common/Time.h>
+#include "WorkerThread.h"
 #include "Page.h"
 
 class PagerBase
@@ -82,8 +83,8 @@ public:
 			return Lightbox::foreign_vector<_T>();
 	}
 
-	template <class _Base, class _Acc, class _Distill, class _Done, class _CarryOn>
-	void fill(_Base _base, _Acc _accumulate, _Distill _distill, _Done _done, _CarryOn _carryOn, unsigned _items)
+	template <class _Base, class _Acc, class _Distill, class _Done>
+	void fill(_Base _base, _Acc _accumulate, _Distill _distill, _Done _done, unsigned _items)
 	{
 		if (_items)
 		{
@@ -91,8 +92,9 @@ public:
 			levels.push_back(page(IndexLevel(0, 0)));
 			if (!levels[0]->alreadyExisted())
 			{
-				for (unsigned item = 0; item < _items && _carryOn(item * 100 / _items); ++item)
+				for (unsigned item = 0; item < _items && !WorkerThread::quitting(); ++item)
 				{
+					WorkerThread::setCurrentProgress(item * 100 / _items);
 					nbug(4) << "Item:" << item << " (" << levels.size() << " levels)";
 					unsigned leveledItem = item;	// the same at the base level, but itemsPerPage times smaller at each higher level.
 					for (int l = 0; ; ++l)

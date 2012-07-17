@@ -106,12 +106,12 @@ public slots:
 		{
 			qDebug() << "UNLOAD" << name << " [PLUGIN]";
 			p.reset();
-			bool isFinilized = false;
-			bool** fed = (bool**)l.resolve("g_lightboxFinilized");
+			bool isFinalized = false;
+			bool** fed = (bool**)l.resolve("g_lightboxFinalized");
 			assert(fed);
-			*fed = &isFinilized;
+			*fed = &isFinalized;
 			assert(l.unload());
-			assert(isFinilized);
+			assert(isFinalized);
 			QFile::remove(l.fileName());
 		}
 	}
