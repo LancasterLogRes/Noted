@@ -25,6 +25,7 @@
 
 #include <Common/Common.h>
 
+#include <QGLWidget>
 #include <QMutex>
 #include <QPainter>
 #include <QDebug>
@@ -58,12 +59,12 @@ void drawPeaks(QPainter& _p, std::map<float, float> const& _ps, int _yoffset, _F
 
 class NotedFace;
 
-class Prerendered: public QWidget
+class Prerendered: public QGLWidget
 {
 	Q_OBJECT
 
 public:
-	Prerendered(QWidget* _p): QWidget(_p), m_c(0) {}
+	Prerendered(QWidget* _p): QGLWidget(_p), m_c(0) {}
 
 	NotedFace* c() const;
 
@@ -72,10 +73,11 @@ public slots:
 
 protected:
 	virtual void doRender(QImage& _img) = 0;
+	virtual void initializeGL();
+	virtual void resizeGL(int _w, int _h);
+	virtual void paintGL();
 
-	virtual void paintEvent(QPaintEvent*);
-
-	QMutex x_rendered;
 	QImage m_rendered;
+	unsigned m_texture[1];
 	mutable NotedFace* m_c;
 };

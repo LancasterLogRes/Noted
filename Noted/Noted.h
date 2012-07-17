@@ -194,7 +194,7 @@ private:
 	bool m_cursorDirty;
 
 	// Playback...
-	WorkerThread* m_playbackThread;	// TODO: move to its own class.
+	WorkerThread* m_playbackThread;
 	std::shared_ptr<Audio::Playback> m_playback;
 	Lightbox::Time m_fineCursorWas;
 	Lightbox::Time m_nextResample;

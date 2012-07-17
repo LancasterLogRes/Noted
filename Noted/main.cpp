@@ -27,6 +27,7 @@ int main(int argc, char *argv[])
 	if (!Lightbox::UnitTesting<100>::go())
 		return -1;
 	QApplication a(argc, argv);
+	a.setAttribute(Qt::AA_X11InitThreads, true);
 	Noted w;
 #if defined(Q_WS_S60)
 	w.showMaximized();

@@ -46,9 +46,9 @@ public:
 	bool rejigRender();
 
 	/// Called from the GUI thread.
-	void updateIfNeeded() { if (m_needsUpdate) update(); m_needsUpdate = false; }
+	void updateIfNeeded();
 
-    using Prerendered::event;
+	using Prerendered::event;
 
 public slots:
 	void sourceChanged();
@@ -60,9 +60,9 @@ protected:
 
 	virtual void doRender(QImage& _img) { doRender(_img, 0, width()); }
 	virtual void doRender(QImage& _img, int _dx, int _dw) = 0;
-	virtual QImage renderOverlay() { return QImage(); }
 
-	virtual void paintEvent(QPaintEvent*);
+	virtual void paintGL();
+	virtual void resizeGL(int _w, int _h);
 	virtual void mousePressEvent(QMouseEvent* _e);
 	virtual void mouseReleaseEvent(QMouseEvent* _e);
 	virtual void mouseMoveEvent(QMouseEvent* _e);

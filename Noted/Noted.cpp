@@ -839,7 +839,6 @@ QList<EventsStore*> Noted::eventsStores() const
 
 void Noted::noteLastValidIs(AcausalAnalysisPtr const& _a)
 {
-	// TODO: Lock
 	if (!m_toBeAnalyzed.count(_a))
 	{
 		suspendWork();

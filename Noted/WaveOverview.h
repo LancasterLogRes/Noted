@@ -39,7 +39,7 @@ signals:
 	void resized();
 
 private:
-    using Prerendered::event;
+	using Prerendered::event;
 
 	virtual void doRender(QImage& _img);
 	virtual void mousePressEvent(QMouseEvent* _e);

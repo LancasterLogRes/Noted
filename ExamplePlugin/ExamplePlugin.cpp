@@ -42,7 +42,6 @@ public:
 	TestGLView(ExamplePlugin* _p): m_p(_p), m_c(_p->noted()) {}
 	virtual void initializeGL()
 	{
-		glShadeModel(GL_SMOOTH);
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClearDepth(1.0f);
 		glEnable(GL_DEPTH_TEST);

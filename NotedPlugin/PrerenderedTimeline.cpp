@@ -77,50 +77,72 @@ void PrerenderedTimeline::wheelEvent(QWheelEvent* _e)
 	c()->setTimelineOffset(t - _e->x() * pixelDuration());
 }
 
+int PrerenderedTimeline::renderingPositionOf(Lightbox::Time _t) const
+{
+	return (_t - m_renderingOffset + m_renderingPixelDuration / 2) / m_renderingPixelDuration;
+}
+
+Lightbox::Time PrerenderedTimeline::renderingTimeOf(int _x) const
+{
+	return int64_t(_x) * m_renderingPixelDuration + m_renderingOffset;
+}
+
+void PrerenderedTimeline::resizeGL(int _w, int _h)
+{
+	Prerendered::resizeGL(_w, _h);
+}
+
 void PrerenderedTimeline::sourceChanged()
 {
 	m_sourceChanged = true;
 	m_needsUpdate = true;
 }
 
-void PrerenderedTimeline::paintEvent(QPaintEvent*)
+void PrerenderedTimeline::paintGL()
 {
-	QPainter p(this);
+	glClear(GL_COLOR_BUFFER_BIT);
+	QRect r(0, 0, 0, height());
 	{
 		QMutexLocker l(&m_lock);
-		if (m_rendered.width())
+		if (m_needsUpdate)
 		{
-			Time o = c()->earliestVisible();
-			Time d = c()->pixelDuration();
-
-			QRect r(0, 0, 0, height());
-			Time relativeOffset = m_renderedOffset - o;
-			r.setX((relativeOffset + sign(relativeOffset) * d / 2) / d);
-			r.setWidth((m_renderedPixelDuration * m_rendered.width()) / d);
-			if (r.x() == 0 && m_renderedOffset != o)
-				qDebug() << "Stange -> zero drawing offset, but have ro=" << m_renderedOffset << " and need o=" << o;
-
-			p.drawImage(r, m_rendered);
-			if (!m_overlay.isNull())
-				p.drawImage(0, 0, m_overlay);
+			// Update the GL texture from the rendered image.
+			QImage glRendered = convertToGLFormat(m_rendered);
+			glBindTexture(GL_TEXTURE_2D, m_texture[0]);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glRendered.size().width(), glRendered.size().height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, glRendered.constBits());
 		}
+		Time o = c()->earliestVisible();
+		Time d = c()->pixelDuration();
+		Time relativeOffset = m_renderedOffset - o;
+		r.setX((relativeOffset + sign(relativeOffset) * d / 2) / d);
+		r.setWidth((m_renderedPixelDuration * m_rendered.width() + d / 2) / d);
+		if (r.x() == 0 && m_renderedOffset != o)
+			qDebug() << "Stange -> zero drawing offset, but have ro=" << m_renderedOffset << " and need o=" << o;
 	}
+	glBindTexture(GL_TEXTURE_2D, m_texture[0]);
+	glBegin(GL_TRIANGLE_STRIP);
+	glTexCoord2i(0, 0);
+	glVertex2i(r.x(), r.top());
+	glTexCoord2i(1, 0);
+	glVertex2i(r.x() + r.width(), r.top());
+	glTexCoord2i(0, 1);
+	glVertex2i(r.x(), r.top() + r.height());
+	glTexCoord2i(1, 1);
+	glVertex2i(r.x() + r.width(), r.top() + r.height());
+	glEnd();
+	m_needsUpdate = false;
 }
 
 bool PrerenderedTimeline::rejigRender()
 {
-	m_renderingOffset  = c()->earliestVisible();
+	m_renderingOffset = c()->earliestVisible();
 	m_renderingPixelDuration = c()->pixelDuration();
 	int w = width();
 	int h = height();
 	//qDebug() << size() << m_rendered.size();
 	if (w && h && (m_renderedOffset != m_renderingOffset || m_renderedPixelDuration != m_renderingPixelDuration || height() != m_rendered.height() || width() > m_rendered.width() || m_sourceChanged) && c()->samples())
 	{
-		{
-			QMutexLocker l(&m_lock);
-			m_overlay = renderOverlay();
-		}
-		QImage img(width(), height(), QImage::Format_ARGB32_Premultiplied);
+		QImage img(width(), height(), QImage::Format_RGB32);
 		img.fill(qRgb(255, 255, 255));
 
 		{
@@ -179,19 +201,14 @@ bool PrerenderedTimeline::rejigRender()
 		m_rendered = img;
 		m_renderedOffset = m_renderingOffset;
 		m_renderedPixelDuration = m_renderingPixelDuration;
-
 		m_needsUpdate = true;
 		return true;
 	}
 	return false;
 }
 
-int PrerenderedTimeline::renderingPositionOf(Lightbox::Time _t) const
+void PrerenderedTimeline::updateIfNeeded()
 {
-	return (_t - m_renderingOffset + m_renderingPixelDuration / 2) / m_renderingPixelDuration;
-}
-
-Lightbox::Time PrerenderedTimeline::renderingTimeOf(int _x) const
-{
-	return int64_t(_x) * m_renderingPixelDuration + m_renderingOffset;
+	if (m_needsUpdate)
+		updateGL();
 }
