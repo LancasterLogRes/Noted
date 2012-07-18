@@ -1125,7 +1125,6 @@ void Noted::timerEvent(QTimerEvent*)
 	static int i = 0;
 	if (++i % 10 == 0)
 	{
-		/*
 		QProgressBar* pb = ui->statusBar->findChild<QProgressBar*>();
 		if (m_workerThread->progress() < 100)
 		{
@@ -1142,20 +1141,20 @@ void Noted::timerEvent(QTimerEvent*)
 		}
 		else if (pb)
 			delete pb;
-*/
+
 		if (m_workFinished)
 		{
 			m_workFinished = false;
 			emit analysisFinished();
-/*			info("WORK All finished");
+			info("WORK All finished");
 			m_cursorDirty = true;
 			if (pb)
 				delete pb;
 			m_workerThread->setProgress(100);
-			statusBar()->showMessage("Ready");*/
+			statusBar()->showMessage("Ready");
 		}
 
-/*		if (m_playback)
+		if (m_playback)
 			ui->statusBar->findChild<QLabel*>("alsa")->setText(QString("%1 %2# @ %3Hz, %4x%5 frames").arg(m_playback->deviceName().c_str()).arg(m_playback->channels()).arg(m_playback->rate()).arg(m_playback->periods()).arg(m_playback->frames()));
 		else
 			ui->statusBar->findChild<QLabel*>("alsa")->setText("No audio");
@@ -1176,21 +1175,21 @@ void Noted::timerEvent(QTimerEvent*)
 				if (lock && ui->infoView->verticalScrollBar())
 					ui->infoView->verticalScrollBar()->setValue(ui->infoView->verticalScrollBar()->maximum());
 			}
-		}*/
+		}
 	}
 
 	if (m_cursorDirty)
 	{
-/*		if (m_fineCursor >= duration())
+		if (m_fineCursor >= duration())
 		{
 			// Played to end of audio
 			setCursor(0);
 			ui->actPlay->setChecked(false);
 		}
 		ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(m_fineCursor, toBase(samples(), m_rate), 0, 0).c_str());
-*/		m_cursorDirty = false;
-/*		if (ui->actFollow->isChecked() && (m_fineCursor < earliestVisible() || m_fineCursor > earliestVisible() + visibleDuration() * 7 / 8))
-			setTimelineOffset(m_fineCursor - visibleDuration() / 8);*/
+		m_cursorDirty = false;
+		if (ui->actFollow->isChecked() && (m_fineCursor < earliestVisible() || m_fineCursor > earliestVisible() + visibleDuration() * 7 / 8))
+			setTimelineOffset(m_fineCursor - visibleDuration() / 8);
 		emit cursorChanged();
 	}
 }
