@@ -22,7 +22,6 @@ SOURCES += main.cpp\
 	MetaSpectrumView.cpp \
 	EventsView.cpp \
 	DataView.cpp \
-	Cursor.cpp \
 	WorkerThread.cpp \
 	WaveView.cpp \
 	WaveWindowView.cpp \
@@ -47,7 +46,6 @@ HEADERS  += Noted.h \
 	ProcessEventCompiler.h \
 	MetaSpectrumView.h \
 	DataView.h \
-	Cursor.h \
 	WorkerThread.h \
 	CurrentView.h \
 	Grapher.h \

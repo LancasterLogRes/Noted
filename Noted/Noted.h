@@ -166,11 +166,6 @@ private:
 
 	void reloadDirties();
 
-	std::pair<QRect, QRect> cursorGeoOffset(int _id) const;
-	bool cursorEvent(QEvent* _e, int _id);
-	QRect cursorGeo(int _id) const { return cursorGeoOffset(_id).first; }
-	void paintCursor(QPainter& _p, int _id) const;
-
 	virtual bool carryOn(int _progress);
 	void updateParameters();
 	bool serviceAudio();

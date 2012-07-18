@@ -43,7 +43,6 @@
 #include "WorkerThread.h"
 #include "ProcessEventCompiler.h"
 #include "PropertiesEditor.h"
-#include "Cursor.h"
 #include "CompileEvents.h"
 #include "CollateEvents.h"
 #include "CompileEventsView.h"
@@ -143,9 +142,6 @@ Noted::Noted(QWidget* _p):
 
 	updateAudioDevices();
 
-//	new Cursor(this, 0);
-//	new Cursor(this, 1);
-//	new Cursor(this, 2);
 	ui->waveform->installEventFilter(this);
 	ui->overview->installEventFilter(this);
 	ui->dataDisplay->installEventFilter(this);
@@ -193,8 +189,6 @@ Noted::Noted(QWidget* _p):
 Noted::~Noted()
 {
 	g_debugPost = simpleDebugOut;
-	foreach (Cursor* c, findChildren<Cursor*>())
-		c->hide();
 
 	suspendWork();
 
@@ -1225,60 +1219,6 @@ int Noted::activeWidth() const
 	return max<int>(1, ui->dataDisplay->width());
 }
 
-bool Noted::cursorEvent(QEvent* _e, int _i)
-{
-	if (QMouseEvent* me = dynamic_cast<QMouseEvent*>(_e))
-	{
-		m_cursorDirty = true;
-		QMouseEvent nme(me->type(), (ui->dataDisplay->mapFromGlobal(me->globalPos())), me->button(), me->buttons(), me->modifiers());
-		return _i ? ui->overview->event(&nme) : ui->waveform->event(&nme);
-	}
-	else if (QWheelEvent* me = dynamic_cast<QWheelEvent*>(_e))
-	{
-		m_cursorDirty = true;
-		QWheelEvent nme(ui->dataDisplay->mapFromGlobal(me->globalPos()), me->delta(), me->buttons(), me->modifiers(), me->orientation());
-		return _i ? ui->overview->event(&nme) : ui->waveform->event(&nme);
-	}
-	return false;
-}
-
-// TODO: cursors of _id==0 should be per-Timeline, not handled by Noted at all.
-
-pair<QRect, QRect> Noted::cursorGeoOffset(int _id) const
-{
-	QWidget* mthis = const_cast<QWidget*>((QWidget const*)this);
-	QRect geo;		// where the cursor window will be placed on the screen.
-	QRect canvas;	// the offset
-	if (_id == 0)
-	{
-		// quite arbitrary limits placed on where the cursor may draw...
-		int f = positionOf(cursor() - windowSize() + hop()) - 4;
-		int t = positionOf(cursor() + hop()) + 4;
-
-		int cf = clamp(f, 0, ui->dataDisplay->width() - 1);
-		int ct = clamp(t, 0, ui->dataDisplay->width() - 1);
-		geo = QRect(mapToGlobal(ui->dataDisplay->mapTo(mthis, QPoint(cf, 0))), QSize(ct - cf, ui->dataDisplay->height()));
-		canvas = QRect(QPoint(-cf, 0), QSize(0, geo.height()));
-	}
-	else if (_id == 1)
-	{
-		int f = ui->overview->positionOf(earliestVisible());
-		int t = ui->overview->positionOf(earliestVisible() + visibleDuration()) + 2;
-		int cf = clamp(f, 0, ui->overview->width() - 1);
-		int ct = clamp(t, 0, ui->overview->width() - 1);
-		geo = QRect(mapToGlobal(ui->overview->mapTo(mthis, QPoint(cf, 0))), QSize(ct - cf, ui->overview->height()));
-		canvas = QRect(QPoint(f - cf, 0), QSize(t - f, geo.height()));
-	}
-	else if (_id == 2)
-	{
-		int f = ui->overview->positionOf(cursor());
-		int cf = clamp(f, 0, ui->overview->width() - 1);
-		geo = QRect(mapToGlobal(ui->overview->mapTo(mthis, QPoint(cf, 0))), QSize(1, ui->overview->height()));
-		canvas = QRect(QPoint(f - cf, 0), geo.size());
-	}
-	return make_pair(geo, canvas);
-}
-
 void Noted::info(QString const& _info, int _id)
 {
 	QString color = (_id == 255) ? "#700" : (_id == 254) ? "#007" : (_id == 253) ? "#440" : "#fff";
@@ -1290,57 +1230,6 @@ void Noted::info(QString const& _info, char const* _c)
 {
 	QMutexLocker l(&x_infos);
 	m_infos += QString("<div style=\"margin-top: 1px;\"><span style=\"background-color:%1;\">&nbsp;</span> %2</div>").arg(_c).arg(_info);
-}
-
-void Noted::paintCursor(QPainter& _p, int _id) const
-{
-	QRect r;
-	QRect o;
-	tie(r, o) = cursorGeoOffset(_id);
-	_p.setCompositionMode(QPainter::CompositionMode_Source);
-	_p.fillRect(QRect(0, 0, r.width(), r.height()), Qt::transparent);
-	_p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-	_p.translate(o.topLeft());
-	_p.setRenderHint(QPainter::Antialiasing, false);
-	if (!r.width())
-		return;
-	if (_id == 0)
-	{
-		// already translated back to timelines' cooardinate system.
-		// (cursor() - windowSize() + hop()) to hop() is guaranteed drawable.
-		QMutexLocker l(&x_timelines);
-		foreach (Timeline* t, m_timelines)
-		{
-			int y = t->widget()->y();
-			if (y > -1)
-			{
-				int h = t->widget()->height();
-				QColor cc = t->cursorColor();
-				int x = positionOf(t->highlightFrom());
-				int w = widthOf(t->highlightDuration());
-				if (w > 2)
-					_p.fillRect(x + 1, y, w - 1, h, QColor(255, 192, 127, 32));
-				cc.setAlpha(128);
-				_p.fillRect(x + w, y, 1, h, cc);
-				cc.setAlpha(64);
-				_p.fillRect(x, y, 1, h, cc);
-			}
-		}
-	}
-	else if (_id == 1)
-	{
-		int f = ui->overview->positionOf(earliestVisible());
-		int t = ui->overview->positionOf(earliestVisible() + visibleDuration()) + 2;
-		_p.fillRect(0, 0, t - f, o.height(), QColor(127, 192, 255, 128));
-		_p.setPen(QColor(0, 0, 0, 128));
-		_p.drawLine(0, 0, 0, o.height());
-		_p.drawLine(t - f - 1, 0, t - f - 1, r.height());
-	}
-	else if (_id == 2)
-	{
-		_p.setPen(QColor(0, 0, 0, 128));
-		_p.drawLine(0, 0, 0, o.height());
-	}
 }
 
 void Noted::updateParameters()
