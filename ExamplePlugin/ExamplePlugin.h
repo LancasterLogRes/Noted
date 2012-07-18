@@ -25,6 +25,7 @@
 
 class QDockWidget;
 class QWidget;
+class GLView;
 
 class ExamplePlugin: public NotedPlugin
 {
@@ -37,7 +38,9 @@ public:
 	float scale;
 	float bias;
 	LIGHTBOX_PROPERTIES(scale, bias);
+	virtual void onPropertiesChanged();
 
 private:
 	QDockWidget* m_vizDock;
+	GLView* m_glView;
 };

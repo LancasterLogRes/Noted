@@ -13,7 +13,7 @@ include ( ../Common.pri )
 
 win32: RC_FILE = Noted.rc
 CONFIG += uic
-LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin -l$$FFTW3_LIB -lsndfile -lresample
+LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin -l$$FFTW3_LIB -lsndfile -lresample -lboost_system -lboost_chrono
 
 SOURCES += main.cpp\
 	Noted.cpp \
@@ -34,7 +34,8 @@ SOURCES += main.cpp\
 	Page.cpp \
 	Pager.cpp \
 	CompileEventsView.cpp \
-        PropertiesEditor.cpp
+        PropertiesEditor.cpp \
+    NotedGLWidget.cpp
 
 HEADERS  += Noted.h \
 	WaveView.h \

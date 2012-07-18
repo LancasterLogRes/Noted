@@ -20,15 +20,23 @@
 
 #pragma once
 
+#include <QObject>
+
 class QMouseEvent;
 class QWheelEvent;
 class QWidget;
+class NotedGLWidget;
 
-class QGLWidgetProxy
+class QGLWidgetProxy: public QObject
 {
-public:
-    virtual ~QGLWidgetProxy() {}
+	Q_OBJECT
 
+	friend class NotedGLWidget;
+
+public:
+	virtual ~QGLWidgetProxy() {}
+
+	virtual bool needsRepaint() const { return true; }
 	virtual void initializeGL() {}
 	virtual void resizeGL(int, int) {}
 	virtual void paintGL() {}
@@ -38,5 +46,6 @@ public:
 	virtual void mouseMoveEvent(QMouseEvent*) {}
 	virtual void wheelEvent(QWheelEvent*) {}
 
+protected:
 	QWidget* m_widget;
 };

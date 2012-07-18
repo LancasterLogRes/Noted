@@ -123,18 +123,18 @@ public:
 };
 
 Noted::Noted(QWidget* _p):
-	NotedBase				(_p),
-	ui						(new Ui::Noted),
-	m_workerThread			(nullptr),
-	m_fineCursorWas			(UndefinedTime),
-	m_nextResample			(UndefinedTime),
-	m_resampler				(nullptr),
-	m_workFinished			(false),
-	m_resampleWaveAcAnalysis(new ResampleWaveAc),
-	m_spectraAcAnalysis		(new SpectraAc),
-	m_finishUpAcAnalysis	(new FinishUpAc),
-	m_compileEventsAnalysis	(new CompileEvents),
-	m_collateEventsAnalysis	(new CollateEvents)
+	NotedBase					(_p),
+	ui							(new Ui::Noted),
+	m_workerThread				(nullptr),
+	m_fineCursorWas				(UndefinedTime),
+	m_nextResample				(UndefinedTime),
+	m_resampler					(nullptr),
+	m_workFinished				(false),
+	m_resampleWaveAcAnalysis	(new ResampleWaveAc),
+	m_spectraAcAnalysis			(new SpectraAc),
+	m_finishUpAcAnalysis		(new FinishUpAc),
+	m_compileEventsAnalysis		(new CompileEvents),
+	m_collateEventsAnalysis		(new CollateEvents)
 {
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
 
@@ -143,9 +143,9 @@ Noted::Noted(QWidget* _p):
 
 	updateAudioDevices();
 
-	new Cursor(this, 0);
-	new Cursor(this, 1);
-	new Cursor(this, 2);
+//	new Cursor(this, 0);
+//	new Cursor(this, 1);
+//	new Cursor(this, 2);
 	ui->waveform->installEventFilter(this);
 	ui->overview->installEventFilter(this);
 	ui->dataDisplay->installEventFilter(this);
@@ -179,7 +179,7 @@ Noted::Noted(QWidget* _p):
 
 	on_sampleRate_currentIndexChanged(0);
 
-	startTimer(15);
+	startTimer(5);
 	resumeWork();
 
 	readSettings();
@@ -280,7 +280,7 @@ void Noted::load(LibraryPtr const& _dl)
 				QSettings s("LancasterLogicResponse", "Noted");
 				readBaseSettings(s);
 				_dl->p->readSettings(s);
-				Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p);
+				Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p, [=](std::string const&){_dl->p->onPropertiesChanged();});
 				props.deserialize(s.value(QString(name) + "/properties").toString().toStdString());
 				if (props.size())
 				{
@@ -1125,6 +1125,7 @@ void Noted::timerEvent(QTimerEvent*)
 	static int i = 0;
 	if (++i % 10 == 0)
 	{
+		/*
 		QProgressBar* pb = ui->statusBar->findChild<QProgressBar*>();
 		if (m_workerThread->progress() < 100)
 		{
@@ -1141,20 +1142,20 @@ void Noted::timerEvent(QTimerEvent*)
 		}
 		else if (pb)
 			delete pb;
-
+*/
 		if (m_workFinished)
 		{
 			m_workFinished = false;
-			info("WORK All finished");
 			emit analysisFinished();
+/*			info("WORK All finished");
 			m_cursorDirty = true;
 			if (pb)
 				delete pb;
 			m_workerThread->setProgress(100);
-			statusBar()->showMessage("Ready");
+			statusBar()->showMessage("Ready");*/
 		}
 
-		if (m_playback)
+/*		if (m_playback)
 			ui->statusBar->findChild<QLabel*>("alsa")->setText(QString("%1 %2# @ %3Hz, %4x%5 frames").arg(m_playback->deviceName().c_str()).arg(m_playback->channels()).arg(m_playback->rate()).arg(m_playback->periods()).arg(m_playback->frames()));
 		else
 			ui->statusBar->findChild<QLabel*>("alsa")->setText("No audio");
@@ -1175,21 +1176,21 @@ void Noted::timerEvent(QTimerEvent*)
 				if (lock && ui->infoView->verticalScrollBar())
 					ui->infoView->verticalScrollBar()->setValue(ui->infoView->verticalScrollBar()->maximum());
 			}
-		}
+		}*/
 	}
 
 	if (m_cursorDirty)
 	{
-		if (m_fineCursor >= duration())
+/*		if (m_fineCursor >= duration())
 		{
 			// Played to end of audio
 			setCursor(0);
 			ui->actPlay->setChecked(false);
 		}
 		ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(m_fineCursor, toBase(samples(), m_rate), 0, 0).c_str());
-		m_cursorDirty = false;
-		if (ui->actFollow->isChecked() && (m_fineCursor < earliestVisible() || m_fineCursor > earliestVisible() + visibleDuration() * 7 / 8))
-			setTimelineOffset(m_fineCursor - visibleDuration() / 8);
+*/		m_cursorDirty = false;
+/*		if (ui->actFollow->isChecked() && (m_fineCursor < earliestVisible() || m_fineCursor > earliestVisible() + visibleDuration() * 7 / 8))
+			setTimelineOffset(m_fineCursor - visibleDuration() / 8);*/
 		emit cursorChanged();
 	}
 }

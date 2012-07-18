@@ -19,6 +19,7 @@
  */
 
 #include <array>
+#include <iostream>
 #include <QtGui>
 
 #ifdef Q_OS_MAC
@@ -36,10 +37,13 @@ using namespace Lightbox;
 
 NOTED_PLUGIN(ExamplePlugin);
 
-class TestGLView: public QGLWidgetProxy
+class GLView: public QGLWidgetProxy
 {
+	friend class ExamplePlugin;
+
 public:
-	TestGLView(ExamplePlugin* _p): m_p(_p), m_c(_p->noted()) {}
+	GLView(ExamplePlugin* _p): m_p(_p), m_c(_p->noted()) {}
+
 	virtual void initializeGL()
 	{
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -47,8 +51,8 @@ public:
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LEQUAL);
 		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-		glGenTextures (2, m_texture);
-		for (int i = 0; i < 2; ++i)
+		glGenTextures (1, m_texture);
+		for (int i = 0; i < 1; ++i)
 		{
 			glBindTexture (GL_TEXTURE_1D, m_texture[i]);
 			glTexParameteri (GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -67,11 +71,18 @@ public:
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 	}
+
+	virtual bool needsRepaint() const
+	{
+		if (m_lastCursor == m_c->cursorIndex() && !m_propertiesChanged)
+			return false;
+		m_lastCursor = m_c->cursorIndex();
+		m_propertiesChanged = false;
+		return true;
+	}
+
 	virtual void paintGL()
 	{
-		if (m_lastCursor == m_c->cursorIndex())
-			return;
-		m_lastCursor = m_c->cursorIndex();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glLoadIdentity();
 		{
@@ -85,9 +96,7 @@ public:
 			glPixelTransferf(GL_RED_BIAS, bias);
 			glPixelTransferf(GL_GREEN_BIAS, bias);
 			glPixelTransferf(GL_BLUE_BIAS, bias);
-			glTexImage1D(GL_TEXTURE_1D, 0, 1, w.size() / 2, 0, GL_LUMINANCE, GL_FLOAT, w.data());
-			glBindTexture(GL_TEXTURE_1D, m_texture[1]);
-			glTexImage1D(GL_TEXTURE_1D, 0, 1, w.size() / 2, 0, GL_LUMINANCE, GL_FLOAT, w.data() + w.size() / 2);
+			glTexImage1D(GL_TEXTURE_1D, 0, 1, w.size(), 0, GL_LUMINANCE, GL_FLOAT, w.data());
 		}
 
 		if (auto p = m_c->deltaPhaseSpectrum(m_c->cursorIndex(), 1))
@@ -101,37 +110,28 @@ public:
 		glBindTexture(GL_TEXTURE_1D, m_texture[0]);
 		glBegin(GL_TRIANGLE_STRIP);
 		glTexCoord1f(0.f);
-		glVertex3f(-1.0f, 0.0f, 0.0f);
+		glVertex3f(-1.0f, -1.0f, 0.0f);
 		glTexCoord1f(1.f);
-		glVertex3f( 1.0f, 0.0f, 0.0f);
+		glVertex3f( 1.0f, -1.0f, 0.0f);
 		glTexCoord1f(0.f);
 		glVertex3f(-1.0f, 1.0f, 0.0f);
 		glTexCoord1f(1.f);
 		glVertex3f( 1.0f, 1.0f, 0.0f);
 		glEnd();
-		glBindTexture(GL_TEXTURE_1D, m_texture[1]);
-		glBegin(GL_TRIANGLE_STRIP);
-		glTexCoord1f(0.f);
-		glVertex3f(-1.0f,-1.0f, 0.0f);
-		glTexCoord1f(1.f);
-		glVertex3f( 1.0f,-1.0f, 0.0f);
-		glTexCoord1f(0.f);
-		glVertex3f(-1.0f, 0.0f, 0.0f);
-		glTexCoord1f(1.f);
-		glVertex3f( 1.0f, 0.0f, 0.0f);
-		glEnd();
 	}
 
 private:
-	unsigned m_lastCursor;
+	mutable unsigned m_lastCursor;
+	mutable bool m_propertiesChanged;
 	ExamplePlugin* m_p;
 	NotedFace* m_c;
 };
 
 ExamplePlugin::ExamplePlugin(NotedFace* _c): NotedPlugin(_c), scale(2.f), bias(0.5f)
 {
+	m_glView = new GLView(this);
 	m_vizDock = new QDockWidget("Viz", _c);
-	m_vizDock->setWidget(_c->addGLWidget(new TestGLView(this), m_vizDock));
+	m_vizDock->setWidget(_c->addGLWidget(m_glView, m_vizDock));
 	m_vizDock->setFeatures(m_vizDock->features()|QDockWidget::DockWidgetVerticalTitleBar);
 	_c->addDockWidget(Qt::RightDockWidgetArea, m_vizDock);
 }
@@ -139,4 +139,9 @@ ExamplePlugin::ExamplePlugin(NotedFace* _c): NotedPlugin(_c), scale(2.f), bias(0
 ExamplePlugin::~ExamplePlugin()
 {
 	delete m_vizDock;
+}
+
+void ExamplePlugin::onPropertiesChanged()
+{
+	m_glView->m_propertiesChanged = true;
 }

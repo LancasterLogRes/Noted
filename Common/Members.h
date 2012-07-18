@@ -45,23 +45,25 @@ class Members
 public:
 	Members() {}
 
-	Members(MemberMap const& _map, std::weak_ptr<_Owner> const& _object):
+	Members(MemberMap const& _map, std::weak_ptr<_Owner> const& _object, std::function<void(std::string const&)> const& _onChanged = std::function<void(std::string const&)>()):
 		m_map		(_map),
-		m_object	(_object)
+		m_object	(_object),
+		m_onChanged	(_onChanged)
 	{}
 
 	// Templated copy-constructor
 	template <class _OtherOwner>
 	Members(Members<_OtherOwner> const& _ps):
 		m_map		(_ps.m_map),
-		m_object	(_ps.m_object)
+		m_object	(_ps.m_object),
+		m_onChanged	(_ps.m_onChanged)
 	{}
 
 	unsigned size() const { return m_map.size(); }
 	std::vector<std::string> names() const { std::vector<std::string> ret; for (auto k : m_map) ret.push_back(k.first); return ret; }
 	std::type_info const& typeinfo(std::string const& _name) const { auto i = m_map.find(_name); if (i != m_map.end()) return *i->second.type; else return typeid(void); }
 
-	template <class _Val> void set(std::string const& _name, _Val const& _v) { if (std::shared_ptr<_Owner> p = m_object.lock()) { auto i = m_map.find(_name); if (i != m_map.end()) i->second.set<_Val, _Owner>(p.get(), _v); } }
+	template <class _Val> void set(std::string const& _name, _Val const& _v) { if (std::shared_ptr<_Owner> p = m_object.lock()) { auto i = m_map.find(_name); if (i != m_map.end()) { i->second.set<_Val, _Owner>(p.get(), _v); if (m_onChanged) m_onChanged(_name); } } }
 	template <class _Val> _Val const& get(std::string const& _name, _Val const& _default = _Val()) const { if (std::shared_ptr<_Owner> p = m_object.lock()) { auto i = m_map.find(_name); if (i != m_map.end()) return i->second.getValue<_Val, _Owner>(p.get(), _default); } return _default; }
 	template <class _Val> Members& operator()(std::string const& _name, _Val const& _v) { set(_name, _v); return *this; }
 
@@ -79,7 +81,7 @@ public:
 	bool typedSet(std::string const& _name, _Setter& _l)
 	{
 		std::string tn(typeinfo(_name).name());
-#define	DO(X) if (tn == typeid(X).name()) { typedef X T; T old = get<X>(_name); T nw = _l(old); cdebug << nw << old << (nw == old); if (nw == old) return false; set<X>(_name, nw); cdebug << get<X>(_name); return true; }
+#define	DO(X) if (tn == typeid(X).name()) { typedef X T; T old = get<X>(_name); T nw = _l(old); cdebug << nw << old << (nw == old); if (nw == old) return false; set<X>(_name, nw); return true; }
 #include "DoTypes.h"
 #undef DO
 		return false;
@@ -138,6 +140,7 @@ public:
 private:
 	MemberMap m_map;
 	std::weak_ptr<_Owner> m_object;
+	std::function<void(std::string const&)> m_onChanged;
 };
 
 typedef Members<void> VoidMembers;

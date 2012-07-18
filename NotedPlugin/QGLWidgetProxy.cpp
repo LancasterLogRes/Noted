@@ -18,4 +18,6 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QDebug>
+
 #include "QGLWidgetProxy.h"

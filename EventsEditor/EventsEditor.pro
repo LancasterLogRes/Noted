@@ -6,7 +6,7 @@
 
 TARGET = EventsEditor
 TEMPLATE = lib
-QT       += core gui
+QT       += core gui opengl
 CONFIG += qt
 
 include ( ../Common.pri )

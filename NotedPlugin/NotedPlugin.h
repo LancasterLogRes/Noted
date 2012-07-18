@@ -51,6 +51,7 @@ public:
 	virtual AcausalAnalysisPtrs ripeAnalysis(AcausalAnalysisPtr const&) { return AcausalAnalysisPtrs(); }
 	virtual QString titleAmendment(QString const& _title) const { return _title; }
 	virtual Lightbox::MemberMap propertyMap() const { return Lightbox::NullMemberMap; }
+	virtual void onPropertiesChanged() {}
 
 	NotedFace* noted() const { return m_noted; }
 
