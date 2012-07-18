@@ -44,4 +44,5 @@ private:
 	virtual void doRender(QImage& _img);
 	virtual void mousePressEvent(QMouseEvent* _e);
 	virtual void mouseMoveEvent(QMouseEvent* _e);
+	virtual void paintGL();
 };

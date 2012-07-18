@@ -53,6 +53,9 @@ public:
 public slots:
 	void sourceChanged();
 
+private slots:
+	void checkCursorMove();
+
 protected:
 	/// These two are frozen at the zoom configuration as it was prior to rendering; this is necessary as the real offset/visibleduration may change during rendering (which is happening asynchronously).
 	int renderingPositionOf(Lightbox::Time _t) const;
@@ -79,6 +82,9 @@ protected:
 	bool m_sourceChanged;
 	Lightbox::Time m_lastEnd;
 	Lightbox::Time m_lastWarped;
+
+	int m_lastCursorL;
+	int m_lastCursorR;
 
 	QImage m_overlay;
 };

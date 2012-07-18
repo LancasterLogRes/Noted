@@ -29,7 +29,11 @@ using namespace Lightbox;
 
 WaveOverview::WaveOverview(QWidget* _parent): Prerendered(_parent)
 {
+	connect(c(), SIGNAL(offsetChanged()), SLOT(updateGL()));
+	connect(c(), SIGNAL(durationChanged()), SLOT(updateGL()));
 	connect(c(), SIGNAL(analysisFinished()), SLOT(rerender()));
+	connect(c(), SIGNAL(analysisFinished()), SLOT(updateGL()));
+	connect(c(), SIGNAL(cursorChanged()), SLOT(updateGL()));
 }
 
 int WaveOverview::positionOf(Lightbox::Time _t)
@@ -52,6 +56,35 @@ void WaveOverview::mouseMoveEvent(QMouseEvent* _e)
 {
 	if (_e->buttons() & Qt::LeftButton)
 		c()->setCursor(timeOf(_e->x()));
+}
+
+void WaveOverview::paintGL()
+{
+	Prerendered::paintGL();
+
+	int cursorL = positionOf(c()->earliestVisible());
+	int cursorR = positionOf(c()->latestVisible());
+	int cursorM = positionOf(c()->cursor());
+
+	glColor4f(0.f, .3f, 1.f, .2f);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBegin(GL_TRIANGLE_STRIP);
+	glVertex2i(cursorL, 0);
+	glVertex2i(cursorR, 0);
+	glVertex2i(cursorL, height());
+	glVertex2i(cursorR, height());
+	glEnd();
+
+	glBegin(GL_LINES);
+	glColor4f(0.f, .3f, 1.f, .5f);
+	glVertex2i(cursorL, 0);
+	glVertex2i(cursorL, height());
+	glVertex2i(cursorR, 0);
+	glVertex2i(cursorR, height());
+	glColor4f(0.f, 0.f, 0.f, .5f);
+	glVertex2i(cursorM, 0);
+	glVertex2i(cursorM, height());
+	glEnd();
 }
 
 void WaveOverview::doRender(QImage& _img)

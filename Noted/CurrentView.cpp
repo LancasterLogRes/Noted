@@ -24,6 +24,7 @@
 
 CurrentView::CurrentView(QWidget* _parent): Prerendered(_parent), m_i(-1)
 {
+	// TODO: do this properly once this is a plugin.
 	connect(window(), SIGNAL(cursorChanged()), this, SLOT(check()));
 }
 

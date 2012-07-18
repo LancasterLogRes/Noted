@@ -30,10 +30,11 @@ using namespace std;
 
 PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop): Prerendered(_p), m_draggingTime(Lightbox::UndefinedTime), m_cursorSizeIsHop(_cursorSizeIsHop), m_renderedOffset(0), m_renderedPixelDuration(0)
 {
-	connect(c(), SIGNAL(offsetChanged()), this, SLOT(update()));
-	connect(c(), SIGNAL(durationChanged()), this, SLOT(update()));
-	connect(c(), SIGNAL(analysisFinished()), this, SLOT(sourceChanged()));
-	connect(c(), SIGNAL(analysisFinished()), this, SLOT(update()));
+	connect(c(), SIGNAL(offsetChanged()), SLOT(updateGL()));
+	connect(c(), SIGNAL(durationChanged()), SLOT(updateGL()));
+	connect(c(), SIGNAL(analysisFinished()), SLOT(sourceChanged()));
+	connect(c(), SIGNAL(analysisFinished()), SLOT(updateGL()));
+	connect(c(), SIGNAL(cursorChanged()), SLOT(checkCursorMove()));
 	initTimeline(c());
 }
 
@@ -98,6 +99,14 @@ void PrerenderedTimeline::sourceChanged()
 	m_needsUpdate = true;
 }
 
+void PrerenderedTimeline::checkCursorMove()
+{
+	int cursorL = c()->positionOf(highlightFrom()) + 1;
+	int cursorR = cursorL + c()->widthOf(highlightDuration());
+	if (m_lastCursorR != cursorR && !((cursorL > size().width() && m_lastCursorL > size().width()) || cursorR < 0 && m_lastCursorR < 0))
+		updateGL();
+}
+
 void PrerenderedTimeline::paintGL()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -119,6 +128,7 @@ void PrerenderedTimeline::paintGL()
 		if (r.x() == 0 && m_renderedOffset != o)
 			qDebug() << "Stange -> zero drawing offset, but have ro=" << m_renderedOffset << " and need o=" << o;
 	}
+	glColor4f(1.f, 1.f, 1.f, 1.f);
 	glBindTexture(GL_TEXTURE_2D, m_texture[0]);
 	glBegin(GL_TRIANGLE_STRIP);
 	glTexCoord2i(0, 0);
@@ -129,6 +139,26 @@ void PrerenderedTimeline::paintGL()
 	glVertex2i(r.x(), r.top() + r.height());
 	glTexCoord2i(1, 1);
 	glVertex2i(r.x() + r.width(), r.top() + r.height());
+	glEnd();
+
+	m_lastCursorL = c()->positionOf(highlightFrom()) + 1;
+	m_lastCursorR = m_lastCursorL + c()->widthOf(highlightDuration());
+	glColor4f(0.f, .3f, 1.f, 0.2f);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBegin(GL_TRIANGLE_STRIP);
+	glVertex2i(m_lastCursorL, r.top());
+	glVertex2i(m_lastCursorR, r.top());
+	glVertex2i(m_lastCursorL, r.top() + r.height());
+	glVertex2i(m_lastCursorR, r.top() + r.height());
+	glEnd();
+
+	glBegin(GL_LINES);
+	glColor4f(0.f, 0.f, 0.f, .5f);
+	glVertex2i(m_lastCursorL, r.top());
+	glVertex2i(m_lastCursorL, r.top() + r.height());
+	glColor4f(0.f, 0.f, 0.f, 1.f);
+	glVertex2i(m_lastCursorR, r.top());
+	glVertex2i(m_lastCursorR, r.top() + r.height());
 	glEnd();
 	m_needsUpdate = false;
 }

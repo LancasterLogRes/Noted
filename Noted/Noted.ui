@@ -351,7 +351,7 @@
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <layout class="QVBoxLayout" name="verticalLayout">
          <property name="spacing">
           <number>0</number>
@@ -420,7 +420,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <layout class="QGridLayout" name="gridLayout">
          <property name="spacing">
           <number>0</number>
@@ -429,7 +429,7 @@
           <widget class="QLineEdit" name="windowPeriod">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-             <horstretch>3</horstretch>
+             <horstretch>5</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
@@ -444,8 +444,8 @@
          <item row="0" column="1">
           <widget class="QSpinBox" name="windowSize">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-             <horstretch>2</horstretch>
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>4</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
@@ -484,6 +484,12 @@
          </item>
          <item row="1" column="1">
           <widget class="QSpinBox" name="hop">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
              <width>16777215</width>

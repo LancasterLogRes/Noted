@@ -56,6 +56,8 @@ void Prerendered::initializeGL()
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
 	glEnable(GL_TEXTURE_2D);
 	glGenTextures(1, m_texture);
 	glBindTexture (GL_TEXTURE_2D, m_texture[0]);
@@ -85,6 +87,7 @@ void Prerendered::paintGL()
 		glBindTexture(GL_TEXTURE_2D, m_texture[0]);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glRendered.size().width(), glRendered.size().height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, glRendered.constBits());
 	}
+	glColor4f(1.f, 1.f, 1.f, 1.f);
 	glBindTexture(GL_TEXTURE_2D, m_texture[0]);
 	glBegin(GL_TRIANGLE_STRIP);
 	glTexCoord2i(0, 0);
