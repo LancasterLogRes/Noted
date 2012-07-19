@@ -71,7 +71,7 @@ void PrerenderedTimeline::wheelEvent(QWheelEvent* _e)
 #else
 #define CORRECT_SIGN
 #endif
-	c()->zoomTimeline(c()->timeOf(_e->x()), exp(CORRECT_SIGN _e->delta() / (QApplication::keyboardModifiers() & Qt::ControlModifier ? 2400.0 : QApplication::keyboardModifiers() & Qt::ShiftModifier ? 24 : 240.0)));
+	c()->zoomTimeline(_e->x(), exp(CORRECT_SIGN _e->delta() / (QApplication::keyboardModifiers() & Qt::ControlModifier ? 2400.0 : QApplication::keyboardModifiers() & Qt::ShiftModifier ? 24 : 240.0)));
 #undef CORRECT_SIGN
 }
 

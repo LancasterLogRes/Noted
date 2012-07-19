@@ -1011,12 +1011,12 @@ QList<EventsView*> Noted::eventsViews() const
 
 void Noted::on_actZoomOut_activated()
 {
-	zoomTimeline(m_timelineOffset + visibleDuration() / 2, 1.2);
+	zoomTimeline(activeWidth() / 2, 1.2);
 }
 
 void Noted::on_actZoomIn_activated()
 {
-	zoomTimeline(m_timelineOffset + visibleDuration() / 2, 1 / 1.2);
+	zoomTimeline(activeWidth() / 2, 1 / 1.2);
 }
 
 void Noted::on_actPanBack_activated()
@@ -1214,6 +1214,23 @@ int Noted::activeWidth() const
 {
 	return max<int>(1, ui->dataDisplay->width());
 }
+#if 0
+
+void Noted::on_actZoomOut_activated()
+{
+	Time centre = timeOf();
+	setPixelDuration(m_pixelDuration *= 1.2);
+	setTimelineOffset(centre - m_pixelDuration * activeWidth() / 2);
+}
+
+void Noted::on_actZoomIn_activated()
+{
+	int xFocus = activeWidth() / 2;
+	Time centre = timeOf(xFocus);
+	setPixelDuration(m_pixelDuration /= 1.2);
+	setTimelineOffset(centre - m_pixelDuration * xFocus);
+}
+#endif
 
 void Noted::info(QString const& _info, int _id)
 {

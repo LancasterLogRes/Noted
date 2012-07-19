@@ -58,6 +58,11 @@ void WaveOverview::mouseMoveEvent(QMouseEvent* _e)
 		c()->setCursor(timeOf(_e->x()));
 }
 
+void WaveOverview::initializeGL()
+{
+	Prerendered::initializeGL();
+}
+
 void WaveOverview::paintGL()
 {
 	Prerendered::paintGL();
