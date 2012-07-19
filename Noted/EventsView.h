@@ -32,42 +32,67 @@
 #include <QFrame>
 #include <QPaintEvent>
 #include <QPainter>
+#include <QSplitter>
 
+class PropertiesEditor;
 class QPushButton;
+class QLabel;
+class QSettings;
+class CompileEventsView;
 
 class EventsView: public PrerenderedTimeline, public EventsStore
 {
 	Q_OBJECT
+	friend class CompileEventsView;
 
 public:
-	explicit EventsView(QWidget* _parent = 0);
+	EventsView(QWidget* _parent = 0, Lightbox::EventCompiler const& _c = Lightbox::EventCompiler());
 	~EventsView();
+
+	virtual QWidget* widget() { return m_actualWidget; }
+
+	void readSettings(QSettings& _s, QString const& _id);
+	void writeSettings(QSettings& _s, QString const& _id);
 
 	void save();
 	void restore();
 	QString name() const;
+	virtual QString niceName() const { return name(); }
 
-	void initEvents();
-	void shiftEvents(unsigned _n);
+	Lightbox::EventCompiler const& eventCompiler() const { return m_eventCompiler; }
+
+	QMutex* mutex() const { return &x_events; }
+	void clearEvents();
+	void setInitEvents(Lightbox::StreamEvents const& _se);
 	void appendEvents(Lightbox::StreamEvents const& _se);
 	virtual Lightbox::StreamEvents events(int _i) const;
+	virtual Lightbox::StreamEvents initEvents() const { return m_initEvents; }
+	std::vector<float> graphEvents(float _nature) const;
 
-	Lightbox::EventCompiler m_eventCompiler;
-	QList<Lightbox::StreamEvents> m_events;
-	mutable QMutex x_events;
-
-	Lightbox::StreamEvents m_current;
-	QComboBox* m_selection;
+	void updateEventTypes();
 
 public slots:
 	void duplicate();
-	void edit();
-
 	void onUseChanged();
+	void exportEvents();
 
 private:
 	virtual void doRender(QImage& _img, int _dx, int _dw);
 
-	QString m_name;
+	Lightbox::EventCompiler m_eventCompiler;
+
+	QSplitter* m_actualWidget;
+	PropertiesEditor* m_propertiesEditor;
+	QComboBox* m_selection;
 	QPushButton* m_use;
+	QLabel* m_label;
+
+	Lightbox::StreamEvents m_initEvents;
+	QList<Lightbox::StreamEvents> m_events;
+	mutable QMutex x_events;
+
+	Lightbox::StreamEvents m_current;
+
+	QString m_savedName;
+	std::string m_savedProperties;
 };

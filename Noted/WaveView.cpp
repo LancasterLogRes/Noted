@@ -47,7 +47,7 @@ void WaveView::doRender(QImage& _img, int _dx, int _dw)
 
 	vector<float> wave(_dw);
 
-	bool isAbsolute = c()->waveBlock(c()->timeOf(_dx), c()->durationOf(_dw), foreign_vector<float>(wave.data(), wave.size()), true);
+	bool isAbsolute = c()->waveBlock(c()->timeOf(_dx), c()->durationOf(_dw), foreign_vector<float>(wave.data(), wave.size()));
 
 	int h = height();
 	QPainter p(&_img);

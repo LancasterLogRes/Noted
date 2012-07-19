@@ -20,23 +20,27 @@
 
 #pragma once
 
-class QMouseEvent;
-class QWheelEvent;
+#include <Common/MemberCollection.h>
+#include <NotedPlugin/NotedPlugin.h>
+
+class QDockWidget;
 class QWidget;
+class GLView;
 
-class GLView
+class ExamplePlugin: public NotedPlugin
 {
+	Q_OBJECT
+
 public:
-    virtual ~GLView() {}
+	ExamplePlugin(NotedFace* _c);
+	~ExamplePlugin();
 
-	virtual void initializeGL() {}
-	virtual void resizeGL(int, int) {}
-	virtual void paintGL() {}
+	float scale;
+	float bias;
+	LIGHTBOX_PROPERTIES(scale, bias);
+	virtual void onPropertiesChanged();
 
-	virtual void mousePressEvent(QMouseEvent*) {}
-	virtual void mouseReleaseEvent(QMouseEvent*) {}
-	virtual void mouseMoveEvent(QMouseEvent*) {}
-	virtual void wheelEvent(QWheelEvent*) {}
-
-	QWidget* m_widget;
+private:
+	QDockWidget* m_vizDock;
+	GLView* m_glView;
 };

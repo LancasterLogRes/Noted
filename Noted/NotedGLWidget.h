@@ -20,27 +20,39 @@
 
 #pragma once
 
+#include <iostream>
+#include <boost/chrono.hpp>
 #include <QGLWidget>
+#include <QThread>
+#include <QResizeEvent>
 
-#include <NotedPlugin/GLView.h>
+#include <NotedPlugin/QGLWidgetProxy.h>
 
-class NotedGLWidget: public QGLWidget
+class NotedGLWidget: public QGLWidget, public QThread
 {
 public:
-	NotedGLWidget(GLView* _v, QWidget* _p): QGLWidget(QGLFormat(QGL::SampleBuffers), _p), m_v(_v) { m_v->m_widget = this; startTimer(15); }
-	~NotedGLWidget() { delete m_v; }
+	NotedGLWidget(QGLWidgetProxy* _v, QWidget* _p);
+	~NotedGLWidget();
 
-	virtual void initializeGL() { m_v->initializeGL(); }
-	virtual void resizeGL(int _w, int _h) { m_v->resizeGL(_w, _h); }
-	virtual void paintGL() { m_v->paintGL(); }
+	virtual void run();
+
+	virtual void initializeGL();
+	virtual void resizeGL(int, int);
+	virtual void paintGL();
 
 	virtual void mousePressEvent(QMouseEvent* _e) { m_v->mousePressEvent(_e); }
 	virtual void mouseReleaseEvent(QMouseEvent* _e) { m_v->mouseReleaseEvent(_e); }
 	virtual void mouseMoveEvent(QMouseEvent* _e) { m_v->mouseMoveEvent(_e); }
 	virtual void wheelEvent(QWheelEvent* _e) { m_v->wheelEvent(_e); }
-
-	virtual void timerEvent(QTimerEvent*) { updateGL(); }
+	virtual void paintEvent(QPaintEvent*);
+	virtual void hideEvent(QShowEvent*);
+	virtual void closeEvent(QCloseEvent*);
+	virtual void resizeEvent(QResizeEvent* _e);
 
 private:
-	GLView* m_v;
+	void quit();
+
+	QGLWidgetProxy* m_v;
+	QSize m_newSize;
+	bool m_quitting;
 };

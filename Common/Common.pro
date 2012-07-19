@@ -9,9 +9,16 @@ TARGET = Common
 TEMPLATE = lib
 include ( ../Common.pri )
 
-LIBS += -lboost_system
-unix: LIBS += -lfftw3f
-win32: LIBS += -lfftw3f-3
+# required for non-windows platforms, it seems...
+!win32: LIBS += -lboost_system
+
+# for windows, it doesn't seem to find libboost_system, so we do it manually.
+win32 {
+	debug: LIBS += -lboost_system-mgw46-mt-d-1_50
+	release: LIBS += -lboost_system-mgw46-mt-1_50
+}
+
+LIBS += -l$$FFTW3_LIB
 
 SOURCES += Common.cpp \
     FFTW.cpp \
@@ -23,7 +30,6 @@ SOURCES += Common.cpp \
     Time.cpp
 HEADERS += Common.h Global.h \
     Time.h \
-    Properties.h \
     GraphParameters.h \
     WavHeader.h \
     Algorithms.h \
@@ -36,4 +42,8 @@ HEADERS += Common.h Global.h \
     StreamIO.h \
     Statistics.h \
     Peaks.h \
-    Flags.h
+    Flags.h \
+    DoTypes.h \
+    MemberCollection.h \
+    MemberMap.h \
+    Members.h

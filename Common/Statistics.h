@@ -79,7 +79,7 @@ template <class T>
 typename T::value_type variance(T const& _distro, typename T::value_type _mean)
 {
 	typename T::value_type ret = 0;
-	foreach (auto v, _distro)
+	for (auto v: _distro)
 		ret += sqr(v - _mean);
 	return ret / _distro.size();
 }

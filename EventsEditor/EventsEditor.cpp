@@ -29,11 +29,11 @@ using namespace std;
 using namespace Lightbox;
 
 EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
-	QGraphicsView	(_parent),
-	m_c				(nullptr),
-	m_filename		(_filename),
-	m_lastTimerDirty(true),
-	m_eventsDirty	(true)
+	QGraphicsView		(_parent),
+	m_c					(nullptr),
+	m_filename			(_filename),
+	m_lastTimerDirty	(true),
+	m_eventsDirty		(true)
 {
 	setFrameShape(NoFrame);
 
@@ -101,6 +101,13 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 	initTimeline(c());
 }
 
+EventsEditor::~EventsEditor()
+{
+	QMutexLocker l(&x_events);
+	m_events.clear();
+	c()->noteEventCompilersChanged();
+}
+
 void EventsEditor::save(QSettings& _s) const
 {
 	_s.setValue(m_filename + ".enabled", m_enabled->isChecked());
@@ -135,7 +142,7 @@ void EventsEditor::mouseReleaseEvent(QMouseEvent* _e)
 void EventsEditor::mouseMoveEvent(QMouseEvent* _e)
 {
 	if (m_draggingTime != Lightbox::UndefinedTime && _e->buttons() & Qt::MiddleButton)
-		c()->setOffset(m_draggingTime - _e->x() * (c()->timelineDuration() / c()->activeWidth()));
+		c()->setTimelineOffset(m_draggingTime - _e->x() * c()->pixelDuration());
 	else if (_e->buttons() & Qt::MiddleButton)
 	{
 		setDragMode(QGraphicsView::NoDrag);
@@ -263,8 +270,8 @@ NotedFace* EventsEditor::c() const
 void EventsEditor::onViewParamsChanged()
 {
 	resetTransform();
-	double hopsInWidth = toSeconds(c()->timelineDuration()) * 1000;
-	double hopsFromBeginning = toSeconds(c()->timelineOffset()) * 1000;
+	double hopsInWidth = toSeconds(c()->visibleDuration()) * 1000;
+	double hopsFromBeginning = toSeconds(c()->earliestVisible()) * 1000;
 	setSceneRect(hopsFromBeginning, 0, hopsInWidth, height());
 	scale(width() / hopsInWidth, 1);
 }

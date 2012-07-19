@@ -41,12 +41,95 @@ namespace Lightbox
 {
 
 template <class _T>
+void valcpy(_T* _d, _T const* _s, unsigned _n, unsigned _dstride = 1, unsigned _sstride = 1)
+{
+	if (!_s)
+	{
+		if (_dstride == 1)
+			memset(_d, 0, _n * sizeof(_T));
+		else
+			for (unsigned i = 0; i < _n; ++i)
+				memset(_d + i * _dstride, 0, sizeof(_T));
+	}
+	else if (_sstride == 1 && _dstride == 1)
+	{
+		if (_d != _s)
+			memcpy(_d, _s, sizeof(_T) * _n);
+	}
+	else if (_n >= 4)
+	{
+		// can't do an in-place valcpy if deststride is greater than srcstride - we'd override our src data before we've used it.
+		assert(_d != _s || _dstride < _sstride);
+		unsigned nLess4 = _n - 4;
+		if (_sstride == 1)
+		{
+			unsigned i = 0;
+			for (; i < nLess4; i += 4)
+			{
+				_d[i * _dstride] = _s[i];
+				_d[(i + 1) * _dstride] = _s[(i + 1)];
+				_d[(i + 2) * _dstride] = _s[(i + 2)];
+				_d[(i + 3) * _dstride] = _s[(i + 3)];
+			}
+			for (; i < _n; ++i)
+				_d[i * _dstride] = _s[i];
+		}
+		else if (_dstride == 1)
+		{
+			unsigned i = 0;
+			for (; i < nLess4; i += 4)
+			{
+				_d[i] = _s[i * _sstride];
+				_d[(i + 1)] = _s[(i + 1) * _sstride];
+				_d[(i + 2)] = _s[(i + 2) * _sstride];
+				_d[(i + 3)] = _s[(i + 3) * _sstride];
+			}
+			for (; i < _n; ++i)
+				_d[i] = _s[i * _sstride];
+		}
+		else
+		{
+			unsigned i = 0;
+			for (; i < nLess4; i += 4)
+			{
+				_d[i * _dstride] = _s[i * _sstride];
+				_d[(i + 1) * _dstride] = _s[(i + 1) * _sstride];
+				_d[(i + 2) * _dstride] = _s[(i + 2) * _sstride];
+				_d[(i + 3) * _dstride] = _s[(i + 3) * _sstride];
+			}
+			for (; i < _n; ++i)
+				_d[i * _dstride] = _s[i * _sstride];
+		}
+	}
+	else
+		for (unsigned i = 0; i < _n; ++i)
+			_d[i * _dstride] = _s[i * _sstride];
+}
+
+template <class _T, class _U>
+void catenate(_T& _target, _U const& _extra)
+{
+	foreach (auto i, _extra)
+		_target.push_back(i);
+}
+
+template <class _T>
 inline unsigned maxInRange(_T const& _t)
 {
-	unsigned ret = -1;
-	for (unsigned i = 0; i < _t.size(); ++i)
-		if (ret == -1 || _t[ret] < _t[i])
+	unsigned ret = (unsigned)-1;
+	for (unsigned i = 0; i < (unsigned)_t.size(); ++i)
+		if (ret == (unsigned)-1 || _t[ret] < _t[i])
 			ret = i;
+	return ret;
+}
+
+template <class _T>
+inline _T maxInRange(_T const& _begin, _T const& _end)
+{
+	_T ret = _begin;
+	for (auto it = _begin + 1; it < _end; ++it)
+		if (*ret < *it)
+			ret = it;
 	return ret;
 }
 
@@ -177,7 +260,7 @@ typename element_of<_A>::type packCombine(_A const& _a, _B const& _b, unsigned _
 	{
 		_A a = _a;
 		_B b = _b;
-        _A ae = std::next(a, _s);
+		_A ae = std::next(a, _s);
 		for (; a != ae; ++a, ++b)
 		{
 			at[0] = *a;
@@ -233,13 +316,13 @@ typename element_of<_A>::type packCombine(_A const& _a, _B const& _b, unsigned _
 	{
 		_A a = _a;
 		_B b = _b;
-        _A ae = std::next(a, _s);
+		_A ae = std::next(a, _s);
 
 		if (_s > 7)
 		{
-            _A ap3 = std::next(a, 3);
-            _B bp3 = std::next(b, 3);
-            _A aem3 = std::next(a, _s - 3);
+			_A ap3 = std::next(a, 3);
+			_B bp3 = std::next(b, 3);
+			_A aem3 = std::next(a, _s - 3);
 			for (; ap3 < aem3;)
 			{
 				bool agood = (&*a + 3 == &*ap3) && (intptr_t(&*a) & 15) == 0;
@@ -393,7 +476,7 @@ void packTransform(_A _a, _B _b, unsigned _s, _Fxform const& _xform)
 	{
 		_A a = _a;
 		_B b = _b;
-        _A ae = std::next(a, _s);
+		_A ae = std::next(a, _s);
 		for (; a != ae; ++a, ++b)
 		{
 			at[0] = *a;
@@ -452,15 +535,15 @@ void packTransform(_A _a, _B _b, unsigned _s, _Fxform const& _xform)
 	{
 		_A a = _a;
 		_B b = _b;
-        _A ae = std::next(a, _s);
-        _A ae4 = std::next(a, _s & ~3u);
+		_A ae = std::next(a, _s);
+		_A ae4 = std::next(a, _s & ~3u);
 
 		for (; a != ae4;)
 		{
-            bool agood = (&*a + 3 == &*std::next(a, 3)) && (intptr_t(&*a) & VectorSizeLess1) == 0;
+			bool agood = (&*a + 3 == &*std::next(a, 3)) && (intptr_t(&*a) & VectorSizeLess1) == 0;
 			if (agood)
 			{
-                bool bgood = (&*b + 3 == &*std::next(b, 3)) && (intptr_t(&*b) & VectorSizeLess1) == 0;
+				bool bgood = (&*b + 3 == &*std::next(b, 3)) && (intptr_t(&*b) & VectorSizeLess1) == 0;
 				if (bgood)
 				{
 					_xform(*(VectorType*)&*a, *(VectorType const*)&*b);
@@ -556,7 +639,7 @@ void autocross(_It _begin, int _s, _F const& _f, unsigned _maxPeriod, unsigned _
 	_It ap = _begin;
 	for (int p = 0; p < rs; ++p, ++ap)
 		// Add new, subtract old.
-        _ret[p] += (_f(std::next(_begin, _s - p), std::next(ap, _s - p), _movingBy) - _f(_begin, ap, _movingBy)) / (_s - p);
+		_ret[p] += (_f(std::next(_begin, _s - p), std::next(ap, _s - p), _movingBy) - _f(_begin, ap, _movingBy)) / (_s - p);
 }
 
 template <class _F, class _U>
@@ -598,15 +681,15 @@ std::vector<typename _T::value_type> selfsimilarity(_T const& _b, unsigned _size
 inline void makeTotalUnit(std::vector<float>& _v)
 {
 	float integral = packEvaluate(_v.begin(), _v.size(), [](v4sf& acc, v4sf const& a){ acc = acc + a; }, [](float const* acc){ return acc[0] + acc[1] + acc[2] + acc[3];});
-	float div[4] = {integral, integral, integral, integral };
-	packTransform(_v.begin(), _v.size(), [&](v4sf& a){ a = a / *(v4sf*)div; });
+	v4sf div = { integral, integral, integral, integral };
+	packTransform(_v.begin(), _v.size(), [&](v4sf& a){ a = a / div; });
 }
 
 inline void makeTotalMinusUnit(std::vector<float>& _v)
 {
 	float integral = packEvaluate(_v.begin(), _v.size(), [](v4sf& acc, v4sf const& a){ acc = acc + a; }, [](float const* acc){ return acc[0] + acc[1] + acc[2] + acc[3];});
-	float div[4] = {-integral, -integral, -integral, -integral };
-	packTransform(_v.begin(), _v.size(), [&](v4sf& a){ a = a / *(v4sf*)div; });
+	v4sf div = {-integral, -integral, -integral, -integral };
+	packTransform(_v.begin(), _v.size(), [&](v4sf& a){ a = a / div; });
 }
 
 
@@ -614,8 +697,8 @@ template <class _It>
 std::tuple<typename element_of<_It>::type, typename element_of<_It>::type> meanVariance(_It _begin, int _s)
 {
 	float m = packEvaluate(_begin, _s, [](v4sf& acc, v4sf const& a){ acc += a; }, [&](float a[4]){ return (a[0] + a[1] + a[2] + a[3]) / float(_s); });
-	float ma[4] = {m,m,m,m};
-	float v = packEvaluate(_begin, _s, [&](v4sf& acc, v4sf const& a){ acc += sqr(a - *(v4sf*)ma); }, [&](float a[4]){ return (a[0] + a[1] + a[2] + a[3]) / float(_s); });
+	v4sf ma = { m, m, m, m };
+	float v = packEvaluate(_begin, _s, [&](v4sf& acc, v4sf const& a){ acc += sqr(a - ma); }, [&](float a[4]){ return (a[0] + a[1] + a[2] + a[3]) / float(_s); });
 	return std::make_tuple(m, v);
 }
 

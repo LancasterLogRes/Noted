@@ -20,29 +20,29 @@
 
 #pragma once
 
-#include <NotedPlugin/Prerendered.h>
+#include <QTableWidget>
+#include <Common/Members.h>
 
-class Noted;
-
-class WaveOverview: public Prerendered
+class PropertiesEditor: public QTableWidget
 {
 	Q_OBJECT
-	friend class Noted;
 
 public:
-	WaveOverview(QWidget* _parent = 0);
-
-	int positionOf(Lightbox::Time _t);
-	Lightbox::Time timeOf(int _x);
+	explicit PropertiesEditor(QWidget* _p = nullptr);
+	~PropertiesEditor();
+	
+	void setProperties(Lightbox::VoidMembers const& _properties);
 
 signals:
-	void resized();
+	void changed();
+
+public slots:
+	void updateWidgets();
+
+private slots:
+	void onChanged();
 
 private:
-	using Prerendered::event;
-
-	virtual void doRender(QImage& _img);
-	virtual void mousePressEvent(QMouseEvent* _e);
-	virtual void mouseMoveEvent(QMouseEvent* _e);
-	virtual void paintGL();
+	Lightbox::VoidMembers m_properties;
+	void* m_object;
 };

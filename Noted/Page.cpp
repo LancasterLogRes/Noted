@@ -18,6 +18,7 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QDebug>
 #include "Pager.h"
 #include "Page.h"
 
@@ -35,18 +36,34 @@ Page::Page(IndexLevel const& _ii, QString const& _filename, bool _allowCreate, u
 	if (m_file.exists() || _allowCreate)
 	{
 		m_file.open(QIODevice::ReadWrite);
-//		qDebug() << m_file.fileName() << m_file.isOpen();
-		if (m_file.size() == 0)
-			m_file.resize(_size);
-		else
-		{
-			m_alreadyExisted = true;
-			assert((unsigned)m_file.size() == _size);
-		}
-		m_mapping = m_file.map(0, m_file.size());
-		m_sizeof = m_file.size();
-        assert(!_size || m_mapping);
-	}
+        if (m_file.isOpen())
+        {
+            if (m_file.size() != _size)
+            {
+                qDebug() << m_file.fileName() << m_file.isOpen() << m_file.size() << _size;
+                m_file.resize(_size);
+                qDebug() << m_file.size() << _size << _size;
+            }
+            else
+            {
+                m_alreadyExisted = true;
+                assert((unsigned)m_file.size() == _size);
+            }
+            m_mapping = m_file.map(0, m_file.size());
+            m_sizeof = m_file.size();
+    //        qDebug() << hex << intptr_t(m_mapping);
+            if (!m_mapping)
+            {
+                qWarning() << "Couldn't map " << m_file.size() << " bytes of " << _filename;
+                qWarning() << "THIS ISN'T GOOD!";
+            }
+        }
+        else
+        {
+            qWarning() << "Couldn't open cache file " << _filename;
+            qWarning() << "THIS ISN'T GOOD!";
+        }
+    }
 }
 
 Page::~Page()

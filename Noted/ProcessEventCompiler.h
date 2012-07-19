@@ -28,7 +28,7 @@ class ProcessEventCompiler: public Lightbox::EventCompilerImpl
 public:
 	ProcessEventCompiler(QString const& _program): m_s(&m_p), m_program(_program) {}
 	std::string arguments;
-	LIGHTBOX_EVENTCOMPILER_PROPERTIES(arguments);
+	LIGHTBOX_PROPERTIES(arguments);
 
 	virtual Lightbox::StreamEvents init()
 	{
@@ -65,9 +65,6 @@ public:
 			Lightbox::StreamEvent e;
 			e.type = Lightbox::toEventType(l[0].toStdString());
 			e.strength = l[1].toFloat();
-/*			e.nature[0] = l[2].toInt();
-			e.nature[1] = l[3].toInt();
-			e.nature[2] = l[4].toInt();*/
 			e.nature = l[2].toFloat();
 			ret.push_back(e);
 		}

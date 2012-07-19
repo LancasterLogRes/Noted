@@ -36,7 +36,7 @@ using namespace Lightbox;
 class NotedGLWidget: public QGLWidget
 {
 public:
-	NotedGLWidget(GLView* _v, QWidget* _p): QGLWidget(_p), m_v(_v) {}
+	NotedGLWidget(QGLWidgetProxy* _v, QWidget* _p): QGLWidget(_p), m_v(_v) {}
     virtual ~NotedGLWidget() { delete m_v; }
 
 	virtual void initializeGL() { m_v->initializeGL(); }
@@ -49,7 +49,7 @@ public:
 	virtual void wheelEvent(QWheelEvent* _e) { m_v->wheelEvent(_e); }
 
 private:
-	GLView* m_v;
+	QGLWidgetProxy* m_v;
 };
 
 class App: public DummyNoted
@@ -76,7 +76,7 @@ public:
 		pb->setChecked(false);
 	}
 
-	QWidget* addGLWidget(GLView* _v, QWidget* _p = nullptr)
+	QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr)
 	{
 		return new NotedGLWidget(_v, _p);
 	}
@@ -106,12 +106,12 @@ public slots:
 		{
 			qDebug() << "UNLOAD" << name << " [PLUGIN]";
 			p.reset();
-			bool isFinilized = false;
-			bool** fed = (bool**)l.resolve("g_lightboxFinilized");
+			bool isFinalized = false;
+			bool** fed = (bool**)l.resolve("g_lightboxFinalized");
 			assert(fed);
-			*fed = &isFinilized;
+			*fed = &isFinalized;
 			assert(l.unload());
-			assert(isFinilized);
+			assert(isFinalized);
 			QFile::remove(l.fileName());
 		}
 	}

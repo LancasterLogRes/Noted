@@ -46,22 +46,26 @@ public:
 	bool rejigRender();
 
 	/// Called from the GUI thread.
-	void updateIfNeeded() { if (m_needsUpdate) update(); m_needsUpdate = false; }
+	void updateIfNeeded();
 
-    using Prerendered::event;
+	using Prerendered::event;
 
 public slots:
 	void sourceChanged();
 
+private slots:
+	void checkCursorMove();
+
 protected:
-	int xOf(Lightbox::Time _t) const;
-	Lightbox::Time timeOf(int _x) const;
+	/// These two are frozen at the zoom configuration as it was prior to rendering; this is necessary as the real offset/visibleduration may change during rendering (which is happening asynchronously).
+	int renderingPositionOf(Lightbox::Time _t) const;
+	Lightbox::Time renderingTimeOf(int _x) const;
 
 	virtual void doRender(QImage& _img) { doRender(_img, 0, width()); }
 	virtual void doRender(QImage& _img, int _dx, int _dw) = 0;
-	virtual QImage renderOverlay() { return QImage(); }
 
-	virtual void paintEvent(QPaintEvent*);
+	virtual void paintGL();
+	virtual void resizeGL(int _w, int _h);
 	virtual void mousePressEvent(QMouseEvent* _e);
 	virtual void mouseReleaseEvent(QMouseEvent* _e);
 	virtual void mouseMoveEvent(QMouseEvent* _e);
@@ -71,13 +75,16 @@ protected:
 	Lightbox::Time m_draggingTime;
 	bool m_cursorSizeIsHop;
 	Lightbox::Time m_renderedOffset;
-	Lightbox::Time m_renderedDuration;
+	Lightbox::Time m_renderedPixelDuration;
 	Lightbox::Time m_renderingOffset;
-	Lightbox::Time m_renderingDuration;
+	Lightbox::Time m_renderingPixelDuration;
 	bool m_needsUpdate;
 	bool m_sourceChanged;
 	Lightbox::Time m_lastEnd;
 	Lightbox::Time m_lastWarped;
+
+	int m_lastCursorL;
+	int m_lastCursorR;
 
 	QImage m_overlay;
 };

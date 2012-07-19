@@ -92,7 +92,7 @@ QVariant StreamEventItem::itemChange(GraphicsItemChange _change, QVariant const&
 		setZValue(v.x());
 		if (scene())
 		{
-			scene()->itemChanged(this);	// TODO: call once for batch moves.
+			scene()->itemChanged(this);	// OPTIMIZE: call once for batch moves.
 			scene()->c()->setCursor(fromSeconds(x() / 1000));
 		}
 		return v;

@@ -18,31 +18,17 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include <NotedPlugin/Prerendered.h>
-
-class Noted;
-
-class WaveOverview: public Prerendered
-{
-	Q_OBJECT
-	friend class Noted;
-
-public:
-	WaveOverview(QWidget* _parent = 0);
-
-	int positionOf(Lightbox::Time _t);
-	Lightbox::Time timeOf(int _x);
-
-signals:
-	void resized();
-
-private:
-	using Prerendered::event;
-
-	virtual void doRender(QImage& _img);
-	virtual void mousePressEvent(QMouseEvent* _e);
-	virtual void mouseMoveEvent(QMouseEvent* _e);
-	virtual void paintGL();
-};
+DO(std::string)
+DO(float)
+DO(double)
+DO(bool)
+DO(int)
+DO(unsigned int)
+DO(short)
+DO(unsigned short)
+DO(char)
+DO(unsigned char)
+DO(long)
+DO(unsigned long)
+DO(long long)
+DO(unsigned long long)

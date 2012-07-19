@@ -23,6 +23,7 @@
 #include <memory>
 #include <QObject>
 #include <Common/Time.h>
+#include <Common/MemberMap.h>
 
 #include "NotedFace.h"
 #include "CausalAnalysis.h"
@@ -39,6 +40,8 @@ class NotedPlugin: public QObject
 	friend class Noted;
 
 public:
+	typedef NotedPlugin LIGHTBOX_PROPERTIES_BaseClass;
+
 	NotedPlugin(NotedFace*);
 	virtual ~NotedPlugin();
 
@@ -47,6 +50,8 @@ public:
 	virtual void writeSettings(QSettings&) {}
 	virtual AcausalAnalysisPtrs ripeAnalysis(AcausalAnalysisPtr const&) { return AcausalAnalysisPtrs(); }
 	virtual QString titleAmendment(QString const& _title) const { return _title; }
+	virtual Lightbox::MemberMap propertyMap() const { return Lightbox::NullMemberMap; }
+	virtual void onPropertiesChanged() {}
 
 	NotedFace* noted() const { return m_noted; }
 
@@ -70,5 +75,6 @@ private:
 
 #define NOTED_PLUGIN(O) \
 	LIGHTBOX_FINILIZING_LIBRARY \
-	extern "C" __attribute__ ((visibility ("default"))) NotedPlugin* newPlugin(NotedFace* n) { return new O(n); }
+	extern "C" __attribute__ ((visibility ("default"))) NotedPlugin* newPlugin(NotedFace* n) { return new O(n); } \
+	extern "C" __attribute__ ((visibility ("default"))) char const* pluginName() { return #O; }
 

@@ -38,6 +38,7 @@ public:
 	~DataView() {}
 
 	QComboBox* selection() { return m_selection; }
+    void checkSpec();
 
 public slots:
 	void rejig();

@@ -18,27 +18,6 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <QDebug>
 
-#include <QWidget>
-
-class Noted;
-
-class Cursor: public QWidget
-{
-	Q_OBJECT
-
-public:
-	Cursor(Noted* _c, int _id = 0);
-	virtual ~Cursor();
-
-public slots:
-	void updateGeo();
-
-private:
-	virtual void paintEvent(QPaintEvent* _e);
-	virtual bool event(QEvent* _e);
-
-	Noted* m_c;
-	int m_id;
-};
+#include "QGLWidgetProxy.h"

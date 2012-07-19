@@ -47,7 +47,7 @@ public:
 	unsigned				rate() const { return m_rate; }
 	unsigned				channels() const { return m_channels; }
 	unsigned				periods() const { return m_periods; }
-	bool					isInterleaved() const { return true; }
+	bool					isInterleaved() const { return false; }
 	int						device() const { return m_device; }
 	std::string				deviceName() const { return m_deviceName; }
 

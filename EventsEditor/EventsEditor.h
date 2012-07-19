@@ -41,13 +41,16 @@ class EventsEditor: public QGraphicsView, public EventsStore, public Timeline
 
 public:
 	EventsEditor(QWidget* _parent, QString _filename = "");
-	
+	~EventsEditor();
+
+	virtual QString niceName() const { return m_filename; }
 	virtual QWidget* widget() { return this; }
 
 	QString queryFilename();
 	EventsEditScene* scene() const { return &*m_scene; }
 	NotedFace* c() const;
 	virtual Lightbox::StreamEvents events(int _i) const;
+	virtual Lightbox::StreamEvents initEvents() const { return Lightbox::StreamEvents(); }
 
 	void save(QSettings& _c) const;
 	void load(QSettings const& _c);

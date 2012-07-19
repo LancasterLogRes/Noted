@@ -16,7 +16,7 @@ Noted uses the Qt cross-platform toolkit as a GUI and its bundled build tool, 'q
 
 - FFTW; tested against 3.3.0. Should be in the system's include/library path (generally the way with Linux distributions; noted/Common/Common.pro may need tweaking otherwise).
 
-- Boost; tested against 1.48. Should be in the system's include/library path (generally the way with Linux distributions; noted/Common.primay need tweaking otherwise).
+- Boost; tested against 1.48 & 1.50. Should be in the system's include/library path (generally the way with Linux distributions; noted/Common.pri may need tweaking otherwise).
 
 
    Debian & derivatives (Ubuntu &c.):
@@ -29,19 +29,25 @@ sudo apt-get install libboost1.48-dev libboost-system1.48-dev portaudio19-dev li
 
 You'll need to download and install all components for a working minGW first. It's found at:
 
-http://sourceforge.net/projects/mingw/files/Installer/mingw-get-inst/
+http://builds.qt-project.org/job/mingw32-windows/
 
-You'll also need to download and install the Qt Windows libraries and IDE:
+The same site contains a prebuilt and compatible GDB also. Put them somewhere sensible, e.g. C:\mingw32.
 
-http://qt.nokia.com/downloads (making sure to get the minGW versions).
+You'll also need to download and compile Qt (4.8.x) from:
 
-Configure Qt Creator pointing it at the minGW installation and Qt installations you just made.
+http://qt.nokia.com/downloads
+
+Make sure to get the source code - the minGW versions are too old to be useful. You can compile by running 'configure' followed by <path to Mingw>/bin/ming32-make, making sure to specify the platform as "win32-g++-4.6".
+
+NB. Mingw's make (mingw32-make.exe) has a bug making it crash if the environment's PATH variable contains parentheses. Ensure that the PATH contains no such characters; the easiest way is to reset it to precisely what you need (i.e. the path to MinGW's bin and Qt's bin directories) prior to calling make from the command line, e.g.:
+
+set PATH=C:\mingw32\bin;c:\qt-everywhere-opensource-src-4.8.2\bin
 
 Next you'll need to download and install boost:
 
 http://www.boost.org/users/download/
 
-Unpack and compile it to somewhere sensible ("C:\boost", perhaps). In any case, remember where the directory is. Compilation is a slightly tedious affair - use the Windows command line (cmd.exe) to execute "bootstrap.bat" in boost's path, then switch to the msys shell to do the actual build, executing "bjam toolset=gcc" in boost's path.
+Unpack and compile it to somewhere sensible ("C:\boost_1_50_0", perhaps). In any case, remember where the directory is. Compilation is easy enough - use the Windows command line (cmd.exe) to execute "bootstrap.bat" in boost's path, then "b2 toolset=gcc" both in boost's path.
 
 Edit Noted/Common.pri and find the line beginning "BOOST ="; edit it so the path afterwards is the freshly installed boost's directory.
 
@@ -49,18 +55,32 @@ Next, download the latest (stable) Portaudio v19. You can get it from:
 
 http://www.portaudio.com/download.html
 
-Building can be done in msys with:
+Building can be done in MSys's bash shell (found in the MinGW installation) with:
 
 ./configure --with-winapi=directx,wmme,wasapi,wdmks --with-dxdir=/c/DXSDK/Feb2010 && make
 
 Make sure you have the latest DirectX SDK installed, and if the path is different to C:\DXSDK\Feb2010, then change the configure line accordingly. Make sure the path has no spaces in it.
 
-NB. Make sure the msys's "awk" utility is used over minGW's (delete minGW/bin/awk.exe).
+NB. The PATH parentheses issue is still around; make sure your PATH has no parens in it.
+
+If building fails, you might want to ask on the Portaudio mailing list, but as a workaround, remove the offending API from the configure line and reconfigure.
 
 Finally, get FFTW 3 from here:
 
 http://www.fftw.org/install/windows.html
 
 Having unpacked it somewhere sensible, you'll need to configure Noted with the directory into which you unpacked it. Go into Noted/Common.pri and change the line beginning with "FFTW = " so it ends with the correct path.
+
+In QtCreator, you'll need to specify the MinGW GCC & GDB in the Tools/Options/Build&Run/Toolchains. Since the make command is still broken regarding parens, you'll need to sanitize the PATH variable in the build environment (Projects tab, Build settings, Build environment) freeing it of parens (not a massive problem - just make sure it has the Qt and MinGW bin directories in it and you should be fine).
+
+Mac OS X
+
+By far the easiest way to building on Mac is to install MacPorts. Once done you can get all required software with:
+
+sudo port install ...
+
+Since we're using a GNU GCC rather than the Apple variant, it's necessary to create a new mkspec (to avoid qmake putting in an -Xarch parameter). Instructions...
+
+There is unfortunately a conflict between the libiconv used by Apple's libcups and the libiconv used by boost as installed over MacPorts. Workaround...
 
 -- Gavin Wood <gavin@lancasterlogicresponse.com> 

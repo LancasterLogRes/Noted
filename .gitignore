@@ -1,3 +1,6 @@
 *.user
 *.user.*
 thirdparty
+*.wix*
+*.msi
+*.log

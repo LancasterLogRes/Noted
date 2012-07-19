@@ -36,7 +36,7 @@ Lightbox::Time SpectraView::period() const { return c()->windowSize(); }
 void SpectraView::doRender(QImage& _img, int _dx, int _dw)
 {
 //	int w = width();
-	int h = height();
+    int h = _img.height();
 	unsigned bc = c()->spectrumSize();
 	unsigned s = c()->hops();
 	NotedFace* br = dynamic_cast<NotedFace*>(c());
@@ -44,13 +44,13 @@ void SpectraView::doRender(QImage& _img, int _dx, int _dw)
 	{
 		for (int x = _dx; x < _dx + _dw; ++x)
 		{
-			int fi = timeOf(x) > 0 ? timeOf(x) / c()->hop() : -1;
-			int ti = qMax<int>(fi + 1, timeOf(x + 1) / c()->hop());
+			int fi = renderingTimeOf(x) > 0 ? renderingTimeOf(x) / c()->hop() : -1;
+			int ti = qMax<int>(fi + 1, renderingTimeOf(x + 1) / c()->hop());
 //			float di = float(timeOf(x + 1) - timeOf(x)) / c()->hop();
 			if (fi >= 0 && ti < (int)s)
 			{
-				auto ms = br->magSpectrum(fi, ti - fi, true);
-				auto dps = br->deltaPhaseSpectrum(fi, 1, true);
+				auto ms = br->magSpectrum(fi, ti - fi);
+				auto dps = br->deltaPhaseSpectrum(fi, 1);
 
 				if (ms && dps)
 				{

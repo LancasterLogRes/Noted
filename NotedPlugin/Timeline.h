@@ -32,7 +32,9 @@ class EventsStore
 public:
 	virtual ~EventsStore() {}
 
+	virtual QString niceName() const = 0;
 	virtual Lightbox::StreamEvents events(int _i) const = 0;
+	virtual Lightbox::StreamEvents initEvents() const = 0;
 };
 
 class Timeline
@@ -47,10 +49,8 @@ public:
 	virtual Lightbox::Time highlightDuration() const;
 	virtual Lightbox::Time highlightFrom() const;
 
-	Lightbox::Time timelineOffset() const;
-	Lightbox::Time timelineDuration() const;
-	int xOfReal(Lightbox::Time _t) const;
-	Lightbox::Time timeOfReal(int _x) const;
+	Lightbox::Time earliestVisible() const;
+	Lightbox::Time pixelDuration() const;
 
 protected:
 	NotedFace* m_nf;

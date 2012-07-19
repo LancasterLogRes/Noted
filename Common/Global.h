@@ -20,10 +20,13 @@
 
 #pragma once
 
+#include <vector>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <cstdint>
 #include <tuple>
+#include <functional>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
@@ -32,11 +35,10 @@
 
 /// Define an enumeration together with a output stream operator. The values may not be assigned integers explicitly.
 #define LIGHTBOX_ENUM_TOSTRING(Name, ...) \
-	static char const* g_lightbox_namesOf ## Name = #__VA_ARGS__;\
-	static std::string g_lightbox_upperNamesOf ## Name = boost::algorithm::to_upper_copy(std::string(#__VA_ARGS__));\
+	static std::string g_lightbox_upperNamesOf ## Name;\
 	inline std::string toString(Name _n)\
 	{\
-		return ::Lightbox::afterComma(g_lightbox_namesOf ## Name, (uint16_t)_n);\
+		return ::Lightbox::afterComma(#__VA_ARGS__, (uint16_t)_n);\
 	}\
 	template <class T> inline T& operator<<(T& _o, Name _e)\
 	{\
@@ -45,9 +47,11 @@
 	inline Name to ## Name(std::string const& _s, bool _caseSensitive = true)\
 	{\
 		std::string ucs = boost::algorithm::to_upper_copy(_s);\
+		if (g_lightbox_upperNamesOf ## Name.empty())\
+			g_lightbox_upperNamesOf ## Name = boost::algorithm::to_upper_copy(std::string(#__VA_ARGS__));\
 		for (unsigned i = 0; ; ++i)\
 		{\
-			std::string s = ::Lightbox::afterComma(_caseSensitive ? g_lightbox_namesOf ## Name : g_lightbox_upperNamesOf ## Name.c_str(), i);\
+			std::string s = ::Lightbox::afterComma(_caseSensitive ? #__VA_ARGS__ : g_lightbox_upperNamesOf ## Name.c_str(), i);\
 			if (s.empty())\
 				return Name(0);\
 			else if ((_caseSensitive ? _s : ucs) == s)\
@@ -87,7 +91,7 @@
 	bool operator<(Name const& _c) const { return M1 < _c.M1 || (M1 == _c.M1 && (M2 < _c.M2 || (M2 == _c.M2 && M3 < _c.M3))); } \
 	bool operator==(Name const& _c) const { return _c.M1 == M1 && _c.M2 == M2 && _c.M3 == M3; } \
 	bool operator!=(Name const& _c) const { return !operator==(_c); } \
-	template <class S> friend S& operator<<(S& _out, Name const& _this) { return _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ")"; } \
+	template <class S> friend S& operator<<(S& _out, Name const& _this) { _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ")"; return _out; } \
 	operator std::tuple<T1, T2, T3>() const { return std::make_tuple(M1, M2, M3); }
 
 #define LIGHTBOX_STRUCT_BASE_3(Name, T1, M1, T2, M2, T3, M3) \
@@ -189,8 +193,8 @@ struct Name \
 
 #if defined(LIGHTBOX_SHARED_LIBRARY)
 #define LIGHTBOX_FINILIZING_LIBRARY \
-	extern "C" { __attribute__ ((visibility ("default"))) bool* g_lightboxFinilized = nullptr; } \
-	struct LightboxFinilizer { LightboxFinilizer() { std::cerr << "Finilizer()" << std::endl; } ~LightboxFinilizer() { std::cerr << "~Finilizer()" << std::endl; if (g_lightboxFinilized) *g_lightboxFinilized = true; } } g_lightboxFinilizer;
+	extern "C" { __attribute__ ((visibility ("default"))) bool* g_lightboxFinalized = nullptr; } \
+	struct LightboxFinalizer { ~LightboxFinalizer() { if (g_lightboxFinalized) *g_lightboxFinalized = true; } } g_lightboxFinalizer;
 #else
 #define LIGHTBOX_FINILIZING_LIBRARY
 #endif
@@ -247,7 +251,11 @@ template <class _T>
 class foreign_vector
 {
 public:
+	typedef _T value_type;
+	typedef _T element_type;
+
 	foreign_vector(): m_data(nullptr), m_count(0) {}
+	foreign_vector(std::vector<_T>* _data): m_data(_data->data()), m_count(_data->size()) {}
 	foreign_vector(_T* _data, unsigned _count): m_data(_data), m_count(_count) {}
 
 	explicit operator bool() const { return m_data && m_count; }
@@ -255,6 +263,7 @@ public:
 	_T* data() { return m_data; }
 	_T const* data() const { return m_data; }
 	unsigned count() const { return m_count; }
+	unsigned size() const { return m_count; }
 	foreign_vector& tied(std::shared_ptr<void> const& _lock) { m_lock = _lock; return *this; }
 
 	_T* begin() { return m_data; }
@@ -271,4 +280,35 @@ private:
 	std::shared_ptr<void> m_lock;
 };
 
+class NullOutputStream
+{
+public:
+	template <class T> NullOutputStream& operator<<(T const&) { return *this; }
+};
+
+extern bool g_debugEnabled[256];
+extern std::function<void(std::string const&, unsigned char)> g_debugPost;
+
+void simpleDebugOut(std::string const&, unsigned char);
+
+template <unsigned char _Id = 0, bool _AutoSpacing = true>
+class DebugOutputStream
+{
+public:
+	DebugOutputStream(char const* _start = "    ") { sstr << _start; }
+	~DebugOutputStream() { g_debugPost(sstr.str(), _Id); }
+	template <class T> DebugOutputStream& operator<<(T const& _t) { if (_AutoSpacing && sstr.str().size() && sstr.str().back() != ' ') sstr << " "; sstr << _t; return *this; }
+	std::stringstream sstr;
+};
+
 }
+
+// Dirties the global namespace, but oh so convenient...
+#define nbug(X) if (true) {} else Lightbox::NullOutputStream()
+#define nsbug(X) if (true) {} else Lightbox::NullOutputStream()
+#define ndebug if (true) {} else Lightbox::NullOutputStream()
+#define cbug(X) Lightbox::DebugOutputStream<X>()
+#define csbug(X) Lightbox::DebugOutputStream<X, false>()
+#define cdebug Lightbox::DebugOutputStream<253, true>()
+#define cnote Lightbox::DebugOutputStream<254, true>()
+#define cwarn Lightbox::DebugOutputStream<255, true>()

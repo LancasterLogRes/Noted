@@ -40,6 +40,8 @@ public:
 	explicit Color(uint8_t _val) { r() = _val; g() = _val; b() = _val; }
 	Color(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a = 255) { m_data.value = 0; r() = _r; g() = _g; b() = _b; a() = _a; }
 
+	uint8_t* data() { return (uint8_t*)&m_data; }
+	uint8_t const* data() const { return (uint8_t const*)&m_data; }
 	uint32_t uint32() const { return m_data.rgb.value(); }
 	uint8_t r() const { return m_data.rgb.r; }
 	uint8_t g() const { return m_data.rgb.g; }

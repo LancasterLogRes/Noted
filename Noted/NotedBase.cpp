@@ -21,6 +21,8 @@
 #include <cstdlib>
 #include <memory>
 #include <unordered_map>
+#include <sndfile.h>
+#include <libresample.h>
 #include <QDebug>
 #include <QtGui>
 #include <Common/Common.h>
@@ -47,7 +49,7 @@ NotedBase::~NotedBase()
 
 uint32_t NotedBase::calculateWaveFingerprint() const
 {
-	return uint32_t(qHash(m_audioFile.fileName())) ^ (m_normalize ? 0 : 42) ^ m_blockSamples;
+	return uint32_t(qHash(m_sourceFileName)) ^ m_rate ^ m_blockSamples;
 }
 
 uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const
@@ -57,11 +59,11 @@ uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const
 	if (!m_zeroPhase)
 		ret *= 69;
 	ret ^= m_hopSamples << 8;
-	ret ^= m_windowSizeSamples << 16;
+	ret ^= m_windowFunction.size() << 16;
 	return ret;
 }
 
-bool NotedBase::waveBlock(Time _from, Time _duration, Lightbox::foreign_vector<float> o_toFill, bool) const
+bool NotedBase::waveBlock(Time _from, Time _duration, Lightbox::foreign_vector<float> o_toFill) const
 {
 	QMutexLocker l(&x_wave);
 	IndexLevel il(-1, 0);
@@ -88,7 +90,7 @@ bool NotedBase::waveBlock(Time _from, Time _duration, Lightbox::foreign_vector<f
 		// global sample index...
 		int si = fromSample + i * samples / o_toFill.count();
 
-		if (si < 0 || si >= (int)m_samples)	// TODO: optimize through memset zero and loop cropping.
+		if (si < 0 || si >= (int)m_samples)	// OPTIMIZE: by memset zero and loop cropping.
 			o_toFill[i] = 0;
 		else
 		{
@@ -120,56 +122,46 @@ Lightbox::foreign_vector<float> NotedBase::waveWindow(int _window) const
 	QMutexLocker l(&x_wave);
 
 	// 0th window begins at (1 - hopsPerWindow) hops; all negative samples are 0 values.
-	int hopsPerWindow = m_windowSizeSamples / m_hopSamples;
+	int hopsPerWindow = m_windowFunction.size() / m_hopSamples;
 	int hop = _window + 1 - hopsPerWindow;
 	if (hop < 0)
 	{
-		shared_ptr<vector<float> > data = make_shared<vector<float> >(m_windowSizeSamples, 0.f);
-		auto i = m_wave.item(0, 0, true, 0, m_windowSizeSamples + hop * m_hopSamples);
-		memcpy(data->data() + m_windowSizeSamples - i.count(), i.data(), i.count() * sizeof(float));
-		return foreign_vector<float>(data->data(), m_windowSizeSamples).tied(data);
+		shared_ptr<vector<float> > data = make_shared<vector<float> >(m_windowFunction.size(), 0.f);
+		auto i = m_wave.item(0, 0, 0, m_windowFunction.size() + hop * m_hopSamples);
+		valcpy(data->data() + m_windowFunction.size() - i.count(), i.data(), i.count());
+		return foreign_vector<float>(data->data(), m_windowFunction.size()).tied(data);
 	}
-	else if ((hop * m_hopSamples) / (m_pageBlocks * m_blockSamples) == (hop * m_hopSamples + m_windowSizeSamples - 1) / (m_pageBlocks * m_blockSamples))
+	else if ((hop * m_hopSamples) / (m_pageBlocks * m_blockSamples) == (hop * m_hopSamples + m_windowFunction.size() - 1) / (m_pageBlocks * m_blockSamples))
 		// same page - just return
-		return m_wave.item(hop * m_hopSamples / m_blockSamples, 0, true, hop * m_hopSamples % m_blockSamples, m_windowSizeSamples);
+		return m_wave.item(hop * m_hopSamples / m_blockSamples, 0, hop * m_hopSamples % m_blockSamples, m_windowFunction.size());
 	else
 	{
 		// differing pages - need to create vector<float> and copy.
-		shared_ptr<vector<float> > data = make_shared<vector<float> >(m_windowSizeSamples);
+		shared_ptr<vector<float> > data = make_shared<vector<float> >(m_windowFunction.size());
 		int length1 = m_pageBlocks * m_blockSamples - hop * m_hopSamples % (m_pageBlocks * m_blockSamples);
-		auto i1 = m_wave.item(hop * m_hopSamples / m_blockSamples, 0, true, hop * m_hopSamples % m_blockSamples, length1);
-		memcpy(data->data(), i1.data(), length1 * sizeof(float));
-		auto i2 = m_wave.item((hop * m_hopSamples / (m_blockSamples * m_pageBlocks) + 1) * m_pageBlocks, 0, true, 0, m_windowSizeSamples - length1);
+		auto i1 = m_wave.item(hop * m_hopSamples / m_blockSamples, 0, hop * m_hopSamples % m_blockSamples, length1);
+		valcpy(data->data(), i1.data(), length1);
+		auto i2 = m_wave.item((hop * m_hopSamples / (m_blockSamples * m_pageBlocks) + 1) * m_pageBlocks, 0, 0, m_windowFunction.size() - length1);
 		if (i2)
-			memcpy(data->data() + length1, i2.data(), (m_windowSizeSamples - length1) * sizeof(float));
-		return foreign_vector<float>(data->data(), m_windowSizeSamples).tied(data);
+			valcpy(data->data() + length1, i2.data(), m_windowFunction.size() - length1);
+		return foreign_vector<float>(data->data(), m_windowFunction.size()).tied(data);
 	}
 }
 
-bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
+bool NotedBase::resampleWave()
 {
-	m_audioHeader = reinterpret_cast<WavHeader const*>(m_audioFile.map(0, sizeof(WavHeader)));
-	if (m_audioHeader && m_audioHeader->verify() && m_audioHeader->bitsPerSample == 16)	// can't handle anything other than 16 bit wavs for now.
+	SF_INFO info;
+	m_sndfile = sf_open(m_sourceFileName.toLocal8Bit().data(), SFM_READ, &info);
+	if (m_sndfile)
 	{
-		unsigned dataBytes = m_audioHeader->dataBytes;
-		if (dataBytes > m_audioFile.size() - sizeof(WavHeader))
-		{
-			qDebug() << "BAD Wav file header. Recovering, though the data may be corrupted.";
-			dataBytes = m_audioFile.size() - sizeof(WavHeader);
-		}
+		QMutexLocker l(&x_wave);
+		m_wave.init(calculateWaveFingerprint(), m_pageBlocks, m_blockSamples);
 
-		unsigned inFrames = dataBytes / m_audioHeader->bytesPerFrame;
-		Time inPeriod = toBase(1, m_audioHeader->rate);
-		m_samples = fromBase(toBase(inFrames, m_audioHeader->rate), m_rate);
-		unsigned outBlocks = (m_samples + m_blockSamples - 1) / m_blockSamples;
+		sf_seek(m_sndfile, 0, SEEK_SET);
+		float buffer[m_blockSamples * info.channels];
 
-		m_audioData = m_audioFile.map(sizeof(WavHeader), dataBytes);
-		auto sampleAt = [=](unsigned _i) -> int16_t { return (_i < dataBytes) ? *(int16_t const*)(m_audioData + _i) : 0; };
-
-//		float rpb4[4] = { 1.f / m_pageBlocks, 1.f / m_pageBlocks, 1.f / m_pageBlocks, 1.f / m_pageBlocks };
-
-		//TODO: only do RMS for first level - for later levels, just do mean. OR....
-		//TODO: only to max for first level - for later levels, just do mean.
+		// COULDDO: could only do RMS for first level - for later levels, just do mean
+		// ...or only to max for first level - for later levels, just do mean.
 		assert(m_pageBlocks == m_blockSamples);
 		auto accF = [&](float* current, float* acc, unsigned _n)
 		{
@@ -180,53 +172,85 @@ bool NotedBase::resampleWave(std::function<bool(int)> const& _carryOn)
 //			packTransform(acc, m_blockSamples, [&](v4sf& a){});
 		};
 
-		pair<int16_t, int16_t> r = range((int16_t*)m_audioData, (int16_t*)(m_audioData + inFrames * m_audioHeader->bytesPerFrame));
-		float factor = m_normalize ? 1 / max<float>(abs(r.first), abs(r.second)) : (1 / 32768.f);
-
-		QMutexLocker l(&x_wave);
-		m_wave.init(calculateWaveFingerprint(), m_pageBlocks, m_blockSamples);
-		if (m_audioHeader->rate == m_rate)
+		if (info.samplerate == (int)m_rate)
 		{
 			// Just copy across...
+			m_samples = info.frames;
+			unsigned outBlocks = (m_samples + m_blockSamples - 1) / m_blockSamples;
 			auto baseF = [&](unsigned blockIndex, float* page)
 			{
-				for (unsigned i = 0; i < m_blockSamples; ++i)
-					page[i] = sampleAt((i + blockIndex * m_blockSamples) * m_audioHeader->bytesPerFrame) * factor;
+				(void)blockIndex;
+				unsigned rc = sf_readf_float(m_sndfile, buffer, m_blockSamples);
+				valcpy<float>(page, buffer, rc, 1, info.channels);	// just take the channel 0.
+				memset(page + rc, 0, sizeof(float) * (m_blockSamples - rc));	// zeroify what's left.
 			};
-			m_wave.fill(baseF, accF, distillF, [](){}, _carryOn, outBlocks);
+			m_wave.fill(baseF, accF, distillF, [](){}, outBlocks);
 		}
 		else
 		{
 			// Needs a resample
+			double factor = double(m_rate) / info.samplerate;
+			void* resampler = resample_open(1, factor, factor);
+			m_samples = fromBase(toBase(info.frames, info.samplerate), m_rate);
+			unsigned outBlocks = (m_samples + m_blockSamples - 1) / m_blockSamples;
+
+			unsigned bufferPos = m_blockSamples;
+
 			auto baseF = [&](unsigned blockIndex, float* page)
 			{
-				for (unsigned i = 0; i < m_blockSamples; ++i)
+				unsigned pagePos = 0;
+				while (pagePos != m_blockSamples)
 				{
-					unsigned frame = i + blockIndex * m_blockSamples;
-					unsigned j = fromBase(toBase(frame, m_rate), m_audioHeader->rate);
-					unsigned x = float(toBase(frame, m_rate) - toBase(j, m_audioHeader->rate)) / inPeriod;
-					page[i] = lerp(x, *(int16_t*)(m_audioData + j * m_audioHeader->bytesPerFrame), sampleAt((j + 1) * m_audioHeader->bytesPerFrame)) * factor;
+					if (bufferPos == m_blockSamples)
+					{
+						// At end of current (input) buffer - refill and reset position.
+						int rc = sf_readf_float(m_sndfile, buffer, m_blockSamples);
+						if (rc < 0)
+							rc = 0;
+						valcpy<float>(buffer, buffer, rc, 1, info.channels);	// just take the channel 0.
+						memset(buffer + rc, 0, sizeof(float) * (m_blockSamples - rc));	// zeroify what's left.
+						bufferPos = 0;
+					}
+					int used = 0;
+					pagePos += resample_process(resampler, factor, buffer + bufferPos, m_blockSamples - bufferPos, blockIndex == outBlocks - 1, &used, page + pagePos, m_blockSamples - pagePos);
+					bufferPos += used;
 				}
+				for (unsigned i = 0; i < m_blockSamples; ++i)
+					page[i] = clamp(page[i], -1.f, 1.f);
 			};
-			m_wave.fill(baseF, accF, distillF, [](){}, _carryOn, outBlocks);
+			m_wave.fill(baseF, accF, distillF, [](){}, outBlocks);
+			resample_close(resampler);
 		}
+		sf_close(m_sndfile);
 	}
 	else
 		return false;
 	return true;
 }
 
-void NotedBase::rejigSpectra(std::function<bool(int)> const& _carryOn)
+void setVector(v4sf& _v, float _f)
 {
+	float* f = (float*)&_v;
+	f[0] = _f;
+	f[1] = _f;
+	f[2] = _f;
+	f[3] = _f;
+}
+
+void NotedBase::rejigSpectra()
+{
+	qDebug() << "### Locking...";
 	QMutexLocker l(&x_spectra);
+	qDebug() << "### Locked.";
 	if (samples())
 	{
 		m_spectra.init(calculateSpectraFingerprint(m_wave.fingerprint()), m_pageSpectra, spectrumSize() * 3);
 
-		FFTW fftw(m_windowSizeSamples);
+		FFTW fftw(m_windowFunction.size());
 		vector<float> lp(spectrumSize(), 0);
 
-		float p4[4] = { (float)m_pageSpectra, (float)m_pageSpectra, (float)m_pageSpectra, (float)m_pageSpectra };
+		v4sf p4;
+		setVector(p4, (float)m_pageSpectra);
 		int ss = spectrumSize();
 		int ss2 = spectrumSize() * 2;
 		int ss3 = spectrumSize() * 3;
@@ -235,11 +259,12 @@ void NotedBase::rejigSpectra(std::function<bool(int)> const& _carryOn)
 		{
 			float* b = fftw.in();
 			foreign_vector<float> win = waveWindow(index);
+			assert(win.data());
 			float* d = win.data();
 			float* w = m_windowFunction.data();
-			unsigned off = m_zeroPhase ? m_windowSizeSamples / 2 : 0;
-			for (unsigned j = 0; j < m_windowSizeSamples; ++d, ++j, ++w)
-				b[(j + off) % m_windowSizeSamples] = *d * *w;
+			unsigned off = m_zeroPhase ? m_windowFunction.size() / 2 : 0;
+			for (unsigned j = 0; j < m_windowFunction.size(); ++d, ++j, ++w)
+				b[(j + off) % m_windowFunction.size()] = *d * *w;
 			fftw.process();
 
 			packTransform(&(lp[0]), &(fftw.phase()[0]), ss, [&](v4sf& a, v4sf const& b){ a = b - a; });
@@ -254,14 +279,15 @@ void NotedBase::rejigSpectra(std::function<bool(int)> const& _carryOn)
 		};
 		auto divideF = [&](float* sd)
 		{
-			packTransform(sd, ss3, [&](v4sf& a){ a /= *(v4sf*)p4; });
+			packTransform(sd, ss3, [&](v4sf& a){ a = a / p4; });
 		};
 		auto doneF = [&]() { lp = fftw.phase(); };
 
-		m_spectra.fill(baseF, sumF, divideF, doneF, _carryOn, hops());
+		m_spectra.fill(baseF, sumF, divideF, doneF, hops());
 	}
 	else
 	{
 		m_spectra.fillFromExisting();
 	}
+	qDebug() << "### Leaving?";
 }

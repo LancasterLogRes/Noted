@@ -41,6 +41,9 @@ class EventsView;
 class Noted;
 class NotedBase;
 
+struct SNDFILE_tag;
+typedef struct SNDFILE_tag SNDFILE;
+
 static const std::vector<float> NullVectorFloat;
 
 class NotedBase: public NotedFace
@@ -52,29 +55,20 @@ public:
 	~NotedBase();
 
 	virtual Lightbox::foreign_vector<float> waveWindow(int _window) const;
-	virtual bool waveBlock(Lightbox::Time _from, Lightbox::Time _duration, Lightbox::foreign_vector<float> o_toFill, bool _forceBest = false) const;
-	virtual Lightbox::foreign_vector<float> magSpectrum(int _i, int _n, bool _force = false) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, _force, 0, spectrumSize()); }
-	virtual Lightbox::foreign_vector<float> phaseSpectrum(int _i, int _n, bool _force = false) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, _force, spectrumSize(), spectrumSize()); }
-	virtual Lightbox::foreign_vector<float> deltaPhaseSpectrum(int _i, int _n, bool _force = false) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, _force, spectrumSize() * 2, spectrumSize()); }
-
-	// StreamEvent stuff - would be nice to have this in a separate module/plugin.
-	virtual std::vector<float> graphEvents(float _nature) const = 0;
-	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity(), Lightbox::Time _t = Lightbox::UndefinedTime) const = 0;
-	virtual QVector<Lightbox::StreamEvent> eventsOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity(), Lightbox::Time _t = 0) const = 0;
-	virtual QVector<Lightbox::StreamEvent> initEventsOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity()) const = 0;
-	virtual bool isVisible(Lightbox::StreamEvent const& _e) const = 0;
-	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name) = 0;
+	virtual bool waveBlock(Lightbox::Time _from, Lightbox::Time _duration, Lightbox::foreign_vector<float> o_toFill) const;
+	virtual Lightbox::foreign_vector<float> magSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, 0, spectrumSize()); }
+	virtual Lightbox::foreign_vector<float> phaseSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, spectrumSize(), spectrumSize()); }
+	virtual Lightbox::foreign_vector<float> deltaPhaseSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, spectrumSize() * 2, spectrumSize()); }
 
 protected:
-	bool resampleWave(std::function<bool(int)> const& _carryOn);
-	void rejigSpectra(std::function<bool(int)> const& _carryOn);
+	bool resampleWave();
+	void rejigSpectra();
 
 	uint32_t calculateWaveFingerprint() const;
 	uint32_t calculateSpectraFingerprint(uint32_t _base) const;
 
-	QFile m_audioFile;
-	uint8_t const* m_audioData;
-	Lightbox::WavHeader const* m_audioHeader;
+	QString m_sourceFileName;
+	SNDFILE* m_sndfile;
 
 	mutable QMutex x_wave;
 	Pager<float> m_wave;

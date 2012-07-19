@@ -37,7 +37,7 @@ NOTED_PLUGIN(TestPlugin);
 
 static QWidget* glw;
 
-class TestGLView: public GLView
+class TestGLView: public QGLWidgetProxy
 {
 public:
 	virtual void initializeGL()

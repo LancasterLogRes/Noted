@@ -19,71 +19,78 @@
  */
 
 #include <iostream>
+#include <fstream>
 #include <cmath>
-#include <QSplitter>
-#include <QGraphicsOpacityEffect>
-#include <QPushButton>
-#include <QDebug>
-#include <QFrame>
-#include <QPaintEvent>
-#include <QPainter>
+#include <QtGui>
 #include <EventCompiler/StreamEvent.h>
 
+#include "PropertiesEditor.h"
 #include "Noted.h"
 #include "EventsView.h"
 
 using namespace std;
 using namespace Lightbox;
 
-EventsView::EventsView(QWidget* _parent):
-	PrerenderedTimeline	(_parent),
-	m_use		(nullptr)
+EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
+	PrerenderedTimeline	(new QSplitter(_parent)),
+	m_eventCompiler		(_ec),
+	m_use				(nullptr)
 {
+	m_actualWidget = dynamic_cast<QSplitter*>(parentWidget());
+	m_propertiesEditor = new PropertiesEditor(m_actualWidget);
+	m_actualWidget->addWidget(this);
+	m_actualWidget->addWidget(m_propertiesEditor);
+	m_propertiesEditor->setProperties(m_eventCompiler.properties());
+	connect(m_propertiesEditor, SIGNAL(changed()), c(), SLOT(noteEventCompilersChanged()));
+
 	connect(c(), SIGNAL(eventsChanged()), this, SLOT(sourceChanged()));
 	auto oe = []() -> QGraphicsEffect* { auto ret = new QGraphicsOpacityEffect; ret->setOpacity(0.7); return ret; };
 
+	m_label = new QLabel(this);
+	m_label->setGeometry(0, 0, 98, 16);
+	m_label->setStyleSheet("background: white");
+	m_label->setText(name());
+
 	QPushButton* b = new QPushButton(this);
-	b->setGeometry(0, 0, 23, 23);
+	b->setGeometry(0, 18, 23, 23);
 	b->setText("X");
 	b->setGraphicsEffect(oe());
 	connect(b, SIGNAL(clicked()), SLOT(deleteLater()));
 
-	m_selection = new QComboBox(this);
-	m_selection->setGeometry(0, 25, 98, 23);
-	m_selection->setGraphicsEffect(oe());
-	connect(m_selection, SIGNAL(currentIndexChanged(int)), SLOT(sourceChanged()));
-
 	QPushButton* ex = new QPushButton(this);
-	ex->setGeometry(25, 0, 23, 23);
+	ex->setGeometry(25, 18, 23, 23);
 	ex->setText(">");
 	ex->setGraphicsEffect(oe());
 	connect(ex, SIGNAL(clicked()), SLOT(exportEvents()));
 
 	QPushButton* d = new QPushButton(this);
-	d->setGeometry(50, 0, 23, 23);
+	d->setGeometry(50, 18, 23, 23);
 	d->setText("+");
 	d->setGraphicsEffect(oe());
 	connect(d, SIGNAL(clicked()), SLOT(duplicate()));
 
-	QPushButton* e = new QPushButton(this);
-	e->setGeometry(75, 0, 23, 23);
-	e->setText("E");
-	e->setGraphicsEffect(oe());
-	connect(e, SIGNAL(clicked()), SLOT(edit()));
-
 	m_use = new QPushButton(this);
-	m_use->setGeometry(100, 0, 23, 23);
+	m_use->setGeometry(75, 18, 23, 23);
 	m_use->setText("U");
 	m_use->setGraphicsEffect(oe());
 	m_use->setCheckable(true);
 	m_use->setChecked(true);
-	connect(e, SIGNAL(toggled(bool)), SLOT(onUseChanged()));
+	connect(m_use, SIGNAL(toggled(bool)), SLOT(onUseChanged()));
+
+	m_selection = new QComboBox(this);
+	m_selection->setGeometry(0, 43, 98, 23);
+	m_selection->setGraphicsEffect(oe());
+	connect(m_selection, SIGNAL(currentIndexChanged(int)), SLOT(sourceChanged()));
 
 	c()->noteEventCompilersChanged();
 }
 
 EventsView::~EventsView()
 {
+	QWidget* w = parentWidget();
+	setParent(0);
+	delete w;
+	clearEvents();
 }
 
 void EventsView::onUseChanged()
@@ -91,11 +98,23 @@ void EventsView::onUseChanged()
 	c()->noteEventCompilersChanged();
 }
 
-void EventsView::initEvents()
+void EventsView::clearEvents()
 {
 	QMutexLocker l(&x_events);
+	m_initEvents.clear();
 	m_events.clear();
 	m_current.clear();
+}
+
+vector<float> EventsView::graphEvents(float _nature) const
+{
+	QMutexLocker l(&x_events);
+	vector<float> ret;
+	foreach (auto es, m_events)
+		foreach (auto e, es)
+			if (e.type >= Graph && e.nature == _nature)
+				ret.push_back(e.strength);
+	return ret;
 }
 
 Lightbox::StreamEvents EventsView::events(int _i) const
@@ -109,21 +128,16 @@ Lightbox::StreamEvents EventsView::events(int _i) const
 	return StreamEvents();
 }
 
-void EventsView::shiftEvents(unsigned _n)
-{
-	QMutexLocker l(&x_events);
-	m_events.erase(m_events.begin(), next(m_events.begin(), _n));
-}
-
 void EventsView::appendEvents(StreamEvents const& _se)
 {
 	QMutexLocker l(&x_events);
 	m_events.push_back(_se);
 }
 
-void EventsView::edit()
+void EventsView::setInitEvents(StreamEvents const& _se)
 {
-	dynamic_cast<Noted*>(c())->newEventsEdit(this);
+	QMutexLocker l(&x_events);
+	m_initEvents = _se;
 }
 
 void EventsView::duplicate()
@@ -143,19 +157,125 @@ QString EventsView::name() const
 void EventsView::save()
 {
 	if (!m_eventCompiler.isNull())
-		m_name = name();
+	{
+		m_savedName = name();
+		m_savedProperties = m_eventCompiler.properties().serialized();
+	}
 	m_eventCompiler = EventCompiler();
 
 	// Have to clear at the moment, since auxilliary StreamEvent data can have hooks into the shared library that will be unloaded.
 	QMutexLocker l(&x_events);
 	m_events.clear();
+	m_initEvents.clear();
 }
 
 void EventsView::restore()
 {
-	m_eventCompiler = c()->newEventCompiler(m_name);
+	m_eventCompiler = c()->newEventCompiler(m_savedName);
+	m_eventCompiler.properties().deserialize(m_savedProperties);
+	m_propertiesEditor->setProperties(m_eventCompiler.properties());
+	m_label->setText(name());
+}
 
-	//TODO: Noted should rejig our events.
+void EventsView::readSettings(QSettings& _s, QString const& _id)
+{
+	m_savedName = _s.value(_id + "/name").toString();
+	m_savedProperties = _s.value(_id + "/properties").toString().toStdString();
+	restore();
+}
+
+void EventsView::writeSettings(QSettings& _s, QString const& _id)
+{
+	_s.setValue(_id + "/name", name());
+	_s.setValue(_id + "/properties", QString::fromStdString(m_eventCompiler.properties().serialized()));
+}
+
+void EventsView::exportEvents()
+{
+	QString fn = QFileDialog::getSaveFileName(this, "Export a series of events", QDir::currentPath(), "Native format (*.events);;XML format (*.xml);;CSV format (*.csv *.txt)");
+	ofstream out;
+	out.open(fn.toLocal8Bit(), ios::trunc);
+	if (fn.endsWith(".xml"))
+		out << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << endl << "<events>" << endl;
+	if (out)
+	{
+		Time t = 0;
+		QVariant v = m_selection->itemData(m_selection->currentIndex());
+		foreach (StreamEvents se, m_events)
+		{
+			int timeout = 0;
+			foreach (StreamEvent e, se)
+				if (eventVisible(v, e))
+				{
+					if (fn.endsWith(".xml"))
+					{
+						if (!timeout++)
+							out << QString("\t<time value=\"%1\">").arg(t).toStdString() << endl;
+						out << QString("\t\t<%1 strength=\"%2\" character=\"%3\" nature=\"%4\" surprise=\"%5\" position=\"%6\" period=\"%7\" />").arg(QString::fromStdString(toString(e.type)).toLower()).arg(e.strength).arg(toString(e.character).c_str()).arg(e.nature).arg(e.surprise).arg(e.position).arg(e.period).toStdString() << endl;
+					}
+					else if (fn.endsWith(".events"))
+					{
+						if (!timeout++)
+							out << t << endl;
+						out << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.nature << " " << e.surprise << " " << e.position << " " << e.period << endl;
+					}
+					else
+					{
+						out << toSeconds(t) << " " << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.nature << " " << e.surprise << " " << e.position << " " << e.period << endl;
+					}
+
+				}
+			if (timeout)
+			{
+				if (fn.endsWith(".xml"))
+					out << "\t</time>" << endl;
+				else if (fn.endsWith(".events"))
+					out << endl;
+			}
+			t += c()->hop();
+		}
+	}
+	if (fn.endsWith(".xml"))
+		out << "</events>" << endl;
+}
+
+void updateCombo(QComboBox* _box, set<float> const& _natures, set<EventType> _types)
+{
+	QString s =  _box->currentText();
+	_box->clear();
+	foreach (float n, _natures)
+	{
+		QPixmap pm(16, 16);
+		pm.fill(QColor::fromHsvF(n, 0.5, 0.85));
+		_box->insertItem(_box->count(), pm, QString("Graph events of nature %1").arg(n), n);
+	}
+	_box->insertItem(_box->count(), "All Graph events", true);
+	foreach (EventType e, _types)
+		_box->insertItem(_box->count(), QString("All %1 events").arg(toString(e).c_str()), int(e));
+	_box->insertItem(_box->count(), "All non-Graph events", false);
+	_box->insertItem(_box->count(), "All events");
+	for (int i = 0; i < _box->count(); ++i)
+		if (_box->itemText(i) == s)
+		{
+			_box->setCurrentIndex(i);
+			goto OK;
+		}
+	_box->setCurrentIndex(_box->count() - 1);
+	OK:;
+}
+
+void EventsView::updateEventTypes()
+{
+	set<float> natures;
+	set<EventType> types;
+	QMutexLocker l(&x_events);
+	foreach (auto es, m_events)
+		foreach (auto e, es)
+			if (e.type >= Graph)
+				natures.insert(e.nature);
+			else
+				types.insert(e.type);
+	updateCombo(m_selection, natures, types);
 }
 
 void EventsView::doRender(QImage& _img, int _dx, int _dw)
@@ -221,9 +341,9 @@ void EventsView::doRender(QImage& _img, int _dx, int _dw)
 		for (int i = 0; i < (int)m_events.size(); ++i)
 		{
 			Time t = i * c()->hop();
-			int px = xOf((i - 1) * c()->hop());
-			int x = xOf(t);
-			int nx = xOf((i + 1) * c()->hop());
+			int px = renderingPositionOf((i - 1) * c()->hop());
+			int x = renderingPositionOf(t);
+			int nx = renderingPositionOf((i + 1) * c()->hop());
 			int mx = (x + nx) / 2;
 			bool inView = nx >= r.left() - 160 && px <= r.right() + 160;
 			{
@@ -347,7 +467,7 @@ void EventsView::doRender(QImage& _img, int _dx, int _dw)
 							case Lightbox::PeriodSet:
 							{
 								p.setPen(cDark);
-								QRect r(x, yBar, xOf(t + e.period) - x, 12);
+								QRect r(x, yBar, renderingPositionOf(t + e.period) - x, 12);
 								p.drawLine(r.left(), r.center().y(), r.right(), r.center().y());
 								p.drawLine(r.topLeft(), r.bottomLeft());
 								p.drawLine(r.topRight(), r.bottomRight());

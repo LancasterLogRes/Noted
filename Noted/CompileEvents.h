@@ -30,7 +30,9 @@ public:
 	virtual void init(bool _willRecord)
 	{
 		if (_willRecord)
-			dynamic_cast<Noted*>(noted())->m_initEvents.clear();
+		{
+			dynamic_cast<Noted*>(noted())->clearEventsCache();
+		}
 	}
 	virtual void fini(bool)
 	{
