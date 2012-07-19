@@ -1011,22 +1011,22 @@ QList<EventsView*> Noted::eventsViews() const
 
 void Noted::on_actZoomOut_activated()
 {
-	zoomTimeline(m_timelineOffset + duration() / 2, 1.2);
+	zoomTimeline(m_timelineOffset + visibleDuration() / 2, 1.2);
 }
 
 void Noted::on_actZoomIn_activated()
 {
-	zoomTimeline(m_timelineOffset + duration() / 2, 1 / 1.2);
+	zoomTimeline(m_timelineOffset + visibleDuration() / 2, 1 / 1.2);
 }
 
 void Noted::on_actPanBack_activated()
 {
-	setTimelineOffset(m_timelineOffset - duration() / 4);
+	setTimelineOffset(m_timelineOffset - visibleDuration() / 4);
 }
 
 void Noted::on_actPanForward_activated()
 {
-	setTimelineOffset(m_timelineOffset + duration() / 4);
+	setTimelineOffset(m_timelineOffset + visibleDuration() / 4);
 }
 
 void Noted::on_actPanic_activated()
