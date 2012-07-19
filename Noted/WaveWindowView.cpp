@@ -30,7 +30,7 @@
 using namespace std;
 using namespace Lightbox;
 
-void WaveWindowView::doRender(QImage& _img)
+void WaveWindowView::doRender(QGLFramebufferObject* _fbo)
 {
 	foreign_vector<float> d = c()->waveWindow(c()->cursorIndex());
 	float* data = d.data();
@@ -58,7 +58,7 @@ void WaveWindowView::doRender(QImage& _img)
 		int w = width();
 		int h = height();
 
-		QPainter p(&_img);
+		QPainter p(_fbo);
 		p.fillRect(rect(), Qt::white);
 
 		p.setPen(QColor(224, 224, 224));

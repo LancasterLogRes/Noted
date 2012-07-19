@@ -31,5 +31,5 @@ public:
 	~SpectrumView() {}
 
 private:
-	virtual void doRender(QImage& _img);
+	virtual void doRender(QGLFramebufferObject* _fbo);
 };

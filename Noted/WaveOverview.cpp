@@ -92,7 +92,7 @@ void WaveOverview::paintGL()
 	glEnd();
 }
 
-void WaveOverview::doRender(QImage& _img)
+void WaveOverview::doRender(QGLFramebufferObject* _fbo)
 {
 	int w = width();
 	int h = height();
@@ -105,10 +105,8 @@ void WaveOverview::doRender(QImage& _img)
 	vector<float> wave(ww);
 	bool isAbsolute = c()->waveBlock(Time(0), c()->duration(), foreign_vector<float>(wave.data(), wave.size()));
 
-	_img.fill(Qt::white);
-
-	QPainter p(&_img);
-
+	QPainter p(_fbo);
+	p.fillRect(rect(), Qt::white);
 	GraphParameters<Time> nor(make_pair(0, c()->duration()), width() / 80, toBase(1, 1000000));
 	for (Time t = nor.from; t < nor.to; t += nor.incr)
 	{

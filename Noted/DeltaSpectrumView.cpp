@@ -31,7 +31,7 @@ using namespace Lightbox;
 
 #include "DeltaSpectrumView.h"
 
-void DeltaSpectrumView::doRender(QImage& _img)
+void DeltaSpectrumView::doRender(QGLFramebufferObject* _fbo)
 {
 	auto phase = c()->phaseSpectrum(m_i, 1);
 	auto lPhase = c()->phaseSpectrum(m_i - 1, 1);
@@ -43,7 +43,7 @@ void DeltaSpectrumView::doRender(QImage& _img)
 		int w = width();
 		int h = height() - 16;
 
-		QPainter p(&_img);
+		QPainter p(_fbo);
 		p.fillRect(rect(), qRgb(255, 255, 255));
 
 		float sc = 2 * Pi;

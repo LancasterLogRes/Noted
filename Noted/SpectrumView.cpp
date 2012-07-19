@@ -32,7 +32,7 @@
 using namespace std;
 using namespace Lightbox;
 
-void SpectrumView::doRender(QImage& _img)
+void SpectrumView::doRender(QGLFramebufferObject* _fbo)
 {
 	auto mag = c()->magSpectrum(m_i, 1);
 	auto phase = c()->phaseSpectrum(m_i, 1);
@@ -44,7 +44,7 @@ void SpectrumView::doRender(QImage& _img)
 		int ho = height() / 5;
 		int h = height() - 16 - ho;
 
-		QPainter p(&_img);
+		QPainter p(_fbo);
 		p.fillRect(rect(), qRgb(255, 255, 255));
 
 		float sc = qMax(1.f, Lightbox::range(mag.begin(), mag.end()).second);

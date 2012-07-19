@@ -34,6 +34,8 @@
 using namespace std;
 using namespace Lightbox;
 
+Prerendered::Prerendered(QWidget* _p): QGLWidget(_p), m_fbo(nullptr), m_c(nullptr) {}
+
 NotedFace* Prerendered::c() const
 {
 	if (!m_c)
@@ -46,6 +48,8 @@ NotedFace* Prerendered::c() const
 void Prerendered::rerender()
 {
 	m_rendered = QImage();
+	delete m_fbo;
+	m_fbo = nullptr;
 	updateGL();
 }
 
@@ -77,18 +81,18 @@ void Prerendered::resizeGL(int _w, int _h)
 
 void Prerendered::paintGL()
 {
-	if (m_rendered.size() != size() && c()->samples())
+	if ((!m_fbo || m_fbo->size() != size()) && c()->samples())
 	{
 //		qDebug() << "Rendering " << (void*)this;
-		m_rendered = QImage(size(), QImage::Format_RGB32);
-		doRender(m_rendered);
-		QImage glRendered = convertToGLFormat(m_rendered);
+		delete m_fbo;
+		m_fbo = new QGLFramebufferObject(size());
+		doRender(m_fbo);
 //		qDebug() << "Rendered " << m_rendered.size();
-		glBindTexture(GL_TEXTURE_2D, m_texture[0]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glRendered.size().width(), glRendered.size().height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, glRendered.constBits());
+		m_fbo->release();
+		initializeGL();
 	}
 	glColor4f(1.f, 1.f, 1.f, 1.f);
-	glBindTexture(GL_TEXTURE_2D, m_texture[0]);
+	glBindTexture(GL_TEXTURE_2D, m_fbo ? m_fbo->texture() : 0);
 	glBegin(GL_TRIANGLE_STRIP);
 	glTexCoord2i(0, 0);
 	glVertex2i(0, 0);

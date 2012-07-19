@@ -41,7 +41,7 @@ signals:
 private:
 	using Prerendered::event;
 
-	virtual void doRender(QImage& _img);
+	virtual void doRender(QGLFramebufferObject* _fbo);
 	virtual void mousePressEvent(QMouseEvent* _e);
 	virtual void mouseMoveEvent(QMouseEvent* _e);
 	virtual void initializeGL();

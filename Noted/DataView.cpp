@@ -331,12 +331,12 @@ pair<pair<float, float>, pair<float, float> > DataView::ranges(bool _needX, bool
 	return make_pair(xRange, yRange);
 }
 
-void DataView::doRender(QImage& _img)
+void DataView::doRender(QGLFramebufferObject* _fbo)
 {
 	shared_ptr<AuxGraphsSpec> spec = m_spec.lock();
 	if (!spec)
 		return;
-	QPainter p(&_img);
+	QPainter p(_fbo);
 
 	vector<StreamEvent> ses;
 	foreach (GraphSpec s, spec->graphs)

@@ -25,6 +25,7 @@
 
 #include <Common/Common.h>
 
+#include <QGLFramebufferObject>
 #include <QGLWidget>
 #include <QMutex>
 #include <QPainter>
@@ -64,7 +65,7 @@ class Prerendered: public QGLWidget
 	Q_OBJECT
 
 public:
-	Prerendered(QWidget* _p): QGLWidget(_p), m_c(0) {}
+	Prerendered(QWidget* _p);
 
 	NotedFace* c() const;
 
@@ -72,11 +73,12 @@ public slots:
 	void rerender();
 
 protected:
-	virtual void doRender(QImage& _img) = 0;
+	virtual void doRender(QGLFramebufferObject*) {}
 	virtual void initializeGL();
 	virtual void resizeGL(int _w, int _h);
 	virtual void paintGL();
 
+	QGLFramebufferObject* m_fbo;
 	QImage m_rendered;
 	unsigned m_texture[1];
 	mutable NotedFace* m_c;

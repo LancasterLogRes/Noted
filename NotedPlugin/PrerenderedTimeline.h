@@ -61,7 +61,7 @@ protected:
 	int renderingPositionOf(Lightbox::Time _t) const;
 	Lightbox::Time renderingTimeOf(int _x) const;
 
-	virtual void doRender(QImage& _img) { doRender(_img, 0, width()); }
+	void doRender(QImage& _img) { doRender(_img, 0, width()); }
 	virtual void doRender(QImage& _img, int _dx, int _dw) = 0;
 
 	virtual void paintGL();

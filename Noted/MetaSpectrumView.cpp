@@ -32,7 +32,7 @@
 using namespace std;
 using namespace Lightbox;
 
-void MetaSpectrumView::doRender(QImage& _img)
+void MetaSpectrumView::doRender(QGLFramebufferObject* _fbo)
 {
 	if (c()->spectrumSize() > 4)
 	{
@@ -54,7 +54,7 @@ void MetaSpectrumView::doRender(QImage& _img)
 		int ho = height() / 5;
 		int h = height() - 16 - ho;
 
-		QPainter p(&_img);
+		QPainter p(_fbo);
 		p.fillRect(rect(), qRgb(255, 255, 255));
 
 		float sc = qMax(1.f, Lightbox::range(mag).second);
