@@ -33,10 +33,12 @@ using namespace Lightbox;
 
 Lightbox::Time SpectraView::period() const { return c()->windowSize(); }
 
-void SpectraView::doRender(QImage& _img, int _dx, int _dw)
+void SpectraView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 {
 //	int w = width();
-    int h = _img.height();
+	int h = _fbo->height();
+	QPainter p(_fbo);
+	// OPTIMIZE: !!!
 	unsigned bc = c()->spectrumSize();
 	unsigned s = c()->hops();
 	NotedFace* br = dynamic_cast<NotedFace*>(c());
@@ -75,15 +77,15 @@ void SpectraView::doRender(QImage& _img, int _dx, int _dw)
 						if (mmp < 0.f || mmp > Pi * 2)
 							qDebug() << "Gaa! Phase out of range! (" << mmp << ")";
 						if (di <= 2)
-							_img.setPixel(x, y, QColor::fromHsvF(qMax(0.f, qMin(1.f, mmp / float(Pi * 2))), qMax(0.f, qMin(1.f, 1.f + log(mm + 0.0001f) / 4.f)), 1.f).rgb());
+							p.fillRect(QRect(x, y, 1, 1), QColor::fromHsvF(qMax(0.f, qMin(1.f, mmp / float(Pi * 2))), qMax(0.f, qMin(1.f, 1.f + log(mm + 0.0001f) / 4.f)), 1.f).rgb());
 						else if (di >= 4)
-							_img.setPixel(x, y, QColor::fromHsvF(0, 0, 1.f - qMax(0.f, qMin(1.f, sqrt(mm)))).rgb());
+							p.fillRect(QRect(x, y, 1, 1), QColor::fromHsvF(0, 0, 1.f - qMax(0.f, qMin(1.f, sqrt(mm)))).rgb());
 						else
 						{
 							QRgb c1 = QColor::fromHsvF(qMax(0.f, qMin(1.f, mmp / float(Pi * 2))), qMax(0.f, qMin(1.f, 1.f + log(mm + 0.0001f) / 4.f)), 1.f).rgb();
 							QRgb c2 = QColor::fromHsvF(0, 0, 1.f - qMax(0.f, qMin(1.f, sqrt(mm)))).rgb();
 							float f = (di - 2) / 2;
-							_img.setPixel(x, y, qRgb(lerp(f, qRed(c1), qRed(c2)), lerp(f, qGreen(c1), qGreen(c2)), lerp(f, qBlue(c1), qBlue(c2))));
+							p.fillRect(QRect(x, y, 1, 1), qRgb(lerp(f, qRed(c1), qRed(c2)), lerp(f, qGreen(c1), qGreen(c2)), lerp(f, qBlue(c1), qBlue(c2))));
 						}
 #endif
 //						float dp = Lightbox::withReflection(fabs(mmdp));
@@ -100,7 +102,7 @@ void SpectraView::doRender(QImage& _img, int _dx, int _dw)
 							unitChange -= 1.f;
 //						float deviation = 1.f - sqr(sqr(1.f - withReflection(fabs(unitChange - expectedUnitChange), 1.f)));
 
-						_img.setPixel(x, y, QColor::fromHsvF(qMax(0.f, qMin(1.f, unitChange)), qMax(0.f, qMin(1.f, 1.f + log(mm + 0.0001f) / 4.f)), 1.f).rgb());
+						p.fillRect(QRect(x, y, 1, 1), QColor::fromHsvF(qMax(0.f, qMin(1.f, unitChange)), qMax(0.f, qMin(1.f, 1.f + log(mm + 0.0001f) / 4.f)), 1.f).rgb());
 					}
 				}
 			}

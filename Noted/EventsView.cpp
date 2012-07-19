@@ -278,11 +278,11 @@ void EventsView::updateEventTypes()
 	updateCombo(m_selection, natures, types);
 }
 
-void EventsView::doRender(QImage& _img, int _dx, int _dw)
+void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 {
-	if (_img.isNull())
+	if (_fbo->size().isEmpty())
 		return;
-	QPainter p(&_img);
+	QPainter p(_fbo);
 	if (!p.isActive())
 		return;
 

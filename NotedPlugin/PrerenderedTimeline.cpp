@@ -28,8 +28,10 @@ using namespace std;
 #include "NotedFace.h"
 #include "PrerenderedTimeline.h"
 
-PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop): Prerendered(_p), m_draggingTime(Lightbox::UndefinedTime), m_cursorSizeIsHop(_cursorSizeIsHop), m_renderedOffset(0), m_renderedPixelDuration(0)
+PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop): Prerendered(_p), m_draggingTime(Lightbox::UndefinedTime), m_cursorSizeIsHop(_cursorSizeIsHop), m_renderedOffset(0), m_renderedPixelDuration(0), m_renderingContext(nullptr), m_renderingFrame(nullptr)
 {
+	m_renderingContext = new QGLWidget(0, this);
+//	m_renderingContext->show();
 	connect(c(), SIGNAL(offsetChanged()), SLOT(updateGL()));
 	connect(c(), SIGNAL(durationChanged()), SLOT(updateGL()));
 	connect(c(), SIGNAL(analysisFinished()), SLOT(sourceChanged()));
@@ -40,6 +42,8 @@ PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop): Pr
 
 PrerenderedTimeline::~PrerenderedTimeline()
 {
+	delete m_renderingContext;
+	delete m_renderingFrame;
 }
 
 void PrerenderedTimeline::mousePressEvent(QMouseEvent* _e)
@@ -110,33 +114,31 @@ void PrerenderedTimeline::paintGL()
 	QRect r(0, 0, 0, height());
 	{
 		QMutexLocker l(&m_lock);
-		if (m_needsUpdate)
+		if (m_fbo)
 		{
-			// Update the GL texture from the rendered image.
-			QImage glRendered = convertToGLFormat(m_rendered);
-			glBindTexture(GL_TEXTURE_2D, m_texture[0]);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glRendered.size().width(), glRendered.size().height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, glRendered.constBits());
+			Time o = c()->earliestVisible();
+			Time d = c()->pixelDuration();
+			Time relativeOffset = m_renderedOffset - o;
+			r.setX((relativeOffset + sign(relativeOffset) * d / 2) / d);
+			r.setWidth((m_renderedPixelDuration * m_fbo->width() + d / 2) / d);
+			if (r.x() == 0 && m_renderedOffset != o)
+				qDebug() << "Strange -> zero drawing offset, but have ro=" << m_renderedOffset << " and need o=" << o;
+			glBindTexture(GL_TEXTURE_2D, m_fbo->texture());
 		}
-		Time o = c()->earliestVisible();
-		Time d = c()->pixelDuration();
-		Time relativeOffset = m_renderedOffset - o;
-		r.setX((relativeOffset + sign(relativeOffset) * d / 2) / d);
-		r.setWidth((m_renderedPixelDuration * m_rendered.width() + d / 2) / d);
-		if (r.x() == 0 && m_renderedOffset != o)
-			qDebug() << "Strange -> zero drawing offset, but have ro=" << m_renderedOffset << " and need o=" << o;
+		else
+			glBindTexture(GL_TEXTURE_2D, 0);
+		glColor4f(1.f, 1.f, 1.f, 1.f);
+		glBegin(GL_TRIANGLE_STRIP);
+		glTexCoord2i(0, 0);
+		glVertex2i(r.x(), r.top());
+		glTexCoord2i(1, 0);
+		glVertex2i(r.x() + r.width(), r.top());
+		glTexCoord2i(0, 1);
+		glVertex2i(r.x(), r.top() + r.height());
+		glTexCoord2i(1, 1);
+		glVertex2i(r.x() + r.width(), r.top() + r.height());
+		glEnd();
 	}
-	glColor4f(1.f, 1.f, 1.f, 1.f);
-	glBindTexture(GL_TEXTURE_2D, m_texture[0]);
-	glBegin(GL_TRIANGLE_STRIP);
-	glTexCoord2i(0, 0);
-	glVertex2i(r.x(), r.top());
-	glTexCoord2i(1, 0);
-	glVertex2i(r.x() + r.width(), r.top());
-	glTexCoord2i(0, 1);
-	glVertex2i(r.x(), r.top() + r.height());
-	glTexCoord2i(1, 1);
-	glVertex2i(r.x() + r.width(), r.top() + r.height());
-	glEnd();
 
 	m_lastCursorL = c()->positionOf(highlightFrom()) + 1;
 	m_lastCursorR = m_lastCursorL + c()->widthOf(highlightDuration());
@@ -167,13 +169,21 @@ bool PrerenderedTimeline::rejigRender()
 	int w = width();
 	int h = height();
 	//qDebug() << size() << m_rendered.size();
-	if (w && h && (m_renderedOffset != m_renderingOffset || m_renderedPixelDuration != m_renderingPixelDuration || height() != m_rendered.height() || width() > m_rendered.width() || m_sourceChanged) && c()->samples())
+	if (w && h && (m_renderedOffset != m_renderingOffset || m_renderedPixelDuration != m_renderingPixelDuration || !m_fbo || height() != m_fbo->height() || width() > m_fbo->width() || m_sourceChanged) && c()->samples())
 	{
-		QImage img(width(), height(), QImage::Format_RGB32);
-		img.fill(qRgb(255, 255, 255));
-
+		m_renderingContext->makeCurrent();
+		if (!m_renderingFrame || m_renderingFrame->size() != QSize(w, h))
 		{
-			QPainter p(&img);
+			delete m_renderingFrame;
+			m_renderingFrame = new QGLFramebufferObject(w, h);
+			resizeGL(w, h);
+		}
+		m_renderingFrame->bind();
+
+		glClearColor(1, 1, 1, 1);
+		glClear(GL_COLOR_BUFFER_BIT);
+		{
+			QPainter p(m_renderingFrame);
 			GraphParameters<double> nor(make_pair(m_renderingOffset, m_renderingOffset + m_renderingPixelDuration * width()), width() / 80, toBase(1, 1000000));
 			for (Time t = nor.from; t < nor.to; t += nor.incr)
 			{
@@ -193,39 +203,52 @@ bool PrerenderedTimeline::rejigRender()
 			}
 		}
 
-		if (m_renderedPixelDuration == m_renderingPixelDuration && height() == m_rendered.height() && !m_sourceChanged)
+
+		if (m_fbo && m_renderedPixelDuration == m_renderingPixelDuration && height() == m_fbo->height() && !m_sourceChanged)
 		{
 			if (m_renderingOffset < m_renderedOffset)
 			{
-				assert(width() == m_rendered.width());	// currently can't handle changes in width when the new offset is earlier.
+				assert(width() == m_fbo->width());	// currently can't handle changes in width when the new offset is earlier.
 				// |//////|----------|
 				//    rW       kW
 				Time rerenderPeriod = m_renderedOffset - m_renderingOffset;
 				int rerenderWidth = min<int>(w, (rerenderPeriod + m_renderedPixelDuration / 2) / m_renderedPixelDuration);
 				int keepWidth = w - rerenderWidth;
-				QPainter(&img).drawImage(rerenderWidth, 0, m_rendered, 0, 0, keepWidth, -1);
-				doRender(img, 0, rerenderWidth);
+//				QPainter(&img).drawImage(rerenderWidth, 0, m_rendered, 0, 0, keepWidth, -1);
+				glPushMatrix();
+				glScalef(1.f, -1.f, 1.f);
+				glTranslatef(0, -h, 0);
+				m_renderingContext->drawTexture(QPointF(rerenderWidth, 0), m_fbo->texture());
+				glPopMatrix();
+				doRender(m_renderingFrame, 0, rerenderWidth);
 			}
 			else
 			{
 				// NOTE: Here it may be that rendered & rendering are not equal widths - in which case rW + kW != w.
 				// |----------|//////|
 				//      kW       rW
-				Time rerenderPeriod = m_renderingOffset + width() * m_renderingPixelDuration - (m_renderedOffset + m_rendered.width() * m_renderedPixelDuration);
+				Time rerenderPeriod = m_renderingOffset + width() * m_renderingPixelDuration - (m_renderedOffset + m_fbo->width() * m_renderedPixelDuration);
 				int rerenderWidth = min<int>(w, (rerenderPeriod + m_renderedPixelDuration / 2) / m_renderedPixelDuration);
 				int keepWidth = w - rerenderWidth;
-				QPainter(&img).drawImage(0, 0, m_rendered, (m_renderingOffset - m_renderedOffset + m_renderedPixelDuration / 2) / m_renderedPixelDuration, 0, keepWidth, -1);
-				doRender(img, keepWidth, rerenderWidth);
+//				QPainter(&img).drawImage(0, 0, m_rendered, (m_renderingOffset - m_renderedOffset + m_renderedPixelDuration / 2) / m_renderedPixelDuration, 0, keepWidth, -1);
+				glPushMatrix();
+				glScalef(1.f, -1.f, 1.f);
+				glTranslatef(0, -h, 0);
+				m_renderingContext->drawTexture(QPointF(-m_fbo->width() + keepWidth, 0), m_fbo->texture());
+				glPopMatrix();
+				doRender(m_renderingFrame, keepWidth, rerenderWidth);
 			}
 		}
 		else
 		{
 			m_sourceChanged = false;
-			doRender(img);
+			doRender(m_renderingFrame, 0, w);
 		}
+		m_renderingFrame->release();
+		m_renderingContext->doneCurrent();
 
 		QMutexLocker l(&m_lock);
-		m_rendered = img;
+		swap(m_renderingFrame, m_fbo);
 		m_renderedOffset = m_renderingOffset;
 		m_renderedPixelDuration = m_renderingPixelDuration;
 		m_needsUpdate = true;

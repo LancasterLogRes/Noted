@@ -28,6 +28,7 @@
 #include <QMouseEvent>
 #include <QWidget>
 #include <QMutex>
+#include <QGLContext>
 
 #include "Timeline.h"
 #include "Prerendered.h"
@@ -61,8 +62,7 @@ protected:
 	int renderingPositionOf(Lightbox::Time _t) const;
 	Lightbox::Time renderingTimeOf(int _x) const;
 
-	void doRender(QImage& _img) { doRender(_img, 0, width()); }
-	virtual void doRender(QImage& _img, int _dx, int _dw) = 0;
+	virtual void doRender(QGLFramebufferObject* _fbo, int _dx, int _dw) = 0;
 
 	virtual void paintGL();
 	virtual void resizeGL(int _w, int _h);
@@ -78,6 +78,9 @@ protected:
 	Lightbox::Time m_renderedPixelDuration;
 	Lightbox::Time m_renderingOffset;
 	Lightbox::Time m_renderingPixelDuration;
+	QGLWidget* m_renderingContext;
+	QGLFramebufferObject* m_renderingFrame;
+
 	bool m_needsUpdate;
 	bool m_sourceChanged;
 	Lightbox::Time m_lastEnd;
@@ -86,5 +89,4 @@ protected:
 	int m_lastCursorL;
 	int m_lastCursorR;
 
-	QImage m_overlay;
 };

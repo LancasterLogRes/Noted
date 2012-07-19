@@ -47,7 +47,6 @@ NotedFace* Prerendered::c() const
 
 void Prerendered::rerender()
 {
-	m_rendered = QImage();
 	delete m_fbo;
 	m_fbo = nullptr;
 	updateGL();
@@ -63,8 +62,6 @@ void Prerendered::initializeGL()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
 	glEnable(GL_TEXTURE_2D);
-	glGenTextures(1, m_texture);
-	glBindTexture (GL_TEXTURE_2D, m_texture[0]);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 }

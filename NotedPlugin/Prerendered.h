@@ -79,7 +79,5 @@ protected:
 	virtual void paintGL();
 
 	QGLFramebufferObject* m_fbo;
-	QImage m_rendered;
-	unsigned m_texture[1];
 	mutable NotedFace* m_c;
 };

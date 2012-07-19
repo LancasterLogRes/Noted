@@ -40,7 +40,7 @@ Lightbox::Time WaveView::highlightDuration() const
 	return m_nf->windowSize();
 }
 
-void WaveView::doRender(QImage& _img, int _dx, int _dw)
+void WaveView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 {
 	if (_dw < 1)
 		return;
@@ -50,7 +50,7 @@ void WaveView::doRender(QImage& _img, int _dx, int _dw)
 	bool isAbsolute = c()->waveBlock(c()->timeOf(_dx), c()->durationOf(_dw), foreign_vector<float>(wave.data(), wave.size()));
 
 	int h = height();
-	QPainter p(&_img);
+	QPainter p(_fbo);
 	QRect r(_dx, 0, _dw, h);
 	p.setClipRect(r);
 	p.translate(0, 10);

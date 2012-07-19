@@ -37,5 +37,5 @@ signals:
 	void resized();
 
 private:
-	virtual void doRender(QImage& _img, int _dx, int _dw);
+	virtual void doRender(QGLFramebufferObject* _fbo, int _dx, int _dw);
 };
