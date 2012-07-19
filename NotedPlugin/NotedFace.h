@@ -110,10 +110,12 @@ public:
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;
 	virtual void info(QString const& _info, char const* _color = "gray") = 0;
 
+	inline void zoomTimeline(Lightbox::Time _pivot, double _factor) { m_timelineOffset = _pivot - positionOf(_pivot) * pixelDuration(); m_pixelDuration = m_pixelDuration * _factor; emit durationChanged(); }
+
 public slots:
 	virtual void setCursor(qint64 _c) = 0;
-	virtual void setTimelineOffset(qint64 _o) = 0;
-	virtual void setPixelDuration(qint64 _d) = 0;
+	inline void setTimelineOffset(qint64 _o) { if (m_timelineOffset != _o) { m_timelineOffset = _o; emit offsetChanged(); } }
+	inline void setPixelDuration(qint64 _d) { if (m_pixelDuration != _d) { m_pixelDuration = _d; emit durationChanged(); } }
 
 	virtual void updateWindowTitle() = 0;
 

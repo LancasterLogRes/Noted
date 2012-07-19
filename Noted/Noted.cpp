@@ -849,7 +849,7 @@ void Noted::on_actFollow_changed()
 
 void Noted::on_actOpen_activated()
 {
-	QString s = QFileDialog::getOpenFileName(this, "Open an audio file", QDir::homePath(), "Microsoft Wave (*.wav *.WAV);;SGI/Apple (*.AIFF *.AIFC *.aiff *.aifc);;Sun/DEC/NeXT (*.AU *.SND *.au *.snd);;Paris Audio File (*.PAF *.paf);;Commodore Amiga (*.IFF *.SVX *.iff *.svx);;Sphere Nist (*.NIST *.nist);;IRCAM (*.SF *.sf);;Creative (*.VOC *.voc);;Soundforge (*.W64 *.w64);;GNU Octave 2.0 (*.MAT4 *.mat4);;GNU Octave 2.1 (*.MAT5 *.mat5);;Portable Voice Format (*.PVF *.pvf);;Fasttracker 2 (*.XI *.xi);;HMM Tool Kit (*.HTK *.htk);;Apple CAF (*.CAF *.caf);;Sound Designer II (*.SD2 *.sd2);;Free Lossless Audio Codec (*.FLAC *.flac);;Ogg Vorbis (*.OGG *.ogg)");
+	QString s = QFileDialog::getOpenFileName(this, "Open an audio file", QDir::homePath(), "All Audio files (*.wav *.WAV *.aiff *.AIFF *.aifc *.AIFC *.au *.AU *.snd *.SND *.nist *.NIST *.iff *.IFF *.svx *.SVX *.paf *.PAF *.w64 *.W64 *.voc *.VOC *.sf *.SF *.caf *.CAF *.htk *.HTK *.xi *.XI *.pvf *.PVF *.mat5 *.mat4 *.MAT5 *.MAT4 *.sd2 *.SD2 *.flac *.FLAC *.ogg *.OGG );;Microsoft Wave (*.wav *.WAV);;SGI/Apple (*.AIFF *.AIFC *.aiff *.aifc);;Sun/DEC/NeXT (*.AU *.SND *.au *.snd);;Paris Audio File (*.PAF *.paf);;Commodore Amiga (*.IFF *.SVX *.iff *.svx);;Sphere Nist (*.NIST *.nist);;IRCAM (*.SF *.sf);;Creative (*.VOC *.voc);;Soundforge (*.W64 *.w64);;GNU Octave 2.0 (*.MAT4 *.mat4);;GNU Octave 2.1 (*.MAT5 *.mat5);;Portable Voice Format (*.PVF *.pvf);;Fasttracker 2 (*.XI *.xi);;HMM Tool Kit (*.HTK *.htk);;Apple CAF (*.CAF *.caf);;Sound Designer II (*.SD2 *.sd2);;Free Lossless Audio Codec (*.FLAC *.flac);;Ogg Vorbis (*.OGG *.ogg)");
 	if (!s.isNull())
 		setAudio(s);
 }
@@ -1011,26 +1011,22 @@ QList<EventsView*> Noted::eventsViews() const
 
 void Noted::on_actZoomOut_activated()
 {
-	Time centre = m_timelineOffset + m_pixelDuration * activeWidth() / 2;
-	setPixelDuration(m_pixelDuration *= 1.2);
-	setTimelineOffset(centre - m_pixelDuration * activeWidth() / 2);
+	zoomTimeline(m_timelineOffset + duration() / 2, 1.2);
 }
 
 void Noted::on_actZoomIn_activated()
 {
-	Time centre = m_timelineOffset + m_pixelDuration * activeWidth() / 2;
-	setPixelDuration(m_pixelDuration /= 1.2);
-	setTimelineOffset(centre - m_pixelDuration * activeWidth() / 2);
+	zoomTimeline(m_timelineOffset + duration() / 2, 1 / 1.2);
 }
 
 void Noted::on_actPanBack_activated()
 {
-	setTimelineOffset(m_timelineOffset - m_pixelDuration * activeWidth() / 4);
+	setTimelineOffset(m_timelineOffset - duration() / 4);
 }
 
 void Noted::on_actPanForward_activated()
 {
-	setTimelineOffset(m_timelineOffset + m_pixelDuration * activeWidth() / 4);
+	setTimelineOffset(m_timelineOffset + duration() / 4);
 }
 
 void Noted::on_actPanic_activated()

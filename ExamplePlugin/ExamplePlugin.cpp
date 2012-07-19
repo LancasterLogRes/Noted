@@ -46,11 +46,7 @@ public:
 
 	virtual void initializeGL()
 	{
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		glClearDepth(1.0f);
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LEQUAL);
-		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+		glDisable(GL_DEPTH_TEST);
 		glGenTextures (1, m_texture);
 		for (int i = 0; i < 1; ++i)
 		{
@@ -83,7 +79,6 @@ public:
 
 	virtual void paintGL()
 	{
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glLoadIdentity();
 		{
 			auto w = m_c->waveWindow(m_c->cursorIndex());

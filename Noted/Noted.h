@@ -110,8 +110,6 @@ public slots:
 	virtual void onLibraryChange(QString const& _name);
 
 	virtual void setCursor(qint64 _c);
-	virtual void setTimelineOffset(qint64 _o) { if (m_timelineOffset != _o) { m_timelineOffset = _o; emit offsetChanged(); } }
-	virtual void setPixelDuration(qint64 _d) { if (m_pixelDuration != _d) { m_pixelDuration = _d; emit durationChanged(); } }
 
 private slots:
 	void on_actOpen_activated();

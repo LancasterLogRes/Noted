@@ -66,16 +66,13 @@ void PrerenderedTimeline::mouseMoveEvent(QMouseEvent* _e)
 
 void PrerenderedTimeline::wheelEvent(QWheelEvent* _e)
 {
-	// Want to keep timeOf(_e->x()) constant.
-	Lightbox::Time t = c()->timeOf(_e->x());
 #ifdef Q_OS_MAC
 #define CORRECT_SIGN -
 #else
 #define CORRECT_SIGN
 #endif
-	c()->setPixelDuration(c()->pixelDuration() * exp(CORRECT_SIGN _e->delta() / (QApplication::keyboardModifiers() & Qt::ControlModifier ? 2400.0 : QApplication::keyboardModifiers() & Qt::ShiftModifier ? 24 : 240.0)));
+	c()->zoomTimeline(c()->timeOf(_e->x()), exp(CORRECT_SIGN _e->delta() / (QApplication::keyboardModifiers() & Qt::ControlModifier ? 2400.0 : QApplication::keyboardModifiers() & Qt::ShiftModifier ? 24 : 240.0)));
 #undef CORRECT_SIGN
-	c()->setTimelineOffset(t - _e->x() * pixelDuration());
 }
 
 int PrerenderedTimeline::renderingPositionOf(Lightbox::Time _t) const
@@ -126,7 +123,7 @@ void PrerenderedTimeline::paintGL()
 		r.setX((relativeOffset + sign(relativeOffset) * d / 2) / d);
 		r.setWidth((m_renderedPixelDuration * m_rendered.width() + d / 2) / d);
 		if (r.x() == 0 && m_renderedOffset != o)
-			qDebug() << "Stange -> zero drawing offset, but have ro=" << m_renderedOffset << " and need o=" << o;
+			qDebug() << "Strange -> zero drawing offset, but have ro=" << m_renderedOffset << " and need o=" << o;
 	}
 	glColor4f(1.f, 1.f, 1.f, 1.f);
 	glBindTexture(GL_TEXTURE_2D, m_texture[0]);
