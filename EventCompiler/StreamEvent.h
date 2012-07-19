@@ -148,11 +148,11 @@ enum Character
 	Psychotic,	//=	(Tedious|Aggressive|Structured|Pointed)&SimpleComponents,		// O
 	Ditzy,		//=	(Charming|Peaceful|Chaotic|Disparate)&SimpleComponents,			// ?
 	Vibrant,	//=	(Charming|Peaceful|Chaotic|Pointed)&SimpleComponents,			// ~
-	Harmonious,	//= (Charming|Peaceful|Structured|Disparate)&SimpleComponents,		// #
+	Harmonious,	//= 	(Charming|Peaceful|Structured|Disparate)&SimpleComponents,		// #
 	Adroit,		//=	(Charming|Peaceful|Structured|Pointed)&SimpleComponents,		// |
 	Explosive,	//=	(Charming|Aggressive|Chaotic|Disparate)&SimpleComponents,		// *
 	Implosive,	//=	(Charming|Aggressive|Chaotic|Pointed)&SimpleComponents,			// /
-	Visceral,	//=	(Charming|Aggressive|Structured|Disparate)&SimpleComponents,	// !
+	Visceral,	//=	(Charming|Aggressive|Structured|Disparate)&SimpleComponents,		// !
 	Piquant		//=	(Charming|Aggressive|Structured|Pointed)&SimpleComponents		// ^
 };
 

@@ -27,7 +27,8 @@ using namespace std;
 #include "Noted.h"
 #include "Cursor.h"
 
-Cursor::Cursor(Noted* _c, int _id): QDialog(_c, Qt::FramelessWindowHint|Qt::Tool|Qt::WindowStaysOnBottomHint), m_c(_c), m_id(_id)
+//Cursor::Cursor(Noted* _c, int _id): QDialog(_c, Qt::FramelessWindowHint|Qt::Tool|Qt::WindowStaysOnBottomHint), m_c(_c), m_id(_id)
+Cursor::Cursor(Noted* _c, int _id): QWidget(_c, Qt::FramelessWindowHint|Qt::Tool|Qt::WindowStaysOnBottomHint), m_c(_c), m_id(_id)
 {
     setStyleSheet("background:transparent;");
 	setAttribute(Qt::WA_TranslucentBackground, true);
