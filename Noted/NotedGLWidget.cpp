@@ -18,6 +18,7 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cassert>
 #include <QDebug>
 #include <QTimer>
 #include "NotedGLWidget.h"

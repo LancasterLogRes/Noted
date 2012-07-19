@@ -21,7 +21,6 @@
 #pragma once
 
 #include <iostream>
-#include <boost/chrono.hpp>
 #include <QGLWidget>
 #include <QThread>
 #include <QResizeEvent>
