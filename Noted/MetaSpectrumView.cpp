@@ -43,8 +43,9 @@ void MetaSpectrumView::doRender(QGLFramebufferObject* _fbo)
 		unsigned aoff = 0;//arity / 2;
 		{
 			auto imag = c()->magSpectrum(m_i, 1);
-			for (unsigned i = 0; i < arity; ++i)
-				fftw.in()[i] = imag[(i + aoff) % arity];// * wF[(i + aoff) % arity];
+			if (imag.size())
+				for (unsigned i = 0; i < arity; ++i)
+					fftw.in()[i] = imag[(i + aoff) % arity];// * wF[(i + aoff) % arity];
 		}
 		fftw.process();
 		vector<float> const& mag = fftw.mag();

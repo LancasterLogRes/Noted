@@ -22,16 +22,16 @@
 #include <QApplication>
 #include <QPainter>
 #include <Common/Common.h>
-using namespace Lightbox;
-using namespace std;
 
 #include "NotedFace.h"
 #include "PrerenderedTimeline.h"
 
+using namespace Lightbox;
+using namespace std;
+
 PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop): Prerendered(_p), m_draggingTime(Lightbox::UndefinedTime), m_cursorSizeIsHop(_cursorSizeIsHop), m_renderedOffset(0), m_renderedPixelDuration(0), m_renderingContext(nullptr), m_renderingFrame(nullptr)
 {
 	m_renderingContext = new QGLWidget(0, this);
-//	m_renderingContext->show();
 	connect(c(), SIGNAL(offsetChanged()), SLOT(updateGL()));
 	connect(c(), SIGNAL(durationChanged()), SLOT(updateGL()));
 	connect(c(), SIGNAL(analysisFinished()), SLOT(sourceChanged()));
@@ -168,7 +168,6 @@ bool PrerenderedTimeline::rejigRender()
 	m_renderingPixelDuration = c()->pixelDuration();
 	int w = width();
 	int h = height();
-	//qDebug() << size() << m_rendered.size();
 	if (w && h && (m_renderedOffset != m_renderingOffset || m_renderedPixelDuration != m_renderingPixelDuration || !m_fbo || height() != m_fbo->height() || width() > m_fbo->width() || m_sourceChanged) && c()->samples())
 	{
 		m_renderingContext->makeCurrent();
@@ -213,8 +212,6 @@ bool PrerenderedTimeline::rejigRender()
 				//    rW       kW
 				Time rerenderPeriod = m_renderedOffset - m_renderingOffset;
 				int rerenderWidth = min<int>(w, (rerenderPeriod + m_renderedPixelDuration / 2) / m_renderedPixelDuration);
-				int keepWidth = w - rerenderWidth;
-//				QPainter(&img).drawImage(rerenderWidth, 0, m_rendered, 0, 0, keepWidth, -1);
 				glPushMatrix();
 				glScalef(1.f, -1.f, 1.f);
 				glTranslatef(0, -h, 0);
@@ -230,7 +227,6 @@ bool PrerenderedTimeline::rejigRender()
 				Time rerenderPeriod = m_renderingOffset + width() * m_renderingPixelDuration - (m_renderedOffset + m_fbo->width() * m_renderedPixelDuration);
 				int rerenderWidth = min<int>(w, (rerenderPeriod + m_renderedPixelDuration / 2) / m_renderedPixelDuration);
 				int keepWidth = w - rerenderWidth;
-//				QPainter(&img).drawImage(0, 0, m_rendered, (m_renderingOffset - m_renderedOffset + m_renderedPixelDuration / 2) / m_renderedPixelDuration, 0, keepWidth, -1);
 				glPushMatrix();
 				glScalef(1.f, -1.f, 1.f);
 				glTranslatef(0, -h, 0);

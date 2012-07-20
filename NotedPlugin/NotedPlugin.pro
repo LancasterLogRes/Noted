@@ -20,7 +20,8 @@ SOURCES += Timeline.cpp \
 	Prerendered.cpp \
 	AcausalAnalysis.cpp \
 	CausalAnalysis.cpp \
-    QGLWidgetProxy.cpp
+    QGLWidgetProxy.cpp \
+    PrerenderedOOT.cpp
 
 HEADERS  += Timeline.h \
 	PrerenderedTimeline.h \
@@ -30,4 +31,5 @@ HEADERS  += Timeline.h \
 	CausalAnalysis.h \
 	AcausalAnalysis.h \
 	AuxLibraryFace.h \
-    QGLWidgetProxy.h
+    QGLWidgetProxy.h \
+    PrerenderedOOT.h

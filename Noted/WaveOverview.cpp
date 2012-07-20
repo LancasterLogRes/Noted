@@ -27,13 +27,8 @@
 using namespace std;
 using namespace Lightbox;
 
-WaveOverview::WaveOverview(QWidget* _parent): Prerendered(_parent)
+WaveOverview::WaveOverview(QWidget* _parent): CurrentView(_parent)
 {
-	connect(c(), SIGNAL(offsetChanged()), SLOT(updateGL()));
-	connect(c(), SIGNAL(durationChanged()), SLOT(updateGL()));
-	connect(c(), SIGNAL(analysisFinished()), SLOT(rerender()));
-	connect(c(), SIGNAL(analysisFinished()), SLOT(updateGL()));
-	connect(c(), SIGNAL(cursorChanged()), SLOT(updateGL()));
 }
 
 int WaveOverview::positionOf(Lightbox::Time _t)
@@ -60,12 +55,12 @@ void WaveOverview::mouseMoveEvent(QMouseEvent* _e)
 
 void WaveOverview::initializeGL()
 {
-	Prerendered::initializeGL();
+	CurrentView::initializeGL();
 }
 
 void WaveOverview::paintGL()
 {
-	Prerendered::paintGL();
+	CurrentView::paintGL();
 
 	int cursorL = positionOf(c()->earliestVisible());
 	int cursorR = positionOf(c()->latestVisible());

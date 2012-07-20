@@ -22,17 +22,15 @@
 
 #include "CurrentView.h"
 
-CurrentView::CurrentView(QWidget* _parent): Prerendered(_parent), m_i(-1)
-{
-	// TODO: do this properly once this is a plugin.
-	connect(window(), SIGNAL(cursorChanged()), this, SLOT(check()));
-}
+CurrentView::CurrentView(QWidget* _parent): PrerenderedOOT(_parent), m_i(-1)
+{}
 
-void CurrentView::check()
+bool CurrentView::needsRepaint() const
 {
-	if (m_i != (int)c()->cursorIndex())
+	if (PrerenderedOOT::needsRepaint() && m_i != (int)c()->cursorIndex())
 	{
 		m_i = c()->cursorIndex();
-		rerender();
+		return true;
 	}
+	return false;
 }

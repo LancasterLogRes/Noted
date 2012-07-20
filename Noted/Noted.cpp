@@ -791,11 +791,11 @@ bool Noted::work()
 	{
 		bool worked = false;
 		{
-			QMutexLocker l(&x_timelines);
+			/*QMutexLocker l(&x_timelines);
 			foreach (Timeline* t, m_timelines)
 				if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
 					if (pt->rejigRender())
-						worked = true;
+						worked = true;*/
 		}
 		if (!worked)
 		{

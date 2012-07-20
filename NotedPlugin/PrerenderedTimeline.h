@@ -49,7 +49,7 @@ public:
 	/// Called from the GUI thread.
 	void updateIfNeeded();
 
-	using Prerendered::event;
+	using Prerendered::QGLWidget::event;
 
 public slots:
 	void sourceChanged();

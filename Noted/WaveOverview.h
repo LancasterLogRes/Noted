@@ -20,11 +20,11 @@
 
 #pragma once
 
-#include <NotedPlugin/Prerendered.h>
+#include "CurrentView.h"
 
 class Noted;
 
-class WaveOverview: public Prerendered
+class WaveOverview: public CurrentView
 {
 	Q_OBJECT
 	friend class Noted;
@@ -39,7 +39,7 @@ signals:
 	void resized();
 
 private:
-	using Prerendered::event;
+	using CurrentView::event;
 
 	virtual void doRender(QGLFramebufferObject* _fbo);
 	virtual void mousePressEvent(QMouseEvent* _e);

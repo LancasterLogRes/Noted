@@ -21,9 +21,9 @@
 #pragma once
 
 #include <cmath>
-#include <NotedPlugin/Prerendered.h>
+#include <NotedPlugin/PrerenderedOOT.h>
 
-class CurrentView: public Prerendered
+class CurrentView: public PrerenderedOOT
 {
 	Q_OBJECT
 
@@ -31,9 +31,8 @@ public:
 	explicit CurrentView(QWidget* _parent = 0);
 	~CurrentView() {}
 
-public slots:
-	virtual void check();
+	virtual bool needsRepaint() const;
 
 protected:
-	int m_i;
+	mutable int m_i;
 };
