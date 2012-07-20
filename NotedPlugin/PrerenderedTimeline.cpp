@@ -29,14 +29,10 @@
 using namespace Lightbox;
 using namespace std;
 
-PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop): Prerendered(_p), m_draggingTime(Lightbox::UndefinedTime), m_cursorSizeIsHop(_cursorSizeIsHop), m_renderedOffset(0), m_renderedPixelDuration(0), m_renderingContext(nullptr), m_renderingFrame(nullptr)
+PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop): PrerenderedOOT(_p), m_draggingTime(Lightbox::UndefinedTime), m_cursorSizeIsHop(_cursorSizeIsHop), m_renderedOffset(0), m_renderedPixelDuration(0), m_renderingContext(nullptr), m_renderingFrame(nullptr)
 {
 	m_renderingContext = new QGLWidget(0, this);
-	connect(c(), SIGNAL(offsetChanged()), SLOT(updateGL()));
-	connect(c(), SIGNAL(durationChanged()), SLOT(updateGL()));
 	connect(c(), SIGNAL(analysisFinished()), SLOT(sourceChanged()));
-	connect(c(), SIGNAL(analysisFinished()), SLOT(updateGL()));
-	connect(c(), SIGNAL(cursorChanged()), SLOT(checkCursorMove()));
 	initTimeline(c());
 }
 
@@ -89,23 +85,25 @@ Lightbox::Time PrerenderedTimeline::renderingTimeOf(int _x) const
 	return int64_t(_x) * m_renderingPixelDuration + m_renderingOffset;
 }
 
+bool PrerenderedTimeline::needsRepaint() const
+{
+	int cursorL = c()->positionOf(highlightFrom()) + 1;
+	int cursorR = cursorL + c()->widthOf(highlightDuration());
+	if (PrerenderedOOT::needsRepaint() || m_needsUpdate || m_lastOffset != c()->earliestVisible() || m_lastPixelDuration != c()->pixelDuration() || (m_lastCursorR != cursorR && !((cursorL > size().width() && m_lastCursorL > size().width()) || cursorR < 0 && m_lastCursorR < 0)))
+	{
+		return true;
+	}
+	return false;
+}
+
 void PrerenderedTimeline::resizeGL(int _w, int _h)
 {
-	Prerendered::resizeGL(_w, _h);
+	PrerenderedOOT::resizeGL(_w, _h);
 }
 
 void PrerenderedTimeline::sourceChanged()
 {
 	m_sourceChanged = true;
-	m_needsUpdate = true;
-}
-
-void PrerenderedTimeline::checkCursorMove()
-{
-	int cursorL = c()->positionOf(highlightFrom()) + 1;
-	int cursorR = cursorL + c()->widthOf(highlightDuration());
-	if (m_lastCursorR != cursorR && !((cursorL > size().width() && m_lastCursorL > size().width()) || cursorR < 0 && m_lastCursorR < 0))
-		updateGL();
 }
 
 void PrerenderedTimeline::paintGL()
@@ -251,10 +249,4 @@ bool PrerenderedTimeline::rejigRender()
 		return true;
 	}
 	return false;
-}
-
-void PrerenderedTimeline::updateIfNeeded()
-{
-	if (m_needsUpdate)
-		updateGL();
 }

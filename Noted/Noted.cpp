@@ -791,11 +791,11 @@ bool Noted::work()
 	{
 		bool worked = false;
 		{
-			/*QMutexLocker l(&x_timelines);
+			QMutexLocker l(&x_timelines);
 			foreach (Timeline* t, m_timelines)
 				if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
 					if (pt->rejigRender())
-						worked = true;*/
+						worked = true;
 		}
 		if (!worked)
 		{
@@ -1148,12 +1148,6 @@ void Noted::timerEvent(QTimerEvent*)
 			ui->statusBar->findChild<QLabel*>("alsa")->setText(QString("%1 %2# @ %3Hz, %4x%5 frames").arg(m_playback->deviceName().c_str()).arg(m_playback->channels()).arg(m_playback->rate()).arg(m_playback->periods()).arg(m_playback->frames()));
 		else
 			ui->statusBar->findChild<QLabel*>("alsa")->setText("No audio");
-		{
-			QMutexLocker l(&x_timelines);
-			foreach (Timeline* t, m_timelines)
-				if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
-					pt->updateIfNeeded();
-		}
 		{
 			QMutexLocker l(&x_infos);
 			if (m_infos.size())

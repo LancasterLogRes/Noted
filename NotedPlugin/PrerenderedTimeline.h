@@ -31,9 +31,9 @@
 #include <QGLContext>
 
 #include "Timeline.h"
-#include "Prerendered.h"
+#include "PrerenderedOOT.h"
 
-class PrerenderedTimeline: public Prerendered, public Timeline
+class PrerenderedTimeline: public PrerenderedOOT, public Timeline
 {
 	Q_OBJECT
 
@@ -46,16 +46,12 @@ public:
 	/// Called from the worker thread.
 	bool rejigRender();
 
-	/// Called from the GUI thread.
-	void updateIfNeeded();
+	virtual bool needsRepaint() const;
 
-	using Prerendered::QGLWidget::event;
+	using PrerenderedOOT::event;
 
 public slots:
 	void sourceChanged();
-
-private slots:
-	void checkCursorMove();
 
 protected:
 	/// These two are frozen at the zoom configuration as it was prior to rendering; this is necessary as the real offset/visibleduration may change during rendering (which is happening asynchronously).
@@ -83,10 +79,9 @@ protected:
 
 	bool m_needsUpdate;
 	bool m_sourceChanged;
-	Lightbox::Time m_lastEnd;
-	Lightbox::Time m_lastWarped;
 
 	int m_lastCursorL;
 	int m_lastCursorR;
-
+	Lightbox::Time m_lastOffset;
+	Lightbox::Time m_lastPixelDuration;
 };
