@@ -46,6 +46,7 @@ inline std::ostream& operator<<(std::ostream& _out, QString const& _s) { return 
 class Timeline;
 class EventsStore;
 class CausalAnalysis;
+class QGLWidget;
 
 class NotedFace: public QMainWindow
 {
@@ -59,6 +60,7 @@ public:
 
 	virtual bool carryOn(int _progress) = 0;
 	virtual int activeWidth() const = 0;
+	virtual QGLWidget* glMaster() const = 0;
 
 	inline Lightbox::Time earliestVisible() const { return m_timelineOffset; }
 	inline Lightbox::Time pixelDuration() const { return m_pixelDuration; }
@@ -155,6 +157,7 @@ public:
 	virtual bool carryOn(int) { return false; }
 
 	virtual int activeWidth() const { return 0; }
+	virtual QGLWidget* glMaster() const { return nullptr; }
 	virtual Lightbox::Time earliestVisible() const { return 0; }
 	virtual Lightbox::Time pixelDuration() const { return 1; }
 	virtual Lightbox::Time cursor() const { return 0; }

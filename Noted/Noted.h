@@ -76,6 +76,7 @@ public:
 	~Noted();
 
 	virtual int activeWidth() const;
+	virtual QGLWidget* glMaster() const;
 	virtual bool isPlaying() const { return !!m_playback; }
 	virtual void info(QString const& _info, char const* _color = "gray");
 	void info(QString const& _info, int _id);
@@ -236,4 +237,7 @@ private:
 	QMutex x_infos;
 	QString m_info;
 	QString m_infos;
+
+	// Master GL context...
+	QGLWidget* m_glMaster;
 };

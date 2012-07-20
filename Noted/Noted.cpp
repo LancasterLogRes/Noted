@@ -133,7 +133,8 @@ Noted::Noted(QWidget* _p):
 	m_spectraAcAnalysis			(new SpectraAc),
 	m_finishUpAcAnalysis		(new FinishUpAc),
 	m_compileEventsAnalysis		(new CompileEvents),
-	m_collateEventsAnalysis		(new CollateEvents)
+	m_collateEventsAnalysis		(new CollateEvents),
+	m_glMaster					(new QGLWidget)
 {
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
 
@@ -206,6 +207,13 @@ Noted::~Noted()
 	delete m_playbackThread;
 
 	delete ui;
+
+	delete m_glMaster;
+}
+
+QGLWidget* Noted::glMaster() const
+{
+	return m_glMaster;
 }
 
 void Noted::on_actAbout_activated()
