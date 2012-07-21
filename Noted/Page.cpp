@@ -40,9 +40,9 @@ Page::Page(IndexLevel const& _ii, QString const& _filename, bool _allowCreate, u
         {
             if (m_file.size() != _size)
             {
-                qDebug() << m_file.fileName() << m_file.isOpen() << m_file.size() << _size;
+//				qDebug() << m_file.fileName() << m_file.isOpen() << m_file.size() << _size;
                 m_file.resize(_size);
-                qDebug() << m_file.size() << _size << _size;
+//				qDebug() << m_file.size() << _size << _size;
             }
             else
             {
@@ -51,7 +51,7 @@ Page::Page(IndexLevel const& _ii, QString const& _filename, bool _allowCreate, u
             }
             m_mapping = m_file.map(0, m_file.size());
             m_sizeof = m_file.size();
-    //        qDebug() << hex << intptr_t(m_mapping);
+//			qDebug() << hex << intptr_t(m_mapping);
             if (!m_mapping)
             {
                 qWarning() << "Couldn't map " << m_file.size() << " bytes of " << _filename;

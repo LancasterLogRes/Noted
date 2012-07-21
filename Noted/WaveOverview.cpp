@@ -19,6 +19,7 @@
  */
 
 #include <QPainter>
+#include <QGLFramebufferObject>
 #include <Common/Common.h>
 #include <NotedPlugin/NotedFace.h>
 

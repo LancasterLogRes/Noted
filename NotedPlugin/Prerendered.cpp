@@ -19,6 +19,7 @@
  */
 
 #include <QPainter>
+#include <QGLFramebufferObject>
 #ifdef Q_OS_MAC
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
@@ -27,6 +28,7 @@
 #include <GL/glu.h>
 #endif
 #include <Common/Common.h>
+#include <boost/thread.hpp>
 
 #include "NotedFace.h"
 #include "Prerendered.h"
@@ -34,7 +36,87 @@
 using namespace std;
 using namespace Lightbox;
 
-Prerendered::Prerendered(QWidget* _p): QGLWidget(_p), m_fbo(nullptr), m_c(nullptr) {}
+void DisplayThread::run()
+{
+	m_p->run();
+}
+
+Prerendered::Prerendered(QWidget* _p): QGLWidget(_p), m_fbo(nullptr), m_display(this), m_c(nullptr)
+{
+	setAutoBufferSwap(false);
+}
+
+Prerendered::~Prerendered()
+{
+	quit();
+	delete m_fbo;
+}
+
+void Prerendered::paintEvent(QPaintEvent*)
+{
+	if (!m_display.isRunning())
+	{
+		m_quitting = false;
+		doneCurrent();
+		m_display.start();
+	}
+}
+
+bool Prerendered::needsRepaint() const
+{
+	return !size().isEmpty() && isVisible();
+}
+
+void Prerendered::quit()
+{
+	m_quitting = true;
+	m_display.wait(1000);
+	while (m_display.isRunning())
+	{
+		terminate();
+		m_display.wait(1000);
+	}
+	makeCurrent();
+}
+
+void Prerendered::hideEvent(QShowEvent*)
+{
+	quit();
+}
+
+void Prerendered::closeEvent(QCloseEvent*)
+{
+	quit();
+}
+
+void Prerendered::resizeEvent(QResizeEvent* _e)
+{
+	m_newSize = _e->size();
+}
+
+void Prerendered::run()
+{
+	makeCurrent();
+	initializeGL();
+	while (!m_quitting)
+	{
+		bool resized = false;
+		if (m_newSize.isValid())
+		{
+			resizeGL(m_newSize.width(), m_newSize.height());
+			m_newSize = QSize();
+			resized = true;
+		}
+		if (resized || needsRepaint())
+		{
+			paintGL();
+			swapBuffers();
+		}
+		else
+			m_display.msleep(5);
+	}
+	doneCurrent();
+}
 
 NotedFace* Prerendered::c() const
 {
@@ -47,9 +129,6 @@ NotedFace* Prerendered::c() const
 
 void Prerendered::rerender()
 {
-	delete m_fbo;
-	m_fbo = nullptr;
-	updateGL();
 }
 
 void Prerendered::initializeGL()
@@ -78,13 +157,15 @@ void Prerendered::resizeGL(int _w, int _h)
 
 void Prerendered::paintGL()
 {
-	if ((!m_fbo || m_fbo->size() != size()) && c()->samples())
+	if ((true || !m_fbo || m_fbo->size() != size()) && c()->samples())
 	{
-//		qDebug() << "Rendering " << (void*)this;
-		delete m_fbo;
-		m_fbo = new QGLFramebufferObject(size());
+		if (!m_fbo || m_fbo->size() != size())
+		{
+			delete m_fbo;
+			m_fbo = new QGLFramebufferObject(size());
+		}
+		m_fbo->bind();
 		doRender(m_fbo);
-//		qDebug() << "Rendered " << m_rendered.size();
 		m_fbo->release();
 		initializeGL();
 	}
@@ -101,4 +182,3 @@ void Prerendered::paintGL()
 	glVertex2i(width(), height());
 	glEnd();
 }
-

@@ -27,11 +27,13 @@ class SpectraView: public PrerenderedTimeline
 	Q_OBJECT
 
 public:
-	explicit SpectraView(QWidget* _parent = 0): PrerenderedTimeline(_parent) {}
+	explicit SpectraView(QWidget* _parent = 0): PrerenderedTimeline(_parent) { m_texture[0] = 0; }
 	~SpectraView() {}
 
 	Lightbox::Time period() const;
 
 private:
 	virtual void doRender(QGLFramebufferObject* _fbo, int _dx, int _dw);
+
+	unsigned m_texture[1];
 };

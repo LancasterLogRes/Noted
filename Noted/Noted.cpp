@@ -134,7 +134,8 @@ Noted::Noted(QWidget* _p):
 	m_finishUpAcAnalysis		(new FinishUpAc),
 	m_compileEventsAnalysis		(new CompileEvents),
 	m_collateEventsAnalysis		(new CollateEvents),
-	m_glMaster					(new QGLWidget)
+	m_glMaster					(new QGLWidget),
+	m_constructed				(false)
 {
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
 
@@ -171,9 +172,6 @@ Noted::Noted(QWidget* _p):
 	connect(&m_libraryWatcher, SIGNAL(fileChanged(QString)), this, SLOT(onLibraryChange(QString)));
 	connect(this, SIGNAL(analysisFinished()), SLOT(updateEventStuff()));
 
-	foreach (CurrentView* v, findChildren<CurrentView*>())
-		connect(this, SIGNAL(cursorChanged()), v, SLOT(check()));
-
 	on_sampleRate_currentIndexChanged(0);
 
 	startTimer(5);
@@ -185,29 +183,41 @@ Noted::Noted(QWidget* _p):
 	setCorner(Qt::BottomLeftCorner, Qt::LeftDockWidgetArea);
 	setCorner(Qt::TopRightCorner, Qt::RightDockWidgetArea);
 	setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
+
+	m_constructed = true;
 }
 
 Noted::~Noted()
 {
+	qDebug() << "Disabling playback...";
+	ui->actPlay->setChecked(false);
+	for (m_playbackThread->quit(); !m_playbackThread->wait(1000); m_playbackThread->terminate()) {}
+	delete m_playbackThread;
+	m_playbackThread = nullptr;
+	qDebug() << "Disabled permenantly.";
+
 	g_debugPost = simpleDebugOut;
 
+	qDebug() << "Disabling worker(s)...";
 	suspendWork();
+	delete m_workerThread;
+	m_workerThread = nullptr;
+	qDebug() << "Disabled permenantly.";
 
+	qDebug() << "Unloading libraries...";
 	while (m_libraries.size())
 	{
 		unload(*m_libraries.begin());
 		m_libraries.erase(m_libraries.begin());
 	}
+	qDebug() << "Unloaded all libraries.";
 
+	qDebug() << "Killing timelines...";
 	while (m_timelines.size())
 		delete *m_timelines.begin();
-
-	delete m_workerThread;
-	for (m_playbackThread->quit(); !m_playbackThread->wait(1000); m_playbackThread->terminate()) {}
-	delete m_playbackThread;
+	qDebug() << "Killed.";
 
 	delete ui;
-
 	delete m_glMaster;
 }
 
@@ -232,12 +242,19 @@ void Noted::updateAudioDevices()
 
 void Noted::addLibrary(QString const& _name)
 {
-	m_libraries.insert(_name, make_shared<Library>(_name));
-	auto item = new QListWidgetItem("... " + _name.section('/', -1));
-	item->setData(Qt::UserRole, _name);
-	ui->loadedLibraries->addItem(item);
-	m_dirtyLibraries.insert(_name);
-	reloadDirties();
+	cnote << "Adding library" << _name.toLocal8Bit().data() << ".";
+	if (m_libraries.contains(_name))
+		cwarn << "Ignoring duplicate library" << _name.toLocal8Bit().data() << ".";
+	else
+	{
+		cnote << "Not a duplicate - loading...";
+		m_libraries.insert(_name, make_shared<Library>(_name));
+		auto item = new QListWidgetItem("... " + _name.section('/', -1));
+		item->setData(Qt::UserRole, _name);
+		ui->loadedLibraries->addItem(item);
+		m_dirtyLibraries.insert(_name);
+		reloadDirties();
+	}
 }
 
 void Noted::load(LibraryPtr const& _dl)
@@ -280,8 +297,11 @@ void Noted::load(LibraryPtr const& _dl)
 				// load state.
 				char const* name = ((pnf_t)_dl->l.resolve("pluginName"))();
 				QSettings s("LancasterLogicResponse", "Noted");
-				readBaseSettings(s);
-				_dl->p->readSettings(s);
+				if (m_constructed)
+				{
+					readBaseSettings(s);
+					_dl->p->readSettings(s);
+				}
 				Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p, [=](std::string const&){_dl->p->onPropertiesChanged();});
 				props.deserialize(s.value(QString(name) + "/properties").toString().toStdString());
 				if (props.size())
@@ -316,6 +336,7 @@ void Noted::load(LibraryPtr const& _dl)
 								lib->p->removeDeadAuxes();
 							}
 						}
+				cnote << "Useless library - unloading" << _dl->name;
 				_dl->unload();
 				LOADED:;
 			}
@@ -473,11 +494,6 @@ bool Noted::eventFilter(QObject*, QEvent* _e)
 	if (_e->type() == QEvent::Resize)
 		viewSizesChanged();
 	return false;
-}
-
-void Noted::moveEvent(QMoveEvent*)
-{
-	emit cursorChanged();
 }
 
 vector<float> Noted::graphEvents(float _nature) const
@@ -845,7 +861,7 @@ void Noted::noteLastValidIs(AcausalAnalysisPtr const& _a)
 	{
 		suspendWork();
 		m_workFinished = false;
-		info(QString("WORK Last valid is now %1").arg(_a ? demangled(typeid(*_a).name()).c_str() : "(None)"));
+		cnote << "WORK Last valid is now " << (_a ? demangled(typeid(*_a).name()).c_str() : "(None)");
 		m_toBeAnalyzed.insert(_a);
 		resumeWork();
 	}
@@ -1182,7 +1198,6 @@ void Noted::timerEvent(QTimerEvent*)
 		m_cursorDirty = false;
 		if (ui->actFollow->isChecked() && (m_fineCursor < earliestVisible() || m_fineCursor > earliestVisible() + visibleDuration() * 7 / 8))
 			setTimelineOffset(m_fineCursor - visibleDuration() / 8);
-		emit cursorChanged();
 	}
 }
 
@@ -1216,23 +1231,6 @@ int Noted::activeWidth() const
 {
 	return max<int>(1, ui->dataDisplay->width());
 }
-#if 0
-
-void Noted::on_actZoomOut_activated()
-{
-	Time centre = timeOf();
-	setPixelDuration(m_pixelDuration *= 1.2);
-	setTimelineOffset(centre - m_pixelDuration * activeWidth() / 2);
-}
-
-void Noted::on_actZoomIn_activated()
-{
-	int xFocus = activeWidth() / 2;
-	Time centre = timeOf(xFocus);
-	setPixelDuration(m_pixelDuration /= 1.2);
-	setTimelineOffset(centre - m_pixelDuration * xFocus);
-}
-#endif
 
 void Noted::info(QString const& _info, int _id)
 {
@@ -1262,37 +1260,47 @@ void Noted::clearEventsCache()
 
 void Noted::rejigAudio()
 {
-	deque<AcausalAnalysisPtr> todo;	// will become a member.
-	todo.push_back(nullptr);
-
-	// OPTIMIZE: move into worker code; allow multiple workers.
-	// OPTIMIZE: consider searching tree locally and completely, putting toBeAnalyzed things onto global todo, and skipping through otherwise.
-	// ...keeping search local until RAAs needed to be done are found.
-	while (todo.size())
+	auto wasToBeAnalysed = m_toBeAnalyzed;
+	m_toBeAnalyzed.clear();
+	if (wasToBeAnalysed.size())
 	{
-		AcausalAnalysisPtr aa = todo.front();
-		todo.pop_front();
-		if (m_toBeAnalyzed.count(aa) && aa)
+		auto yetToBeAnalysed = wasToBeAnalysed;
+		deque<AcausalAnalysisPtr> todo;	// will become a member.
+		todo.push_back(nullptr);
+
+		// OPTIMIZE: move into worker code; allow multiple workers.
+		// OPTIMIZE: consider searching tree locally and completely, putting toBeAnalyzed things onto global todo, and skipping through otherwise.
+		// ...keeping search local until RAAs needed to be done are found.
+		while (todo.size())
 		{
-			WorkerThread::setCurrentDescription(demangled(typeid(*aa).name()).c_str());
-			info(QString("WORKER Working on %1").arg(demangled(typeid(*aa).name()).c_str()));
-			aa->go(this, 0, hops());
-			info(QString("WORKER Finished %1").arg(demangled(typeid(*aa).name()).c_str()));
-			if (WorkerThread::quitting())
-				break;
+			AcausalAnalysisPtr aa = todo.front();
+			todo.pop_front();
+			if (yetToBeAnalysed.count(aa) && aa)
+			{
+				WorkerThread::setCurrentDescription(demangled(typeid(*aa).name()).c_str());
+				cnote << "WORKER Working on " << demangled(typeid(*aa).name());
+				aa->go(this, 0, hops());
+				cnote << "WORKER Finished " << demangled(typeid(*aa).name());
+				if (WorkerThread::quitting())
+				{
+					for (auto i: wasToBeAnalysed)
+						m_toBeAnalyzed.insert(i);
+					break;
+				}
+			}
+			else if (aa)
+			{
+				cnote << "WORKER Skipping job " << demangled(typeid(*aa).name());
+			}
+			AcausalAnalysisPtrs ripe = ripeAcausalAnalysis(aa);
+			if (yetToBeAnalysed.count(aa))
+			{
+				foreach (auto i, ripe)
+					yetToBeAnalysed.insert(i);
+				yetToBeAnalysed.erase(aa);
+			}
+			catenate(todo, ripe);
 		}
-		else if (aa)
-		{
-			info(QString("WORKER Skipping job %1").arg(demangled(typeid(*aa).name()).c_str()));
-		}
-		AcausalAnalysisPtrs ripe = ripeAcausalAnalysis(aa);
-		if (m_toBeAnalyzed.count(aa))
-		{
-			foreach (auto i, ripe)
-				m_toBeAnalyzed.insert(i);
-			m_toBeAnalyzed.erase(aa);
-		}
-		catenate(todo, ripe);
 	}
 }
 

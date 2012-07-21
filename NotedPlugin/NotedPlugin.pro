@@ -17,19 +17,17 @@ SOURCES += Timeline.cpp \
 	PrerenderedTimeline.cpp \
 	NotedFace.cpp \
 	NotedPlugin.cpp \
-	Prerendered.cpp \
 	AcausalAnalysis.cpp \
 	CausalAnalysis.cpp \
     QGLWidgetProxy.cpp \
-    PrerenderedOOT.cpp
+    Prerendered.cpp
 
 HEADERS  += Timeline.h \
 	PrerenderedTimeline.h \
 	NotedFace.h \
 	NotedPlugin.h \
-	Prerendered.h \
 	CausalAnalysis.h \
 	AcausalAnalysis.h \
 	AuxLibraryFace.h \
     QGLWidgetProxy.h \
-    PrerenderedOOT.h
+    Prerendered.h

@@ -156,7 +156,6 @@ private:
 	void changeEvent(QEvent *e);
 	void timerEvent(QTimerEvent*);
 	void closeEvent(QCloseEvent*);
-	void moveEvent(QMoveEvent*);
 	void readSettings();
 	void writeSettings();
 	void readBaseSettings(QSettings&);
@@ -240,4 +239,6 @@ private:
 
 	// Master GL context...
 	QGLWidget* m_glMaster;
+
+	bool m_constructed;
 };

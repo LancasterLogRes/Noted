@@ -81,7 +81,7 @@ public:
 	bool typedSet(std::string const& _name, _Setter& _l)
 	{
 		std::string tn(typeinfo(_name).name());
-#define	DO(X) if (tn == typeid(X).name()) { typedef X T; T old = get<X>(_name); T nw = _l(old); cdebug << nw << old << (nw == old); if (nw == old) return false; set<X>(_name, nw); return true; }
+#define	DO(X) if (tn == typeid(X).name()) { typedef X T; T old = get<X>(_name); T nw = _l(old); if (nw == old) return false; set<X>(_name, nw); return true; }
 #include "DoTypes.h"
 #undef DO
 		return false;

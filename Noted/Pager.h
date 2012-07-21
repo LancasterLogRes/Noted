@@ -155,6 +155,10 @@ public:
 				}
 				m_topLevel = levels.size() - 1;
 			}
+			if (WorkerThread::quitting())
+			{
+				QFile::remove(filename(IndexLevel(0, 0)));
+			}
 		}
 		else
 			fillFromExisting();

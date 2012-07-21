@@ -21,6 +21,7 @@
 #include <utility>
 #include <QApplication>
 #include <QPainter>
+#include <QGLFramebufferObject>
 #include <Common/Common.h>
 
 #include "NotedFace.h"
@@ -29,7 +30,7 @@
 using namespace Lightbox;
 using namespace std;
 
-PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop): PrerenderedOOT(_p), m_draggingTime(Lightbox::UndefinedTime), m_cursorSizeIsHop(_cursorSizeIsHop), m_renderedOffset(0), m_renderedPixelDuration(0), m_renderingContext(nullptr), m_renderingFrame(nullptr)
+PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop): Prerendered(_p), m_draggingTime(Lightbox::UndefinedTime), m_cursorSizeIsHop(_cursorSizeIsHop), m_renderedOffset(0), m_renderedPixelDuration(0), m_renderingContext(nullptr), m_renderingFrame(nullptr)
 {
 	m_renderingContext = new QGLWidget(0, this);
 	connect(c(), SIGNAL(analysisFinished()), SLOT(sourceChanged()));
@@ -89,7 +90,7 @@ bool PrerenderedTimeline::needsRepaint() const
 {
 	int cursorL = c()->positionOf(highlightFrom()) + 1;
 	int cursorR = cursorL + c()->widthOf(highlightDuration());
-	if (PrerenderedOOT::needsRepaint() || m_needsUpdate || m_lastOffset != c()->earliestVisible() || m_lastPixelDuration != c()->pixelDuration() || (m_lastCursorR != cursorR && !((cursorL > size().width() && m_lastCursorL > size().width()) || cursorR < 0 && m_lastCursorR < 0)))
+	if (Prerendered::needsRepaint() || m_needsUpdate || m_lastOffset != c()->earliestVisible() || m_lastPixelDuration != c()->pixelDuration() || (m_lastCursorR != cursorR && !((cursorL > size().width() && m_lastCursorL > size().width()) || cursorR < 0 && m_lastCursorR < 0)))
 	{
 		return true;
 	}
@@ -98,7 +99,7 @@ bool PrerenderedTimeline::needsRepaint() const
 
 void PrerenderedTimeline::resizeGL(int _w, int _h)
 {
-	PrerenderedOOT::resizeGL(_w, _h);
+	Prerendered::resizeGL(_w, _h);
 }
 
 void PrerenderedTimeline::sourceChanged()

@@ -21,6 +21,7 @@
 #include <utility>
 #include <cmath>
 #include <QGraphicsOpacityEffect>
+#include <QGLFramebufferObject>
 #include <QVariant>
 #include <QComboBox>
 #include <QDebug>

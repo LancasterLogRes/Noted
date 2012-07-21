@@ -22,6 +22,7 @@
 #include <fstream>
 #include <cmath>
 #include <QtGui>
+#include <QGLFramebufferObject>
 #include <EventCompiler/StreamEvent.h>
 
 #include "PropertiesEditor.h"

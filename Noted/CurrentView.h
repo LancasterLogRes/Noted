@@ -21,9 +21,9 @@
 #pragma once
 
 #include <cmath>
-#include <NotedPlugin/PrerenderedOOT.h>
+#include <NotedPlugin/Prerendered.h>
 
-class CurrentView: public PrerenderedOOT
+class CurrentView: public Prerendered
 {
 	Q_OBJECT
 

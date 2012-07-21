@@ -22,16 +22,18 @@
 
 #include <utility>
 #include <map>
-
 #include <Common/Common.h>
-
-#include <QGLFramebufferObject>
+#include <QThread>
 #include <QGLWidget>
 #include <QMutex>
 #include <QPainter>
 #include <QDebug>
 #include <QMouseEvent>
 #include <QWidget>
+
+class NotedFace;
+class Prerendered;
+class QGLFramebufferObject;
 
 template <class _FX, class _FY, class _FL>
 void drawPeaks(QPainter& _p, std::map<float, float> const& _ps, int _yoffset, _FX _x, _FY _y, _FL _l, int _maxCount = 5)
@@ -58,14 +60,28 @@ void drawPeaks(QPainter& _p, std::map<float, float> const& _ps, int _yoffset, _F
 			break;
 }
 
-class NotedFace;
+class DisplayThread: public QThread
+{
+public:
+	DisplayThread(Prerendered* _p): m_p(_p) {}
+
+	virtual void run();
+
+	using QThread::msleep;
+
+private:
+	Prerendered* m_p;
+};
 
 class Prerendered: public QGLWidget
 {
 	Q_OBJECT
 
+	friend class DisplayThread;
+
 public:
 	Prerendered(QWidget* _p);
+	~Prerendered();
 
 	NotedFace* c() const;
 
@@ -73,11 +89,29 @@ public slots:
 	void rerender();
 
 protected:
+	virtual bool needsRepaint() const;
 	virtual void doRender(QGLFramebufferObject*) {}
+
 	virtual void initializeGL();
 	virtual void resizeGL(int _w, int _h);
 	virtual void paintGL();
 
+	virtual void run();
+
+	virtual void paintEvent(QPaintEvent*);
+	virtual void hideEvent(QShowEvent*);
+	virtual void closeEvent(QCloseEvent*);
+	virtual void resizeEvent(QResizeEvent* _e);
+
+protected:
 	QGLFramebufferObject* m_fbo;
+
+private:
+	void quit();
+
+	DisplayThread m_display;
+	bool m_quitting;
+
 	mutable NotedFace* m_c;
+	QSize m_newSize;
 };

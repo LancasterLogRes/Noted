@@ -24,6 +24,7 @@
 #include <QFrame>
 #include <QPaintEvent>
 #include <QPainter>
+#include <QGLFramebufferObject>
 #include <NotedPlugin/NotedFace.h>
 #include "WaveView.h"
 

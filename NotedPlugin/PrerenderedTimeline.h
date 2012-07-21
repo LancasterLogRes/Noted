@@ -28,12 +28,14 @@
 #include <QMouseEvent>
 #include <QWidget>
 #include <QMutex>
-#include <QGLContext>
 
 #include "Timeline.h"
-#include "PrerenderedOOT.h"
+#include "Prerendered.h"
 
-class PrerenderedTimeline: public PrerenderedOOT, public Timeline
+class QGLWidget;
+class QGLFramebufferObject;
+
+class PrerenderedTimeline: public Prerendered, public Timeline
 {
 	Q_OBJECT
 
@@ -48,7 +50,7 @@ public:
 
 	virtual bool needsRepaint() const;
 
-	using PrerenderedOOT::event;
+	using Prerendered::event;
 
 public slots:
 	void sourceChanged();

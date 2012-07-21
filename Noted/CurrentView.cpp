@@ -22,12 +22,12 @@
 
 #include "CurrentView.h"
 
-CurrentView::CurrentView(QWidget* _parent): PrerenderedOOT(_parent), m_i(-1)
+CurrentView::CurrentView(QWidget* _parent): Prerendered(_parent), m_i(-1)
 {}
 
 bool CurrentView::needsRepaint() const
 {
-	if (PrerenderedOOT::needsRepaint() && m_i != (int)c()->cursorIndex())
+	if (Prerendered::needsRepaint() && m_i != (int)c()->cursorIndex())
 	{
 		m_i = c()->cursorIndex();
 		return true;
