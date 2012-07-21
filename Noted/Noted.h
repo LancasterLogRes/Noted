@@ -48,15 +48,14 @@
 namespace Ui { class Noted; }
 
 class QTemporaryFile;
-
+class QTreeWidgetItem;
+class QComboBox;
 class WorkerThread;
 class PrerenderedTimeline;
 class EventsView;
 class EventsEditor;
 class CompileEvents;
 class CollateEvents;
-class Cursor;
-class QComboBox;
 
 bool eventVisible(QVariant const& _v, Lightbox::StreamEvent const& _e);
 
@@ -140,6 +139,7 @@ private slots:
 	void on_addLibrary_clicked();
 	void on_killLibrary_clicked();
 	void on_refreshAudioDevices_clicked() { updateAudioDevices(); }
+	void on_loadedLibraries_itemClicked(QTreeWidgetItem* _it, int);
 
 	void onDataViewDockClosed();
 	void updateEventStuff();
@@ -199,6 +199,7 @@ private:
 		Library(QString const& _name): name(_name) {}
 
 		QString name;
+		QString nick;
 		QLibrary l;
 
 		// One of (p, cf, auxFace) is valid.
@@ -206,6 +207,7 @@ private:
 		Lightbox::EventCompilerFactories cf;
 		std::shared_ptr<AuxLibraryFace> auxFace;
 		std::weak_ptr<NotedPlugin> aux;
+		QTreeWidgetItem* item;
 
 		void unload();
 	};

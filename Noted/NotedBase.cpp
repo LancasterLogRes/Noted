@@ -239,9 +239,7 @@ void setVector(v4sf& _v, float _f)
 
 void NotedBase::rejigSpectra()
 {
-	qDebug() << "### Locking...";
 	QMutexLocker l(&x_spectra);
-	qDebug() << "### Locked.";
 	if (samples())
 	{
 		m_spectra.init(calculateSpectraFingerprint(m_wave.fingerprint()), m_pageSpectra, spectrumSize() * 3);
@@ -289,5 +287,4 @@ void NotedBase::rejigSpectra()
 	{
 		m_spectra.fillFromExisting();
 	}
-	qDebug() << "### Leaving?";
 }

@@ -140,6 +140,7 @@ Noted::Noted(QWidget* _p):
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
 
 	ui->setupUi(this);
+	ui->loadedLibraries->clear();
 	setWindowIcon(QIcon(":/Noted.png"));
 
 	updateAudioDevices();
@@ -248,13 +249,25 @@ void Noted::addLibrary(QString const& _name)
 	else
 	{
 		cnote << "Not a duplicate - loading...";
-		m_libraries.insert(_name, make_shared<Library>(_name));
-		auto item = new QListWidgetItem("... " + _name.section('/', -1));
-		item->setData(Qt::UserRole, _name);
-		ui->loadedLibraries->addItem(item);
+		auto lp = make_shared<Library>(_name);
+		m_libraries.insert(_name, lp);
+		lp->item = new QTreeWidgetItem(ui->loadedLibraries, QStringList() << _name.section('/', -1) << "Unknown" << _name);
+		lp->item->setFlags(lp->item->flags() | Qt::ItemIsUserCheckable);
+		lp->item->setCheckState(0, Qt::Checked);
 		m_dirtyLibraries.insert(_name);
 		reloadDirties();
 	}
+}
+
+void Noted::on_loadedLibraries_itemClicked(QTreeWidgetItem* _it, int)
+{
+	for (auto l: m_libraries)
+		if (l->item == _it)
+		{
+			m_dirtyLibraries.insert(l->name);
+			break;
+		}
+	reloadDirties();
 }
 
 void Noted::load(LibraryPtr const& _dl)
@@ -263,7 +276,8 @@ void Noted::load(LibraryPtr const& _dl)
 	m_libraryWatcher.addPath(_dl->name);
 	if (QLibrary::isLibrary(_dl->name))
 	{
-		QString tempFile = QDir::tempPath() + "/Noted[" + _dl->name.section('/', -1) + "]" + QDateTime::currentDateTime().toString("yyyyMMdd-hh.mm.ss.zzz");
+		_dl->nick = _dl->name.section('/', -1);
+		QString tempFile = QDir::tempPath() + "/Noted[" + _dl->nick + "]" + QDateTime::currentDateTime().toString("yyyyMMdd-hh.mm.ss.zzz");
 		_dl->l.setFileName(tempFile);
 		_dl->l.setLoadHints(QLibrary::ResolveAllSymbolsHint);
 		QFile::copy(_dl->name, tempFile);
@@ -274,7 +288,8 @@ void Noted::load(LibraryPtr const& _dl)
 			typedef char const*(*pnf_t)();
 			if (cf_t cf = (cf_t)_dl->l.resolve("eventCompilerFactories"))
 			{
-				cnote << "LOAD" << _dl->name << " [ECF]";
+				_dl->item->setText(1, "Event Compilers");
+				cnote << "LOAD" << _dl->nick << " [ECF]";
 				_dl->cf = cf();
 				foreach (auto f, _dl->cf)
 				{
@@ -287,15 +302,16 @@ void Noted::load(LibraryPtr const& _dl)
 			}
 			else if (pf_t np = (pf_t)_dl->l.resolve("newPlugin"))
 			{
-				cnote << "LOAD" << _dl->name << " [PLUGIN]";
+				_dl->item->setText(1, "Plugin");
+				_dl->nick = ((pnf_t)_dl->l.resolve("pluginName"))();
+				cnote << "LOAD" << _dl->nick << " [PLUGIN]";
+
 				_dl->p = shared_ptr<NotedPlugin>(np(this));
 
 				foreach (auto lib, m_libraries)
 					if (!lib->l.isLoaded())
 						load(lib);
 
-				// load state.
-				char const* name = ((pnf_t)_dl->l.resolve("pluginName"))();
 				QSettings s("LancasterLogicResponse", "Noted");
 				if (m_constructed)
 				{
@@ -303,11 +319,11 @@ void Noted::load(LibraryPtr const& _dl)
 					_dl->p->readSettings(s);
 				}
 				Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p, [=](std::string const&){_dl->p->onPropertiesChanged();});
-				props.deserialize(s.value(QString(name) + "/properties").toString().toStdString());
+				props.deserialize(s.value(_dl->nick + "/properties").toString().toStdString());
 				if (props.size())
 				{
-					auto propsDock = new QDockWidget(QString("%1 Properties").arg(name), this);
-					propsDock->setObjectName(_dl->name);
+					auto propsDock = new QDockWidget(QString("%1 Properties").arg(_dl->nick), this);
+					propsDock->setObjectName(_dl->nick);
 					auto pe = new PropertiesEditor(propsDock);
 					pe->setProperties(props);
 					propsDock->setWidget(pe);
@@ -327,7 +343,8 @@ void Noted::load(LibraryPtr const& _dl)
 							{
 								_dl->auxFace = f;
 								_dl->aux = lib->p;
-								cnote << "LOAD" << _dl->name << " [AUX:" << lib->name << "]";
+								cnote << "LOAD" << _dl->nick << " [AUX:" << lib->nick << "]";
+								_dl->item->setText(1, "Aux: " + lib->nick);
 								goto LOADED;
 							}
 							else
@@ -336,8 +353,9 @@ void Noted::load(LibraryPtr const& _dl)
 								lib->p->removeDeadAuxes();
 							}
 						}
-				cnote << "Useless library - unloading" << _dl->name;
+				cnote << "Useless library - unloading" << _dl->nick;
 				_dl->unload();
+				_dl->item->setText(1, "Aux: ?");
 				LOADED:;
 			}
 		}
@@ -345,6 +363,7 @@ void Noted::load(LibraryPtr const& _dl)
 		{
 			cwarn << "ERROR on load: " << _dl->l.errorString();
 		}
+		_dl->item->setText(0, _dl->nick);
 	}
 	else if (QFile::exists(_dl->name))
 	{
@@ -383,13 +402,11 @@ void Noted::unload(LibraryPtr const& _dl)
 			writeBaseSettings(s);
 			_dl->p->writeSettings(s);
 
-			typedef char const*(*pnf_t)();
-			char const* name = ((pnf_t)_dl->l.resolve("pluginName"))();
 			Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p);
-			s.setValue(QString(name) + "/properties", QString::fromStdString(props.serialized()));
+			s.setValue(_dl->nick + "/properties", QString::fromStdString(props.serialized()));
 
 			// kill the properties dock if there is one.
-			delete findChild<QDockWidget*>(_dl->name);
+			delete findChild<QDockWidget*>(_dl->nick);
 
 			// unload dependents.
 			foreach (auto l, m_libraries)
@@ -459,16 +476,23 @@ void Noted::reloadDirties()
 
 		foreach (QString const& name, m_dirtyLibraries)
 		{
-			for (int i = 0; i < ui->loadedLibraries->count(); ++i)
-				if (ui->loadedLibraries->item(i)->data(Qt::UserRole).toString() == name)
-				{
-					reloadLibrary(name);
-					goto OK;
-				}
-			// nothing found
-			unload(m_libraries[name]);
-			m_libraries.remove(name);
-			OK:;
+			bool load = false;
+			bool kill = true;
+			for (auto i: ui->loadedLibraries->findItems(name, Qt::MatchExactly, 2))
+			{
+				kill = false;
+				load = (i->checkState(0) == Qt::Checked);
+				break;
+			}
+
+			if (load)
+				reloadLibrary(name);
+			else
+			{
+				unload(m_libraries[name]);
+				if (kill)
+					m_libraries.remove(name);
+			}
 		}
 
 		foreach (EventsView* ev, eventsViews())
@@ -592,7 +616,7 @@ void Noted::on_killLibrary_clicked()
 {
 	if (ui->loadedLibraries->currentItem())
 	{
-		QString s = ui->loadedLibraries->currentItem()->data(Qt::UserRole).toString();
+		QString s = ui->loadedLibraries->currentItem()->text(2);
 		delete ui->loadedLibraries->currentItem();
 		m_dirtyLibraries.insert(s);
 		reloadDirties();
