@@ -1386,6 +1386,8 @@ void Noted::rejigAudio()
 			}
 			catenate(todo, ripe);
 		}
+		if (!WorkerThread::quitting() /*&& all other threads finished*/)
+			m_finishUpAcAnalysis->go(this, 0, hops());
 	}
 }
 
@@ -1404,8 +1406,6 @@ AcausalAnalysisPtrs Noted::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finish
 			ret.push_back(AcausalAnalysisPtr(new CompileEventsView(ev)));
 	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !eventsViews().size()) || (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == eventsViews().size()))
 		ret.push_back(m_collateEventsAnalysis);
-	else if (dynamic_cast<CollateEvents*>(&*_finished))
-		ret.push_back(m_finishUpAcAnalysis);
 
 	// Go through all other things that can give CAs; at this point, it's just the plugins
 	AcausalAnalysisPtrs acc;
