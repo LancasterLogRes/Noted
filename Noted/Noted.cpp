@@ -241,6 +241,15 @@ void Noted::updateAudioDevices()
 	ui->playDevice->setCurrentIndex(ui->playDevice->findText(pd));
 }
 
+QString defaultNick(QString const& _filename)
+{
+	QString ret = _filename.section('/', -1);
+	QRegExp re("(lib)?(.*)\\.[a-zA-Z]*");
+	if (re.exactMatch(ret))
+		ret = re.cap(2);
+	return ret;
+}
+
 void Noted::addLibrary(QString const& _name, bool _isEnabled)
 {
 	cnote << "Adding library" << _name.toLocal8Bit().data() << ".";
@@ -251,7 +260,7 @@ void Noted::addLibrary(QString const& _name, bool _isEnabled)
 		cnote << "Not a duplicate - loading...";
 		auto lp = make_shared<Library>(_name);
 		m_libraries.insert(_name, lp);
-		lp->item = new QTreeWidgetItem(ui->loadedLibraries, QStringList() << "Unknown" << "Unknown" << _name);
+		lp->item = new QTreeWidgetItem(ui->loadedLibraries, QStringList() << defaultNick(_name) << "Unknown" << _name);
 		lp->item->setFlags(lp->item->flags() | Qt::ItemIsUserCheckable);
 		lp->item->setCheckState(0, _isEnabled ? Qt::Checked : Qt::Unchecked);
 		if (_isEnabled)
@@ -286,10 +295,7 @@ void Noted::load(LibraryPtr const& _dl)
 	m_libraryWatcher.addPath(_dl->filename);
 	if (QLibrary::isLibrary(_dl->filename))
 	{
-		_dl->nick = _dl->filename.section('/', -1);
-		QRegExp re("(lib)?(.*)\\.[a-zA-Z]*");
-		if (re.exactMatch(_dl->nick))
-			_dl->nick = re.cap(2);
+		_dl->nick = defaultNick(_dl->filename);
 		QString tempFile = QDir::tempPath() + "/Noted[" + _dl->nick + "]" + QDateTime::currentDateTime().toString("yyyyMMdd-hh.mm.ss.zzz");
 		_dl->l.setFileName(tempFile);
 		_dl->l.setLoadHints(QLibrary::ResolveAllSymbolsHint);
