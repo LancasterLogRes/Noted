@@ -77,8 +77,6 @@ public:
 	virtual int activeWidth() const;
 	virtual QGLWidget* glMaster() const;
 	virtual bool isPlaying() const { return !!m_playback; }
-	virtual void info(QString const& _info, char const* _color = "gray");
-	void info(QString const& _info, int _id);
 
 	virtual AcausalAnalysisPtr spectraAcAnalysis() const { return m_spectraAcAnalysis; }
 	virtual CausalAnalysisPtr compileEventsAnalysis() const { return m_compileEventsAnalysis; }
@@ -88,6 +86,7 @@ public:
 
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr);
 	virtual void addTimeline(Timeline* _tl);
+	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d);
 
 	virtual QList<EventsStore*> eventsStores() const;
 	virtual std::vector<float> graphEvents(float _nature) const;
@@ -95,17 +94,20 @@ public:
 	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name);
 	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity()) const;
 
-	void suspendWork();
-	void resumeWork();
-
 	using QWidget::event;
 
 	void updateGraphs(std::vector<std::shared_ptr<Lightbox::AuxGraphsSpec> > const& _specs);
 
 public slots:
+	void suspendWork();
+	void resumeWork();
+
+	virtual void info(QString const& _info, QString const& _color = "gray");
+	void info(QString const& _info, int _id);
+
 	virtual void updateWindowTitle();
 
-	virtual void addLibrary(QString const& _name);
+	virtual void addLibrary(QString const& _name, bool _isEnabled = true);
 	virtual void reloadLibrary(QString const& _name);
 	virtual void onLibraryChange(QString const& _name);
 
@@ -140,6 +142,9 @@ private slots:
 	void on_killLibrary_clicked();
 	void on_refreshAudioDevices_clicked() { updateAudioDevices(); }
 	void on_loadedLibraries_itemClicked(QTreeWidgetItem* _it, int);
+
+	void on_actReadSettings_activated();
+	void on_actWriteSettings_activated();
 
 	void onDataViewDockClosed();
 	void updateEventStuff();
@@ -196,9 +201,9 @@ private:
 	// Extensions...
 	struct Library
 	{
-		Library(QString const& _name): name(_name) {}
+		Library(QString const& _filename): filename(_filename) {}
 
-		QString name;
+		QString filename;
 		QString nick;
 		QLibrary l;
 
@@ -210,6 +215,7 @@ private:
 		QTreeWidgetItem* item;
 
 		void unload();
+		bool isEnabled() const;
 	};
 	typedef std::shared_ptr<Library> LibraryPtr;
 	void load(LibraryPtr const& _dl);

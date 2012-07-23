@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>960</width>
-    <height>600</height>
+    <width>681</width>
+    <height>475</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,7 +27,7 @@
     <property name="sizePolicy">
      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
       <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
+      <verstretch>1</verstretch>
      </sizepolicy>
     </property>
     <property name="minimumSize">
@@ -45,7 +45,7 @@
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
        <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
+       <verstretch>6</verstretch>
       </sizepolicy>
      </property>
      <property name="minimumSize">
@@ -59,7 +59,7 @@
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
        <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
+       <verstretch>50</verstretch>
       </sizepolicy>
      </property>
      <property name="minimumSize">
@@ -76,7 +76,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>960</width>
+     <width>681</width>
      <height>22</height>
     </rect>
    </property>
@@ -121,10 +121,18 @@
     </property>
     <addaction name="actAbout"/>
    </widget>
+   <widget class="QMenu" name="menu_Debug">
+    <property name="title">
+     <string>&amp;Debug</string>
+    </property>
+    <addaction name="actReadSettings"/>
+    <addaction name="actWriteSettings"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_View"/>
    <addaction name="menuOutput"/>
    <addaction name="menu_Events"/>
+   <addaction name="menu_Debug"/>
    <addaction name="menu_Help"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -626,7 +634,7 @@
       <number>0</number>
      </property>
      <property name="spacing">
-      <number>2</number>
+      <number>0</number>
      </property>
      <item row="0" column="0" colspan="2">
       <widget class="QComboBox" name="playDevice">
@@ -819,6 +827,19 @@
        </item>
       </layout>
      </item>
+     <item row="4" column="1">
+      <spacer name="verticalSpacer_4">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
     </layout>
    </widget>
   </widget>
@@ -922,15 +943,15 @@ p, li { white-space: pre-wrap; }
     <set>QDockWidget::DockWidgetFeatureMask</set>
    </property>
    <property name="windowTitle">
-    <string>Libs</string>
+    <string>Libraries</string>
    </property>
    <attribute name="dockWidgetArea">
-    <number>4</number>
+    <number>2</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_3">
     <layout class="QGridLayout" name="gridLayout_3">
      <property name="margin">
-      <number>1</number>
+      <number>0</number>
      </property>
      <property name="spacing">
       <number>2</number>
@@ -976,15 +997,15 @@ p, li { white-space: pre-wrap; }
      </item>
      <item row="0" column="0" rowspan="3">
       <widget class="QTreeWidget" name="loadedLibraries">
+       <property name="frameShape">
+        <enum>QFrame::NoFrame</enum>
+       </property>
        <property name="rootIsDecorated">
         <bool>false</bool>
        </property>
-       <property name="uniformRowHeights">
+       <property name="allColumnsShowFocus">
         <bool>true</bool>
        </property>
-       <attribute name="headerVisible">
-        <bool>false</bool>
-       </attribute>
        <attribute name="headerStretchLastSection">
         <bool>false</bool>
        </attribute>
@@ -1351,6 +1372,16 @@ p, li { white-space: pre-wrap; }
   <action name="actNewEventsFrom">
    <property name="text">
     <string>New Event Stream From...</string>
+   </property>
+  </action>
+  <action name="actReadSettings">
+   <property name="text">
+    <string>&amp;Read settings</string>
+   </property>
+  </action>
+  <action name="actWriteSettings">
+   <property name="text">
+    <string>&amp;Write settings</string>
    </property>
   </action>
  </widget>

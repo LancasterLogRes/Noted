@@ -241,7 +241,7 @@ void Noted::updateAudioDevices()
 	ui->playDevice->setCurrentIndex(ui->playDevice->findText(pd));
 }
 
-void Noted::addLibrary(QString const& _name)
+void Noted::addLibrary(QString const& _name, bool _isEnabled)
 {
 	cnote << "Adding library" << _name.toLocal8Bit().data() << ".";
 	if (m_libraries.contains(_name))
@@ -251,11 +251,14 @@ void Noted::addLibrary(QString const& _name)
 		cnote << "Not a duplicate - loading...";
 		auto lp = make_shared<Library>(_name);
 		m_libraries.insert(_name, lp);
-		lp->item = new QTreeWidgetItem(ui->loadedLibraries, QStringList() << _name.section('/', -1) << "Unknown" << _name);
+		lp->item = new QTreeWidgetItem(ui->loadedLibraries, QStringList() << "Unknown" << "Unknown" << _name);
 		lp->item->setFlags(lp->item->flags() | Qt::ItemIsUserCheckable);
-		lp->item->setCheckState(0, Qt::Checked);
-		m_dirtyLibraries.insert(_name);
-		reloadDirties();
+		lp->item->setCheckState(0, _isEnabled ? Qt::Checked : Qt::Unchecked);
+		if (_isEnabled)
+		{
+			m_dirtyLibraries.insert(_name);
+			reloadDirties();
+		}
 	}
 }
 
@@ -264,23 +267,33 @@ void Noted::on_loadedLibraries_itemClicked(QTreeWidgetItem* _it, int)
 	for (auto l: m_libraries)
 		if (l->item == _it)
 		{
-			m_dirtyLibraries.insert(l->name);
+			m_dirtyLibraries.insert(l->filename);
 			break;
 		}
 	reloadDirties();
 }
 
+void Noted::addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d)
+{
+	if (_d->objectName().isEmpty())
+		_d->setObjectName(_d->windowTitle());
+	QMainWindow::addDockWidget(_a, _d);
+}
+
 void Noted::load(LibraryPtr const& _dl)
 {
-	cnote << "Loading:" << _dl->name;
-	m_libraryWatcher.addPath(_dl->name);
-	if (QLibrary::isLibrary(_dl->name))
+	cnote << "Loading:" << _dl->filename;
+	m_libraryWatcher.addPath(_dl->filename);
+	if (QLibrary::isLibrary(_dl->filename))
 	{
-		_dl->nick = _dl->name.section('/', -1);
+		_dl->nick = _dl->filename.section('/', -1);
+		QRegExp re("(lib)?(.*)\\.[a-zA-Z]*");
+		if (re.exactMatch(_dl->nick))
+			_dl->nick = re.cap(2);
 		QString tempFile = QDir::tempPath() + "/Noted[" + _dl->nick + "]" + QDateTime::currentDateTime().toString("yyyyMMdd-hh.mm.ss.zzz");
 		_dl->l.setFileName(tempFile);
 		_dl->l.setLoadHints(QLibrary::ResolveAllSymbolsHint);
-		QFile::copy(_dl->name, tempFile);
+		QFile::copy(_dl->filename, tempFile);
 		if (_dl->l.load())
 		{
 			typedef EventCompilerFactories&(*cf_t)();
@@ -309,27 +322,31 @@ void Noted::load(LibraryPtr const& _dl)
 				_dl->p = shared_ptr<NotedPlugin>(np(this));
 
 				foreach (auto lib, m_libraries)
-					if (!lib->l.isLoaded())
+					if (!lib->l.isLoaded() && lib->isEnabled())
 						load(lib);
 
 				QSettings s("LancasterLogicResponse", "Noted");
+				Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p, [=](std::string const&){_dl->p->onPropertiesChanged();});
+				props.deserialize(s.value(_dl->nick + "/properties").toString().toStdString());
+				PropertiesEditor* pe = nullptr;
+				if (props.size())
+				{
+					QDockWidget* propsDock = new QDockWidget(QString("%1 Properties").arg(_dl->nick), this);
+					propsDock->setObjectName(_dl->nick + "/properties");
+					pe = new PropertiesEditor(propsDock);
+					propsDock->setWidget(pe);
+					propsDock->setFeatures(propsDock->features()|QDockWidget::DockWidgetVerticalTitleBar);
+					addDockWidget(Qt::RightDockWidgetArea, propsDock);
+					if (s.contains(_dl->nick + "/propertiesGeometry"))
+						propsDock->restoreGeometry(s.value(_dl->nick + "/propertiesGeometry").toByteArray());
+				}
 				if (m_constructed)
 				{
 					readBaseSettings(s);
 					_dl->p->readSettings(s);
 				}
-				Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p, [=](std::string const&){_dl->p->onPropertiesChanged();});
-				props.deserialize(s.value(_dl->nick + "/properties").toString().toStdString());
-				if (props.size())
-				{
-					auto propsDock = new QDockWidget(QString("%1 Properties").arg(_dl->nick), this);
-					propsDock->setObjectName(_dl->nick);
-					auto pe = new PropertiesEditor(propsDock);
+				if (pe)
 					pe->setProperties(props);
-					propsDock->setWidget(pe);
-					propsDock->setFeatures(propsDock->features()|QDockWidget::DockWidgetVerticalTitleBar);
-					addDockWidget(Qt::RightDockWidgetArea, propsDock);
-				}
 			}
 			else
 			{
@@ -365,13 +382,18 @@ void Noted::load(LibraryPtr const& _dl)
 		}
 		_dl->item->setText(0, _dl->nick);
 	}
-	else if (QFile::exists(_dl->name))
+	else if (QFile::exists(_dl->filename))
 	{
-		_dl->cf[_dl->name.toStdString()] = [=](){ return new ProcessEventCompiler(_dl->name); };
-		auto li = new QListWidgetItem(_dl->name);
-		li->setData(0, _dl->name);
+		_dl->cf[_dl->filename.toStdString()] = [=](){ return new ProcessEventCompiler(_dl->filename); };
+		auto li = new QListWidgetItem(_dl->filename);
+		li->setData(0, _dl->filename);
 		ui->eventCompilersList->addItem(li);
 	}
+}
+
+bool Noted::Library::isEnabled() const
+{
+	return item->checkState(0) == Qt::Checked;
 }
 
 void Noted::Library::unload()
@@ -385,7 +407,7 @@ void Noted::Library::unload()
 	}
 	else
 	{
-		qWarning() << "Couldn't get the Lightbox 'finalized' symbol in " << name;
+		qWarning() << "Couldn't get the Lightbox 'finalized' symbol in " << filename;
 		assert(l.unload());
 	}
 	QFile::remove(l.fileName());
@@ -398,15 +420,21 @@ void Noted::unload(LibraryPtr const& _dl)
 		if (_dl->p)
 		{
 			// save state.
-			QSettings s("LancasterLogicResponse", "Noted");
-			writeBaseSettings(s);
-			_dl->p->writeSettings(s);
+			{
+				QSettings s("LancasterLogicResponse", "Noted");
+				writeBaseSettings(s);
+				_dl->p->writeSettings(s);
 
-			Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p);
-			s.setValue(_dl->nick + "/properties", QString::fromStdString(props.serialized()));
+				Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p);
+				s.setValue(_dl->nick + "/properties", QString::fromStdString(props.serialized()));
 
-			// kill the properties dock if there is one.
-			delete findChild<QDockWidget*>(_dl->nick);
+				// kill the properties dock if there is one.
+				if (auto pw = findChild<QDockWidget*>(_dl->nick + "/properties"))
+				{
+					s.setValue(_dl->nick + "/propertiesGeometry", pw->saveGeometry());
+					delete pw;
+				}
+			}
 
 			// unload dependents.
 			foreach (auto l, m_libraries)
@@ -435,22 +463,23 @@ void Noted::unload(LibraryPtr const& _dl)
 		else if (_dl->auxFace && _dl->aux.lock()) // check if we're a plugin's auxilliary
 		{
 			// remove ourselves from the plugin we're dependent on.
+			_dl->item->setText(1, "Aux: ?");
 			_dl->auxFace->unload(_dl->l);
 			_dl->auxFace.reset();
 			_dl->aux.lock()->removeDeadAuxes();
 			_dl->aux.reset();
 		}
-		cnote << "UNLOAD" << _dl->name;
+		cnote << "UNLOAD" << _dl->filename;
 		_dl->unload();
 	}
-	m_libraryWatcher.removePath(_dl->name);
+	m_libraryWatcher.removePath(_dl->filename);
 }
 
 void Noted::reloadLibrary(QString const& _name)
 {
 	shared_ptr<Library> dl = m_libraries[_name];
 	assert(dl);
-	assert(dl->name == _name);
+	assert(dl->filename == _name);
 
 	unload(dl);
 	load(dl);
@@ -623,6 +652,22 @@ void Noted::on_killLibrary_clicked()
 	}
 }
 
+void Noted::on_actReadSettings_activated()
+{
+	QSettings s("LancasterLogicResponse", "Noted");
+	for (auto d: findChildren<QDockWidget*>())
+		cdebug << d->objectName();
+	readBaseSettings(s);
+}
+
+void Noted::on_actWriteSettings_activated()
+{
+	QSettings s("LancasterLogicResponse", "Noted");
+	for (auto d: findChildren<QDockWidget*>())
+		cdebug << d->objectName();
+	writeBaseSettings(s);
+}
+
 void Noted::readBaseSettings(QSettings& _s)
 {
 	restoreState(_s.value("windowState").toByteArray());
@@ -641,7 +686,10 @@ void Noted::readSettings()
 {
 	QSettings settings("LancasterLogicResponse", "Noted");
 	restoreGeometry(settings.value("geometry").toByteArray());
-	if (settings.contains("libraries"))
+	if (settings.contains("libraryCount"))
+		for (int i = 0; i < settings.value("libraryCount").toInt(); ++i)
+			addLibrary(settings.value(QString("library%1").arg(i)).toString(), settings.value(QString("library%1.enabled").arg(i)).toBool());
+	else if (settings.contains("libraries"))
 		foreach (QString n, settings.value("libraries").toStringList())
 			addLibrary(n);
 #define DO(X, V, C) ui->X->V(settings.value(#X).C())
@@ -709,9 +757,9 @@ void Noted::writeSettings()
 {
 	QSettings settings("LancasterLogicResponse", "Noted");
 
-	foreach (auto l, m_libraries)
+/*	foreach (auto l, m_libraries)
 		if (l->p)
-			l->p->writeSettings(settings);
+			l->p->writeSettings(settings);*/
 
 	QStringList dataViews;
 	foreach (DataView* dv, findChildren<DataView*>())
@@ -738,7 +786,14 @@ void Noted::writeSettings()
 		}
 	settings.setValue("eventEditors", eds);
 
-	settings.setValue("libraries", QStringList(m_libraries.keys()));
+	int lc = 0;
+	for (auto l: m_libraries)
+	{
+		settings.setValue(QString("library%1").arg(lc), l->filename);
+		settings.setValue(QString("library%1.enabled").arg(lc), l->isEnabled());
+		++lc;
+	}
+	settings.setValue("libraryCount", lc);
 
 #define DO(X, V) settings.setValue(#X, ui->X->V())
 	DO(sampleRate, currentIndex);
@@ -1115,7 +1170,7 @@ void Noted::newDataView(QString const& _n)
 	dw->setObjectName(_n + "Dock");
 	DataView* dv = new DataView(dw, _n);
 	dw->setAllowedAreas(Qt::AllDockWidgetAreas);
-	addDockWidget(Qt::BottomDockWidgetArea, dw, Qt::Horizontal);
+	QMainWindow::addDockWidget(Qt::BottomDockWidgetArea, dw, Qt::Horizontal);
 	dw->setFeatures(dw->features() | QDockWidget::DockWidgetVerticalTitleBar);
 	dw->setWidget(dv);
 	connect(dw, SIGNAL(visibilityChanged(bool)), this, SLOT(onDataViewDockClosed()));
@@ -1263,7 +1318,7 @@ void Noted::info(QString const& _info, int _id)
 	m_infos += "<div style=\"margin-top: 1px;\"><span style=\"background-color:" + color + ";\">&nbsp;</span> " + Qt::escape(_info) + "</div>";
 }
 
-void Noted::info(QString const& _info, char const* _c)
+void Noted::info(QString const& _info, QString const& _c)
 {
 	QMutexLocker l(&x_infos);
 	m_infos += QString("<div style=\"margin-top: 1px;\"><span style=\"background-color:%1;\">&nbsp;</span> %2</div>").arg(_c).arg(_info);

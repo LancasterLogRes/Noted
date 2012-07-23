@@ -71,7 +71,7 @@ bool NotedBase::waveBlock(Time _from, Time _duration, Lightbox::foreign_vector<f
 	int pageBlocksRaisedLevel = 1;
 	int samplesPerPage = m_pageBlocks * m_blockSamples;
 
-	for (unsigned samples = fromBase(_duration, m_rate); samples / m_pageBlocks * 2 > samplesRequired; )
+	for (unsigned samples = fromBase(_duration, m_rate); samples / m_pageBlocks * 1.2 > samplesRequired; )
 	{
 		samples /= m_pageBlocks;
 		++il.level;

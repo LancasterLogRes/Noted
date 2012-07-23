@@ -111,7 +111,8 @@ public:
 
 	virtual void addTimeline(Timeline* _p) = 0;
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;
-	virtual void info(QString const& _info, char const* _color = "gray") = 0;
+	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d) = 0;
+	virtual void info(QString const& _info, QString const& _color = "gray") = 0;
 
 	inline void zoomTimeline(int _xFocus, double _factor) { auto pivot = timeOf(_xFocus); m_timelineOffset = pivot - (m_pixelDuration *= _factor) * _xFocus; emit durationChanged(); }
 
@@ -162,7 +163,7 @@ public:
 	virtual Lightbox::Time pixelDuration() const { return 1; }
 	virtual Lightbox::Time cursor() const { return 0; }
 
-	virtual void info(QString const&, char const* = "gray") {}
+	virtual void info(QString const&, QString const& = "gray") {}
 
 	virtual Lightbox::foreign_vector<float> waveWindow(int) const { return Lightbox::foreign_vector<float>(); }
 	virtual bool waveBlock(Lightbox::Time, Lightbox::Time, Lightbox::foreign_vector<float>) const { return false; }
@@ -189,6 +190,7 @@ public:
 	virtual void timelineDead(Timeline*) {}
 	virtual void addTimeline(Timeline*) {}
 	virtual QWidget* addGLWidget(QGLWidgetProxy*) { return nullptr; }
+	virtual void addDockWidget(Qt::DockWidgetArea, QDockWidget*) {}
 
 	virtual void setCursor(qint64) {}
 	virtual void setTimelineOffset(qint64) {}

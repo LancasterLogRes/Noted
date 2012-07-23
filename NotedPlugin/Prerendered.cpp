@@ -60,6 +60,7 @@ void Prerendered::paintEvent(QPaintEvent*)
 		doneCurrent();
 		m_display.start();
 	}
+	m_newSize = size();
 }
 
 bool Prerendered::needsRepaint() const
