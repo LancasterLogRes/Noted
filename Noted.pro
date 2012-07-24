@@ -1,5 +1,6 @@
 TEMPLATE = subdirs
 SUBDIRS = \
+    contrib \
     Common \
     EventCompiler \
     ExampleEventCompiler \

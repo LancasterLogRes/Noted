@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>Noted.png</file>
+        <file>SpectraView.frag</file>
+        <file>SpectraView.vert</file>
     </qresource>
 </RCC>

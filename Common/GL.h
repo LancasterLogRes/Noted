@@ -20,36 +20,10 @@
 
 #pragma once
 
-#include "CurrentView.h"
-
-class Noted;
-
-class WaveOverview: public CurrentView
-{
-	Q_OBJECT
-	friend class Noted;
-
-public:
-	WaveOverview(QWidget* _parent = 0);
-
-	virtual bool needsRepaint() const;
-	int positionOf(Lightbox::Time _t);
-	Lightbox::Time timeOf(int _x);
-
-private slots:
-	void timelineChanged() { m_timelineChanged = true; }
-
-signals:
-	void resized();
-
-private:
-	using CurrentView::event;
-
-	virtual void doRender(QGLFramebufferObject* _fbo);
-	virtual void mousePressEvent(QMouseEvent* _e);
-	virtual void mouseMoveEvent(QMouseEvent* _e);
-	virtual void initializeGL();
-	virtual void paintGL();
-
-	bool m_timelineChanged;
-};
+#ifdef Q_OS_MAC
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#else
+#include <GL/gl.h>
+#include <GL/glu.h>
+#endif

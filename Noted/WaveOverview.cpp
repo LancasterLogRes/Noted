@@ -30,6 +30,8 @@ using namespace Lightbox;
 
 WaveOverview::WaveOverview(QWidget* _parent): CurrentView(_parent)
 {
+	connect(c(), SIGNAL(durationChanged()), SLOT(timelineChanged()));
+	connect(c(), SIGNAL(offsetChanged()), SLOT(timelineChanged()));
 }
 
 int WaveOverview::positionOf(Lightbox::Time _t)
@@ -61,6 +63,7 @@ void WaveOverview::initializeGL()
 
 void WaveOverview::paintGL()
 {
+	m_timelineChanged = false;
 	CurrentView::paintGL();
 
 	int cursorL = positionOf(c()->earliestVisible());
@@ -86,6 +89,11 @@ void WaveOverview::paintGL()
 	glVertex2i(cursorM, 0);
 	glVertex2i(cursorM, height());
 	glEnd();
+}
+
+bool WaveOverview::needsRepaint() const
+{
+	return CurrentView::needsRepaint() || m_timelineChanged;
 }
 
 void WaveOverview::doRender(QGLFramebufferObject* _fbo)

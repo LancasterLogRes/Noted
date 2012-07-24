@@ -265,19 +265,24 @@ void NotedBase::rejigSpectra()
 				b[(j + off) % m_windowFunction.size()] = *d * *w;
 			fftw.process();
 
-			packTransform(&(lp[0]), &(fftw.phase()[0]), ss, [&](v4sf& a, v4sf const& b){ a = b - a; });
-
 			memcpy(sd, &(fftw.mag()[0]), ss * sizeof(float));
-			memcpy(sd + ss, &(fftw.phase()[0]), ss * sizeof(float));
-			memcpy(sd + ss2, &(lp[0]), ss * sizeof(float));
+			float const* phase = fftw.phase().data();
+			float intpart;
+			for (int i = 0; i < ss; ++i)
+			{
+				sd[i + ss] = phase[i] / TwoPi;
+				sd[i + ss2] = modf((phase[i] - lp[i]) / TwoPi + 1.f, &intpart);
+			}
 		};
 		auto sumF = [&](float* current, float* acc, unsigned)
 		{
-			packTransform(acc, current, ss3, [](v4sf& a, v4sf const& b){ a = a + b; });
+			packTransform(acc, current, ss, [](v4sf& a, v4sf const& b){ a = a + b; });
+			// just copy over an arbitrary phase (the last one of the set, as it happens)...
+			valcpy(acc + ss, current + ss, ss2);
 		};
 		auto divideF = [&](float* sd)
 		{
-			packTransform(sd, ss3, [&](v4sf& a){ a = a / p4; });
+			packTransform(sd, ss, [&](v4sf& a){ a = a / p4; });
 		};
 		auto doneF = [&]() { lp = fftw.phase(); };
 

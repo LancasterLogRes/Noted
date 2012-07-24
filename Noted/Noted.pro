@@ -13,7 +13,7 @@ include ( ../Common.pri )
 
 win32: RC_FILE = Noted.rc
 CONFIG += uic
-LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin -l$$FFTW3_LIB -lsndfile -lresample
+LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin -l$$FFTW3_LIB -lsndfile -lresample -lcontrib -lGLEW
 
 SOURCES += main.cpp\
 	Noted.cpp \
@@ -63,7 +63,9 @@ FORMS    += Noted.ui
 
 OTHER_FILES += \
 	TODO.txt \
-	Noted.rc
+	Noted.rc \
+    SpectraView.frag \
+    SpectraView.vert
 
 RESOURCES += \
 	Noted.qrc

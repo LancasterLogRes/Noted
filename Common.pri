@@ -57,11 +57,14 @@ win32 {
     PORTAUDIO = C:/Lightbox/portaudio
     LIBS += -L$$BOOST/stage/lib -L$$FFTW -L$$PORTAUDIO/lib/.libs
     INCLUDEPATH += $$BOOST $$FFTW $$PORTAUDIO/include
-	FFTW3_LIB = fftw3f-3
+    FFTW3_LIB = fftw3f-3
 }
 !win32 {
-	FFTW3_LIB = fftw3f
+    FFTW3_LIB = fftw3f
 }
+
+!win32: GL_LIBS += -lGL -lGLU
+win32: GL_LIBS += -lOpenGL32 -lGLU32
 
 LIBS += -L$$DESTDIR -Wl,-rpath,$$DESTDIR
 DEPENDPATH = $INCLUDEPATH

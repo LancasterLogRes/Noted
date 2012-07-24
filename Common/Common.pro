@@ -46,4 +46,5 @@ HEADERS += Common.h Global.h \
     DoTypes.h \
     MemberCollection.h \
     MemberMap.h \
-    Members.h
+    Members.h \
+    GL.h
