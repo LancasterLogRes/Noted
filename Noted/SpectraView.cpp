@@ -70,9 +70,17 @@ void SpectraView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 	if (!m_sm)
 		m_sm = make_shared<glShaderManager>();
 	if (!m_shader)
+	{
 		m_shader = shared_ptr<glShader>(m_sm->loadfromMemory(fileDump(":/SpectraView.vert").data(), 0, fileDump(":/SpectraView.frag").data()));
+		if (!m_shader)
+		{
+			cwarn << "Couldn't create shader :-(";
+			m_shader = make_shared<glShader>();
+		}
+	}
 
-	m_shader->begin();
+	if (m_shader->GetProgramObject())
+		m_shader->begin();
 	if (s && bc > 2)
 	{
 		for (int x = _dx; x < _dx + _dw; ++x)
@@ -86,22 +94,36 @@ void SpectraView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 				{
 					glGenTextures(1, m_texture);
 					glBindTexture(GL_TEXTURE_1D, m_texture[0]);
-					glTexParameteri (GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-					glTexParameteri (GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+					glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+					glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+					if (!m_shader->GetProgramObject())
+					{
+						float bias = 1.f;
+						float scale = -1.f;
+						glPixelTransferf(GL_RED_SCALE, scale);
+						glPixelTransferf(GL_GREEN_SCALE, scale);
+						glPixelTransferf(GL_BLUE_SCALE, scale);
+						glPixelTransferf(GL_RED_BIAS, bias);
+						glPixelTransferf(GL_GREEN_BIAS, bias);
+						glPixelTransferf(GL_BLUE_BIAS, bias);
+					}
 				}
 				else
 					glBindTexture(GL_TEXTURE_1D, m_texture[0]);
 				glTexImage1D(GL_TEXTURE_1D, 0, 1, bc * 3, 0, GL_LUMINANCE, GL_FLOAT, mus.data());
 				glBegin(GL_TRIANGLE_STRIP);
+				glTexCoord1f(1/3.f);
 				glVertex3i(x, 0, 0);
 				glVertex3i(x + 1, 0, 0);
+				glTexCoord1f(0.f);
 				glVertex3i(x, 1, 0);
 				glVertex3i(x + 1, 1, 0);
 				glEnd();
 			}
 		}
 	}
-	m_shader->end();
+	if (m_shader->GetProgramObject())
+		m_shader->end();
 	glPopMatrix();
 	_fbo->release();
 }
