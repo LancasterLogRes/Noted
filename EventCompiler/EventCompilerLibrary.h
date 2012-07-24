@@ -36,7 +36,7 @@ typedef std::unordered_map<std::string, std::function<EventCompilerImpl*()> > Ev
 	extern "C" __attribute__ ((visibility ("default"))) Lightbox::EventCompilerFactories const& eventCompilerFactories()
 
 #define LIGHTBOX_EVENTCOMPILER_LIBRARY \
-	LIGHTBOX_FINILIZING_LIBRARY \
+	LIGHTBOX_FINALIZING_LIBRARY \
 	extern "C" __attribute__ ((visibility ("default"))) Lightbox::EventCompilerFactories const& eventCompilerFactories() { static Lightbox::EventCompilerFactories s_ret; return s_ret; } \
 	extern "C" __attribute__ ((visibility ("default"))) Lightbox::EventCompilerFactories const& eventCompilerFactories()
 

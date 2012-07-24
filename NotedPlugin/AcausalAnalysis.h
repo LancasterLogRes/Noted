@@ -33,6 +33,7 @@ public:
 	AcausalAnalysis(QString const& _processName): m_name(_processName) {}
 	virtual ~AcausalAnalysis() {}
 
+	QString const& name() const { return m_name; }
 	void go(NotedFace* _noted, unsigned _from, unsigned _count);
 
 protected:

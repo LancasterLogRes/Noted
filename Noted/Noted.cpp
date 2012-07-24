@@ -916,18 +916,23 @@ bool Noted::work()
 
 void Noted::suspendWork()
 {
-	if (m_workerThread)
+	cnote << "WORK Suspending...";
+	if (m_workerThread && m_workerThread->isRunning())
 	{
 		m_workerThread->quit();
 		while (!m_workerThread->wait(1000))
-			qWarning() << "Worker thread not responding :-(";
+			cwarn << "Worker thread not responding :-(";
 	}
+	cnote << "WORK Suspended";
 }
 
 void Noted::resumeWork()
 {
-	if (m_workerThread)
+	if (m_workerThread && !m_workerThread->isRunning())
+	{
 		m_workerThread->start(QThread::LowPriority);
+		cnote << "WORK Resumed";
+	}
 }
 
 QList<EventsStore*> Noted::eventsStores() const
@@ -946,7 +951,7 @@ void Noted::noteLastValidIs(AcausalAnalysisPtr const& _a)
 	{
 		suspendWork();
 		m_workFinished = false;
-		cnote << "WORK Last valid is now " << (_a ? demangled(typeid(*_a).name()).c_str() : "(None)");
+		cnote << "WORK Last valid is now " << (_a ? _a->name().toLatin1().data() : "(None)");
 		m_toBeAnalyzed.insert(_a);
 		resumeWork();
 	}
@@ -1362,10 +1367,10 @@ void Noted::rejigAudio()
 			todo.pop_front();
 			if (yetToBeAnalysed.count(aa) && aa)
 			{
-				WorkerThread::setCurrentDescription(demangled(typeid(*aa).name()).c_str());
-				cnote << "WORKER Working on " << demangled(typeid(*aa).name());
+				WorkerThread::setCurrentDescription(aa->name());
+				cnote << "WORKER Working on " << aa->name().toStdString();
 				aa->go(this, 0, hops());
-				cnote << "WORKER Finished " << demangled(typeid(*aa).name());
+				cnote << "WORKER Finished " << aa->name().toStdString();
 				if (WorkerThread::quitting())
 				{
 					for (auto i: wasToBeAnalysed)
@@ -1375,7 +1380,7 @@ void Noted::rejigAudio()
 			}
 			else if (aa)
 			{
-				cnote << "WORKER Skipping job " << demangled(typeid(*aa).name());
+				cnote << "WORKER Skipping job " << aa->name().toStdString();
 			}
 			AcausalAnalysisPtrs ripe = ripeAcausalAnalysis(aa);
 			if (yetToBeAnalysed.count(aa))
