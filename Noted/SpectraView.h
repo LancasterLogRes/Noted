@@ -31,7 +31,7 @@ class SpectraView: public PrerenderedTimeline
 
 public:
 	explicit SpectraView(QWidget* _parent = 0);
-	~SpectraView() {}
+	virtual ~SpectraView();
 
 	Lightbox::Time period() const;
 
@@ -39,6 +39,6 @@ private:
 	virtual void doRender(QGLFramebufferObject* _fbo, int _dx, int _dw);
 
 	unsigned m_texture[1];
-	std::shared_ptr<cwc::glShaderManager> m_sm;
-	std::shared_ptr<cwc::glShader> m_shader;
+	cwc::glShaderManager* m_sm;
+	cwc::glShader* m_shader;
 };

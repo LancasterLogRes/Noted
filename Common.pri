@@ -9,34 +9,34 @@ CONFIG -= uic
 }
 
 CONFIG(release, debug|release) {
-    CONFIG += release ndebug
-    CONFIG -= debug
-    profile: QMAKE_CXXFLAGS += -g3
-    !profile: QMAKE_CXXFLAGS += -g0 -fomit-frame-pointer -Wl,-strip-all
-    QMAKE_CXXFLAGS += -DRELEASE -O2
-    system (echo "Release build")
+	CONFIG += release ndebug
+	CONFIG -= debug
+	profile: QMAKE_CXXFLAGS += -g3
+	!profile: QMAKE_CXXFLAGS += -g0 -fomit-frame-pointer -Wl,-strip-all
+	QMAKE_CXXFLAGS += -DRELEASE -O2
+	system (echo "Release build")
 }
 
 CONFIG(debug, debug|release) {
-    CONFIG -= release ndebug
-    QMAKE_CXXFLAGS += -DDEBUG -g3 -fno-inline -O0 -Wall
-    !win32: QMAKE_CXXFLAGS += -fPIC
-    system (echo "Debug build")
+	CONFIG -= release ndebug
+	QMAKE_CXXFLAGS += -DDEBUG -g3 -fno-inline -O0 -Wall
+	!win32: QMAKE_CXXFLAGS += -fPIC
+	system (echo "Debug build")
 }
 
 force_shared {
-    CONFIG -= create_prl link_prl static
-    CONFIG += shared dll dylib
+	CONFIG -= create_prl link_prl static
+	CONFIG += shared dll dylib
 	DEFINES += LIGHTBOX_SHARED_LIBRARY
 	system (echo "Shared build")
 }
 
 force_static {
-    CONFIG += create_prl link_prl static
-    CONFIG -= shared dll dylib
+	CONFIG += create_prl link_prl static
+	CONFIG -= shared dll dylib
 	DEFINES += LIGHTBOX_STATIC_LIBRARY
-    LIBS += -static
-    system (echo "Static build")
+	LIBS += -static
+	system (echo "Static build")
 }
 
 QMAKE_CXXFLAGS += -ffast-math -pipe -fexceptions
@@ -52,19 +52,24 @@ mac: LIBS += -L/opt/local/lib
 
 win32 {
 	# Dependent on your configuration.
-    BOOST = C:/boost_1_50_0
-    FFTW = C:/Lightbox/fftw
-    PORTAUDIO = C:/Lightbox/portaudio
-    LIBS += -L$$BOOST/stage/lib -L$$FFTW -L$$PORTAUDIO/lib/.libs
-    INCLUDEPATH += $$BOOST $$FFTW $$PORTAUDIO/include
-    FFTW3_LIB = fftw3f-3
+	BOOST = C:/boost_1_50_0
+	FFTW = C:/Lightbox/fftw
+	PORTAUDIO = C:/Lightbox/portaudio
+	GLEW = C:/Lightbox/glew-1.8.0
+	RESAMPLE = C:/Lightbox/libresample-0.1.3
+	SNDFILE = C:/Lightbox/libsndfile
+	LIBS += -L$$BOOST/stage/lib -L$$FFTW -L$$PORTAUDIO/lib/.libs -L$$GLEW/lib -L$$RESAMPLE -L$$SNDFILE/lib
+	INCLUDEPATH += $$BOOST $$FFTW $$PORTAUDIO/include $$GLEW/include $$RESAMPLE/include $$SNDFILE/include
+	FFTW3_LIB = fftw3f-3
+	SNDFILE_LIB = $$SNDFILE/lib/libsndfile-1.lib
 }
 !win32 {
-    FFTW3_LIB = fftw3f
+	FFTW3_LIB = fftw3f
+	SNDFILE_LIB = sndfile
 }
 
-!win32: GL_LIBS += -lGL -lGLU
-win32: GL_LIBS += -lOpenGL32 -lGLU32
+!win32: GL_LIBS += -lGL -lGLU -lGLEW
+win32: GL_LIBS += -lOpenGL32 -lGLU32 -lGLEW32
 
 LIBS += -L$$DESTDIR -Wl,-rpath,$$DESTDIR
 DEPENDPATH = $INCLUDEPATH

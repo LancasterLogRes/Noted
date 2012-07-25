@@ -35,9 +35,15 @@ using namespace Lightbox;
 using namespace cwc;
 
 SpectraView::SpectraView(QWidget* _parent):
-	PrerenderedTimeline	(_parent)
+	PrerenderedTimeline	(_parent),
+	m_sm				(nullptr),
+	m_shader			(nullptr)
 {
 	m_texture[0] = 0;
+}
+
+SpectraView::~SpectraView()
+{
 }
 
 Lightbox::Time SpectraView::period() const
@@ -68,14 +74,18 @@ void SpectraView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 	glColor3f(1, 1, 1);
 
 	if (!m_sm)
-		m_sm = make_shared<glShaderManager>();
+	{
+		cnote << "Making shader man";
+		m_sm = new glShaderManager;
+	}
 	if (!m_shader)
 	{
-		m_shader = shared_ptr<glShader>(m_sm->loadfromMemory(fileDump(":/SpectraView.vert").data(), 0, fileDump(":/SpectraView.frag").data()));
+		cnote << "Making shader";
+		m_shader = m_sm->loadfromMemory(fileDump(":/SpectraView.vert").data(), 0, fileDump(":/SpectraView.frag").data());
 		if (!m_shader)
 		{
 			cwarn << "Couldn't create shader :-(";
-			m_shader = make_shared<glShader>();
+			m_shader = new glShader;
 		}
 	}
 

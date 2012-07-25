@@ -13,7 +13,7 @@ include ( ../Common.pri )
 
 win32: RC_FILE = Noted.rc
 CONFIG += uic
-LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin -l$$FFTW3_LIB -lsndfile -lresample -lcontrib -lGLEW
+LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin -l$$FFTW3_LIB $$SNDFILE_LIB -lresample -lcontrib $$GL_LIBS
 
 SOURCES += main.cpp\
 	Noted.cpp \
@@ -33,8 +33,8 @@ SOURCES += main.cpp\
 	Page.cpp \
 	Pager.cpp \
 	CompileEventsView.cpp \
-        PropertiesEditor.cpp \
-    NotedGLWidget.cpp
+		PropertiesEditor.cpp \
+	NotedGLWidget.cpp
 
 HEADERS  += Noted.h \
 	WaveView.h \
@@ -57,15 +57,15 @@ HEADERS  += Noted.h \
 	CompileEvents.h \
 	CollateEvents.h \
 	CompileEventsView.h \
-    PropertiesEditor.h
+	PropertiesEditor.h
 
 FORMS    += Noted.ui
 
 OTHER_FILES += \
 	TODO.txt \
 	Noted.rc \
-    SpectraView.frag \
-    SpectraView.vert
+	SpectraView.frag \
+	SpectraView.vert
 
 RESOURCES += \
 	Noted.qrc

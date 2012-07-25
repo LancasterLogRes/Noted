@@ -22,9 +22,6 @@
 #include <QtCore>
 #include <QtOpenGL>
 #include <fstream>
-#include <boost/thread.hpp>
-#include <boost/array.hpp>
-#include <boost/system/system_error.hpp>
 #include <cassert>
 #include <Common/Common.h>
 #include <NotedPlugin/NotedPlugin.h>
@@ -37,7 +34,7 @@ class NotedGLWidget: public QGLWidget
 {
 public:
 	NotedGLWidget(QGLWidgetProxy* _v, QWidget* _p): QGLWidget(_p), m_v(_v) {}
-    virtual ~NotedGLWidget() { delete m_v; }
+	virtual ~NotedGLWidget() { delete m_v; }
 
 	virtual void initializeGL() { m_v->initializeGL(); }
 	virtual void resizeGL(int _w, int _h) { m_v->resizeGL(_w, _h); }
