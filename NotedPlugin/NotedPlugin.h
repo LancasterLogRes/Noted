@@ -76,5 +76,5 @@ private:
 #define NOTED_PLUGIN(O) \
 	LIGHTBOX_FINALIZING_LIBRARY \
 	extern "C" __attribute__ ((visibility ("default"))) NotedPlugin* newPlugin(NotedFace* n) { return new O(n); } \
-	extern "C" __attribute__ ((visibility ("default"))) char const* pluginName() { return #O; }
+	extern "C" __attribute__ ((visibility ("default"))) char const* libraryName() { return #O; }
 

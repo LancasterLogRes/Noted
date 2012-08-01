@@ -46,11 +46,11 @@ namespace Lightbox
 	LIGHTBOX_MEMBERS(_collect_ ## N, __VA_ARGS__) \
 	virtual Lightbox::MemberMap N() const \
 	{ \
-		if (m_lightbox_properties.empty()) \
-			m_lightbox_properties = Lightbox::MemberCatcher::populate(*static_cast<Base const*>(this), [=](Lightbox::MemberCatcher& _pc){ return _collect_ ## N(_pc); }); \
-		return m_lightbox_properties; \
+		if (m_lightbox_ ## N.empty()) \
+			m_lightbox_ ## N = Lightbox::MemberCatcher::populate(*static_cast<Base const*>(this), [=](Lightbox::MemberCatcher& _pc){ return _collect_ ## N(_pc); }); \
+		return m_lightbox_ ## N; \
 	} \
-	mutable Lightbox::MemberMap m_lightbox_properties
+	mutable Lightbox::MemberMap m_lightbox_ ## N
 
 #define LIGHTBOX_STATE(...) LIGHTBOX_MEMBERS_AUX(state, LIGHTBOX_STATE_BaseClass, __VA_ARGS__)
 #define LIGHTBOX_PROPERTIES(...) LIGHTBOX_MEMBERS_AUX(propertyMap, LIGHTBOX_PROPERTIES_BaseClass, __VA_ARGS__)

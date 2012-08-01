@@ -322,7 +322,7 @@ void Noted::load(LibraryPtr const& _dl)
 			else if (pf_t np = (pf_t)_dl->l.resolve("newPlugin"))
 			{
 				_dl->item->setText(1, "Plugin");
-				_dl->nick = ((pnf_t)_dl->l.resolve("pluginName"))();
+				_dl->nick = ((pnf_t)_dl->l.resolve("libraryName"))();
 				cnote << "LOAD" << _dl->nick << " [PLUGIN]";
 
 				_dl->p = shared_ptr<NotedPlugin>(np(this));
@@ -364,6 +364,8 @@ void Noted::load(LibraryPtr const& _dl)
 							lib->p->m_auxLibraries.append(f);
 							if (f->load(_dl->l))
 							{
+								if (_dl->l.resolve("libraryName"))
+									_dl->nick = ((pnf_t)_dl->l.resolve("libraryName"))();
 								_dl->auxFace = f;
 								_dl->aux = lib->p;
 								cnote << "LOAD" << _dl->nick << " [AUX:" << lib->nick << "]";
