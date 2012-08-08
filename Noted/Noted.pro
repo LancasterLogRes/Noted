@@ -13,7 +13,7 @@ include ( ../Common.pri )
 
 win32: RC_FILE = Noted.rc
 CONFIG += uic
-LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin -l$$FFTW3_LIB $$SNDFILE_LIB -lresample -lcontrib $$GL_LIBS
+LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin $$FFTW3_LIBS $$SNDFILE_LIBS -lresample -lcontrib $$GL_LIBS
 
 SOURCES += main.cpp\
 	Noted.cpp \

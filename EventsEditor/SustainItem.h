@@ -25,7 +25,7 @@
 class SustainBarItem: public QGraphicsItem
 {
 public:
-	SustainBarItem(QPointF const& _begin, QPointF const& _end, float _nature): m_begin(_begin), m_end(_end), m_nature(_nature) {}
+	SustainBarItem(QPointF const& _begin, QPointF const& _end, float _temperature): m_begin(_begin), m_end(_end), m_temperature(_temperature) {}
 
 	virtual QPainterPath shape() const { QPainterPath ret; ret.addRect(boundingRect()); return ret; }
 	virtual QRectF boundingRect() const { return QRectF(m_begin + QPointF(0, 3), QSizeF(m_end.x() - m_begin.x(), 6)); }
@@ -37,7 +37,7 @@ public:
 private:
 	QPointF m_begin;
 	QPointF m_end;
-	float m_nature;
+	float m_temperature;
 	float m_subNature;
 };
 

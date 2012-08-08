@@ -65,7 +65,7 @@ public:
 			Lightbox::StreamEvent e;
 			e.type = Lightbox::toEventType(l[0].toStdString());
 			e.strength = l[1].toFloat();
-			e.nature = l[2].toFloat();
+			e.temperature = l[2].toFloat();
 			ret.push_back(e);
 		}
 		return ret;

@@ -47,6 +47,7 @@ class Timeline;
 class EventsStore;
 class CausalAnalysis;
 class QGLWidget;
+class NotedPlugin;
 
 class NotedFace: public QMainWindow
 {
@@ -96,9 +97,9 @@ public:
 	virtual Lightbox::foreign_vector<float> deltaPhaseSpectrum(int _i, int _n) const = 0;
 
 	virtual QList<EventsStore*> eventsStores() const = 0;
-	virtual std::vector<float> graphEvents(float _nature) const = 0;
-	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity(), Lightbox::Time _t = Lightbox::UndefinedTime) const = 0;
-	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity()) const = 0;
+	virtual std::vector<float> graphEvents(float _temperature) const = 0;
+	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType _et, float _temperature = std::numeric_limits<float>::infinity(), Lightbox::Time _t = Lightbox::UndefinedTime) const = 0;
+	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType _et, float _temperature = std::numeric_limits<float>::infinity()) const = 0;
 	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name) = 0;
 
 	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a = nullptr) = 0;
@@ -113,6 +114,7 @@ public:
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d) = 0;
 	virtual void info(QString const& _info, QString const& _color = "gray") = 0;
+	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const& _mangledName) = 0;
 
 	inline void zoomTimeline(int _xFocus, double _factor) { auto pivot = timeOf(_xFocus); m_timelineOffset = pivot - (m_pixelDuration *= _factor) * _xFocus; emit durationChanged(); }
 
@@ -131,6 +133,7 @@ signals:
 	void durationChanged();
 	void analysisFinished();
 	void eventsChanged();
+	void cursorChanged();
 
 protected:
 	virtual void timelineDead(Timeline* _tl) = 0;
@@ -187,6 +190,7 @@ public:
 
 	virtual bool isPlaying() const { return false; }
 
+	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const&) { return nullptr; }
 	virtual void timelineDead(Timeline*) {}
 	virtual void addTimeline(Timeline*) {}
 	virtual QWidget* addGLWidget(QGLWidgetProxy*) { return nullptr; }

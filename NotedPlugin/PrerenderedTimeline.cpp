@@ -151,10 +151,11 @@ void PrerenderedTimeline::paintGL()
 	glEnd();
 
 	glBegin(GL_LINES);
-	glColor4f(0.f, 0.f, 0.f, .5f);
+	QColor cc = cursorColor();
+	glColor4f(cc.red(), cc.green(), cc.blue(), 0.5f);
 	glVertex2i(m_lastCursorL, r.top());
 	glVertex2i(m_lastCursorL, r.top() + r.height());
-	glColor4f(0.f, 0.f, 0.f, 1.f);
+	glColor4f(cc.red(), cc.green(), cc.blue(), 1.0f);
 	glVertex2i(m_lastCursorR, r.top());
 	glVertex2i(m_lastCursorR, r.top() + r.height());
 	glEnd();

@@ -166,10 +166,15 @@ template <class _T> inline typename is_flag<_T>::FlagsType::Flag fromIndex(unsig
 	{ \
 		return _out << toString(_p); \
 	}
+#define LIGHTBOX_FLAGS_BR(R, D, I, ELEM) { ELEM, I },
+#define LIGHTBOX_FLAGS_ARRAYED(N, X) \
+	static const std::array<N, BOOST_PP_SEQ_SIZE(X)> N ## Values = { { BOOST_PP_SEQ_ENUM(X) } }; \
+	static std::map<N, unsigned> N ## Lookup = { BOOST_PP_SEQ_FOR_EACH_I(LIGHTBOX_FLAGS_BR, i, X) };
 
 #define LIGHTBOX_FLAGS(N, Ns, X) \
 	LIGHTBOX_FLAGS_TYPE(N, Ns); \
 	LIGHTBOX_ENUM_STRINGABLE(N, X) \
-	LIGHTBOX_FLAGS_STRINGABLE(Ns, X)
+	LIGHTBOX_FLAGS_STRINGABLE(Ns, X) \
+	LIGHTBOX_FLAGS_ARRAYED(N, X)
 
 }

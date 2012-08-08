@@ -65,12 +65,15 @@ protected:
 	unsigned windowIndex(Lightbox::Time _t) const { return m_noted->windowIndex(_t); }
 	void updateWindowTitle() { m_noted->updateWindowTitle(); }
 	void notePluginDataChanged() { m_noted->notePluginDataChanged(); }
+	template <class _Plugin> std::shared_ptr<_Plugin> requires() { return std::dynamic_pointer_cast<_Plugin>(requires(typeid(_Plugin).name())); }
+	std::shared_ptr<NotedPlugin> requires(QString const& _s) { if (auto ret = noted()->getPlugin(_s)) return ret; m_required.append(_s); return nullptr; }
 
 private:
 	void removeDeadAuxes();
 
 	NotedFace* m_noted;
 	QList<std::weak_ptr<AuxLibraryFace> > m_auxLibraries;
+	QStringList m_required;
 };
 
 #define NOTED_PLUGIN(O) \

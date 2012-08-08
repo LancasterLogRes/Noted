@@ -18,7 +18,7 @@ win32 {
 	release: LIBS += -lboost_system-mgw46-mt-1_50
 }
 
-LIBS += -l$$FFTW3_LIB
+LIBS += $$FFTW3_LIBS
 
 SOURCES += Common.cpp \
     FFTW.cpp \

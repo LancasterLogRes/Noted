@@ -35,8 +35,8 @@ using namespace Lightbox;
 void SustainBarItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
 {
 	QRectF br = boundingRect();
-	_p->fillRect(br, QColor::fromHsvF(m_nature, .25f, 1.f * Lightbox::Color::hueCorrection(m_nature * 360)));
-	_p->fillRect(QRectF(br.topLeft(), QSizeF(br.width(), 1)), QColor::fromHsvF(m_nature, .5f, .6f * Lightbox::Color::hueCorrection(m_nature * 360)));
+	_p->fillRect(br, QColor::fromHsvF(m_temperature, .25f, 1.f * Lightbox::Color::hueCorrection(m_temperature * 360)));
+	_p->fillRect(QRectF(br.topLeft(), QSizeF(br.width(), 1)), QColor::fromHsvF(m_temperature, .5f, .6f * Lightbox::Color::hueCorrection(m_temperature * 360)));
 }
 
 QPointF SustainSuperItem::evenUp(QPointF const& _n)

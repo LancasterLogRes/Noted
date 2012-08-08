@@ -89,10 +89,10 @@ public:
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d);
 
 	virtual QList<EventsStore*> eventsStores() const;
-	virtual std::vector<float> graphEvents(float _nature) const;
-	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType _et, float _nature, Lightbox::Time _t = Lightbox::UndefinedTime) const;
+	virtual std::vector<float> graphEvents(float _temperature) const;
+	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType _et, float _temperature, Lightbox::Time _t = Lightbox::UndefinedTime) const;
 	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name);
-	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType _et, float _nature = std::numeric_limits<float>::infinity()) const;
+	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType _et, float _temperature = std::numeric_limits<float>::infinity()) const;
 
 	using QWidget::event;
 
@@ -110,6 +110,7 @@ public slots:
 	virtual void addLibrary(QString const& _name, bool _isEnabled = true);
 	virtual void reloadLibrary(QString const& _name);
 	virtual void onLibraryChange(QString const& _name);
+	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const& _mangledName);
 
 	virtual void setCursor(qint64 _c);
 

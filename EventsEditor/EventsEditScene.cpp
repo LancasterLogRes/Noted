@@ -101,13 +101,13 @@ void EventsEditScene::rejigEvents()
 			{
 				if (lastSI && (dynamic_cast<SustainItem*>(ssi) || dynamic_cast<EndSustainItem*>(ssi)))
 				{
-					SustainBarItem* sbi = new SustainBarItem(lastSI->pos(), ssi->pos(), lastSI->streamEvent().nature);
+					SustainBarItem* sbi = new SustainBarItem(lastSI->pos(), ssi->pos(), lastSI->streamEvent().temperature);
 					sbi->setZValue(-1);
 					addItem(sbi);
 				}
 				if (lastBSI && (dynamic_cast<BackSustainItem*>(ssi) || dynamic_cast<EndBackSustainItem*>(ssi)))
 				{
-					SustainBarItem* sbi = new SustainBarItem(lastBSI->pos(), ssi->pos(), lastBSI->streamEvent().nature);
+					SustainBarItem* sbi = new SustainBarItem(lastBSI->pos(), ssi->pos(), lastBSI->streamEvent().temperature);
 					sbi->setZValue(-1);
 					addItem(sbi);
 				}
@@ -200,7 +200,7 @@ void EventsEditScene::saveTo(QString _filename) const
 			StreamEvent const& se = sei->streamEvent();
 			ptree& e = lt->add(boost::algorithm::to_lower_copy(toString(se.type)), "");
 			e.put("<xmlattr>.strength", se.strength);
-			e.put("<xmlattr>.nature", se.nature);
+			e.put("<xmlattr>.temperature", se.temperature);
 			e.put("<xmlattr>.position", se.position);
 			e.put("<xmlattr>.surprise", se.surprise);
 			e.put("<xmlattr>.period", se.period);
@@ -244,7 +244,7 @@ void EventsEditScene::loadFrom(QString _filename)
 						StreamEvent se;
 						se.type = toEventType(w.first, false);
 						se.strength = w.second.get<float>("<xmlattr>.strength", 1.f);
-						se.nature = w.second.get<float>("<xmlattr>.nature", 0.f);
+						se.temperature = w.second.get<float>("<xmlattr>.temperature", 0.f);
 						se.period = w.second.get<Time>("<xmlattr>.period", fromMsecs(w.second.get<int64_t>("<xmlattr>.periodMs", 0)));
 						se.position = w.second.get<int>("<xmlattr>.position", -1);
 						se.surprise = w.second.get<float>("<xmlattr>.surprise", 1.f);

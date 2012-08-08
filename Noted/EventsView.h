@@ -67,7 +67,7 @@ public:
 	void appendEvents(Lightbox::StreamEvents const& _se);
 	virtual Lightbox::StreamEvents events(int _i) const;
 	virtual Lightbox::StreamEvents initEvents() const { return m_initEvents; }
-	std::vector<float> graphEvents(float _nature) const;
+	std::vector<float> graphEvents(float _temperature) const;
 
 	void updateEventTypes();
 

@@ -224,7 +224,7 @@ pair<pair<float, float>, pair<float, float> > DataView::ranges(bool _needX, bool
 	if (_ses.empty())
 	{
 		foreach (GraphSpec s, _spec->graphs)
-			tses.push_back(c()->eventOf(s.filter, s.nature));
+			tses.push_back(c()->eventOf(s.filter, s.temperature));
 	}
 	vector<StreamEvent> const& ses = _ses.empty() ? tses : _ses;
 
@@ -341,7 +341,7 @@ void DataView::doRender(QGLFramebufferObject* _fbo)
 
 	vector<StreamEvent> ses;
 	foreach (GraphSpec s, spec->graphs)
-		ses.push_back(c()->eventOf(s.filter, s.nature));
+		ses.push_back(c()->eventOf(s.filter, s.temperature));
 
 	pair<float, float> xRange;
 	pair<float, float> yRange;

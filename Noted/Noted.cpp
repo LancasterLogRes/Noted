@@ -289,6 +289,14 @@ void Noted::addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d)
 	QMainWindow::addDockWidget(_a, _d);
 }
 
+shared_ptr<NotedPlugin> Noted::getPlugin(QString const& _mangledName)
+{
+	for (auto l: m_libraries)
+		if (l->p && typeid(*l->p).name() == _mangledName)
+			return l->p;
+	return nullptr;
+}
+
 void Noted::load(LibraryPtr const& _dl)
 {
 	cnote << "Loading:" << _dl->filename;
@@ -327,32 +335,41 @@ void Noted::load(LibraryPtr const& _dl)
 
 				_dl->p = shared_ptr<NotedPlugin>(np(this));
 
-				foreach (auto lib, m_libraries)
-					if (!lib->l.isLoaded() && lib->isEnabled())
-						load(lib);
+				if (_dl->p->m_required.empty())
+				{
+					foreach (auto lib, m_libraries)
+						if (!lib->l.isLoaded() && lib->isEnabled())
+							load(lib);
 
-				QSettings s("LancasterLogicResponse", "Noted");
-				Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p, [=](std::string const&){_dl->p->onPropertiesChanged();});
-				props.deserialize(s.value(_dl->nick + "/properties").toString().toStdString());
-				PropertiesEditor* pe = nullptr;
-				if (props.size())
-				{
-					QDockWidget* propsDock = new QDockWidget(QString("%1 Properties").arg(_dl->nick), this);
-					propsDock->setObjectName(_dl->nick + "/properties");
-					pe = new PropertiesEditor(propsDock);
-					propsDock->setWidget(pe);
-					propsDock->setFeatures(propsDock->features()|QDockWidget::DockWidgetVerticalTitleBar);
-					addDockWidget(Qt::RightDockWidgetArea, propsDock);
-					if (s.contains(_dl->nick + "/propertiesGeometry"))
-						propsDock->restoreGeometry(s.value(_dl->nick + "/propertiesGeometry").toByteArray());
+					QSettings s("LancasterLogicResponse", "Noted");
+					Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p, [=](std::string const&){_dl->p->onPropertiesChanged();});
+					props.deserialize(s.value(_dl->nick + "/properties").toString().toStdString());
+					PropertiesEditor* pe = nullptr;
+					if (props.size())
+					{
+						QDockWidget* propsDock = new QDockWidget(QString("%1 Properties").arg(_dl->nick), this);
+						propsDock->setObjectName(_dl->nick + "/properties");
+						pe = new PropertiesEditor(propsDock);
+						propsDock->setWidget(pe);
+						propsDock->setFeatures(propsDock->features()|QDockWidget::DockWidgetVerticalTitleBar);
+						addDockWidget(Qt::RightDockWidgetArea, propsDock);
+						if (s.contains(_dl->nick + "/propertiesGeometry"))
+							propsDock->restoreGeometry(s.value(_dl->nick + "/propertiesGeometry").toByteArray());
+					}
+					if (m_constructed)
+					{
+						readBaseSettings(s);
+						_dl->p->readSettings(s);
+					}
+					if (pe)
+						pe->setProperties(props);
 				}
-				if (m_constructed)
+				else
 				{
-					readBaseSettings(s);
-					_dl->p->readSettings(s);
+					_dl->item->setText(1, "Plugin: Requires " + _dl->p->m_required.join(" "));
+					_dl->p.reset();
+					_dl->unload();
 				}
-				if (pe)
-					pe->setProperties(props);
 			}
 			else
 			{
@@ -557,33 +574,33 @@ bool Noted::eventFilter(QObject*, QEvent* _e)
 	return false;
 }
 
-vector<float> Noted::graphEvents(float _nature) const
+vector<float> Noted::graphEvents(float _temperature) const
 {
 	// OPTIMIZE: memoize.
 	foreach (EventsView* ev, eventsViews())
 	{
-		vector<float> ret = ev->graphEvents(_nature);
+		vector<float> ret = ev->graphEvents(_temperature);
 		if (ret.size())
 			return ret;
 	}
 	return vector<float>();
 }
 
-StreamEvent Noted::eventOf(EventType _et, float _nature, Time _t) const
+StreamEvent Noted::eventOf(EventType _et, float _temperature, Time _t) const
 {
 	if (_t == UndefinedTime)
 		_t = cursor();
 	StreamEvent ret(NoEvent);
 	if (_t < duration() && _et != NoEvent)
 	{
-		bool careAboutNature = isFinite(_nature);
+		bool careAboutNature = isFinite(_temperature);
 		auto evs = eventsViews();
 //		foreach (EventsView* ev, evs)
 //			ev->mutex()->lock();
 		for (int i = windowIndex(_t); i >= 0; --i)
 			foreach (EventsView* ev, evs)
 				foreach (StreamEvent const& e, ev->events(i))
-					if (e.type == _et && (e.nature == _nature || !careAboutNature))
+					if (e.type == _et && (e.temperature == _temperature || !careAboutNature))
 					{
 						ret = e;
 						goto OK;
@@ -595,7 +612,7 @@ StreamEvent Noted::eventOf(EventType _et, float _nature, Time _t) const
 	return ret;
 }
 
-StreamEvents Noted::initEventsOf(EventType _et, float _nature) const
+StreamEvents Noted::initEventsOf(EventType _et, float _temperature) const
 {
 	if (d_initEvents)
 	{
@@ -604,9 +621,9 @@ StreamEvents Noted::initEventsOf(EventType _et, float _nature) const
 			catenate(m_initEvents, ev->initEvents());
 	}
 	StreamEvents ret;
-	bool careAboutNature = isFinite(_nature);
+	bool careAboutNature = isFinite(_temperature);
 	foreach (StreamEvent const& e, m_initEvents)
-		if (e.type == _et && (e.nature == _nature || !careAboutNature))
+		if (e.type == _et && (e.temperature == _temperature || !careAboutNature))
 			ret.push_back(e);
 	return ret;
 }
@@ -1290,6 +1307,8 @@ void Noted::timerEvent(QTimerEvent*)
 		m_cursorDirty = false;
 		if (ui->actFollow->isChecked() && (m_fineCursor < earliestVisible() || m_fineCursor > earliestVisible() + visibleDuration() * 7 / 8))
 			setTimelineOffset(m_fineCursor - visibleDuration() / 8);
+
+		emit cursorChanged();
 	}
 }
 
@@ -1307,7 +1326,7 @@ void Noted::changeEvent(QEvent *e)
 
 bool eventVisible(QVariant const& _v, Lightbox::StreamEvent const& _e)
 {
-	return (QMetaType::Type(_v.type()) == QMetaType::Float && _e.nature == _v.toFloat() && _e.type >= Lightbox::Graph)
+	return (QMetaType::Type(_v.type()) == QMetaType::Float && _e.temperature == _v.toFloat() && _e.type >= Lightbox::Graph)
 			|| (_v.type() == QVariant::Int && _v.toInt() == int(_e.type))
 			|| (_v.type() == QVariant::Bool && (_e.type >= Lightbox::Graph) == (_v.toBool()))
 			|| !_v.isValid();

@@ -40,8 +40,8 @@ force_static {
 }
 
 QMAKE_CXXFLAGS += -ffast-math -pipe -fexceptions
-!mac: QMAKE_CXXFLAGS += -std=c++0x
-mac: QMAKE_CXXFLAGS += -std=c++11
+mac: QMAKE_CXXFLAGS +=  -std=c++11
+!mac: QMAKE_CXXFLAGS +=  -std=c++0x
 crosscompilation: QMAKE_CXXFLAGS += -march=btver1
 !crosscompilation: QMAKE_CXXFLAGS += -march=native
 QMAKE_CXXFLAGS_WARN_ON += -Wno-parentheses
@@ -60,16 +60,15 @@ win32 {
 	SNDFILE = C:/Lightbox/libsndfile
 	LIBS += -L$$BOOST/stage/lib -L$$FFTW -L$$PORTAUDIO/lib/.libs -L$$GLEW/lib -L$$RESAMPLE -L$$SNDFILE/lib
 	INCLUDEPATH += $$BOOST $$FFTW $$PORTAUDIO/include $$GLEW/include $$RESAMPLE/include $$SNDFILE/include
-	FFTW3_LIB = fftw3f-3
-	SNDFILE_LIB = $$SNDFILE/lib/libsndfile-1.lib
+        FFTW3_LIBS = -lfftw3f-3
+        SNDFILE_LIBS = $$SNDFILE/lib/libsndfile-1.lib
+        GL_LIBS += -lOpenGL32 -lGLU32 -lGLEW32
 }
 !win32 {
-	FFTW3_LIB = fftw3f
-	SNDFILE_LIB = sndfile
+        FFTW3_LIBS = -lfftw3f
+        SNDFILE_LIBS = -lsndfile
+        GL_LIBS += -lGL -lGLU -lGLEW
 }
-
-!win32: GL_LIBS += -lGL -lGLU -lGLEW
-win32: GL_LIBS += -lOpenGL32 -lGLU32 -lGLEW32
 
 LIBS += -L$$DESTDIR -Wl,-rpath,$$DESTDIR
 DEPENDPATH = $INCLUDEPATH

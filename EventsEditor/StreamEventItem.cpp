@@ -68,7 +68,7 @@ void StreamEventItem::mouseMoveEvent(QGraphicsSceneMouseEvent* _e)
 		int mag = sqrt(sqr(rc.x()) + sqr(rc.y())) / 32;
 		float th = atan2(rc.x(), rc.y());
 		if (mag > 0)
-			m_se.nature = levelled(fracPart((th + TwoPi) / TwoPi), 6 * sqr(mag));
+			m_se.temperature = levelled(fracPart((th + TwoPi) / TwoPi), 6 * sqr(mag));
 		update();
 		scene()->itemChanged(this);
 		_e->accept();

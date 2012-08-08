@@ -33,10 +33,10 @@ class StreamEventItem: public QGraphicsItem
 public:
 	StreamEventItem(Lightbox::StreamEvent const& _se);
 
-	QColor color() const { return QColor::fromHsvF(m_se.nature, 1.f, 1.f * Lightbox::Color::hueCorrection(m_se.nature * 360)); }
-	QColor cDark() const { return QColor::fromHsvF(m_se.nature, 0.5f, 0.6f * Lightbox::Color::hueCorrection(m_se.nature * 360)); }
-	QColor cLight() const { return QColor::fromHsvF(m_se.nature, 0.5f, 1.0f * Lightbox::Color::hueCorrection(m_se.nature * 360)); }
-	QColor cPastel() const { return QColor::fromHsvF(m_se.nature, 0.25f, 1.0f * Lightbox::Color::hueCorrection(m_se.nature * 360)); }
+	QColor color() const { return QColor::fromHsvF(m_se.temperature, 1.f, 1.f * Lightbox::Color::hueCorrection(m_se.temperature * 360)); }
+	QColor cDark() const { return QColor::fromHsvF(m_se.temperature, 0.5f, 0.6f * Lightbox::Color::hueCorrection(m_se.temperature * 360)); }
+	QColor cLight() const { return QColor::fromHsvF(m_se.temperature, 0.5f, 1.0f * Lightbox::Color::hueCorrection(m_se.temperature * 360)); }
+	QColor cPastel() const { return QColor::fromHsvF(m_se.temperature, 0.25f, 1.0f * Lightbox::Color::hueCorrection(m_se.temperature * 360)); }
 
 	EventsEditor* view() const;
 	QPointF distanceFrom(StreamEventItem* _i, QPointF const& _onThem = QPointF(0, 0), QPointF const& _onUs = QPointF(0, 0)) const;

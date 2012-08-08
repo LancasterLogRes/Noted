@@ -19,7 +19,8 @@
  */
 
 #pragma once
-
+#include <array>
+#include <map>
 #include "Global.h"
 #include "Flags.h"
 

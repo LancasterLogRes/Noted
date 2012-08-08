@@ -42,7 +42,8 @@
 	}\
 	template <class T> inline T& operator<<(T& _o, Name _e)\
 	{\
-		return _o << toString(_e);\
+		_o << toString(_e);\
+		return _o;\
 	}\
 	inline Name to ## Name(std::string const& _s, bool _caseSensitive = true)\
 	{\

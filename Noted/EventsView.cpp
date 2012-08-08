@@ -107,13 +107,13 @@ void EventsView::clearEvents()
 	m_current.clear();
 }
 
-vector<float> EventsView::graphEvents(float _nature) const
+vector<float> EventsView::graphEvents(float _temperature) const
 {
 	QMutexLocker l(&x_events);
 	vector<float> ret;
 	foreach (auto es, m_events)
 		foreach (auto e, es)
-			if (e.type >= Graph && e.nature == _nature)
+			if (e.type >= Graph && e.temperature == _temperature)
 				ret.push_back(e.strength);
 	return ret;
 }
@@ -212,17 +212,17 @@ void EventsView::exportEvents()
 					{
 						if (!timeout++)
 							out << QString("\t<time value=\"%1\">").arg(t).toStdString() << endl;
-						out << QString("\t\t<%1 strength=\"%2\" character=\"%3\" nature=\"%4\" surprise=\"%5\" position=\"%6\" period=\"%7\" />").arg(QString::fromStdString(toString(e.type)).toLower()).arg(e.strength).arg(toString(e.character).c_str()).arg(e.nature).arg(e.surprise).arg(e.position).arg(e.period).toStdString() << endl;
+						out << QString("\t\t<%1 strength=\"%2\" character=\"%3\" temperature=\"%4\" surprise=\"%5\" position=\"%6\" period=\"%7\" />").arg(QString::fromStdString(toString(e.type)).toLower()).arg(e.strength).arg(toString(e.character).c_str()).arg(e.temperature).arg(e.surprise).arg(e.position).arg(e.period).toStdString() << endl;
 					}
 					else if (fn.endsWith(".events"))
 					{
 						if (!timeout++)
 							out << t << endl;
-						out << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.nature << " " << e.surprise << " " << e.position << " " << e.period << endl;
+						out << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << e.position << " " << e.period << endl;
 					}
 					else
 					{
-						out << toSeconds(t) << " " << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.nature << " " << e.surprise << " " << e.position << " " << e.period << endl;
+						out << toSeconds(t) << " " << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << e.position << " " << e.period << endl;
 					}
 
 				}
@@ -240,15 +240,15 @@ void EventsView::exportEvents()
 		out << "</events>" << endl;
 }
 
-void updateCombo(QComboBox* _box, set<float> const& _natures, set<EventType> _types)
+void updateCombo(QComboBox* _box, set<float> const& _temperatures, set<EventType> _types)
 {
 	QString s =  _box->currentText();
 	_box->clear();
-	foreach (float n, _natures)
+	foreach (float n, _temperatures)
 	{
 		QPixmap pm(16, 16);
 		pm.fill(QColor::fromHsvF(n, 0.5, 0.85));
-		_box->insertItem(_box->count(), pm, QString("Graph events of nature %1").arg(n), n);
+		_box->insertItem(_box->count(), pm, QString("Graph events of temperature %1").arg(n), n);
 	}
 	_box->insertItem(_box->count(), "All Graph events", true);
 	foreach (EventType e, _types)
@@ -267,16 +267,16 @@ void updateCombo(QComboBox* _box, set<float> const& _natures, set<EventType> _ty
 
 void EventsView::updateEventTypes()
 {
-	set<float> natures;
+	set<float> temperatures;
 	set<EventType> types;
 	QMutexLocker l(&x_events);
 	foreach (auto es, m_events)
 		foreach (auto e, es)
 			if (e.type >= Graph)
-				natures.insert(e.nature);
+				temperatures.insert(e.temperature);
 			else
 				types.insert(e.type);
-	updateCombo(m_selection, natures, types);
+	updateCombo(m_selection, temperatures, types);
 }
 
 void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
@@ -306,10 +306,10 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 		foreach (StreamEvent e, se)
 			if (e.type >= Graph)
 			{
-				if (!mins.contains(e.nature) || mins[e.nature] > e.strength)
-					mins[e.nature] = e.strength;
-				if (!maxs.contains(e.nature) || maxs[e.nature] < e.strength)
-					maxs[e.nature] = e.strength;
+				if (!mins.contains(e.temperature) || mins[e.temperature] > e.strength)
+					mins[e.temperature] = e.strength;
+				if (!maxs.contains(e.temperature) || maxs[e.temperature] < e.strength)
+					maxs[e.temperature] = e.strength;
 			}
 
 	const int ySustain = 12;
@@ -353,13 +353,13 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 				BOOST_FOREACH (Lightbox::StreamEvent e, m_events[i])
 					if (eventVisible(m_selection->itemData(m_selection->currentIndex()), e) && (inView || isAlwaysVisible(e.type)))
 					{
-						float n = e.nature - int(e.nature);
-						QPoint pt(x, height() - ((e.type >= Graph) ? ((e.strength - mins[e.nature]) / (maxs[e.nature] - mins[e.nature])) : e.strength) * height());
+						float n = e.temperature - int(e.temperature);
+						QPoint pt(x, height() - ((e.type >= Graph) ? ((e.strength - mins[e.temperature]) / (maxs[e.temperature] - mins[e.temperature])) : e.strength) * height());
 						QColor c = QColor::fromHsvF(n, 1.f, 1.f * Color::hueCorrection(n * 360));
 						QColor cDark = QColor::fromHsvF(n, 0.5f, 0.6f * Color::hueCorrection(n * 360));
 						QColor cLight = QColor::fromHsvF(n, 0.5f, 1.0f * Color::hueCorrection(n * 360));
 						QColor cPastel = QColor::fromHsvF(n, 0.25f, 1.0f * Color::hueCorrection(n * 360));
-						float id = e.nature;
+						float id = e.temperature;
 
 						if (Lightbox::AuxLabel* al = dynamic_cast<AuxLabel*>(&*e.aux()))
 						{
@@ -372,7 +372,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 						if (pass == 3)
 							switch (e.type)
 							{
-							case Lightbox::Spike:	// strength, surprise, nature
+							case Lightbox::Spike:	// strength, surprise, temperature
 							{
 								int ox = qMax(4, nx - x);
 								if (e.strength > 0)
@@ -420,8 +420,8 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 							{
 								if (lastSustainEvent.type == Sustain)
 								{
-									p.fillRect(lastSustain.x(), ySustain + 1, x - lastSustain.x(), 4, QBrush(QColor::fromHsvF(lastSustainEvent.nature, 0.25f, 1.0f * Color::hueCorrection(lastSustainEvent.nature * 360))));
-									p.fillRect(lastSustain.x(), ySustain, x - lastSustain.x(), 1, QBrush(QColor::fromHsvF(lastSustainEvent.nature, 0.5f, 0.6f * Color::hueCorrection(lastSustainEvent.nature * 360))));
+									p.fillRect(lastSustain.x(), ySustain + 1, x - lastSustain.x(), 4, QBrush(QColor::fromHsvF(lastSustainEvent.temperature, 0.25f, 1.0f * Color::hueCorrection(lastSustainEvent.temperature * 360))));
+									p.fillRect(lastSustain.x(), ySustain, x - lastSustain.x(), 1, QBrush(QColor::fromHsvF(lastSustainEvent.temperature, 0.5f, 0.6f * Color::hueCorrection(lastSustainEvent.temperature * 360))));
 									lastSustain = QPoint(x, ySustain);
 								}
 								else
@@ -436,8 +436,8 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 							{
 								if (lastBackSustainEvent.type == BackSustain)
 								{
-									p.fillRect(lastBackSustain.x(), yBackSustain + 1, x - lastBackSustain.x(), 4, QBrush(QColor::fromHsvF(lastBackSustainEvent.nature, 0.25f, 1.0f * Color::hueCorrection(lastBackSustainEvent.nature * 360))));
-									p.fillRect(lastBackSustain.x(), yBackSustain, x - lastBackSustain.x(), 1, QBrush(QColor::fromHsvF(lastBackSustainEvent.nature, 0.5f, 0.6f * Color::hueCorrection(lastBackSustainEvent.nature * 360))));
+									p.fillRect(lastBackSustain.x(), yBackSustain + 1, x - lastBackSustain.x(), 4, QBrush(QColor::fromHsvF(lastBackSustainEvent.temperature, 0.25f, 1.0f * Color::hueCorrection(lastBackSustainEvent.temperature * 360))));
+									p.fillRect(lastBackSustain.x(), yBackSustain, x - lastBackSustain.x(), 1, QBrush(QColor::fromHsvF(lastBackSustainEvent.temperature, 0.5f, 0.6f * Color::hueCorrection(lastBackSustainEvent.temperature * 360))));
 									lastBackSustain = QPoint(x, yBackSustain);
 								}
 								else

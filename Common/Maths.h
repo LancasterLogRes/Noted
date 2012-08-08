@@ -32,6 +32,17 @@
 namespace Lightbox
 {
 
+/// Linear interpolate with templated fixed-point (thousandths) factor.
+template <int _x> inline float lerp(float _a, float _b) { return _a * (1.f - _x / 1000.f) + _b * _x / 1000.f; }
+
+template <class T> inline T lerp(double _x, T _a, T _b) { return _a + (_b - _a) * _x; }
+
+/// Square a number.
+template <class T> inline T sqr(T _t) { return _t * _t; }
+
+/// Sign of a number
+template <class T> inline T sign(T _t) { return _t ? _t > 0 ? 1 : -1 : 0; }
+
 template <class _T>
 typename std::remove_reference<decltype(_T()[0])>::type sumOf(_T const& _r)
 {
@@ -40,6 +51,42 @@ typename std::remove_reference<decltype(_T()[0])>::type sumOf(_T const& _r)
 	foreach (auto i, _r)
 		ret += i;
 	return ret;
+}
+
+template <class _T>
+typename std::remove_reference<decltype(_T()[0])>::type productOf(_T const& _r)
+{
+	typedef typename std::remove_reference<decltype(_T()[0])>::type R;
+	R ret = R(1);
+	foreach (auto i, _r)
+		ret *= i;
+	return ret;
+}
+
+template <class _T>
+typename std::remove_reference<decltype(_T()[0])>::type magnitudeOf(_T const& _r)
+{
+	typedef typename std::remove_reference<decltype(_T()[0])>::type R;
+	R ret = R(0);
+	for (auto i: _r)
+		ret += sqr(i);
+	return sqrt(ret);
+}
+
+template <class _Ta, class _Tb>
+typename std::remove_reference<decltype(_Ta()[0] * _Tb()[0])>::type cosineSimilarity(_Ta const& _a, _Tb const& _b)
+{
+	assert(_a.size() == _b.size());
+	typedef typename std::remove_reference<decltype(_Ta()[0] * _Tb()[0])>::type R;
+	float ma = magnitudeOf(_a);
+	float mb = magnitudeOf(_b);
+	if (ma == 0.f || mb == 0.f)
+		return 0.f;
+	R ret = R(0);
+	auto bii = _b.begin();
+	for (auto ai: _a)
+		ret += ai * *(bii++);
+	return ret /= (ma * mb);
 }
 
 template <class _T>
@@ -65,14 +112,22 @@ typename _T::iterator nearest(_T& _map, _U const& _v)
 }
 
 template <class _T>
-void normalize(std::vector<_T>& _v)
+void normalize(_T& _v)
 {
 	auto r = range(_v);
-	int vs = _v.size();
-	float d = r.second - r.first;
-	if (d > 0.f)
-		for (int i = 0; i < vs; ++i)
-			_v[i] = (_v[i] - r.first) / d;
+	auto d = r.second - r.first;
+	if (d > 0)
+		for (auto v: _v)
+			v = (v - r.first) / d;
+}
+
+template <class _T>
+decltype(_T()[0]) makeUnitMagnitude(_T& _v)
+{
+	auto m = magnitudeOf(_v);
+	if (m)
+		for (auto i: _v)
+			i /= m;
 }
 
 inline double fracPart(double _f) { double r; return modf(_f, &r); }
@@ -86,17 +141,6 @@ inline bool isFinite(float _x)
 	return (reinterpret_cast<uint32_t&>(_x) & 0x7fffffff) < 0x7f800000;
 #pragma GCC diagnostic pop
 }
-
-/// Linear interpolate with templated fixed-point (thousandths) factor.
-template <int _x> inline float lerp(float _a, float _b) { return _a * (1.f - _x / 1000.f) + _b * _x / 1000.f; }
-
-template <class T> inline T lerp(double _x, T _a, T _b) { return _a + (_b - _a) * _x; }
-
-/// Square a number.
-template <class T> inline T sqr(T _t) { return _t * _t; }
-
-/// Sign of a number
-template <class T> inline T sign(T _t) { return _t ? _t > 0 ? 1 : -1 : 0; }
 
 template <class T, class U> inline T clamp(T _v, U _min, U _max)
 {

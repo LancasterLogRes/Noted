@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <array>
 #include <vector>
 #include <list>
 #include <map>
