@@ -113,20 +113,21 @@ inline EventType asBegin(EventType _e)
 enum CharacterComponent
 {
 	NoCharacter = 0,
-	Charming = 8,
 	Aggressive = 4,
 	Structured = 2,
 	Pointed = 1,
-	Tedious = Charming << 16,
 	Peaceful = Aggressive << 16,
 	Chaotic = Structured << 16,
 	Disparate = Pointed << 16,
-	SimpleComponents = Charming | Aggressive | Structured | Pointed,
+	SimpleComponents = Aggressive | Structured | Pointed,
 	InvertedComponents = SimpleComponents << 16,
 	EveryCharacter = SimpleComponents | InvertedComponents
 };
 
-LIGHTBOX_FLAGS(CharacterComponent, CharacterComponents, (Charming)(Aggressive)(Structured)(Pointed)(Tedious)(Peaceful)(Chaotic)(Disparate));
+static const CharacterComponent Charming = NoCharacter;
+static const CharacterComponent Tedious = NoCharacter;
+
+LIGHTBOX_FLAGS(CharacterComponent, CharacterComponents, (Aggressive)(Structured)(Pointed)(Peaceful)(Chaotic)(Disparate));
 
 /**
  * All 16 valid configurations of CharacterComponents, named.
@@ -138,25 +139,25 @@ LIGHTBOX_FLAGS(CharacterComponent, CharacterComponents, (Charming)(Aggressive)(S
  */
 enum Character
 {
-	Dull,		//=	(Tedious|Peaceful|Chaotic|Disparate)&SimpleComponents,			// (space)
-	Foolish,	//=	(Tedious|Peaceful|Chaotic|Pointed)&SimpleComponents,			// F
-	Geeky,		//=	(Tedious|Peaceful|Structured|Disparate)&SimpleComponents,		// E
-	Glib,		//=	(Tedious|Peaceful|Structured|Pointed)&SimpleComponents,			// G
-	Yobbish,	//=	(Tedious|Aggressive|Chaotic|Disparate)&SimpleComponents,		// Y
-	Fanatical,	//=	(Tedious|Aggressive|Chaotic|Pointed)&SimpleComponents,			// F
-	Violent,	//=	(Tedious|Aggressive|Structured|Disparate)&SimpleComponents,		// V
-	Psychotic,	//=	(Tedious|Aggressive|Structured|Pointed)&SimpleComponents,		// O
-	Ditzy,		//=	(Charming|Peaceful|Chaotic|Disparate)&SimpleComponents,			// ?
+	Dull,		//=	(Charming|Peaceful|Chaotic|Disparate)&SimpleComponents,			// (space)
 	Vibrant,	//=	(Charming|Peaceful|Chaotic|Pointed)&SimpleComponents,			// ~
 	Harmonious,	//= (Charming|Peaceful|Structured|Disparate)&SimpleComponents,		// #
 	Adroit,		//=	(Charming|Peaceful|Structured|Pointed)&SimpleComponents,		// |
 	Explosive,	//=	(Charming|Aggressive|Chaotic|Disparate)&SimpleComponents,		// *
 	Implosive,	//=	(Charming|Aggressive|Chaotic|Pointed)&SimpleComponents,			// /
-	Visceral,	//=	(Charming|Aggressive|Structured|Disparate)&SimpleComponents,		// !
-	Piquant		//=	(Charming|Aggressive|Structured|Pointed)&SimpleComponents		// ^
+	Visceral,	//=	(Charming|Aggressive|Structured|Disparate)&SimpleComponents,	// !
+	Piquant,	//=	(Charming|Aggressive|Structured|Pointed)&SimpleComponents		// ^
+	Ditzy = Dull,			//=	(Tedious|Peaceful|Chaotic|Disparate)&SimpleComponents,			// (space)
+	Foolish = Vibrant,		//=	(Tedious|Peaceful|Chaotic|Pointed)&SimpleComponents,			// F
+	Geeky = Harmonious,		//=	(Tedious|Peaceful|Structured|Disparate)&SimpleComponents,		// E
+	Glib = Adroit,			//=	(Tedious|Peaceful|Structured|Pointed)&SimpleComponents,			// G
+	Yobbish = Explosive,	//=	(Tedious|Aggressive|Chaotic|Disparate)&SimpleComponents,		// Y
+	Fanatical = Implosive,	//=	(Tedious|Aggressive|Chaotic|Pointed)&SimpleComponents,			// F
+	Violent = Visceral,		//=	(Tedious|Aggressive|Structured|Disparate)&SimpleComponents,		// V
+	Psychotic = Piquant,	//=	(Tedious|Aggressive|Structured|Pointed)&SimpleComponents,		// O
 };
 
-LIGHTBOX_ENUM_TOSTRING(Character, Dull, Foolish, Geeky, Glib, Yobbish, Fanatical, Violent, Psychotic, Ditzy, Vibrant, Harmonious, Adroit, Explosive, Implosive, Visceral, Piquant);
+LIGHTBOX_ENUM_TOSTRING(Character, Dull, Vibrant, Harmonious, Adroit, Explosive, Implosive, Visceral, Piquant);
 
 /// Unneeded unless you suspect _c could be an invalid bit pattern (i.e. not a character).
 /// The character returned is guaranteed to be valid.
@@ -168,14 +169,6 @@ inline char toChar(Character _c)
 	switch (_c)
 	{
 	case Dull: return ' ';
-	case Foolish: return 'F';
-	case Geeky: return 'E';
-	case Glib: return 'G';
-	case Yobbish: return 'Y';
-	case Fanatical: return 'A';
-	case Violent: return 'V';
-	case Psychotic: return 'P';
-	case Ditzy: return '?';
 	case Vibrant: return '~';
 	case Harmonious: return '#';
 	case Adroit: return '|';
@@ -192,14 +185,6 @@ inline Character toCharacter(char _c)
 	switch (_c)
 	{
 	case ' ': return Dull;
-	case 'F': return Foolish;
-	case 'E': return Geeky;
-	case 'G': return Glib;
-	case 'Y': return Yobbish;
-	case 'A': return Fanatical;
-	case 'V': return Violent;
-	case 'P': return Psychotic;
-	case '?': return Ditzy;
 	case '~': return Vibrant;
 	case '#': return Harmonious;
 	case '|': return Adroit;
