@@ -35,6 +35,7 @@
 
 /// Define an enumeration together with a output stream operator. The values may not be assigned integers explicitly.
 #define LIGHTBOX_ENUM_TOSTRING(Name, ...) \
+	static const std::vector<Name> Name ## Values = { { __VA_ARGS__ } }; \
 	static std::string g_lightbox_upperNamesOf ## Name;\
 	inline std::string toString(Name _n)\
 	{\
