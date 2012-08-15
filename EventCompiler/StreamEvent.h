@@ -49,11 +49,11 @@ LIGHTBOX_TEXTUAL_ENUM(EventType,
 				WorkingComment, PDFComment,
 				Graph, GraphUnder, GraphBar)
 
-typedef std::vector<EventType> EventTypes;
+typedef std::set<EventType> EventTypes;
 
 inline EventTypes operator|(EventType _a, EventType _b) { return EventTypes({_a, _b}); }
-inline EventTypes operator|(EventTypes _a, EventType _b) { _a.push_back(_b); return _a; }
-inline EventTypes operator|(EventType _a, EventTypes _b) { _b.push_back(_a); return _b; }
+inline EventTypes operator|(EventTypes _a, EventType _b) { _a.insert(_b); return _a; }
+inline EventTypes operator|(EventType _a, EventTypes _b) { _b.insert(_a); return _b; }
 
 static const EventType BeginStandard = Spike;
 static const EventType EndStandard = Comment;

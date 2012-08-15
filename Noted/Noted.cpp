@@ -1144,12 +1144,12 @@ QList<EventsView*> Noted::eventsViews() const
 
 void Noted::on_actZoomOut_activated()
 {
-	zoomTimeline(activeWidth() / 2, 1.2);
+	zoomTimeline((cursor() > earliestVisible() && cursor() < latestVisible()) ? positionOf(cursor()) : (activeWidth() / 2), 1.2);
 }
 
 void Noted::on_actZoomIn_activated()
 {
-	zoomTimeline(activeWidth() / 2, 1 / 1.2);
+	zoomTimeline((cursor() > earliestVisible() && cursor() < latestVisible()) ? positionOf(cursor()) : (activeWidth() / 2), 1 / 1.2);
 }
 
 void Noted::on_actPanBack_activated()
