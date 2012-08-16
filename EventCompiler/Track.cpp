@@ -18,4 +18,54 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/algorithm/string.hpp>
 #include "Track.h"
+using namespace std;
+using namespace Lightbox;
+
+void Track::readFile(string const& _filename)
+{
+	syncPoints.clear();
+	events.clear();
+	ifstream in;
+	in.open(_filename.c_str());
+	if (in)
+	{
+		using boost::property_tree::ptree;
+		ptree pt;
+		read_xml(in, pt);
+
+		foreach (ptree::value_type const& v, pt.get_child("events"))
+			if (v.first == "time")
+			{
+				int64_t ms = v.second.get<int64_t>("<xmlattr>.ms", 0);
+				Time t = v.second.get<Time>("<xmlattr>.value", fromMsecs(ms));
+				foreach (ptree::value_type const& w, v.second)
+					if (w.first != "<xmlattr>")
+					{
+						StreamEvent se;
+						se.type = toEventType(w.first, false);
+						se.strength = w.second.get<float>("<xmlattr>.strength", 1.f);
+						se.temperature = w.second.get<float>("<xmlattr>.temperature", 0.f);
+						se.period = w.second.get<Time>("<xmlattr>.period", fromMsecs(w.second.get<int64_t>("<xmlattr>.periodMs", 0)));
+						se.position = w.second.get<int>("<xmlattr>.position", -1);
+						se.surprise = w.second.get<float>("<xmlattr>.surprise", 1.f);
+						se.character = toCharacter(w.second.get<string>("<xmlattr>.character", "Dull"));
+						events.insert(make_pair(t, se));
+						if (se.type == SyncPoint)
+							syncPoints[(uint32_t)se.strength] = t;
+					}
+			}
+	}
+}
+
+void Track::updateSyncPoints()
+{
+	syncPoints.clear();
+	for (auto i: events)
+		if (i.second.type == SyncPoint)
+			syncPoints[(uint32_t)i.second.strength] = i.first;
+}

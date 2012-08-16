@@ -46,6 +46,7 @@ struct Track
 	template <class _F>
 	void streamIn(_F const& _read)	// _F must be a function (void*, size_t)
 	{
+		events.clear();
 		syncPoints.clear();
 		// data stream is intel-encoded for simplicity.
 		uint32_t testSwap = 69;
@@ -83,6 +84,9 @@ struct Track
 			_write(&(i.second), sizeof(StreamEvent));
 		}
 	}
+
+	void readFile(std::string const& _filename);
+	void updateSyncPoints();
 };
 
 }
