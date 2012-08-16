@@ -31,22 +31,20 @@ namespace Lightbox
 
 struct Track
 {
-	std::vector<StreamEvents> events;
-	Time pitch;
+	std::multimap<Time, StreamEvent> events;
 	std::map<uint32_t, Time> syncPoints;
 
 	StreamEvents eventsBetween(Time _from, Time _to) const	///< Get the stream events in range [_from, _to);
 	{
-		unsigned begin = (_from + pitch - 1) / pitch;
-		unsigned end = _to / pitch;
 		StreamEvents ret;
-		for (unsigned i = begin; i < end; ++i)
-			catenate(ret, events[i]);
+		auto end = events.lower_bound(_to);
+		for (auto it = events.lower_bound(_from); it != end; ++it)
+			ret.push_back(it->second);
 		return ret;
 	}
 
 	template <class _F>
-	void streamIn(_F const& _read)
+	void streamIn(_F const& _read)	// _F must be a function (void*, size_t)
 	{
 		syncPoints.clear();
 		// data stream is intel-encoded for simplicity.
@@ -57,41 +55,33 @@ struct Track
 		_read(&count, sizeof(count));
 		if (doSwap)
 			count = __bswap_32(count);
-		events.resize(count);
 		for (unsigned i = 0; i < count; ++i)
 		{
-			uint32_t evCount;
-			_read(&evCount, sizeof(evCount));
+			Time t;
+			_read(&t, sizeof(Time));
 			if (doSwap)
-				evCount = __bswap_32(evCount);
-			events[i].resize(evCount);
-			_read(events[i].data(), sizeof(StreamEvent) * evCount);
-			for (StreamEvent& se: events[i])
-			{
-				if (se.type == SyncPoint)
-					syncPoints[(uint32_t)se.strength] = i * pitch;
-				memset(&se.m_aux, 0, sizeof(se.m_aux));		// shouldn't be set, but just in case...
-				if (doSwap)
-					se.period = __bswap_64(se.period);	// period needs twiddling as the only multi-byte integer.
-			}
+				t = __bswap_64(t);
+			StreamEvent se;
+			_read(&se, sizeof(StreamEvent));
+			if (se.type == SyncPoint)
+				syncPoints[(uint32_t)se.strength] = t;
+			memset(&se.m_aux, 0, sizeof(se.m_aux));		// shouldn't be set, but just in case...
+			if (doSwap)
+				se.period = __bswap_64(se.period);	// period needs twiddling as the only multi-byte integer.
+			events.insert(std::make_pair(t, se));
 		}
-		_read(&pitch, sizeof(pitch));
-		if (doSwap)
-			pitch = __bswap_64(pitch);
 	}
 
-	template <class _F>
+	template <class _F>	// _F must be a function (void const*, size_t)
 	void streamOut(_F const& _write)
 	{
 		int32_t count = events.size();
 		_write(&count, sizeof(count));
-		for (unsigned i = 0; i < count; ++i)
+		for (auto i: events)
 		{
-			int32_t evCount = events[i].size();
-			_write(&evCount, sizeof(evCount));
-			_write(events[i].data(), sizeof(StreamEvent) * evCount);
+			_write(&(i.first), sizeof(Time));
+			_write(&(i.second), sizeof(StreamEvent));
 		}
-		_write(&pitch, sizeof(pitch));
 	}
 };
 
