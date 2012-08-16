@@ -13,7 +13,9 @@ HEADERS += StreamEvent.h \
     EventCompilerLibrary.h \
     EventCompilerImpl.h \
     EventCompiler.h \
-    Preprocessors.h
+    Preprocessors.h \
+    Track.h
 
 SOURCES += \
-    Preprocessors.cpp
+    Preprocessors.cpp \
+    Track.cpp

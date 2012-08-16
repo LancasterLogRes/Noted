@@ -32,6 +32,7 @@
 #include <utility>
 #include <vector>
 #include <type_traits>
+#include <boost/detail/endian.hpp>
 
 #include "Global.h"
 #include "Maths.h"

@@ -1,12 +1,7 @@
-#-------------------------------------------------
-#
-# Project created by QtCreator 2010-07-07T12:57:53
-#
-#-------------------------------------------------
-
 TARGET = Noted
 TEMPLATE = app
 QT       += core gui xml opengl
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += qt
 
 include ( ../Common.pri )
