@@ -72,6 +72,10 @@
 	enum Name { First = 0, __VA_ARGS__ }; \
 	LIGHTBOX_ENUM_TOSTRING(Name, First, __VA_ARGS__)
 
+#define LIGHTBOX_TEXTUAL_ENUM_INHERITS(Name, Inherits, First, ...) \
+	enum Name: Inherits { First = 0, __VA_ARGS__ }; \
+	LIGHTBOX_ENUM_TOSTRING(Name, First, __VA_ARGS__)
+
 #define LIGHTBOX_STRUCT_INTERNALS_2(Name, T1, M1, T2, M2) \
 	Name& operator=(Name const& _s) { M1 = _s.M1; M2 = _s.M2; return *this; } \
 	bool operator<(Name const& _c) const { return M1 < _c.M1 || (M1 == _c.M1 && M2 < _c.M2); } \

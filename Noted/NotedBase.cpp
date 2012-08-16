@@ -251,7 +251,6 @@ void NotedBase::rejigSpectra()
 		setVector(p4, (float)m_pageSpectra);
 		int ss = spectrumSize();
 		int ss2 = spectrumSize() * 2;
-		int ss3 = spectrumSize() * 3;
 
 		auto baseF = [&](unsigned index, float* sd)
 		{

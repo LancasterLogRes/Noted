@@ -203,11 +203,14 @@ void EventsEditor::onCut()
 void EventsEditor::onCopy()
 {
 	QVector<QPair<int, StreamEvent> > d;
-	int t = scene()->selectedItems().first()->x();
-	foreach (QGraphicsItem* it, scene()->selectedItems())
-		if (StreamEventItem* sei = dynamic_cast<StreamEventItem*>(it))
-			d.append(QPair<int, StreamEvent>(it->x() - t, sei->streamEvent()));
-	m_clipboard = d;
+	if (scene()->selectedItems().size())
+	{
+		int t = scene()->selectedItems().first()->x();
+		foreach (QGraphicsItem* it, scene()->selectedItems())
+			if (StreamEventItem* sei = dynamic_cast<StreamEventItem*>(it))
+				d.append(QPair<int, StreamEvent>(it->x() - t, sei->streamEvent()));
+		m_clipboard = d;
+	}
 }
 
 void EventsEditor::onPaste()
