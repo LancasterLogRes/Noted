@@ -1257,6 +1257,7 @@ void Noted::timerEvent(QTimerEvent*)
 				pb->setMaximum(100);
 				pb->setObjectName("progress");
 				pb->setMaximumWidth(128);
+				pb->setMaximumHeight(17);
 				ui->statusBar->addPermanentWidget(pb);
 			}
 			pb->setValue(m_workerThread->progress());

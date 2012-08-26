@@ -123,6 +123,6 @@ inline Character toCharacter(char _c)
 	}
 }
 
-inline CharacterComponent operator|(CharacterComponent _a, CharacterComponent _b) { return CharacterComponent(_a | _b); }
+inline CharacterComponent operator|(CharacterComponent _a, CharacterComponent _b) { return CharacterComponent((int)_a | (int)_b); }
 
 }

@@ -32,7 +32,7 @@ namespace Lightbox
 struct Track
 {
 	std::multimap<Time, StreamEvent> events;
-	std::map<uint32_t, Time> syncPoints;
+	std::vector<Time> syncPoints;
 
 	StreamEvents eventsBetween(Time _from, Time _to) const	///< Get the stream events in range [_from, _to);
 	{
@@ -48,6 +48,7 @@ struct Track
 	{
 		events.clear();
 		syncPoints.clear();
+		syncPoints.push_back(Time(0));
 		// data stream is intel-encoded for simplicity.
 		uint32_t testSwap = 69;
 		bool doSwap = !*(char*)&testSwap;	// swap if first-byte is zero (for intel first byte would be 69).
@@ -65,7 +66,7 @@ struct Track
 			StreamEvent se;
 			_read(&se, sizeof(StreamEvent));
 			if (se.type == SyncPoint)
-				syncPoints[(uint32_t)se.strength] = t;
+				syncPoints.push_back(t);
 			memset(&se.m_aux, 0, sizeof(se.m_aux));		// shouldn't be set, but just in case...
 			if (doSwap)
 				se.period = __bswap_64(se.period);	// period needs twiddling as the only multi-byte integer.
@@ -74,7 +75,7 @@ struct Track
 	}
 
 	template <class _F>	// _F must be a function (void const*, size_t)
-	void streamOut(_F const& _write)
+	void streamOut(_F const& _write) const
 	{
 		int32_t count = events.size();
 		_write(&count, sizeof(count));

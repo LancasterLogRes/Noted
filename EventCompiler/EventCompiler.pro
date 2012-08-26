@@ -9,6 +9,8 @@ TARGET = EventCompiler
 TEMPLATE = lib
 include ( ../Common.pri )
 
+LIBS += -lCommon
+
 HEADERS += StreamEvent.h \
     EventCompilerLibrary.h \
     EventCompilerImpl.h \

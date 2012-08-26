@@ -29,6 +29,7 @@ using namespace Lightbox;
 void Track::readFile(string const& _filename)
 {
 	syncPoints.clear();
+	syncPoints.push_back(Time(0));
 	events.clear();
 	ifstream in;
 	in.open(_filename.c_str());
@@ -56,7 +57,7 @@ void Track::readFile(string const& _filename)
 						se.character = toCharacter(w.second.get<string>("<xmlattr>.character", "Dull"));
 						events.insert(make_pair(t, se));
 						if (se.type == SyncPoint)
-							syncPoints[(uint32_t)se.strength] = t;
+							syncPoints.push_back(t);
 					}
 			}
 	}
@@ -65,7 +66,8 @@ void Track::readFile(string const& _filename)
 void Track::updateSyncPoints()
 {
 	syncPoints.clear();
+	syncPoints.push_back(Time(0));
 	for (auto i: events)
 		if (i.second.type == SyncPoint)
-			syncPoints[(uint32_t)i.second.strength] = i.first;
+			syncPoints.push_back(i.first);
 }
