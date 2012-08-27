@@ -63,8 +63,8 @@ public:
 		Flags operator~() { return Flags(~long(v)); }
 		Flags operator<<(int _i) const { return Flags(long(v) << _i); }
 		Flags operator>>(int _i) const { return Flags(long(v) >> _i); }
-		Flags& operator<<(int _i) { return (*this) = operator<<(_i); }
-		Flags& operator>>(int _i) { return (*this) = operator>>(_i); }
+		Flags& operator<<=(int _i) { return (*this) = operator<<(_i); }
+		Flags& operator>>=(int _i) { return (*this) = operator>>(_i); }
 
 		template <class _T> friend _T operator&(_T _a, typename is_flag<_T>::FlagsType _b);
 		template <class _T> friend typename is_flag<_T>::FlagsType operator|(_T _a, typename is_flag<_T>::FlagsType _b);
