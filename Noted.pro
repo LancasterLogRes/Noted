@@ -1,13 +1,15 @@
 TEMPLATE = subdirs
+system(echo $$CONFIG)
 SUBDIRS = \
-    contrib \
     Common \
     EventCompiler \
     ExampleEventCompiler \
+    Audio
+!crosscompilation: SUBDIRS += \
+    contrib \
     NotedPlugin \
     ExamplePlugin \
     EventsEditor \
-    Audio \
     Noted \
     TestPlugin \
     PluginTest \

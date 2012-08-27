@@ -42,7 +42,7 @@ enum CharacterComponent: uint8_t
 	Chaotic = Structured << c_negativeCharacters,
 	Disparate = Pointed << c_negativeCharacters,
 	SimpleComponents = Aggressive | Structured | Pointed,
-	InvertedComponents = SimpleComponents << 4,
+	InvertedComponents = SimpleComponents << c_negativeCharacters,
 	EveryCharacter = SimpleComponents | InvertedComponents
 };
 
@@ -90,6 +90,7 @@ LIGHTBOX_ENUM_TOSTRING(Character, Dull, Vibrant, Harmonious, Adroit, Explosive, 
 /// The character returned is guaranteed to be valid.
 inline CharacterComponents toComponents(Character _c) { return CharacterComponents(int(_c) | ((int(_c) << c_negativeCharacters) ^ InvertedComponents)); }
 inline Character toCharacter(CharacterComponents _c) { return Character(_c & SimpleComponents); }
+inline Character toNegativeCharacter(CharacterComponents _c) { return Character((_c >> c_negativeCharacters) & SimpleComponents); }
 
 inline char toChar(Character _c)
 {

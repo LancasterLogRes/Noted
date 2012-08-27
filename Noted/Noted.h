@@ -77,6 +77,7 @@ public:
 	virtual int activeWidth() const;
 	virtual QGLWidget* glMaster() const;
 	virtual bool isPlaying() const { return !!m_playback; }
+	virtual bool isPassing() const { return !!m_passing; }
 
 	virtual AcausalAnalysisPtr spectraAcAnalysis() const { return m_spectraAcAnalysis; }
 	virtual CausalAnalysisPtr compileEventsAnalysis() const { return m_compileEventsAnalysis; }
@@ -198,6 +199,10 @@ private:
 	Lightbox::Time m_fineCursorWas;
 	Lightbox::Time m_nextResample;
 	void* m_resampler;
+
+	// Pass-through...
+	WorkerThread* m_passingThread;
+	std::shared_ptr<Audio::Capture> m_passing;
 
 	// Extensions...
 	struct Library

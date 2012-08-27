@@ -23,6 +23,7 @@
 #include <vector>
 #include <cstdint>
 
+#include <Common/Global.h>
 #include "Common.h"
 
 namespace Audio
@@ -31,13 +32,12 @@ namespace Audio
 class Capture: public Common
 {
 public:
-	Capture(int _device = -1, unsigned _channels = 1, unsigned _rate = 44100, unsigned long _frames = 1024, unsigned _periods = 4, char const* _elem = "");
-	std::vector<int16_t> const& read();
+	class IncorrectNumberOfFrames: public std::exception {};
+
+	Capture(int _device = -1, unsigned _channels = 1, int _rate = -1, unsigned long _frames = 1024, int _periods = -1, bool _force16Bit = false);
+	void read(Lightbox::foreign_vector<float> o_destination);
 
 	static std::map<int, std::string> devices() { return Common::devices(false); }
-
-private:
-	std::vector<int16_t>			m_buffer;
 };
 
 }
