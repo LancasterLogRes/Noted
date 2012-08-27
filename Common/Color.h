@@ -151,9 +151,9 @@ inline unsigned nearest(std::vector< std::pair<int, int> > const& _p, int _h = -
 	return besti;
 }
 
-std::vector< std::pair<int, int> > extractHS(std::vector<Lightbox::Color> const& _c);
+LIGHTBOX_API std::vector< std::pair<int, int> > extractHS(std::vector<Lightbox::Color> const& _c);
 
-std::vector<uint8_t> gammaTable(float _g);
+LIGHTBOX_API std::vector<uint8_t> gammaTable(float _g);
 
 template <unsigned _GammaX10>
 uint8_t gamma(uint8_t _x)

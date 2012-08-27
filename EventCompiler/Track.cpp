@@ -26,7 +26,7 @@
 using namespace std;
 using namespace Lightbox;
 
-void Track::readFile(string const& _filename)
+LIGHTBOX_API void Track::readFile(string const& _filename)
 {
 	syncPoints.clear();
 	syncPoints.push_back(Time(0));

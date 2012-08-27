@@ -33,6 +33,8 @@
 #undef foreach
 #define foreach BOOST_FOREACH
 
+#define LIGHTBOX_API __attribute__ ((visibility ("default")))
+
 /// Define an enumeration together with a output stream operator. The values may not be assigned integers explicitly.
 #define LIGHTBOX_ENUM_TOSTRING(Name, ...) \
 	static const std::vector<Name> Name ## Values = { { __VA_ARGS__ } }; \

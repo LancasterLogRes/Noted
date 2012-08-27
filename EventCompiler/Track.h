@@ -23,13 +23,14 @@
 #include <vector>
 #include <map>
 #include <byteswap.h>
+#include <Common/Global.h>
 #include <Common/Time.h>
 #include "StreamEvent.h"
 
 namespace Lightbox
 {
 
-struct Track
+struct LIGHTBOX_API Track
 {
 	std::multimap<Time, StreamEvent> events;
 	std::vector<Time> syncPoints;
@@ -86,8 +87,8 @@ struct Track
 		}
 	}
 
-	void readFile(std::string const& _filename);
-	void updateSyncPoints();
+	LIGHTBOX_API void readFile(std::string const& _filename);
+	LIGHTBOX_API void updateSyncPoints();
 };
 
 }
