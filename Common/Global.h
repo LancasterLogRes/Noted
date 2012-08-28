@@ -229,9 +229,9 @@ std::string afterComma(char const* _s, unsigned _i);
 std::string demangled(char const* _n);
 std::string shortened(std::string const& _s);
 
-constexpr inline bool strcmp(char const* a, char const* b)
+constexpr inline bool static_strcmp(char const* a, char const* b)
 {
-	return *a == *b && (!*a || strcmp(a + 1, b + 1));
+	return *a == *b && (!*a || ::Lightbox::static_strcmp(a + 1, b + 1));
 }
 
 template <class _T> struct Packed { static const bool value = false; };
