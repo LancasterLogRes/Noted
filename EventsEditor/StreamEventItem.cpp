@@ -31,6 +31,7 @@
 #include "SpikeItem.h"
 #include "SustainItem.h"
 #include "PeriodItem.h"
+#include "SyncPointItem.h"
 #include "StreamEventItem.h"
 
 using namespace std;
@@ -143,7 +144,7 @@ void StreamEventItem::wheelEvent(QGraphicsSceneWheelEvent* _e)
 	else
 		v = clamp(v, -1.f, 1.f);
 	update();
-	scene()->setDirty();
+	scene()->setDirty(true);
 }
 
 EventsEditScene* StreamEventItem::scene() const { return dynamic_cast<EventsEditScene*>(const_cast<StreamEventItem*>(this)->QGraphicsItem::scene()); }

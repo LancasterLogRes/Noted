@@ -27,6 +27,7 @@
 #include "SpikeItem.h"
 #include "PeriodItem.h"
 #include "SustainItem.h"
+#include "SyncPointItem.h"
 #include "EventsEditor.h"
 #include "EventsEditScene.h"
 
@@ -75,6 +76,7 @@ void EventsEditScene::rejigEvents()
 	StreamEventItem* lastPSI = nullptr;
 	SustainItem* lastSI = nullptr;
 	BackSustainItem* lastBSI = nullptr;
+	int spOrder = 1;
 	foreach (auto it, items(Qt::AscendingOrder))
 		if (auto sei = dynamic_cast<StreamEventItem*>(it))
 		{
@@ -124,6 +126,11 @@ void EventsEditScene::rejigEvents()
 				lastBSI = sbi;
 			if (dynamic_cast<EndBackSustainItem*>(sei))
 				lastBSI = nullptr;
+			if (auto c = dynamic_cast<SyncPointItem*>(it))
+			{
+				c->setOrder(spOrder);
+				spOrder++;
+			}
 		}
 		else if (auto c = dynamic_cast<Chained*>(it))
 			delete c;
@@ -146,9 +153,9 @@ void EventsEditScene::wheelEvent(QGraphicsSceneWheelEvent* _wheelEvent)
 	_wheelEvent->accept();
 }
 
-void EventsEditScene::itemChanged(StreamEventItem*)
+void EventsEditScene::itemChanged(StreamEventItem* _it)
 {
-	setDirty();
+	setDirty(_it->isCausal());
 	rejigEvents();
 }
 
@@ -196,6 +203,7 @@ void EventsEditScene::saveTo(QString _filename) const
 				last = fromSeconds(sei->pos().x() / 1000);
 				lt = &pt.add("events.time", "");
 				lt->put("<xmlattr>.value", last);
+				pt.add("events.ms", "").put("<xmlattr>.value", toMsecs(last));
 			}
 			StreamEvent const& se = sei->streamEvent();
 			ptree& e = lt->add(boost::algorithm::to_lower_copy(toString(se.type)), "");
@@ -216,10 +224,10 @@ void EventsEditScene::saveTo(QString _filename) const
 	}
 }
 
-void EventsEditScene::setDirty()
+void EventsEditScene::setDirty(bool _requiresRecompile)
 {
 	m_isDirty = true;
-	view()->onChanged();
+	view()->onChanged(_requiresRecompile);
 }
 
 void EventsEditScene::loadFrom(QString _filename)

@@ -46,6 +46,7 @@ public:
 	virtual QRectF core() const = 0;
 	virtual QPainterPath shape() const { QPainterPath ret; ret.addRect(core()); return ret; }
 	virtual QRectF boundingRect() const;
+	virtual bool isCausal() const { return true; }
 
 	static StreamEventItem* newItem(Lightbox::StreamEvent const& _se);
 	EventsEditScene* scene() const;

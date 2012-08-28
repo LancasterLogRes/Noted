@@ -49,7 +49,7 @@ public:
 	void itemChanged(StreamEventItem* _it);
 
 	bool isDirty() const { return m_isDirty; }
-	void setDirty();
+	void setDirty(bool _requiresRecompile);
 	void loadFrom(QString _filename);
 	void saveTo(QString _filename) const;
 	QList<Lightbox::StreamEvents> events(Lightbox::Time _hop) const;

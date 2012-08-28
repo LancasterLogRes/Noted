@@ -18,7 +18,8 @@ SOURCES += EventsEditScene.cpp \
     SpikeItem.cpp \
     PeriodItem.cpp \
     StreamEventItem.cpp \
-    SustainItem.cpp
+    SustainItem.cpp \
+    SyncPointItem.cpp
 
 HEADERS  += EventsEditScene.h \
     EventsEditor.h \
@@ -26,5 +27,6 @@ HEADERS  += EventsEditScene.h \
     PeriodItem.h \
     StreamEventItem.h \
     SustainItem.h \
-    DoEventTypes.h
+    DoEventTypes.h \
+    SyncPointItem.h
 

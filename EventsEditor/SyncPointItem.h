@@ -18,13 +18,23 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-DO(Spike)
-DO(Chain)
-DO(PeriodSet)
-DO(PeriodTweak)
-DO(PeriodReset)
-DO(Sustain)
-DO(EndSustain)
-DO(BackSustain)
-DO(EndBackSustain)
-DO(SyncPoint)
+#pragma once
+
+#include "StreamEventItem.h"
+
+class SyncPointItem: public StreamEventItem
+{
+public:
+	SyncPointItem(Lightbox::StreamEvent const& _se): StreamEventItem(_se) {}
+
+	virtual QRectF core() const;
+	virtual QPointF evenUp(QPointF const& _n);
+	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
+
+	virtual bool isCausal() const { return false; }
+
+	void setOrder(int _i) { m_order = _i; update(); }
+
+private:
+	int m_order;
+};

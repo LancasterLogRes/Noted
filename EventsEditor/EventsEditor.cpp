@@ -56,7 +56,6 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 
 	setDragMode(RubberBandDrag);
 
-
 	m_scene = make_shared<EventsEditScene>();
 	setScene(&*m_scene);
 	connect(&*m_scene, SIGNAL(newScale()), SLOT(onViewParamsChanged()));
@@ -169,11 +168,11 @@ void EventsEditor::onEnableChanged(bool)
 	c()->noteEventCompilersChanged();
 }
 
-void EventsEditor::onChanged()
+void EventsEditor::onChanged(bool _requiresRecompile)
 {
 	if (m_enabled->isChecked())
 		m_lastTimerDirty = false;
-	m_eventsDirty = true;
+	m_eventsDirty = _requiresRecompile;
 }
 
 void EventsEditor::timerEvent(QTimerEvent*)

@@ -75,10 +75,12 @@ public slots:
 	void onInsertEndSustain();
 	void onInsertBackSustain();
 	void onInsertEndBackSustain();
+	void onInsertSyncPoint();
 
 	void onRejigRhythm();
 
-	void onChanged();
+	void onChanged(bool _requiresRecompile);
+	void onChanged() { onChanged(true); }
 
 private:
 	virtual void resizeEvent(QResizeEvent*) { onViewParamsChanged(); }
