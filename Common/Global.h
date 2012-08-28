@@ -35,6 +35,13 @@
 
 #define LIGHTBOX_API __attribute__ ((visibility ("default")))
 
+#define LIGHTBOX_BITS_QUOTE(A) #A
+#define LIGHTBOX_BITS_STRINGIFY(A) LIGHTBOX_BITS_QUOTE(A)
+#define LIGHTBOX_BITS_EXPAND(A) A
+#define LIGHTBOX_BITS_CAT(A, B) A ## B
+#define LIGHTBOX_BITS_EXPAND_CAT(A, B) LIGHTBOX_BITS_CAT( A, B )
+#define LIGHTBOX_BITS_TARGETIFY(A) LIGHTBOX_BITS_EXPAND_CAT(A, LIGHTBOX_TARGET_NAME)
+
 /// Define an enumeration together with a output stream operator. The values may not be assigned integers explicitly.
 #define LIGHTBOX_ENUM_TOSTRING(Name, ...) \
 	static const std::vector<Name> Name ## Values = { { __VA_ARGS__ } }; \
@@ -221,6 +228,11 @@ template <class _T> _T const& NullReturn() { static const _T s_ret = _T(); retur
 std::string afterComma(char const* _s, unsigned _i);
 std::string demangled(char const* _n);
 std::string shortened(std::string const& _s);
+
+constexpr inline bool strcmp(char const* a, char const* b)
+{
+	return *a == *b && (!*a || strcmp(a + 1, b + 1));
+}
 
 template <class _T> struct Packed { static const bool value = false; };
 template <> struct Packed<float> { static const bool value = true; typedef v4sf type; };
