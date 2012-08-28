@@ -20,10 +20,27 @@
 
 #pragma once
 
-#include "Library.h"
+#include <memory>
+#include <QString>
+#include <QLibrary>
+#include <EventCompiler/EventCompilerLibrary.h>
 
-struct AuxLibraryFace
+class AuxLibraryFace;
+class NotedPlugin;
+
+struct Library
 {
-	virtual bool load(LibraryPtr const&) { return false; } // if returns true then notePluginDataChanged() and call unload() before delete; if not then delete immediately.
-	virtual void unload(LibraryPtr const&) {}
+	Library(QString const& _filename): filename(_filename) {}
+
+	QString filename;
+	QString nick;
+	QLibrary l;
+
+	// One of (p, cf, auxFace) is valid.
+	std::shared_ptr<NotedPlugin> p;
+	Lightbox::EventCompilerFactories cf;
+	std::shared_ptr<AuxLibraryFace> auxFace;
+	std::weak_ptr<NotedPlugin> aux;
 };
+
+typedef std::shared_ptr<Library> LibraryPtr;

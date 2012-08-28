@@ -31,6 +31,7 @@
 #include <QMainWindow>
 #include <QRect>
 #include <QMutex>
+#include <QLibrary>
 
 #include <Common/Common.h>
 #include <EventCompiler/EventCompiler.h>
@@ -48,6 +49,7 @@ class EventsStore;
 class CausalAnalysis;
 class QGLWidget;
 class NotedPlugin;
+class AuxLibraryFace;
 
 class NotedFace: public QMainWindow
 {

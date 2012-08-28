@@ -31,6 +31,7 @@
 #include <NotedPlugin/Timeline.h>
 #include <NotedPlugin/CausalAnalysis.h>
 #include <NotedPlugin/AcausalAnalysis.h>
+#include <NotedPlugin/Library.h>
 
 #include <QLibrary>
 #include <QFileSystemWatcher>
@@ -58,6 +59,16 @@ class CompileEvents;
 class CollateEvents;
 
 bool eventVisible(QVariant const& _v, Lightbox::StreamEvent const& _e);
+
+struct RealLibrary: public Library
+{
+	RealLibrary(QString const& _f): Library(_f) {}
+	QTreeWidgetItem* item;
+	void unload();
+	bool isEnabled() const;
+};
+
+typedef std::shared_ptr<RealLibrary> RealLibraryPtr;
 
 class Noted: public NotedBase
 {
@@ -205,28 +216,9 @@ private:
 	std::shared_ptr<Audio::Capture> m_passing;
 
 	// Extensions...
-	struct Library
-	{
-		Library(QString const& _filename): filename(_filename) {}
-
-		QString filename;
-		QString nick;
-		QLibrary l;
-
-		// One of (p, cf, auxFace) is valid.
-		std::shared_ptr<NotedPlugin> p;
-		Lightbox::EventCompilerFactories cf;
-		std::shared_ptr<AuxLibraryFace> auxFace;
-		std::weak_ptr<NotedPlugin> aux;
-		QTreeWidgetItem* item;
-
-		void unload();
-		bool isEnabled() const;
-	};
-	typedef std::shared_ptr<Library> LibraryPtr;
-	void load(LibraryPtr const& _dl);
-	void unload(LibraryPtr const& _dl);
-	QMap<QString, LibraryPtr> m_libraries;
+	void load(RealLibraryPtr const& _dl);
+	void unload(RealLibraryPtr const& _dl);
+	QMap<QString, RealLibraryPtr> m_libraries;
 	QSet<QString> m_dirtyLibraries;
 	QFileSystemWatcher m_libraryWatcher;
 

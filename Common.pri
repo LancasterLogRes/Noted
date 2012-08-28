@@ -2,11 +2,12 @@ DESTDIR = $$OUT_PWD/../built
 
 CONFIG += no_include_pwd
 CONFIG -= uic
+DEFINES += "LIGHTBOX_TARGET_NAME=$$TARGET"
 
-!force_shared:!force_static {
-	crosscompilation: CONFIG += force_static
-	!crosscompilation: CONFIG += force_shared
-}
+crosscompilation: CONFIG += force_static
+!crosscompilation: CONFIG += force_shared
+
+QMAKE_LFLAGS_RELEASE =
 
 CONFIG(release, debug|release) {
 	CONFIG += release ndebug
@@ -35,7 +36,7 @@ force_static {
 	CONFIG += create_prl link_prl static
 	CONFIG -= shared dll dylib
 	DEFINES += LIGHTBOX_STATIC_LIBRARY
-	LIBS += -static
+        LIBS += -static
 	system (echo "Static build")
 }
 

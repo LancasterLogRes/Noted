@@ -258,7 +258,7 @@ void Noted::addLibrary(QString const& _name, bool _isEnabled)
 	else
 	{
 		cnote << "Not a duplicate - loading...";
-		auto lp = make_shared<Library>(_name);
+		auto lp = make_shared<RealLibrary>(_name);
 		m_libraries.insert(_name, lp);
 		lp->item = new QTreeWidgetItem(ui->loadedLibraries, QStringList() << defaultNick(_name) << "Unknown" << _name);
 		lp->item->setFlags(lp->item->flags() | Qt::ItemIsUserCheckable);
@@ -297,7 +297,7 @@ shared_ptr<NotedPlugin> Noted::getPlugin(QString const& _mangledName)
 	return nullptr;
 }
 
-void Noted::load(LibraryPtr const& _dl)
+void Noted::load(RealLibraryPtr const& _dl)
 {
 	cnote << "Loading:" << _dl->filename;
 	m_libraryWatcher.addPath(_dl->filename);
@@ -330,7 +330,6 @@ void Noted::load(LibraryPtr const& _dl)
 			else if (pf_t np = (pf_t)_dl->l.resolve("newPlugin"))
 			{
 				_dl->item->setText(1, "Plugin");
-				_dl->nick = ((pnf_t)_dl->l.resolve("libraryName"))();
 				cnote << "LOAD" << _dl->nick << " [PLUGIN]";
 
 				_dl->p = shared_ptr<NotedPlugin>(np(this));
@@ -379,10 +378,8 @@ void Noted::load(LibraryPtr const& _dl)
 						{
 							// tentatively add it, so the library can use it transparently.
 							lib->p->m_auxLibraries.append(f);
-							if (f->load(_dl->l))
+							if (f->load(_dl))
 							{
-								if (_dl->l.resolve("libraryName"))
-									_dl->nick = ((pnf_t)_dl->l.resolve("libraryName"))();
 								_dl->auxFace = f;
 								_dl->aux = lib->p;
 								cnote << "LOAD" << _dl->nick << " [AUX:" << lib->nick << "]";
@@ -416,12 +413,12 @@ void Noted::load(LibraryPtr const& _dl)
 	}
 }
 
-bool Noted::Library::isEnabled() const
+bool RealLibrary::isEnabled() const
 {
 	return item->checkState(0) == Qt::Checked;
 }
 
-void Noted::Library::unload()
+void RealLibrary::unload()
 {
 	if (bool** fed = (bool**)l.resolve("g_lightboxFinalized"))
 	{
@@ -438,7 +435,7 @@ void Noted::Library::unload()
 	QFile::remove(l.fileName());
 }
 
-void Noted::unload(LibraryPtr const& _dl)
+void Noted::unload(RealLibraryPtr const& _dl)
 {
 	if (_dl->l.isLoaded())
 	{
@@ -489,7 +486,7 @@ void Noted::unload(LibraryPtr const& _dl)
 		{
 			// remove ourselves from the plugin we're dependent on.
 			_dl->item->setText(1, "Aux: ?");
-			_dl->auxFace->unload(_dl->l);
+			_dl->auxFace->unload(_dl);
 			_dl->auxFace.reset();
 			_dl->aux.lock()->removeDeadAuxes();
 			_dl->aux.reset();
@@ -502,7 +499,7 @@ void Noted::unload(LibraryPtr const& _dl)
 
 void Noted::reloadLibrary(QString const& _name)
 {
-	shared_ptr<Library> dl = m_libraries[_name];
+	RealLibraryPtr dl = m_libraries[_name];
 	assert(dl);
 	assert(dl->filename == _name);
 
@@ -1436,7 +1433,7 @@ AcausalAnalysisPtrs Noted::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finish
 
 	// Go through all other things that can give CAs; at this point, it's just the plugins
 	AcausalAnalysisPtrs acc;
-	foreach (LibraryPtr const& l, m_libraries)
+	foreach (RealLibraryPtr const& l, m_libraries)
 		if (l->p && (acc = l->p->ripeAnalysis(_finished)).size())
 			ret.insert(ret.end(), acc.begin(), acc.end());
 

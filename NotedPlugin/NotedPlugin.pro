@@ -30,4 +30,5 @@ HEADERS  += Timeline.h \
 	AcausalAnalysis.h \
 	AuxLibraryFace.h \
     QGLWidgetProxy.h \
-    Prerendered.h
+    Prerendered.h \
+    Library.h
