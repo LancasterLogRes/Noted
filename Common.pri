@@ -7,8 +7,6 @@ DEFINES += "LIGHTBOX_TARGET_NAME=$$TARGET"
 crosscompilation: CONFIG += force_static
 !crosscompilation: CONFIG += force_shared
 
-QMAKE_LFLAGS_RELEASE =
-
 CONFIG(release, debug|release) {
 	CONFIG += release ndebug
 	CONFIG -= debug
@@ -43,8 +41,15 @@ force_static {
 QMAKE_CXXFLAGS += -ffast-math -pipe -fexceptions
 mac: QMAKE_CXXFLAGS +=  -std=c++11
 !mac: QMAKE_CXXFLAGS +=  -std=c++0x
-crosscompilation: QMAKE_CXXFLAGS += -march=btver1
-!crosscompilation: QMAKE_CXXFLAGS += -march=native
+crosscompilation {
+    QMAKE_CXXFLAGS += -march=btver1
+    DEFINES += LIGHTBOX_CROSSCOMPILATION
+}
+!crosscompilation {
+    QMAKE_CXXFLAGS += -march=native
+    DEFINES += LIGHTBOX_NATIVE
+}
+
 QMAKE_CXXFLAGS_WARN_ON += -Wno-parentheses
 
 INCLUDEPATH += $$IN_PWD
@@ -73,4 +78,3 @@ win32 {
 
 LIBS += -L$$DESTDIR -Wl,-rpath,$$DESTDIR
 DEPENDPATH = $INCLUDEPATH
-

@@ -19,7 +19,7 @@
  */
 
 #include <Common/Common.h>
-using namespace Lightbox;
+#include <EventCompiler/EventCompiler.h>
 
 int main(int, char**)
 {

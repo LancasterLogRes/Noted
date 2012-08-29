@@ -35,7 +35,27 @@ Grapher::Grapher(): p(0)
 
 void Grapher::init(QPainter* _p, std::pair<float, float> _xRange, std::pair<float, float> _yRange, std::function<std::string(float)> _xLabel, std::function<std::string(float)> _yLabel, std::function<std::string(float, float)> _pLabel, int _leftGutter, int _bottomGutter)
 {
-	QRect a(_leftGutter, 0, _p->viewport().width() - _leftGutter, _p->viewport().height() - _bottomGutter);
+	if (_xRange.first < _xRange.second)
+	{
+		_xRange.first -= (_xRange.second - _xRange.first) / 20;
+		_xRange.second += (_xRange.second - _xRange.first) / 20;
+	}
+	else
+	{
+		_xRange.first += (_xRange.first - _xRange.second) / 20;
+		_xRange.second -= (_xRange.first - _xRange.second) / 20;
+	}
+	if (_yRange.first < _yRange.second)
+	{
+		_yRange.first -= (_yRange.second - _yRange.first) / 20;
+		_yRange.second += (_yRange.second - _yRange.first) / 20;
+	}
+	else
+	{
+		_yRange.first += (_yRange.first - _yRange.second) / 20;
+		_yRange.second -= (_yRange.first - _yRange.second) / 20;
+	}
+	QRect a(_leftGutter, 2, _p->viewport().width() - _leftGutter - 2, _p->viewport().height() - _bottomGutter - 2);
 	init(_p, _xRange, _yRange, _xLabel, _yLabel, _pLabel, a);
 }
 
@@ -62,7 +82,7 @@ bool Grapher::drawAxes(bool _x, bool _y) const
 	{
 		GraphParameters<float> yParams(yRange, h / c_ySpacing, 1.f);
 		float dy = fabs(yRange.second - yRange.first);
-		for (float f = yParams.from; f < yParams.to; f += yParams.incr)
+		for (float f = yParams.from; f <= yParams.to; f += yParams.incr)
 		{
 			int y = b - h * (f - yParams.from) / dy;
 			if (yParams.isMajor(f))
@@ -89,7 +109,7 @@ bool Grapher::drawAxes(bool _x, bool _y) const
 	{
 		GraphParameters<float> xParams(xRange, w / c_xSpacing, 1.f);
 		float dx = fabs(xRange.second - xRange.first);
-		for (float f = xParams.from; f < xParams.to; f += xParams.incr)
+		for (float f = xParams.from; f <= xParams.to; f += xParams.incr)
 		{
 			int x = l + w * (f - xParams.from) / dx;
 			if (xParams.isMajor(f))
@@ -99,7 +119,7 @@ bool Grapher::drawAxes(bool _x, bool _y) const
 				if (b < p->viewport().bottom())
 				{
 					p->setPen(QColor(144, 144, 144));
-					p->drawText(QRect(x - c_xSpacing / 2, b + c_markLength + c_markSpacing, c_xSpacing, p->viewport().height() - (b + c_markLength + c_markSpacing)), Qt::AlignHCenter|Qt::AlignTop, QString::fromStdString(xLabel(f)));
+					p->drawText(QRect(x - c_xSpacing / 2, b + c_markLength + c_markSpacing, c_xSpacing, p->viewport().height() - (b + c_markLength + c_markSpacing)), Qt::AlignHCenter|Qt::AlignTop, QString::fromStdString(xLabel(round(f * 100000) / 100000)));
 				}
 			}
 			else
@@ -118,21 +138,25 @@ void Grapher::drawLineGraph(vector<float> const& _data, QColor _color, QBrush co
 {
 	int s = _data.size();
 	QPoint l;
+	if (_fillToZero != Qt::NoBrush)
+	{
+		p->setPen(Qt::NoPen);
+		p->setBrush(_fillToZero);
+		for (int i = 0; i < s; ++i)
+		{
+			int zy = yP(0.f);
+			QPoint h(xTP(i), yTP(_data[i]));
+			if (i)
+				p->drawPolygon(QPolygon(QVector<QPoint>() << QPoint(h.x(), zy) << h << l << QPoint(l.x(), zy)));
+			l = h;
+		}
+	}
+	p->setPen(QPen(_color, _width));
 	for (int i = 0; i < s; ++i)
 	{
-		int zy = yP(0.f);
 		QPoint h(xTP(i), yTP(_data[i]));
 		if (i)
-		{
-			if (_fillToZero != Qt::NoBrush)
-			{
-				p->setPen(Qt::NoPen);
-				p->setBrush(_fillToZero);
-				p->drawPolygon(QPolygon(QVector<QPoint>() << QPoint(h.x(), zy) << h << l << QPoint(l.x(), zy)));
-			}
-			p->setPen(QPen(_color, _width));
 			p->drawLine(QLine(l, h));
-		}
 		l = h;
 	}
 }
@@ -146,21 +170,25 @@ void Grapher::ruleY(float _x, QColor _color, float _width) const
 void Grapher::drawLineGraph(std::function<float(float)> const& _f, QColor _color, QBrush const& _fillToZero, float _width) const
 {
 	QPoint l;
-	for (int x = active.left(); x < active.right(); x += 2)
+	if (_fillToZero != Qt::NoBrush)
 	{
-		int zy = yP(0.f);
+		p->setPen(Qt::NoPen);
+		p->setBrush(_fillToZero);
+		for (int x = active.left(); x <= active.right(); ++x)
+		{
+			int zy = yP(0.f);
+			QPoint h(x, yTP(_f(xRU(x))));
+			if (x != active.left())
+				p->drawPolygon(QPolygon(QVector<QPoint>() << QPoint(h.x(), zy) << h << l << QPoint(l.x(), zy)));
+			l = h;
+		}
+	}
+	p->setPen(QPen(_color, _width));
+	for (int x = active.left(); x <= active.right(); ++x)
+	{
 		QPoint h(x, yTP(_f(xRU(x))));
 		if (x != active.left())
-		{
-			if (_fillToZero != Qt::NoBrush)
-			{
-				p->setPen(Qt::NoPen);
-				p->setBrush(_fillToZero);
-				p->drawPolygon(QPolygon(QVector<QPoint>() << QPoint(h.x(), zy) << h << l << QPoint(l.x(), zy)));
-			}
-			p->setPen(QPen(_color, _width));
 			p->drawLine(QLine(l, h));
-		}
 		l = h;
 	}
 }

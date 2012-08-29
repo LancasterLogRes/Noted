@@ -19,9 +19,8 @@
  */
 
 #include <vector>
-using namespace std;
-
 #include "Maths.h"
+using namespace std;
 using namespace Lightbox;
 
 std::vector<float> Lightbox::windowFunction(unsigned _size, WindowFunction _f, float _parameter)
@@ -99,4 +98,98 @@ std::vector<float> Lightbox::scaledWindow(std::vector<float> const& _w, float _f
 	for (unsigned i = 0; i < _w.size(); ++i)
 		ret[i] = _w[i] * _f;
 	return ret;
+}
+
+vector<float> Lightbox::solveQuadratic(float a, float b, float c)
+{
+	float disc = b*b - 4*a*c;
+	if (disc < 0)
+		return vector<float>();
+	else if (disc == 0)
+		return vector<float>({{ -b / (2*a) }});
+	return vector<float>({{(-b + sqrt(disc)) / (2*a), (-b - sqrt(disc)) / (2*a)}});
+}
+
+vector<float> Lightbox::solveCubic(float a, float b, float c, float d)
+{
+	// a is too small - go to quadratic solver
+	if (fabs(a) < .0001)
+		return solveQuadratic(b, c, d);
+
+	if (fabs(d) < .0001)
+		return vector<float>(1, 0.f);
+
+	b /= a;
+	c /= a;
+	d /= a;
+
+	float q = (3*c - b*b) / 9;
+	float r = -27*d + b*(9*c - 2*b*b);
+	r /= 54;
+	float disc = q*q*q + r*r;
+
+	float term1 = b / 3;
+
+	if (disc > 0)
+	{
+		float s = r + sqrt(disc);
+		s = (s < 0) ? -pow(-s, 1/3.f) : pow(s, 1/3.f);
+		float t = r - sqrt(disc);
+		t = (t < 0) ? -pow(-t, 1/3.f) : pow(t, 1/3.f);
+		return vector<float>(1, -term1 + s + t);
+	}
+
+	// The remaining options are all real
+	if (disc == 0)
+	{
+		// All roots real, at least two are equal.
+		float r13 = (r < 0) ? -pow(-r, 1/3.f) : pow(r, 1/3.f);
+		float ret1 = -term1 + 2*r13;
+		float ret2 = -(r13 + term1);
+		return vector<float>({{ ret1, ret2 }});
+	}
+
+	// Only option left is that all roots are real and unequal (to get here, q < 0)
+	q = -q;
+	float dum1 = q*q*q;
+	dum1 = acos(r / sqrt(dum1));
+	float r13 = 2 * sqrt(q);
+	float ret1 = -term1 + r13 * cos(dum1 / 3);
+	float ret2 = -term1 + r13 * cos((dum1 + 2.0*Pi) / 3);
+	float ret3 = -term1 + r13 * cos((dum1 + 4.0*Pi) / 3);
+	return vector<float>({{ ret1, ret2, ret3 }});
+}
+
+/// Bias an x == y curve by some amount _z.
+float Lightbox::bias(float _x, float _z)
+{
+	_x = clamp(_x, -1.f, 1.f);
+	_z = clamp(_z, -1.f, 1.f);
+	if (_x == 0.f)
+		return 0.f;
+	if (_x == -1.f)
+		return -1.f;
+	if (_x == 1.f)
+		return 1.f;
+	if (_z == 0.f)
+		return _x;
+	if (_x < 0.f)
+		return -bias(-_x, _z);
+	if (_z < 0.f)
+		return 1.f - bias(1.f - _x, -_z);
+	auto ts = solveCubic(3 * _z - 2, 3 - 3 * _z, 0, -_x);
+	for (auto t: ts)
+		if (t >= 0.f && t <= 1.f)
+		{
+			float ret = cubicBezierT(t, _z);
+			if (ret >= 0.f && ret <= 1.f)
+				return ret;
+		}
+	for (auto t: ts)
+	{
+		float ret = cubicBezierT(t, _z);
+		if (ret >= 0.f && ret <= 1.f)
+			return ret;
+	}
+	return numeric_limits<float>::infinity();
 }

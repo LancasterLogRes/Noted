@@ -120,7 +120,7 @@ protected:
 	int xTP(float _dataIndex) const { return active.left() + (xT(_dataIndex) - xRange.first) / dx * active.width(); }
 	int yTP(float _dataValue) const { return active.bottom() - (yT(_dataValue) - yRange.first) / dy * active.height(); }
 	// Translate back from pixels into graph units.
-	float xU(int _xPixels) const { return float(_xPixels - active.left()) / active.width() * dx + xRange.first; }
+	float xU(int _xPixels) const { return (_xPixels - active.left() + .5f) / active.width() * dx + xRange.first; }
 	// Translate back from graph units into raw data index.
 	float xR(float _xUnits) const { return (_xUnits - xC) / xM; }
 	// Translate directly from pixels into raw data index. xRU(xTP(X)) == X

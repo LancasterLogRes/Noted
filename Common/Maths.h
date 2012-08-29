@@ -152,6 +152,18 @@ template <class T, class U> inline T clamp(T _v, std::pair<U, U> const& _minMax)
 	return _v < _minMax.first ? _minMax.first : _v < _minMax.second ? _v : _minMax.second;
 }
 
+template <class _T> _T cubed(_T _x) { return _x * _x * _x; }
+
+std::vector<float> solveQuadratic(float a, float b, float c);
+std::vector<float> solveCubic(float a, float b, float c, float d);
+inline float cubicBezierT(float _t, float _z)
+{
+	return 3 * _z * sqr(1 - _t) * _t + 3 * (1 - _t)*_t*_t + _t*_t*_t;
+}
+
+/// Bias an x == y curve by some amount _z.
+float bias(float _x, float _z);
+
 /// Get the "io" of a number.
 template <class T> inline T io(T x)
 {
