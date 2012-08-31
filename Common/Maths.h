@@ -144,7 +144,7 @@ inline bool isFinite(float _x)
 
 template <class T, class U> inline T clamp(T _v, U _min, U _max)
 {
-	return _v < _min ? _min : _v < _max ? _v : _max;
+	return _v < _min ? _min : _v > _max ? _max : isFinite(_v) ? _v : _min;
 }
 
 template <class T, class U> inline T clamp(T _v, std::pair<U, U> const& _minMax)

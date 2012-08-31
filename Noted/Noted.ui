@@ -85,6 +85,8 @@
      <string>&amp;Output</string>
     </property>
     <addaction name="actPlay"/>
+    <addaction name="actPlayCausal"/>
+    <addaction name="actPassthrough"/>
     <addaction name="actPanic"/>
    </widget>
    <widget class="QMenu" name="menu_File">
@@ -149,6 +151,7 @@
    <addaction name="actOpen"/>
    <addaction name="separator"/>
    <addaction name="actPlay"/>
+   <addaction name="actPlayCausal"/>
    <addaction name="separator"/>
    <addaction name="actFollow"/>
   </widget>
@@ -1265,10 +1268,10 @@ p, li { white-space: pre-wrap; }
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>&amp;Play/Pause</string>
+    <string>&amp;Play Acausal</string>
    </property>
    <property name="shortcut">
-    <string>Space</string>
+    <string>F6</string>
    </property>
   </action>
   <action name="actOpen">
@@ -1351,7 +1354,7 @@ p, li { white-space: pre-wrap; }
     <string>&amp;Recalculate Events</string>
    </property>
    <property name="shortcut">
-    <string>F5</string>
+    <string>Ctrl+R</string>
    </property>
   </action>
   <action name="actOpenEvents">
@@ -1382,6 +1385,25 @@ p, li { white-space: pre-wrap; }
   <action name="actWriteSettings">
    <property name="text">
     <string>&amp;Write settings</string>
+   </property>
+  </action>
+  <action name="actPlayCausal">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Play &amp;Causal</string>
+   </property>
+   <property name="shortcut">
+    <string>F5</string>
+   </property>
+  </action>
+  <action name="actPassthrough">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Pass&amp;through</string>
    </property>
   </action>
  </widget>

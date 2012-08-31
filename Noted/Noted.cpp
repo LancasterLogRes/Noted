@@ -995,11 +995,14 @@ void Noted::setCursor(qint64 _c)
 	}
 }
 
+// start playing (acausally - with the pre generated data)
 void Noted::on_actPlay_changed()
 {
 	if (ui->actPlay->isChecked())
 	{
+		m_isCausal = false;
 		ui->dockPlay->setEnabled(false);
+		ui->actPlayCausal->setEnabled(false);
 		ui->actOpen->setEnabled(false);
 		if (!m_playbackThread->isRunning())
 			m_playbackThread->start(QThread::TimeCriticalPriority);
@@ -1007,6 +1010,29 @@ void Noted::on_actPlay_changed()
 	else
 	{
 		ui->dockPlay->setEnabled(true);
+		ui->actPlayCausal->setEnabled(true);
+		ui->actOpen->setEnabled(true);
+	}
+}
+
+void Noted::on_actPlayCausal_changed()
+{
+	if (ui->actPlayCausal->isChecked())
+	{
+		initializeCausal(nullptr);
+		m_isCausal = true;
+		ui->dockPlay->setEnabled(false);
+		ui->actPlay->setEnabled(false);
+		ui->actOpen->setEnabled(false);
+		if (!m_playbackThread->isRunning())
+			m_playbackThread->start(QThread::TimeCriticalPriority);
+		m_lastIndex = cursorIndex();
+	}
+	else
+	{
+		finalizeCausal();
+		ui->dockPlay->setEnabled(true);
+		ui->actPlay->setEnabled(true);
 		ui->actOpen->setEnabled(true);
 	}
 }
@@ -1053,7 +1079,7 @@ void valfan2(_T* _dest, _T const* _source, unsigned _n)
 
 bool Noted::serviceAudio()
 {
-	if (ui->actPlay->isChecked())
+	if (ui->actPlay->isChecked() || ui->actPlayCausal->isChecked())
 	{
 		if (!m_playback)
 		{
@@ -1113,7 +1139,6 @@ bool Noted::serviceAudio()
 			}
 			m_playback->write(output);
 			setCursor(m_fineCursor + toBase(f, r));	// might be different to m_fineCursorWas...
-			return true;
 		}
 	}
 	else
@@ -1125,8 +1150,18 @@ bool Noted::serviceAudio()
 			resample_close(m_resampler);
 			m_resampler = nullptr;
 		}
+		return false;
 	}
-	return false;
+
+	if (ui->actPlayCausal->isChecked() && m_lastIndex != cursorIndex())
+	{
+		// do events until cursor.
+		updateCausal(m_lastIndex + 1, cursorIndex() - m_lastIndex);
+		m_lastIndex = cursorIndex();
+//		updateCurrent();
+	}
+
+	return true;
 }
 
 QList<EventsView*> Noted::eventsViews() const
@@ -1415,6 +1450,11 @@ void Noted::rejigAudio()
 	}
 }
 
+CausalAnalysisPtrs Noted::ripeCausalAnalysis(CausalAnalysisPtr const&)
+{
+	return CausalAnalysisPtrs();
+}
+
 AcausalAnalysisPtrs Noted::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finished)
 {
 	AcausalAnalysisPtrs ret;
@@ -1438,4 +1478,45 @@ AcausalAnalysisPtrs Noted::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finish
 			ret.insert(ret.end(), acc.begin(), acc.end());
 
 	return ret;
+}
+
+void Noted::initializeCausal(CausalAnalysisPtr const& _lastComplete)
+{
+	deque<CausalAnalysisPtr> todo;	// will become a member.
+	todo.push_back(_lastComplete);
+	assert(m_causalQueue.empty());
+
+	while (todo.size())
+	{
+		CausalAnalysisPtr ca = todo.front();
+		todo.pop_front();
+		if (ca != _lastComplete)
+		{
+			ca->init(false);
+
+			m_causalQueue.push_back(ca);
+		}
+		catenate(todo, ripeCausalAnalysis(ca));
+	}
+	m_sequenceIndex = 0;
+}
+
+void Noted::finalizeCausal()
+{
+	for (auto ca: m_causalQueue)
+		ca->fini(false);
+	m_causalQueue.clear();
+}
+
+void Noted::updateCausal(int _from, int _count)
+{
+	Time h = hop();
+	for (auto ca: m_causalQueue)
+		ca->noteBatch(m_sequenceIndex, _count);
+	for (unsigned i = 0; i < _count; ++i, ++m_sequenceIndex)
+	{
+//		setCurrentIndex(_from + i);
+		for (auto ca: m_causalQueue)
+			ca->process(m_sequenceIndex, h * m_sequenceIndex);
+	}
 }

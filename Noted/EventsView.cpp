@@ -353,7 +353,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 				BOOST_FOREACH (Lightbox::StreamEvent e, m_events[i])
 					if (eventVisible(m_selection->itemData(m_selection->currentIndex()), e) && (inView || isAlwaysVisible(e.type)))
 					{
-						float n = e.temperature - int(e.temperature);
+						float n = toHue(e.temperature) / 360.f;
 						QPoint pt(x, height() - ((e.type >= Graph) ? ((e.strength - mins[e.temperature]) / (maxs[e.temperature] - mins[e.temperature])) : e.strength) * height());
 						QColor c = QColor::fromHsvF(n, 1.f, 1.f * Color::hueCorrection(n * 360));
 						QColor cDark = QColor::fromHsvF(n, 0.5f, 0.6f * Color::hueCorrection(n * 360));
@@ -420,8 +420,8 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 							{
 								if (lastSustainEvent.type == Sustain)
 								{
-									p.fillRect(lastSustain.x(), ySustain + 1, x - lastSustain.x(), 4, QBrush(QColor::fromHsvF(lastSustainEvent.temperature, 0.25f, 1.0f * Color::hueCorrection(lastSustainEvent.temperature * 360))));
-									p.fillRect(lastSustain.x(), ySustain, x - lastSustain.x(), 1, QBrush(QColor::fromHsvF(lastSustainEvent.temperature, 0.5f, 0.6f * Color::hueCorrection(lastSustainEvent.temperature * 360))));
+									p.fillRect(lastSustain.x(), ySustain + 1, x - lastSustain.x(), 4, QBrush(QColor::fromHsvF(toHue(lastSustainEvent.temperature) / 360.f, 0.25f, 1.0f * Color::hueCorrection(toHue(lastSustainEvent.temperature)))));
+									p.fillRect(lastSustain.x(), ySustain, x - lastSustain.x(), 1, QBrush(QColor::fromHsvF(toHue(lastSustainEvent.temperature) / 360.f, 0.5f, 0.6f * Color::hueCorrection(toHue(lastSustainEvent.temperature)))));
 									lastSustain = QPoint(x, ySustain);
 								}
 								else
@@ -436,8 +436,8 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 							{
 								if (lastBackSustainEvent.type == BackSustain)
 								{
-									p.fillRect(lastBackSustain.x(), yBackSustain + 1, x - lastBackSustain.x(), 4, QBrush(QColor::fromHsvF(lastBackSustainEvent.temperature, 0.25f, 1.0f * Color::hueCorrection(lastBackSustainEvent.temperature * 360))));
-									p.fillRect(lastBackSustain.x(), yBackSustain, x - lastBackSustain.x(), 1, QBrush(QColor::fromHsvF(lastBackSustainEvent.temperature, 0.5f, 0.6f * Color::hueCorrection(lastBackSustainEvent.temperature * 360))));
+									p.fillRect(lastBackSustain.x(), yBackSustain + 1, x - lastBackSustain.x(), 4, QBrush(QColor::fromHsvF(toHue(lastBackSustainEvent.temperature) / 360.f, 0.25f, 1.0f * Color::hueCorrection(toHue(lastBackSustainEvent.temperature)))));
+									p.fillRect(lastBackSustain.x(), yBackSustain, x - lastBackSustain.x(), 1, QBrush(QColor::fromHsvF(toHue(lastBackSustainEvent.temperature) / 360.f, 0.5f, 0.6f * Color::hueCorrection(toHue(lastBackSustainEvent.temperature)))));
 									lastBackSustain = QPoint(x, yBackSustain);
 								}
 								else

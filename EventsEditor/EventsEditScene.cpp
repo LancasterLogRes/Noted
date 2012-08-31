@@ -172,7 +172,7 @@ NotedFace* EventsEditScene::c() const
 QList<StreamEvents> EventsEditScene::events(Time _hop) const
 {
 	QList<StreamEvents> ret;
-	Time last = -1000000000;
+	Time last = UndefinedTime;
 	foreach (QGraphicsItem* it, items(Qt::AscendingOrder))
 		if (auto sei = dynamic_cast<StreamEventItem*>(it))
 		{
@@ -183,7 +183,8 @@ QList<StreamEvents> EventsEditScene::events(Time _hop) const
 				while (ret.size() * _hop <= last)
 					ret.push_back(StreamEvents());
 			}
-			ret.last().push_back(sei->streamEvent());
+			if (ret.size())
+				ret.last().push_back(sei->streamEvent());
 		}
 	return ret;
 }
@@ -192,7 +193,7 @@ void EventsEditScene::saveTo(QString _filename) const
 {
 	using boost::property_tree::ptree;
 	ptree pt;
-	Time last = -1000000000;
+	Time last = UndefinedTime;
 	ptree* lt = nullptr;
 	foreach (QGraphicsItem* it, items(Qt::AscendingOrder))
 		if (auto sei = dynamic_cast<StreamEventItem*>(it))

@@ -139,20 +139,22 @@ inline float oscillator(Time _t, Time _cycle, float _min = 0.f, float _max = 1.f
 	return _min + d * (1 + sin(double(_t) / _cycle * 3.14159265358 * 2));
 }
 
+/// Pseudo-random factor in interval [_min, _max], determined entire by _t.
 inline float random(Time _t, float _min = 0.f, float _max = 1.f)
 {
     ::srand(_t);
     return ::rand() / double(RAND_MAX) * (_max - _min) + _min;
 }
 
-inline float decayed(float _f, Time _p, Time _hl)
-{
-	return _f / exp2(double(_p) / _hl);
-}
-
-inline float ofHalfLife(Time _halfLife, Time _unit)
+inline float halfLifeDecay(Time _halfLife, Time _unit)
 {
 	return 1.f / exp2(double(_unit) / _halfLife);
+}
+
+/// @deprecated Use halfLifeDecay() instead.
+inline float decayed(float _f, Time _hl, Time _p)
+{
+	return _f * halfLifeDecay(_p, _hl);
 }
 
 }

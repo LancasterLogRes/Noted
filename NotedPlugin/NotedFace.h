@@ -109,8 +109,11 @@ public:
 	virtual CausalAnalysisPtr compileEventsAnalysis() const = 0;
 	virtual CausalAnalysisPtr collateEventsAnalysis() const = 0;
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&) = 0;
+	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&) = 0;
 
 	virtual bool isPlaying() const = 0;
+	virtual bool isCausal() const = 0;
+	virtual bool isPassing() const = 0;
 
 	virtual void addTimeline(Timeline* _p) = 0;
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;
@@ -189,8 +192,11 @@ public:
 	virtual CausalAnalysisPtr compileEventsAnalysis() const { return nullptr; }
 	virtual CausalAnalysisPtr collateEventsAnalysis() const { return nullptr; }
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&) { return AcausalAnalysisPtrs(); }
+	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&) { return CausalAnalysisPtrs(); }
 
 	virtual bool isPlaying() const { return false; }
+	virtual bool isPassing() const { return false; }
+	virtual bool isCausal() const { return false; }
 
 	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const&) { return nullptr; }
 	virtual void timelineDead(Timeline*) {}

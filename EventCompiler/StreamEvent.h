@@ -115,6 +115,11 @@ struct StreamEvent
 	std::shared_ptr<Aux> m_aux;	///< Auxilliary data for the event. TODO: Deprecate in favour of some other comm. method.
 };
 
+inline float toHue(float _temperature)
+{
+	return (600 - (int)(clamp(_temperature, -.25f, 1.25f) * 240)) % 360;
+}
+
 /** e.g.
  *
  * Spike(strength=1; surprise=1) means onset definitely occurred that we were unable to predict (either

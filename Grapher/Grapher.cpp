@@ -82,9 +82,12 @@ bool Grapher::drawAxes(bool _x, bool _y) const
 	{
 		GraphParameters<float> yParams(yRange, h / c_ySpacing, 1.f);
 		float dy = fabs(yRange.second - yRange.first);
+		float lowy = min(yRange.first, yRange.second);
 		for (float f = yParams.from; f <= yParams.to; f += yParams.incr)
 		{
-			int y = b - h * (f - yParams.from) / dy;
+			if (f < lowy)
+				continue;
+			int y = b - h * (f - lowy) / dy;
 			if (yParams.isMajor(f))
 			{
 				p->setPen(QColor(208, 208, 208));
@@ -109,9 +112,12 @@ bool Grapher::drawAxes(bool _x, bool _y) const
 	{
 		GraphParameters<float> xParams(xRange, w / c_xSpacing, 1.f);
 		float dx = fabs(xRange.second - xRange.first);
+		float lowx = min(xRange.first, xRange.second);
 		for (float f = xParams.from; f <= xParams.to; f += xParams.incr)
 		{
-			int x = l + w * (f - xParams.from) / dx;
+			if (f < lowx)
+				continue;
+			int x = l + w * (f - lowx) / dx;
 			if (xParams.isMajor(f))
 			{
 				p->setPen(QColor(208, 208, 208));

@@ -41,6 +41,35 @@
 namespace Lightbox
 {
 
+template <class _T> std::set<_T> operator+(std::set<_T> const& _a, std::set<_T> const& _b)
+{
+	std::set<_T> ret = _a;
+	for (_T const& t: _b)
+		ret.insert(t);
+	return ret;
+}
+
+template <class _T> std::multiset<_T> operator+(std::multiset<_T> const& _a, std::multiset<_T> const& _b)
+{
+	std::multiset<_T> ret;
+	std::set_union(_a.begin(), _a.end(), _b.begin(), _b.end(), ret.begin());
+	return ret;
+}
+
+template <class _T, class _Fit>
+std::pair<typename std::remove_const<typename std::remove_reference<decltype(_T()[0])>::type>::type, float> findBest(_T const& _t, _Fit const& _fit)
+{
+	std::pair<typename std::remove_const<typename std::remove_reference<decltype(_T()[0])>::type>::type, float> ret;
+	ret.second = -std::numeric_limits<float>::infinity();
+	for (auto d: _t)
+	{
+		float f = _fit(d);
+		if (f > ret.second)
+			ret = std::make_pair(d, f);
+	}
+	return ret;
+}
+
 template <class _T>
 void valcpy(_T* _d, _T const* _s, unsigned _n, unsigned _dstride = 1, unsigned _sstride = 1)
 {

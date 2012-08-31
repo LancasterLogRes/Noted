@@ -88,12 +88,14 @@ public:
 	virtual int activeWidth() const;
 	virtual QGLWidget* glMaster() const;
 	virtual bool isPlaying() const { return !!m_playback; }
+	virtual bool isCausal() const { return m_isCausal; }
 	virtual bool isPassing() const { return !!m_passing; }
 
 	virtual AcausalAnalysisPtr spectraAcAnalysis() const { return m_spectraAcAnalysis; }
 	virtual CausalAnalysisPtr compileEventsAnalysis() const { return m_compileEventsAnalysis; }
 	virtual CausalAnalysisPtr collateEventsAnalysis() const { return m_collateEventsAnalysis; }
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&);
+	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&);
 	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a = nullptr);
 
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr);
@@ -130,6 +132,7 @@ private slots:
 	void on_actOpen_activated();
 	void on_actQuit_activated();
 	void on_actPlay_changed();
+	void on_actPlayCausal_changed();
 	void on_actPanic_activated();
 	void on_actFollow_changed();
 	void on_actZoomIn_activated();
@@ -189,6 +192,10 @@ private:
 	void rejigAudio();
 	void setAudio(QString const& _filename);
 
+	void initializeCausal(CausalAnalysisPtr const& _lastComplete);
+	void finalizeCausal();
+	void updateCausal(int _from, int _count);
+
 	void normalizeView() { setTimelineOffset(duration() * -0.025); setPixelDuration(duration() / .95 / activeWidth()); }
 
 	// Just for Timeline class.
@@ -210,6 +217,12 @@ private:
 	Lightbox::Time m_fineCursorWas;
 	Lightbox::Time m_nextResample;
 	void* m_resampler;
+	bool m_isCausal;
+
+	// Causal playback
+	int m_lastIndex;
+	unsigned m_sequenceIndex;
+	CausalAnalysisPtrs m_causalQueue;
 
 	// Pass-through...
 	WorkerThread* m_passingThread;

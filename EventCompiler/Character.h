@@ -127,7 +127,7 @@ inline Character toCharacter(char _c)
 
 inline CharacterComponent operator|(CharacterComponent _a, CharacterComponent _b) { return CharacterComponent((int)_a | (int)_b); }
 
-Character masked(Character _c, CharacterComponents _cc)
+inline Character masked(Character _c, CharacterComponents _cc)
 {
 	return Character(_c & ~(toNegativeCharacter(_cc)) | toCharacter(_cc));
 }
@@ -148,6 +148,11 @@ LIGHTBOX_UNITTEST(3, "masked(Character, CharacterComponents)")
 	LIGHTBOX_REQUIRE_EQUAL(masked(Vibrant, Disparate), Dull);
 	LIGHTBOX_REQUIRE_EQUAL(masked(Adroit, Disparate), Harmonious);
 	LIGHTBOX_REQUIRE_EQUAL(masked(Piquant, Disparate), Visceral);
+}
+
+inline CharacterComponents maskOf(CharacterComponents _cc)
+{
+	return (_cc | (_cc << c_negativeCharacters) | (_cc >> c_negativeCharacters)) & EveryCharacter;
 }
 
 }
