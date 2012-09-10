@@ -51,6 +51,7 @@ public:
 	NotedFace* c() const;
 	virtual Lightbox::StreamEvents events(int _i) const;
 	virtual Lightbox::StreamEvents initEvents() const { return Lightbox::StreamEvents(); }
+	virtual Lightbox::StreamEvents cursorEvents() const;
 
 	void save(QSettings& _c) const;
 	void load(QSettings const& _c);

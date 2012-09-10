@@ -64,6 +64,7 @@ public:
 	virtual bool carryOn(int _progress) = 0;
 	virtual int activeWidth() const = 0;
 	virtual QGLWidget* glMaster() const = 0;
+	virtual int causalCursorIndex() const = 0;	///< -1 when isCausal()
 
 	inline Lightbox::Time earliestVisible() const { return m_timelineOffset; }
 	inline Lightbox::Time pixelDuration() const { return m_pixelDuration; }
@@ -124,7 +125,7 @@ public:
 	inline void zoomTimeline(int _xFocus, double _factor) { auto pivot = timeOf(_xFocus); m_timelineOffset = pivot - (m_pixelDuration *= _factor) * _xFocus; emit durationChanged(); }
 
 public slots:
-	virtual void setCursor(qint64 _c) = 0;
+	virtual void setCursor(qint64 _c, bool _warp = false) = 0;
 	inline void setTimelineOffset(qint64 _o) { if (m_timelineOffset != _o) { m_timelineOffset = _o; emit offsetChanged(); } }
 	inline void setPixelDuration(qint64 _d) { if (m_pixelDuration != _d) { m_pixelDuration = _d; emit durationChanged(); } }
 
@@ -170,6 +171,7 @@ public:
 	virtual Lightbox::Time earliestVisible() const { return 0; }
 	virtual Lightbox::Time pixelDuration() const { return 1; }
 	virtual Lightbox::Time cursor() const { return 0; }
+	virtual int causalCursorIndex() const { return -1; }
 
 	virtual void info(QString const&, QString const& = "gray") {}
 
@@ -204,7 +206,7 @@ public:
 	virtual QWidget* addGLWidget(QGLWidgetProxy*) { return nullptr; }
 	virtual void addDockWidget(Qt::DockWidgetArea, QDockWidget*) {}
 
-	virtual void setCursor(qint64) {}
+	virtual void setCursor(qint64, bool) {}
 	virtual void setTimelineOffset(qint64) {}
 	virtual void setPixelDuration(qint64) {}
 

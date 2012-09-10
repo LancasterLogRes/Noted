@@ -135,7 +135,7 @@ void EventsEditor::mouseReleaseEvent(QMouseEvent* _e)
 {
 	QGraphicsView::mouseReleaseEvent(_e);
 	if (scene()->selectedItems().isEmpty() && _e->button() == Qt::LeftButton)
-		c()->setCursor(fromSeconds(mapToScene(_e->pos()).x() / 1000));
+		c()->setCursor(fromSeconds(mapToScene(_e->pos()).x() / 1000), true);
 }
 
 void EventsEditor::mouseMoveEvent(QMouseEvent* _e)
@@ -150,6 +150,11 @@ void EventsEditor::mouseMoveEvent(QMouseEvent* _e)
 	}
 	else
 		QGraphicsView::mouseMoveEvent(_e);
+}
+
+StreamEvents EventsEditor::cursorEvents() const
+{
+	return events(m_c->causalCursorIndex());
 }
 
 StreamEvents EventsEditor::events(int _i) const

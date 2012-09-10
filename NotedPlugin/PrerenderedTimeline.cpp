@@ -46,7 +46,7 @@ PrerenderedTimeline::~PrerenderedTimeline()
 void PrerenderedTimeline::mousePressEvent(QMouseEvent* _e)
 {
 	if (_e->button() == Qt::LeftButton)
-		c()->setCursor(c()->timeOf(_e->x()));
+		c()->setCursor(c()->timeOf(_e->x()), true);
 	else if (_e->button() == Qt::MiddleButton)
 		m_draggingTime = c()->timeOf(_e->x());
 }
@@ -62,7 +62,7 @@ void PrerenderedTimeline::mouseMoveEvent(QMouseEvent* _e)
 	if (m_draggingTime != Lightbox::UndefinedTime && _e->buttons() & Qt::MiddleButton)
 		c()->setTimelineOffset(m_draggingTime - _e->x() * c()->pixelDuration());
 	else if (_e->buttons() & Qt::LeftButton)
-		c()->setCursor(c()->timeOf(_e->x()));
+		c()->setCursor(c()->timeOf(_e->x()), true);
 }
 
 void PrerenderedTimeline::wheelEvent(QWheelEvent* _e)

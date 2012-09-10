@@ -90,6 +90,7 @@ public:
 	virtual bool isPlaying() const { return !!m_playback; }
 	virtual bool isCausal() const { return m_isCausal; }
 	virtual bool isPassing() const { return !!m_passing; }
+	virtual int causalCursorIndex() const { return m_causalCursorIndex; }
 
 	virtual AcausalAnalysisPtr spectraAcAnalysis() const { return m_spectraAcAnalysis; }
 	virtual CausalAnalysisPtr compileEventsAnalysis() const { return m_compileEventsAnalysis; }
@@ -112,9 +113,12 @@ public:
 
 	void updateGraphs(std::vector<std::shared_ptr<Lightbox::AuxGraphsSpec> > const& _specs);
 
+	Lightbox::foreign_vector<float> cursorMagSpectrum() const;
+	Lightbox::foreign_vector<float> cursorPhaseSpectrum() const;
+
 public slots:
-	void suspendWork();
-	void resumeWork();
+	void suspendWork(bool _force = false);
+	void resumeWork(bool _force = false);
 
 	virtual void info(QString const& _info, QString const& _color = "gray");
 	void info(QString const& _info, int _id);
@@ -126,7 +130,7 @@ public slots:
 	virtual void onLibraryChange(QString const& _name);
 	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const& _mangledName);
 
-	virtual void setCursor(qint64 _c);
+	virtual void setCursor(qint64 _c, bool _warp = false);
 
 private slots:
 	void on_actOpen_activated();
@@ -208,6 +212,7 @@ private:
 
 	// Old working stuff...
 	WorkerThread* m_workerThread;
+	int m_suspends;
 
 	bool m_cursorDirty;
 
@@ -223,6 +228,7 @@ private:
 	int m_lastIndex;
 	unsigned m_sequenceIndex;
 	CausalAnalysisPtrs m_causalQueue;
+	int m_causalCursorIndex;
 
 	// Pass-through...
 	WorkerThread* m_passingThread;

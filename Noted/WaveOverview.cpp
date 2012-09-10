@@ -47,13 +47,13 @@ Time WaveOverview::timeOf(int _x)
 void WaveOverview::mousePressEvent(QMouseEvent* _e)
 {
 	if (_e->button() == Qt::LeftButton)
-		c()->setCursor(timeOf(_e->x()));
+		c()->setCursor(timeOf(_e->x()), true);
 }
 
 void WaveOverview::mouseMoveEvent(QMouseEvent* _e)
 {
 	if (_e->buttons() & Qt::LeftButton)
-		c()->setCursor(timeOf(_e->x()));
+		c()->setCursor(timeOf(_e->x()), true);
 }
 
 void WaveOverview::initializeGL()

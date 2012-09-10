@@ -125,6 +125,7 @@ Noted::Noted(QWidget* _p):
 	NotedBase					(_p),
 	ui							(new Ui::Noted),
 	m_workerThread				(nullptr),
+	m_suspends					(0),
 	m_fineCursorWas				(UndefinedTime),
 	m_nextResample				(UndefinedTime),
 	m_resampler					(nullptr),
@@ -200,7 +201,7 @@ Noted::~Noted()
 	g_debugPost = simpleDebugOut;
 
 	qDebug() << "Disabling worker(s)...";
-	suspendWork();
+	suspendWork(true);
 	delete m_workerThread;
 	m_workerThread = nullptr;
 	qDebug() << "Disabled permenantly.";
@@ -517,9 +518,7 @@ void Noted::reloadDirties()
 {
 	if (!m_dirtyLibraries.empty())
 	{
-		bool doSuspend = m_workerThread && m_workerThread->isRunning();
-		if (doSuspend)
-			suspendWork();
+		suspendWork();
 
 		// OPTIMIZE: only bother saving for EVs whose EC is given by a dirty library.
 		foreach (EventsView* ev, eventsViews())
@@ -554,8 +553,7 @@ void Noted::reloadDirties()
 		// OPTIMIZE: Something finer grained?
 		noteEventCompilersChanged();
 
-		if (doSuspend)
-			resumeWork();
+		resumeWork();
 	}
 }
 
@@ -930,24 +928,39 @@ bool Noted::work()
 	return true;
 }
 
-void Noted::suspendWork()
+void Noted::suspendWork(bool _force)
 {
-	cnote << "WORK Suspending...";
+	cnote << "WORK Suspending..." << m_suspends;
 	if (m_workerThread && m_workerThread->isRunning())
 	{
 		m_workerThread->quit();
 		while (!m_workerThread->wait(1000))
 			cwarn << "Worker thread not responding :-(";
+		m_suspends = 0;
+		cnote << "WORK Suspended";
 	}
-	cnote << "WORK Suspended";
+	else
+	{
+		++m_suspends;
+		cnote << "WORK Additional suspended" << m_suspends;
+	}
 }
 
-void Noted::resumeWork()
+void Noted::resumeWork(bool _force)
 {
-	if (m_workerThread && !m_workerThread->isRunning())
+	if (!_force && m_suspends)
 	{
-		m_workerThread->start(QThread::LowPriority);
-		cnote << "WORK Resumed";
+		m_suspends--;
+		cnote << "WORK One fewer suspend" << m_suspends;
+	}
+	else
+	{
+		if (m_workerThread && !m_workerThread->isRunning())
+		{
+			m_workerThread->start(QThread::LowPriority);
+			cnote << "WORK Resumed" << m_suspends;
+		}
+		m_suspends = 0;
 	}
 }
 
@@ -984,7 +997,7 @@ void Noted::on_actOpen_activated()
 		setAudio(s);
 }
 
-void Noted::setCursor(qint64 _c)
+void Noted::setCursor(qint64 _c, bool _warp)
 {
 	if (m_fineCursor != _c)
 	{
@@ -992,6 +1005,8 @@ void Noted::setCursor(qint64 _c)
 		m_fineCursor = _c;
 		if (oc / hop() * hop() != m_fineCursor / hop() * hop())
 			m_cursorDirty = true;
+		if (_warp && isCausal())
+			m_lastIndex = cursorIndex();
 	}
 }
 
@@ -1019,6 +1034,7 @@ void Noted::on_actPlayCausal_changed()
 {
 	if (ui->actPlayCausal->isChecked())
 	{
+		suspendWork();
 		initializeCausal(nullptr);
 		m_isCausal = true;
 		ui->dockPlay->setEnabled(false);
@@ -1031,9 +1047,12 @@ void Noted::on_actPlayCausal_changed()
 	else
 	{
 		finalizeCausal();
+		m_isCausal = false;
+		m_causalCursorIndex = -1;
 		ui->dockPlay->setEnabled(true);
 		ui->actPlay->setEnabled(true);
 		ui->actOpen->setEnabled(true);
+		resumeWork();
 	}
 }
 
@@ -1153,10 +1172,11 @@ bool Noted::serviceAudio()
 		return false;
 	}
 
-	if (ui->actPlayCausal->isChecked() && m_lastIndex != cursorIndex())
+	if (ui->actPlayCausal->isChecked() && m_lastIndex != (int)cursorIndex())
 	{
 		// do events until cursor.
-		updateCausal(m_lastIndex + 1, cursorIndex() - m_lastIndex);
+		if (!((int)cursorIndex() < m_lastIndex || (int)cursorIndex() - m_lastIndex > 100))	// probably skipped.
+			updateCausal(m_lastIndex + 1, cursorIndex() - m_lastIndex);
 		m_lastIndex = cursorIndex();
 //		updateCurrent();
 	}
@@ -1197,6 +1217,7 @@ void Noted::on_actPanForward_activated()
 void Noted::on_actPanic_activated()
 {
 	ui->actPlay->setChecked(false);
+	ui->actPlayCausal->setChecked(false);
 }
 
 bool Noted::carryOn(int _progress)
@@ -1450,9 +1471,24 @@ void Noted::rejigAudio()
 	}
 }
 
-CausalAnalysisPtrs Noted::ripeCausalAnalysis(CausalAnalysisPtr const&)
+CausalAnalysisPtrs Noted::ripeCausalAnalysis(CausalAnalysisPtr const& _finished)
 {
-	return CausalAnalysisPtrs();
+	CausalAnalysisPtrs ret;
+	if (_finished == nullptr)
+		ret.push_back(m_compileEventsAnalysis);
+	else if (dynamic_cast<CompileEvents*>(&*_finished) && eventsViews().size())
+		foreach (EventsView* ev, eventsViews())
+			ret.push_back(CausalAnalysisPtr(new CompileEventsView(ev)));
+	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !eventsViews().size()) || (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == eventsViews().size()))
+		ret.push_back(m_collateEventsAnalysis);
+
+	// Go through all other things that can give CAs; at this point, it's just the plugins
+	CausalAnalysisPtrs acc;
+	foreach (RealLibraryPtr const& l, m_libraries)
+		if (l->p && (acc = l->p->ripeCausalAnalysis(_finished)).size())
+			ret.insert(ret.end(), acc.begin(), acc.end());
+
+	return ret;
 }
 
 AcausalAnalysisPtrs Noted::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finished)
@@ -1474,7 +1510,7 @@ AcausalAnalysisPtrs Noted::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finish
 	// Go through all other things that can give CAs; at this point, it's just the plugins
 	AcausalAnalysisPtrs acc;
 	foreach (RealLibraryPtr const& l, m_libraries)
-		if (l->p && (acc = l->p->ripeAnalysis(_finished)).size())
+		if (l->p && (acc = l->p->ripeAcausalAnalysis(_finished)).size())
 			ret.insert(ret.end(), acc.begin(), acc.end());
 
 	return ret;
@@ -1510,13 +1546,30 @@ void Noted::finalizeCausal()
 
 void Noted::updateCausal(int _from, int _count)
 {
+	(void)_from;
 	Time h = hop();
 	for (auto ca: m_causalQueue)
 		ca->noteBatch(m_sequenceIndex, _count);
-	for (unsigned i = 0; i < _count; ++i, ++m_sequenceIndex)
+	for (int i = 0; i < _count; ++i, ++m_sequenceIndex)
 	{
-//		setCurrentIndex(_from + i);
+		m_causalCursorIndex = clamp(_from + i, 0, (int)hops());
 		for (auto ca: m_causalQueue)
 			ca->process(m_sequenceIndex, h * m_sequenceIndex);
 	}
+}
+
+foreign_vector<float> Noted::cursorMagSpectrum() const
+{
+	if (m_causalCursorIndex > -1)
+		return magSpectrum(m_causalCursorIndex, 1);
+	else
+		return foreign_vector<float>();
+}
+
+foreign_vector<float> Noted::cursorPhaseSpectrum() const
+{
+	if (m_causalCursorIndex > -1)
+		return phaseSpectrum(m_causalCursorIndex, 1);
+	else
+		return foreign_vector<float>();
 }
