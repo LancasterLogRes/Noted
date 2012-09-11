@@ -7,8 +7,8 @@ SUBDIRS = \
     Audio
 !crosscompilation: SUBDIRS += \
     contrib \
-    Grapher \
-    NotedPlugin \
+	NotedPlugin \
+	Grapher \
     ExamplePlugin \
     EventsEditor \
     Noted \
