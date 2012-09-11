@@ -1861,7 +1861,7 @@ glShader* glShaderManager::loadfromMemory(const char* vertexMem, const char* fra
 glShader* glShaderManager::loadfromMemory(const char* vertexMem, const char* geometryMem, const char* fragmentMem)
 {
   glShader* o = new glShader();
-  o->UsesGeometryShader(true);
+  o->UsesGeometryShader(geometryMem!=0);
   o->SetInputPrimitiveType(_nInputPrimitiveType);
   o->SetOutputPrimitiveType(_nOutputPrimitiveType);
   o->SetVerticesOut(_nVerticesOut);

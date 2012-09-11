@@ -70,7 +70,7 @@ inline S& streamout(S& _out, std::vector<T> const& _e)
 }
 template <class T> inline std::ostream& operator<<(std::ostream& _out, std::vector<T> const& _e) { streamout(_out, _e); return _out; }
 
-template <class S, class T, unsigned long Z>
+template <class S, class T, unsigned Z>
 inline S& streamout(S& _out, std::array<T, Z> const& _e)
 {
 	_out << "[";
@@ -83,7 +83,7 @@ inline S& streamout(S& _out, std::array<T, Z> const& _e)
 	}
 	return _out << "]";
 }
-template <class T, unsigned long Z> inline std::ostream& operator<<(std::ostream& _out, std::array<T, Z> const& _e) { streamout(_out, _e); return _out; }
+template <class T, unsigned Z> inline std::ostream& operator<<(std::ostream& _out, std::array<T, Z> const& _e) { streamout(_out, _e); return _out; }
 
 inline std::ostream& operator<<(std::ostream&& _out, Time const& _n) { return _out << textualTime(_n); }
 

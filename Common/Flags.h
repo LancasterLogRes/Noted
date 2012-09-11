@@ -114,11 +114,13 @@ template <class _T> inline typename is_flag<_T>::FlagsType::Flag fromIndex(unsig
 		BOOST_PP_SEQ_FOR_EACH(LIGHTBOX_ENUM_S2F, N, X) \
 		return N(0); \
 	} \
-	inline std::ostream& operator<<(std::ostream& _out, N _p) \
+    template <class _S> \
+    inline _S& operator<<(_S& _out, N _p) \
 	{ \
 		return _out << toString(_p); \
 	} \
-	inline std::istream& operator>>(std::istream& _in, N& _p) \
+    template <class _S> \
+    inline _S& operator>>(_S& _in, N& _p) \
 	{ \
 		std::string s; \
 		_in >> s; \
