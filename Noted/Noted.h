@@ -24,6 +24,7 @@
 #include <set>
 #include <vector>
 
+#include <Common/FFTW.h>
 #include <Audio/Capture.h>
 #include <Audio/Playback.h>
 #include <EventCompiler/EventCompiler.h>
@@ -89,7 +90,7 @@ public:
 	virtual QGLWidget* glMaster() const;
 	virtual bool isPlaying() const { return !!m_playback; }
 	virtual bool isCausal() const { return m_isCausal; }
-	virtual bool isPassing() const { return !!m_passing; }
+	virtual bool isPassing() const { return !!m_capture; }
 	virtual int causalCursorIndex() const { return m_causalCursorIndex; }
 
 	virtual AcausalAnalysisPtr spectraAcAnalysis() const { return m_spectraAcAnalysis; }
@@ -216,23 +217,30 @@ private:
 
 	bool m_cursorDirty;
 
-	// Playback...
-	WorkerThread* m_playbackThread;
+	// Audio hardware i/o
+	WorkerThread* m_audioThread;
 	std::shared_ptr<Audio::Playback> m_playback;
+	std::shared_ptr<Audio::Capture> m_capture;
+
+	// Playback...
 	Lightbox::Time m_fineCursorWas;
 	Lightbox::Time m_nextResample;
 	void* m_resampler;
 	bool m_isCausal;
 
-	// Causal playback
+	// Causal playback...
+	int m_causalCursorIndex;
+
+	// Passthrough...
+	std::shared_ptr<Lightbox::FFTW> m_fftw;
+	std::vector<float> m_currentWave;
+	std::vector<float> m_currentMagSpectrum;
+	std::vector<float> m_currentPhaseSpectrum;
+
+	// Causal & passthrough...
 	int m_lastIndex;
 	unsigned m_sequenceIndex;
 	CausalAnalysisPtrs m_causalQueue;
-	int m_causalCursorIndex;
-
-	// Pass-through...
-	WorkerThread* m_passingThread;
-	std::shared_ptr<Audio::Capture> m_passing;
 
 	// Extensions...
 	void load(RealLibraryPtr const& _dl);

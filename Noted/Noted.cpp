@@ -154,7 +154,7 @@ Noted::Noted(QWidget* _p):
 	m_timelines.insert(ui->spectra);
 
 	m_workerThread = createWorkerThread([=](){return work();});
-	m_playbackThread = createWorkerThread([=](){return serviceAudio();});
+	m_audioThread = createWorkerThread([=](){return serviceAudio();});
 
 	{
 		QLabel* l = new QLabel("No audio");
@@ -193,9 +193,9 @@ Noted::~Noted()
 {
 	qDebug() << "Disabling playback...";
 	ui->actPlay->setChecked(false);
-	for (m_playbackThread->quit(); !m_playbackThread->wait(1000); m_playbackThread->terminate()) {}
-	delete m_playbackThread;
-	m_playbackThread = nullptr;
+	for (m_audioThread->quit(); !m_audioThread->wait(1000); m_audioThread->terminate()) {}
+	delete m_audioThread;
+	m_audioThread = nullptr;
 	qDebug() << "Disabled permenantly.";
 
 	g_debugPost = simpleDebugOut;
@@ -1019,8 +1019,8 @@ void Noted::on_actPlay_changed()
 		ui->dockPlay->setEnabled(false);
 		ui->actPlayCausal->setEnabled(false);
 		ui->actOpen->setEnabled(false);
-		if (!m_playbackThread->isRunning())
-			m_playbackThread->start(QThread::TimeCriticalPriority);
+		if (!m_audioThread->isRunning())
+			m_audioThread->start(QThread::TimeCriticalPriority);
 	}
 	else
 	{
@@ -1040,8 +1040,8 @@ void Noted::on_actPlayCausal_changed()
 		ui->dockPlay->setEnabled(false);
 		ui->actPlay->setEnabled(false);
 		ui->actOpen->setEnabled(false);
-		if (!m_playbackThread->isRunning())
-			m_playbackThread->start(QThread::TimeCriticalPriority);
+		if (!m_audioThread->isRunning())
+			m_audioThread->start(QThread::TimeCriticalPriority);
 		m_lastIndex = cursorIndex();
 	}
 	else
@@ -1160,10 +1160,67 @@ bool Noted::serviceAudio()
 			setCursor(m_fineCursor + toBase(f, r));	// might be different to m_fineCursorWas...
 		}
 	}
-	else
+	else if (m_playback)
 	{
 		if (m_playback)
 			m_playback.reset();
+		if (m_resampler)
+		{
+			resample_close(m_resampler);
+			m_resampler = nullptr;
+		}
+		return false;
+	}
+
+	if (ui->actPassthrough->isChecked())
+	{
+		if (!m_capture)
+		{
+			try {
+//				m_capture = shared_ptr<Audio::Capture>(new Audio::Capture(ui->playDevice->itemData(ui->playDevice->currentIndex()).toInt(), 2, rate, ui->playChunkSamples->value(), (ui->playChunks->value() == 2) ? -1 : ui->playChunks->value(), ui->force16Bit->isChecked()));
+				m_capture = shared_ptr<Audio::Capture>(new Audio::Capture(-1, 1, m_rate, hopSamples(), 8));
+			} catch (...) {}
+			m_fftw = shared_ptr<FFTW>(new FFTW(windowSizeSamples()));
+			m_currentWave = vector<float>(windowSizeSamples(), 0);
+			m_currentMagSpectrum = vector<float>(spectrumSize(), 0);
+			m_currentPhaseSpectrum = vector<float>(spectrumSize(), 0);
+		}
+		if (m_capture)
+		{
+			// pull out another chunk, rotate m_currentWave hopSamples
+			memmove(m_currentWave.data(), m_currentWave.data() + hopSamples(), (windowSizeSamples() - hopSamples()) * sizeof(float));
+			m_capture->read(foreign_vector<float>(m_currentWave.data() + windowSizeSamples() - hopSamples(), hopSamples()));
+
+			float* b = m_fftw->in();
+			foreign_vector<float> win(&m_currentWave);
+			assert(win.data());
+			float* d = win.data();
+			float* w = m_windowFunction.data();
+			unsigned off = m_zeroPhase ? m_windowFunction.size() / 2 : 0;
+			for (unsigned j = 0; j < m_windowFunction.size(); ++d, ++j, ++w)
+				b[(j + off) % m_windowFunction.size()] = *d * *w;
+			m_fftw->process();
+
+			m_currentMagSpectrum = m_fftw->mag();
+			m_currentPhaseSpectrum = m_fftw->phase();
+			/*
+			float const* phase = fftw.phase().data();
+			float intpart;
+			for (int i = 0; i < ss; ++i)
+			{
+				sd[i + ss] = phase[i] / TwoPi;
+				sd[i + ss2] = modf((phase[i] - lp[i]) / TwoPi + 1.f, &intpart);
+			}
+			*/
+
+			// update
+			updateCausal(m_lastIndex++, 1);
+		}
+	}
+	else if (m_capture)
+	{
+		if (m_capture)
+			m_capture.reset();
 		if (m_resampler)
 		{
 			resample_close(m_resampler);
@@ -1178,7 +1235,6 @@ bool Noted::serviceAudio()
 		if (!((int)cursorIndex() < m_lastIndex || (int)cursorIndex() - m_lastIndex > 100))	// probably skipped.
 			updateCausal(m_lastIndex + 1, cursorIndex() - m_lastIndex);
 		m_lastIndex = cursorIndex();
-//		updateCurrent();
 	}
 
 	return true;
@@ -1563,13 +1619,13 @@ foreign_vector<float> Noted::cursorMagSpectrum() const
 	if (m_causalCursorIndex > -1)
 		return magSpectrum(m_causalCursorIndex, 1);
 	else
-		return foreign_vector<float>();
+		return foreign_vector<float>((vector<float>*)&m_currentMagSpectrum);
 }
 
 foreign_vector<float> Noted::cursorPhaseSpectrum() const
 {
 	if (m_causalCursorIndex > -1)
-		return phaseSpectrum(m_causalCursorIndex, 1);
+		return phaseSpectrum(m_causalCursorIndex, 1);			// FIXME: will return phase normalized to [0, 1] rather than [0, pi].
 	else
-		return foreign_vector<float>();
+		return foreign_vector<float>((vector<float>*)&m_currentPhaseSpectrum);
 }
