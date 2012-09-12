@@ -64,7 +64,7 @@ public:
 	virtual bool carryOn(int _progress) = 0;
 	virtual int activeWidth() const = 0;
 	virtual QGLWidget* glMaster() const = 0;
-	virtual int causalCursorIndex() const = 0;	///< -1 when isCausal()
+	virtual int causalCursorIndex() const = 0;	///< -1 when !isCausal()
 
 	inline Lightbox::Time earliestVisible() const { return m_timelineOffset; }
 	inline Lightbox::Time pixelDuration() const { return m_pixelDuration; }
@@ -115,6 +115,7 @@ public:
 	virtual bool isPlaying() const = 0;
 	virtual bool isCausal() const = 0;
 	virtual bool isPassing() const = 0;
+	inline bool isImmediate() const { return isCausal() || isPassing(); }
 
 	virtual void addTimeline(Timeline* _p) = 0;
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;

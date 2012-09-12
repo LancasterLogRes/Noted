@@ -114,6 +114,7 @@ public:
 
 	void updateGraphs(std::vector<std::shared_ptr<Lightbox::AuxGraphsSpec> > const& _specs);
 
+	Lightbox::foreign_vector<float> cursorWaveWindow() const;
 	Lightbox::foreign_vector<float> cursorMagSpectrum() const;
 	Lightbox::foreign_vector<float> cursorPhaseSpectrum() const;
 
@@ -123,7 +124,6 @@ public slots:
 
 	virtual void info(QString const& _info, QString const& _color = "gray");
 	void info(QString const& _info, int _id);
-
 	virtual void updateWindowTitle();
 
 	virtual void addLibrary(QString const& _name, bool _isEnabled = true);
@@ -138,6 +138,7 @@ private slots:
 	void on_actQuit_activated();
 	void on_actPlay_changed();
 	void on_actPlayCausal_changed();
+	void on_actPassthrough_changed();
 	void on_actPanic_activated();
 	void on_actFollow_changed();
 	void on_actZoomIn_activated();

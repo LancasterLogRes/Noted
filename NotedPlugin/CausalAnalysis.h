@@ -26,11 +26,14 @@
 
 #include "AcausalAnalysis.h"
 
-class CausalAnalysis: public AcausalAnalysis
+class CausalAnalysis: public AcausalAnalysis // TODO: kill AcA's public API
 {
 public:
 	CausalAnalysis(QString const& _processName): AcausalAnalysis(_processName) {}
 	virtual ~CausalAnalysis() {}
+
+	// public API (new)
+	void init(NotedFace* _noted, bool _willRecord) { m_noted = _noted; init(_willRecord); }
 
 	// inherited
 	virtual void init() { init(true); }
@@ -39,7 +42,9 @@ public:
 	virtual void analyze(unsigned _from, unsigned _count, Lightbox::Time _hop);
 
 	// new
+protected:
 	virtual void init(bool _willRecord) { (void)_willRecord; }
+public:// TODO: move to protected & introduce non-virtual public API.
 	virtual void fini(bool _didRecord) { (void)_didRecord; }
 	virtual void noteBatch(unsigned, unsigned) {}
 	virtual void process(unsigned, Lightbox::Time) {}

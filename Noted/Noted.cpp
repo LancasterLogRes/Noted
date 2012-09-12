@@ -129,6 +129,7 @@ Noted::Noted(QWidget* _p):
 	m_fineCursorWas				(UndefinedTime),
 	m_nextResample				(UndefinedTime),
 	m_resampler					(nullptr),
+	m_isCausal					(false),
 	m_workFinished				(false),
 	m_resampleWaveAcAnalysis	(new ResampleWaveAc),
 	m_spectraAcAnalysis			(new SpectraAc),
@@ -240,6 +241,12 @@ void Noted::updateAudioDevices()
 	foreach (auto d, Audio::Playback::devices())
 		ui->playDevice->addItem(QString::fromStdString(d.second), d.first);
 	ui->playDevice->setCurrentIndex(ui->playDevice->findText(pd));
+
+	QString cd = ui->captureDevice->currentText();
+	ui->captureDevice->clear();
+	foreach (auto d, Audio::Capture::devices())
+		ui->captureDevice->addItem(QString::fromStdString(d.second), d.first);
+	ui->captureDevice->setCurrentIndex(ui->captureDevice->findText(cd));
 }
 
 QString defaultNick(QString const& _filename)
@@ -729,6 +736,8 @@ void Noted::readSettings()
 		DO(playRate, setCurrentIndex, toInt);
 		DO(playDevice, setCurrentIndex, toInt);
 		DO(force16Bit, setChecked, toBool);
+		DO(captureDevice, setCurrentIndex, toInt);
+		DO(captureChunks, setValue, toInt);
 	}
 #undef DO
 	if (settings.contains("eventsViews"))
@@ -826,6 +835,8 @@ void Noted::writeSettings()
 	DO(playChunks, value);
 	DO(playRate, currentIndex);
 	DO(playDevice, currentIndex);
+	DO(captureChunks, value);
+	DO(captureDevice, currentIndex);
 #undef DO
 
 	settings.setValue("fileName", m_sourceFileName);
@@ -1016,6 +1027,7 @@ void Noted::on_actPlay_changed()
 	if (ui->actPlay->isChecked())
 	{
 		m_isCausal = false;
+		m_causalCursorIndex = -1;
 		ui->dockPlay->setEnabled(false);
 		ui->actPlayCausal->setEnabled(false);
 		ui->actOpen->setEnabled(false);
@@ -1037,6 +1049,7 @@ void Noted::on_actPlayCausal_changed()
 		suspendWork();
 		initializeCausal(nullptr);
 		m_isCausal = true;
+		m_causalCursorIndex = 0;
 		ui->dockPlay->setEnabled(false);
 		ui->actPlay->setEnabled(false);
 		ui->actOpen->setEnabled(false);
@@ -1051,6 +1064,33 @@ void Noted::on_actPlayCausal_changed()
 		m_causalCursorIndex = -1;
 		ui->dockPlay->setEnabled(true);
 		ui->actPlay->setEnabled(true);
+		ui->actOpen->setEnabled(true);
+		resumeWork();
+	}
+}
+
+void Noted::on_actPassthrough_changed()
+{
+	if (ui->actPassthrough->isChecked())
+	{
+		suspendWork();
+		initializeCausal(nullptr);
+		m_isCausal = false;
+		m_causalCursorIndex = -1;
+		ui->dockPlay->setEnabled(false);
+		ui->actPlay->setEnabled(false);
+		ui->actPlayCausal->setEnabled(false);
+		ui->actOpen->setEnabled(false);
+		if (!m_audioThread->isRunning())
+			m_audioThread->start(QThread::TimeCriticalPriority);
+		m_lastIndex = cursorIndex();
+	}
+	else
+	{
+		finalizeCausal();
+		ui->dockPlay->setEnabled(true);
+		ui->actPlay->setEnabled(true);
+		ui->actPlayCausal->setEnabled(true);
 		ui->actOpen->setEnabled(true);
 		resumeWork();
 	}
@@ -1177,8 +1217,7 @@ bool Noted::serviceAudio()
 		if (!m_capture)
 		{
 			try {
-//				m_capture = shared_ptr<Audio::Capture>(new Audio::Capture(ui->playDevice->itemData(ui->playDevice->currentIndex()).toInt(), 2, rate, ui->playChunkSamples->value(), (ui->playChunks->value() == 2) ? -1 : ui->playChunks->value(), ui->force16Bit->isChecked()));
-				m_capture = shared_ptr<Audio::Capture>(new Audio::Capture(-1, 1, m_rate, hopSamples(), 8));
+				m_capture = shared_ptr<Audio::Capture>(new Audio::Capture(ui->captureDevice->itemData(ui->captureDevice->currentIndex()).toInt(), 1, m_rate, hopSamples(), (ui->captureChunks->value() == 2) ? -1 : ui->captureChunks->value()));
 			} catch (...) {}
 			m_fftw = shared_ptr<FFTW>(new FFTW(windowSizeSamples()));
 			m_currentWave = vector<float>(windowSizeSamples(), 0);
@@ -1584,7 +1623,7 @@ void Noted::initializeCausal(CausalAnalysisPtr const& _lastComplete)
 		todo.pop_front();
 		if (ca != _lastComplete)
 		{
-			ca->init(false);
+			ca->init(this, false);
 
 			m_causalQueue.push_back(ca);
 		}
@@ -1608,24 +1647,39 @@ void Noted::updateCausal(int _from, int _count)
 		ca->noteBatch(m_sequenceIndex, _count);
 	for (int i = 0; i < _count; ++i, ++m_sequenceIndex)
 	{
-		m_causalCursorIndex = clamp(_from + i, 0, (int)hops());
+		if (m_isCausal)
+			m_causalCursorIndex = clamp(_from + i, 0, (int)hops());
 		for (auto ca: m_causalQueue)
 			ca->process(m_sequenceIndex, h * m_sequenceIndex);
 	}
 }
 
+foreign_vector<float> Noted::cursorWaveWindow() const
+{
+	if (isCausal())
+		return waveWindow(m_causalCursorIndex);
+	else if (isPassing())
+		return foreign_vector<float>((vector<float>*)&m_currentWave);
+	else
+		return waveWindow(cursorIndex()); // NOTE: only approximate - no good for Analysers.
+}
+
 foreign_vector<float> Noted::cursorMagSpectrum() const
 {
-	if (m_causalCursorIndex > -1)
+	if (isCausal())
 		return magSpectrum(m_causalCursorIndex, 1);
-	else
+	else if (isPassing())
 		return foreign_vector<float>((vector<float>*)&m_currentMagSpectrum);
+	else
+		return magSpectrum(cursorIndex(), 1); // NOTE: only approximate - no good for Analysers.
 }
 
 foreign_vector<float> Noted::cursorPhaseSpectrum() const
 {
-	if (m_causalCursorIndex > -1)
+	if (isCausal())
 		return phaseSpectrum(m_causalCursorIndex, 1);			// FIXME: will return phase normalized to [0, 1] rather than [0, pi].
-	else
+	else if (isPassing())
 		return foreign_vector<float>((vector<float>*)&m_currentPhaseSpectrum);
+	else
+		return phaseSpectrum(cursorIndex(), 1); // NOTE: only approximate - no good for Analysers.
 }

@@ -84,7 +84,7 @@ private:
 				// Just past a peak
 				m_maxBeatLikelihood = max(m_maxBeatLikelihood, m_lastBL);
 				if (m_lastBL > m_decayedBL && m_lastBL / m_maxBeatLikelihood > 0.0625)
-					ret.push_back(StreamEvent(Spike, m_lastBL / m_maxBeatLikelihood, 0.1, 0, nullptr, -1, Dull, 0.f));
+					ret.push_back(StreamEvent(Spike, m_lastBL / m_maxBeatLikelihood, 0.1, 0, nullptr, -1, Dull, 1.f));
 				m_decayedBL = max(m_decayedBL, m_lastBL * 5);
 				m_lastLastBL = m_lastBL;
 				m_lastBL = beatLikelihood;

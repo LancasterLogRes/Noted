@@ -65,10 +65,12 @@ public:
 	void clearEvents();
 	void setInitEvents(Lightbox::StreamEvents const& _se);
 	void appendEvents(Lightbox::StreamEvents const& _se);
+	void finalizeEvents();
 	virtual Lightbox::StreamEvents events(int _i) const;
 	virtual Lightbox::StreamEvents initEvents() const { return m_initEvents; }
 	virtual Lightbox::StreamEvents cursorEvents() const { return m_current; }
-	std::vector<float> graphEvents(float _temperature) const;
+	std::vector<float> const& graphEvents(float _temperature) const { auto it = m_graphEvents.find(_temperature); if (it != m_graphEvents.end()) return it->second; else return Lightbox::NullVectorFloat; }
+	std::shared_ptr<Lightbox::StreamEvent::Aux> auxEvent(float _temperature, int _pos) const;
 
 	void updateEventTypes();
 
@@ -79,6 +81,7 @@ public slots:
 
 private:
 	virtual void doRender(QGLFramebufferObject* _fbo, int _dx, int _dw);
+	void filterEvents();
 
 	Lightbox::EventCompiler m_eventCompiler;
 
@@ -93,6 +96,8 @@ private:
 	mutable QMutex x_events;
 
 	Lightbox::StreamEvents m_current;
+	std::map<float, std::vector<float> > m_graphEvents;
+	std::map<float, std::map<int, std::shared_ptr<Lightbox::StreamEvent::Aux> > > m_auxEvents;
 
 	QString m_savedName;
 	std::string m_savedProperties;

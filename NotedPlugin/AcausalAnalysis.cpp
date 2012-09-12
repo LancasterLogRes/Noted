@@ -23,8 +23,7 @@
 
 void AcausalAnalysis::go(NotedFace* _noted, unsigned _from, unsigned _count)
 {
-	m_noted = _noted;
-	init();
+	init(_noted);
 	m_steps = prepare(_from, _count, m_noted->hop());
 	analyze(_from, _count, m_noted->hop());
 	fini();

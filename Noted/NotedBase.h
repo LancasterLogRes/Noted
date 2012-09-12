@@ -44,8 +44,6 @@ class NotedBase;
 struct SNDFILE_tag;
 typedef struct SNDFILE_tag SNDFILE;
 
-static const std::vector<float> NullVectorFloat;
-
 class NotedBase: public NotedFace
 {
 	Q_OBJECT

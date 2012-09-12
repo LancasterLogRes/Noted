@@ -306,6 +306,8 @@ public:
 	template <class T> NullOutputStream& operator<<(T const&) { return *this; }
 };
 
+static const std::vector<float> NullVectorFloat;
+
 extern bool g_debugEnabled[256];
 extern std::function<void(std::string const&, unsigned char)> g_debugPost;
 

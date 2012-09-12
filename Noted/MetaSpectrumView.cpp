@@ -27,7 +27,7 @@
 #include <QGLFramebufferObject>
 #include <Common/Common.h>
 #include <NotedPlugin/NotedFace.h>
-
+#include "Noted.h"
 #include "MetaSpectrumView.h"
 
 using namespace std;
@@ -43,7 +43,7 @@ void MetaSpectrumView::doRender(QGLFramebufferObject* _fbo)
 		unsigned arity = fftw.arity();
 		unsigned aoff = 0;//arity / 2;
 		{
-			auto imag = c()->magSpectrum(m_i, 1);
+			auto imag = dynamic_cast<Noted*>(c())->cursorMagSpectrum();
 			if (imag.size())
 				for (unsigned i = 0; i < arity; ++i)
 					fftw.in()[i] = imag[(i + aoff) % arity];// * wF[(i + aoff) % arity];

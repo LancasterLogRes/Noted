@@ -25,7 +25,7 @@
 #include <QPainter>
 #include <QGLFramebufferObject>
 #include <NotedPlugin/NotedFace.h>
-
+#include "Noted.h"
 #include "WaveWindowView.h"
 
 using namespace std;
@@ -33,7 +33,7 @@ using namespace Lightbox;
 
 void WaveWindowView::doRender(QGLFramebufferObject* _fbo)
 {
-	foreign_vector<float> d = c()->waveWindow(c()->cursorIndex());
+	foreign_vector<float> d = dynamic_cast<Noted*>(c())->cursorWaveWindow();
 	float* data = d.data();
 
 	int mean = 0;

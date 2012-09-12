@@ -27,7 +27,7 @@
 #include <QGLFramebufferObject>
 #include <Common/Common.h>
 #include <NotedPlugin/NotedFace.h>
-
+#include "Noted.h"
 #include "SpectrumView.h"
 
 using namespace std;
@@ -35,8 +35,8 @@ using namespace Lightbox;
 
 void SpectrumView::doRender(QGLFramebufferObject* _fbo)
 {
-	auto mag = c()->magSpectrum(m_i, 1);
-	auto phase = c()->phaseSpectrum(m_i, 1);
+	auto mag = dynamic_cast<Noted*>(c())->cursorMagSpectrum();
+	auto phase = dynamic_cast<Noted*>(c())->cursorPhaseSpectrum();
 	unsigned s = c()->spectrumSize();
 
 	if (mag && phase)

@@ -34,6 +34,7 @@ public:
 	virtual ~AcausalAnalysis() {}
 
 	QString const& name() const { return m_name; }
+	void init(NotedFace* _noted) { m_noted = _noted; init(); }
 	void go(NotedFace* _noted, unsigned _from, unsigned _count);
 
 protected:
@@ -45,9 +46,11 @@ protected:
 	bool done(unsigned _i);
 	NotedFace* noted() const { return m_noted; }
 
+protected:
+	NotedFace* m_noted;
+
 private:
 	QString m_name;
-	NotedFace* m_noted;
 	unsigned m_steps;
 };
 

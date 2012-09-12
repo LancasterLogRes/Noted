@@ -35,6 +35,7 @@ public:
 	virtual void init(bool _willRecord);
 	virtual void process(unsigned _i, Lightbox::Time);
 	virtual void record();
+	virtual void fini(bool _didRecord);
 
 private:
 	EventsView* m_ev;

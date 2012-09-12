@@ -74,7 +74,7 @@ void Prerendered::quit()
 	m_display.wait(1000);
 	while (m_display.isRunning())
 	{
-		terminate();
+		m_display.terminate();
 		m_display.wait(1000);
 	}
 	makeCurrent();

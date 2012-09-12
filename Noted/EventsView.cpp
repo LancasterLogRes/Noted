@@ -105,17 +105,53 @@ void EventsView::clearEvents()
 	m_initEvents.clear();
 	m_events.clear();
 	m_current.clear();
+	m_graphEvents.clear();
+	m_auxEvents.clear();
 }
 
-vector<float> EventsView::graphEvents(float _temperature) const
+void EventsView::filterEvents()
 {
 	QMutexLocker l(&x_events);
-	vector<float> ret;
-	foreach (auto es, m_events)
-		foreach (auto e, es)
-			if (e.type >= Graph && e.temperature == _temperature)
-				ret.push_back(e.strength);
-	return ret;
+	int i = 0;
+	QList<StreamEvents> filtered;
+	filtered.reserve(m_events.size());
+	for (StreamEvents const& es: m_events)
+	{
+		filtered.push_back(StreamEvents());
+		for (StreamEvent const& e: es)
+			if (e.type >= Graph)
+			{
+				auto it = m_graphEvents.insert(make_pair(e.temperature, vector<float>()));
+				if (it.second)
+					it.first->second = vector<float>(m_events.size());
+				it.first->second[i] = e.strength;
+			}
+			else if (e.type > Comment && e.type < SyncPoint)
+			{
+				auto it = m_auxEvents.insert(make_pair(e.temperature, map<int, shared_ptr<StreamEvent::Aux> >()));
+				it.first->second[i] = e.aux();
+			}
+			else
+				filtered.back().push_back(e);
+		++i;
+	}
+	m_events = filtered;
+}
+
+shared_ptr<StreamEvent::Aux> EventsView::auxEvent(float _temperature, int _pos) const
+{
+	auto it = m_auxEvents.find(_temperature);
+	if (it == m_auxEvents.end())
+		return shared_ptr<StreamEvent::Aux>();
+	auto rit = it->second.upper_bound(_pos);
+	if (rit != it->second.begin())
+		rit = prev(rit);
+	return rit->second;
+}
+
+void EventsView::finalizeEvents()
+{
+	filterEvents();
 }
 
 Lightbox::StreamEvents EventsView::events(int _i) const

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>681</width>
-    <height>475</height>
+    <width>852</width>
+    <height>489</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -76,7 +76,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>681</width>
+     <width>852</width>
      <height>22</height>
     </rect>
    </property>
@@ -152,6 +152,7 @@
    <addaction name="separator"/>
    <addaction name="actPlay"/>
    <addaction name="actPlayCausal"/>
+   <addaction name="actPassthrough"/>
    <addaction name="separator"/>
    <addaction name="actFollow"/>
   </widget>
@@ -163,12 +164,6 @@
     </sizepolicy>
    </property>
    <property name="minimumSize">
-    <size>
-     <width>320</width>
-     <height>79</height>
-    </size>
-   </property>
-   <property name="maximumSize">
     <size>
      <width>320</width>
      <height>79</height>
@@ -186,12 +181,6 @@
    <widget class="QWidget" name="dockStft">
     <property name="enabled">
      <bool>true</bool>
-    </property>
-    <property name="maximumSize">
-     <size>
-      <width>300</width>
-      <height>16777215</height>
-     </size>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_3">
      <property name="spacing">
@@ -613,13 +602,7 @@
    <property name="minimumSize">
     <size>
      <width>199</width>
-     <height>79</height>
-    </size>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>524287</width>
-     <height>79</height>
+     <height>94</height>
     </size>
    </property>
    <property name="features">
@@ -668,34 +651,6 @@
        </property>
        <property name="value">
         <number>512</number>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QSpinBox" name="playChunks">
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>23</height>
-        </size>
-       </property>
-       <property name="specialValueText">
-        <string>Default</string>
-       </property>
-       <property name="suffix">
-        <string/>
-       </property>
-       <property name="prefix">
-        <string>x</string>
-       </property>
-       <property name="minimum">
-        <number>2</number>
-       </property>
-       <property name="maximum">
-        <number>32</number>
-       </property>
-       <property name="value">
-        <number>2</number>
        </property>
       </widget>
      </item>
@@ -842,6 +797,34 @@
         </size>
        </property>
       </spacer>
+     </item>
+     <item row="3" column="1">
+      <widget class="QSpinBox" name="playChunks">
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>23</height>
+        </size>
+       </property>
+       <property name="specialValueText">
+        <string>Default</string>
+       </property>
+       <property name="suffix">
+        <string/>
+       </property>
+       <property name="prefix">
+        <string>x</string>
+       </property>
+       <property name="minimum">
+        <number>2</number>
+       </property>
+       <property name="maximum">
+        <number>32</number>
+       </property>
+       <property name="value">
+        <number>2</number>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -1259,6 +1242,62 @@ p, li { white-space: pre-wrap; }
        <column/>
        <column/>
       </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_2">
+   <property name="features">
+    <set>QDockWidget::DockWidgetFeatureMask</set>
+   </property>
+   <property name="windowTitle">
+    <string>Capture</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>4</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_5">
+    <layout class="QVBoxLayout" name="verticalLayout_4">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <property name="margin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QComboBox" name="captureDevice"/>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="captureChunks">
+       <property name="specialValueText">
+        <string>Default</string>
+       </property>
+       <property name="prefix">
+        <string>x</string>
+       </property>
+       <property name="minimum">
+        <number>2</number>
+       </property>
+       <property name="maximum">
+        <number>32</number>
+       </property>
+       <property name="value">
+        <number>2</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="verticalSpacer_5">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>43</height>
+        </size>
+       </property>
+      </spacer>
      </item>
     </layout>
    </widget>
