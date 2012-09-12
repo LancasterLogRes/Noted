@@ -1445,11 +1445,10 @@ void Noted::timerEvent(QTimerEvent*)
 			QMutexLocker l(&x_infos);
 			if (m_infos.size())
 			{
-				bool lock = !ui->infoView->verticalScrollBar() || ui->infoView->verticalScrollBar()->value() == ui->infoView->verticalScrollBar()->maximum();
 				m_info += m_infos;
 				ui->infoView->setHtml(m_info);
 				m_infos.clear();
-				if (lock && ui->infoView->verticalScrollBar())
+				if (ui->lockLog->isChecked())
 					ui->infoView->verticalScrollBar()->setValue(ui->infoView->verticalScrollBar()->maximum());
 			}
 		}

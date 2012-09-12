@@ -881,6 +881,9 @@ p, li { white-space: pre-wrap; }
      </item>
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="spacing">
+        <number>2</number>
+       </property>
        <item>
         <spacer name="verticalSpacer_3">
          <property name="orientation">
@@ -893,6 +896,25 @@ p, li { white-space: pre-wrap; }
           </size>
          </property>
         </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="lockLog">
+         <property name="maximumSize">
+          <size>
+           <width>23</width>
+           <height>23</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>L</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QToolButton" name="clearInfo">
@@ -1310,7 +1332,7 @@ p, li { white-space: pre-wrap; }
     <string>&amp;Play Acausal</string>
    </property>
    <property name="shortcut">
-    <string>F6</string>
+    <string>F4</string>
    </property>
   </action>
   <action name="actOpen">
@@ -1443,6 +1465,9 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="text">
     <string>Pass&amp;through</string>
+   </property>
+   <property name="shortcut">
+    <string>F6</string>
    </property>
   </action>
  </widget>
