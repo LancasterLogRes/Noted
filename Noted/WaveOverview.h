@@ -31,6 +31,7 @@ class WaveOverview: public CurrentView
 
 public:
 	WaveOverview(QWidget* _parent = 0);
+	~WaveOverview() { quit(); }
 
 	virtual bool needsRepaint() const;
 	int positionOf(Lightbox::Time _t);

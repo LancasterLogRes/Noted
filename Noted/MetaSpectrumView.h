@@ -28,7 +28,7 @@ class MetaSpectrumView: public CurrentView
 
 public:
 	explicit MetaSpectrumView(QWidget* _parent = 0): CurrentView(_parent) {}
-	~MetaSpectrumView() {}
+	~MetaSpectrumView() { quit(); }
 
 private:
 	virtual void doRender(QGLFramebufferObject* _fbo);

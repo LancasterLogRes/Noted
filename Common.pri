@@ -38,6 +38,11 @@ force_static {
 	system (echo "Static build")
 }
 
+profile {
+    QMAKE_CXXFLAGS += -pg
+    QMAKE_LFLAGS += -pg
+}
+
 QMAKE_CXXFLAGS += -ffast-math -pipe -fexceptions
 mac: QMAKE_CXXFLAGS +=  -std=c++11
 !mac: QMAKE_CXXFLAGS +=  -std=c++0x

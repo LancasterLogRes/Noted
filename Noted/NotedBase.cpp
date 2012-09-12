@@ -105,13 +105,16 @@ bool NotedBase::waveBlock(Time _from, Time _duration, Lightbox::foreign_vector<f
 				data = page->data<float>();
 			}
 
-			o_toFill[i] = data[pageOffset];
-			bool lastPositive = i ? o_toFill[i - 1] > 0 : true;
+			if (data)
+			{
+				o_toFill[i] = data[pageOffset];
+				bool lastPositive = i ? o_toFill[i - 1] > 0 : true;
 
-			if (pageOffset > lPageOffset + 1 && lPageOffset != -1)
-				for (int j = lPageOffset + 1; j < pageOffset; ++j)
-					o_toFill[i] = (fabs(data[j]) + (lastPositive == data[j] < 0 ? .15f : 0.f) > fabs(o_toFill[i])) ? data[j] : o_toFill[i];
-			lPageOffset = pageOffset;
+				if (pageOffset > lPageOffset + 1 && lPageOffset != -1)
+					for (int j = lPageOffset + 1; j < pageOffset; ++j)
+						o_toFill[i] = (fabs(data[j]) + (lastPositive == data[j] < 0 ? .15f : 0.f) > fabs(o_toFill[i])) ? data[j] : o_toFill[i];
+				lPageOffset = pageOffset;
+			}
 		}
 	}
 	return il.level > 0;

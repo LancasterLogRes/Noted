@@ -28,7 +28,7 @@ class WaveWindowView: public CurrentView
 
 public:
 	explicit WaveWindowView(QWidget* _parent = 0): CurrentView(_parent) {}
-	~WaveWindowView() {}
+	~WaveWindowView() { quit(); }
 
 private:
 	virtual void doRender(QGLFramebufferObject* _fbo);

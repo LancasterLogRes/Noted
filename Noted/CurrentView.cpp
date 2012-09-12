@@ -27,7 +27,7 @@ CurrentView::CurrentView(QWidget* _parent): Prerendered(_parent), m_i(-1)
 
 bool CurrentView::needsRepaint() const
 {
-	if (Prerendered::needsRepaint() && (m_i != (int)c()->cursorIndex() || c()->isPassing()))
+	if (Prerendered::needsRepaint() && (m_i != (int)c()->cursorIndex() || c()->isImmediate()))
 	{
 		m_i = c()->cursorIndex();
 		return true;

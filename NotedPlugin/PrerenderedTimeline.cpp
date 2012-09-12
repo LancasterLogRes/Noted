@@ -90,10 +90,8 @@ bool PrerenderedTimeline::needsRepaint() const
 {
 	int cursorL = c()->positionOf(highlightFrom()) + 1;
 	int cursorR = cursorL + c()->widthOf(highlightDuration());
-	if (Prerendered::needsRepaint() || m_needsUpdate || m_lastOffset != c()->earliestVisible() || m_lastPixelDuration != c()->pixelDuration() || (m_lastCursorR != cursorR && !((cursorL > size().width() && m_lastCursorL > size().width()) || cursorR < 0 && m_lastCursorR < 0)))
-	{
+	if (Prerendered::needsRepaint() && (m_needsUpdate || /*m_lastOffset != c()->earliestVisible() || m_lastPixelDuration != c()->pixelDuration() || */(m_lastCursorR != cursorR && !((cursorL > size().width() && m_lastCursorL > size().width()) || cursorR < 0 && m_lastCursorR < 0))))
 		return true;
-	}
 	return false;
 }
 
@@ -109,6 +107,7 @@ void PrerenderedTimeline::sourceChanged()
 
 void PrerenderedTimeline::paintGL()
 {
+//	cbug(42) << __PRETTY_FUNCTION__;
 	glClear(GL_COLOR_BUFFER_BIT);
 	QRect r(0, 0, 0, height());
 	{

@@ -44,6 +44,7 @@ SpectraView::SpectraView(QWidget* _parent):
 
 SpectraView::~SpectraView()
 {
+	quit();
 }
 
 Lightbox::Time SpectraView::period() const

@@ -28,7 +28,7 @@ class DeltaSpectrumView: public CurrentView
 
 public:
 	explicit DeltaSpectrumView(QWidget* _parent = 0): CurrentView(_parent) {}
-	~DeltaSpectrumView() {}
+	~DeltaSpectrumView() { quit(); }
 
 private:
 	virtual void doRender(QGLFramebufferObject* _fbo);

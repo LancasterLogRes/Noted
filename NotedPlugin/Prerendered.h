@@ -104,11 +104,11 @@ protected:
 	virtual void resizeEvent(QResizeEvent* _e);
 
 protected:
+	void quit();
+
 	QGLFramebufferObject* m_fbo;
 
 private:
-	void quit();
-
 	DisplayThread m_display;
 	bool m_quitting;
 

@@ -88,6 +88,7 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 
 EventsView::~EventsView()
 {
+	quit();
 	QWidget* w = parentWidget();
 	setParent(0);
 	delete w;

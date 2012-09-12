@@ -90,7 +90,7 @@ public:
 	virtual QGLWidget* glMaster() const;
 	virtual bool isPlaying() const { return !!m_playback; }
 	virtual bool isCausal() const { return m_isCausal; }
-	virtual bool isPassing() const { return !!m_capture; }
+	virtual bool isPassing() const { return m_isPassing; }
 	virtual int causalCursorIndex() const { return m_causalCursorIndex; }
 
 	virtual AcausalAnalysisPtr spectraAcAnalysis() const { return m_spectraAcAnalysis; }
@@ -228,6 +228,7 @@ private:
 	Lightbox::Time m_nextResample;
 	void* m_resampler;
 	bool m_isCausal;
+	bool m_isPassing;
 
 	// Causal playback...
 	int m_causalCursorIndex;

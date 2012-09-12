@@ -61,6 +61,7 @@ void NotedGLWidget::paintEvent(QPaintEvent*)
 		doneCurrent();
 		start();
 	}
+	m_newSize = size();
 }
 
 void NotedGLWidget::quit()
@@ -103,7 +104,7 @@ void NotedGLWidget::run()
 			m_newSize = QSize();
 			resized = true;
 		}
-		if (resized || m_v->needsRepaint())
+		if (!size().isEmpty() && isVisible() && (resized || m_v->needsRepaint()))
 		{
 			m_v->paintGL();
 			swapBuffers();

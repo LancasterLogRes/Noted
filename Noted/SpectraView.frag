@@ -45,6 +45,6 @@ void main(void)
 {
 	float dphase = texture1D(texture, texCoord0 + 0.6666666).r;
 	float mag = texture1D(texture, texCoord0).r;
-	gl_FragColor = hsvToRgb(vec3(max(0.0, min(1.0, dphase)), 1.0+log(mag+0.0001)/4.0, 1.0));
+        gl_FragColor = hsvToRgb(vec3(max(0.0, min(1.0, dphase)), 1.0+log(mag+0.0001)/4.0, 1-.5 * log(mag+0.0001)/4.0));
 }
 //:fromHsvF(qMax(0.f, qMin(1.f, unitChange)), qMax(0.f, qMin(1.f, 1.f + log(mm + 0.0001f) / 4.f)), 1.f).

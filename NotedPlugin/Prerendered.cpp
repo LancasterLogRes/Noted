@@ -48,6 +48,8 @@ Prerendered::Prerendered(QWidget* _p): QGLWidget(_p), m_fbo(nullptr), m_display(
 
 Prerendered::~Prerendered()
 {
+	if (m_display.isRunning())
+		cwarn << "BAD!!! Prerendered's destructor was called without a called to quit() first! Call quit() in the destructor of the final class.";
 	quit();
 	delete m_fbo;
 }
@@ -158,6 +160,7 @@ void Prerendered::resizeGL(int _w, int _h)
 
 void Prerendered::paintGL()
 {
+//	cbug(42) << __PRETTY_FUNCTION__;
 	if ((true || !m_fbo || m_fbo->size() != size()) && c()->samples())
 	{
 		if (!m_fbo || m_fbo->size() != size())

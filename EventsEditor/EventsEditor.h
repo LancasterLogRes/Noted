@@ -52,6 +52,7 @@ public:
 	virtual Lightbox::StreamEvents events(int _i) const;
 	virtual Lightbox::StreamEvents initEvents() const { return Lightbox::StreamEvents(); }
 	virtual Lightbox::StreamEvents cursorEvents() const;
+	virtual unsigned eventCount() const { return m_events.size(); }
 
 	void save(QSettings& _c) const;
 	void load(QSettings const& _c);

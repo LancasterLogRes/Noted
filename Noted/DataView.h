@@ -35,7 +35,7 @@ class DataView: public CurrentView
 
 public:
 	explicit DataView(QWidget* _parent, QString const& _name);
-	~DataView() {}
+	~DataView() { quit(); }
 
 	QComboBox* selection() { return m_selection; }
     void checkSpec();

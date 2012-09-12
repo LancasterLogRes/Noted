@@ -130,6 +130,7 @@ Noted::Noted(QWidget* _p):
 	m_nextResample				(UndefinedTime),
 	m_resampler					(nullptr),
 	m_isCausal					(false),
+	m_isPassing					(false),
 	m_workFinished				(false),
 	m_resampleWaveAcAnalysis	(new ResampleWaveAc),
 	m_spectraAcAnalysis			(new SpectraAc),
@@ -1029,8 +1030,6 @@ void Noted::on_actPlay_changed()
 {
 	if (ui->actPlay->isChecked())
 	{
-		m_isCausal = false;
-		m_causalCursorIndex = -1;
 		ui->dockPlay->setEnabled(false);
 		ui->actPlayCausal->setEnabled(false);
 		ui->actPassthrough->setEnabled(false);
@@ -1067,7 +1066,6 @@ void Noted::on_actPlayCausal_changed()
 	{
 		finalizeCausal();
 		m_isCausal = false;
-		m_causalCursorIndex = -1;
 		ui->dockPlay->setEnabled(true);
 		ui->actPassthrough->setEnabled(true);
 		ui->actPlay->setEnabled(true);
@@ -1081,9 +1079,9 @@ void Noted::on_actPassthrough_changed()
 	if (ui->actPassthrough->isChecked())
 	{
 		suspendWork();
-		initializeCausal(nullptr);
-		m_isCausal = false;
+		m_isPassing = true;
 		m_causalCursorIndex = -1;
+		initializeCausal(nullptr);
 		ui->dockPlay->setEnabled(false);
 		ui->actPlay->setEnabled(false);
 		ui->actPlayCausal->setEnabled(false);
@@ -1096,6 +1094,7 @@ void Noted::on_actPassthrough_changed()
 	else if (ui->actPassthrough->isEnabled())
 	{
 		finalizeCausal();
+		m_isPassing = false;
 		ui->dockPlay->setEnabled(true);
 		ui->actPlay->setEnabled(true);
 		ui->actPlayCausal->setEnabled(true);
@@ -1147,6 +1146,7 @@ void valfan2(_T* _dest, _T const* _source, unsigned _n)
 
 bool Noted::serviceAudio()
 {
+	bool doneWork = false;
 	if (ui->actPlay->isChecked() || ui->actPlayCausal->isChecked())
 	{
 		if (!m_playback)
@@ -1208,6 +1208,7 @@ bool Noted::serviceAudio()
 			m_playback->write(output);
 			setCursor(m_fineCursor + toBase(f, r));	// might be different to m_fineCursorWas...
 		}
+		doneWork = true;
 	}
 	else if (m_playback)
 	{
@@ -1218,7 +1219,6 @@ bool Noted::serviceAudio()
 			resample_close(m_resampler);
 			m_resampler = nullptr;
 		}
-		return false;
 	}
 
 	if (ui->actPassthrough->isChecked())
@@ -1264,6 +1264,7 @@ bool Noted::serviceAudio()
 			// update
 			updateCausal(m_lastIndex++, 1);
 		}
+		doneWork = true;
 	}
 	else if (m_capture)
 	{
@@ -1274,7 +1275,6 @@ bool Noted::serviceAudio()
 			resample_close(m_resampler);
 			m_resampler = nullptr;
 		}
-		return false;
 	}
 
 	if (ui->actPlayCausal->isChecked() && m_lastIndex != (int)cursorIndex())
@@ -1283,9 +1283,10 @@ bool Noted::serviceAudio()
 		if (!((int)cursorIndex() < m_lastIndex || (int)cursorIndex() - m_lastIndex > 100))	// probably skipped.
 			updateCausal(m_lastIndex + 1, cursorIndex() - m_lastIndex);
 		m_lastIndex = cursorIndex();
+		doneWork = true;
 	}
 
-	return true;
+	return doneWork;
 }
 
 QList<EventsView*> Noted::eventsViews() const
@@ -1640,11 +1641,11 @@ void Noted::initializeCausal(CausalAnalysisPtr const& _lastComplete)
 			m_causalQueue.push_back(ca);
 		}
 		auto ripe = ripeCausalAnalysis(ca);
-		cdebug << m_eventsViewsDone << ca << " leads to " << ripe;
+//		cdebug << m_eventsViewsDone << ca << " leads to " << ripe;
 		catenate(todo, ripe);
 	}
 
-	cdebug << "Causal queue: " << m_causalQueue;
+//	cdebug << "Causal queue: " << m_causalQueue;
 	m_sequenceIndex = 0;
 }
 

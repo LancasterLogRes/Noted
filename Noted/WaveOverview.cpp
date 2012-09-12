@@ -63,6 +63,7 @@ void WaveOverview::initializeGL()
 
 void WaveOverview::paintGL()
 {
+//	cbug(42) << __PRETTY_FUNCTION__;
 	m_timelineChanged = false;
 	CurrentView::paintGL();
 

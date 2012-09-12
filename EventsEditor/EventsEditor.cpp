@@ -154,7 +154,7 @@ void EventsEditor::mouseMoveEvent(QMouseEvent* _e)
 
 StreamEvents EventsEditor::cursorEvents() const
 {
-	return events(m_c->causalCursorIndex());
+	return events(m_c->isCausal() ? m_c->causalCursorIndex() : -1);
 }
 
 StreamEvents EventsEditor::events(int _i) const

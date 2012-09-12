@@ -28,7 +28,7 @@ class SpectrumView: public CurrentView
 
 public:
 	explicit SpectrumView(QWidget* _parent = 0): CurrentView(_parent) {}
-	~SpectrumView() {}
+	~SpectrumView() { quit(); }
 
 private:
 	virtual void doRender(QGLFramebufferObject* _fbo);

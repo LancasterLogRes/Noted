@@ -79,6 +79,7 @@ public:
 
 	virtual void paintGL()
 	{
+//		cbug(42) << __PRETTY_FUNCTION__;
 		glLoadIdentity();
 		{
 			auto w = m_c->waveWindow(m_c->cursorIndex());
