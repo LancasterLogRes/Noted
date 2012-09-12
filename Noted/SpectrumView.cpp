@@ -110,7 +110,7 @@ void SpectrumView::doRender(QGLFramebufferObject* _fbo)
 		p.setBrush(Qt::NoBrush);
 		p.drawLines(pps);
 
-		if (!c()->isPlaying())
+		if (c()->isQuiet())
 			drawPeaks(p, parabolicPeaks(mag.data(), s), ho, [&](float _x){ return 24 + _x * w / s; }, [&](float _y) { return h - h * _y / sc + ho; }, [&](float _x) { return QString::number(round(_x * nyquist / s)) + "Hz"; } );
 	}
 }

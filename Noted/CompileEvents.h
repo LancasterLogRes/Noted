@@ -33,9 +33,6 @@ public:
 		{
 			dynamic_cast<Noted*>(noted())->clearEventsCache();
 		}
-	}
-	virtual void fini(bool)
-	{
 		dynamic_cast<Noted*>(noted())->m_eventsViewsDone = 0;
 	}
 };

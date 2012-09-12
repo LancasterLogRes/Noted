@@ -116,6 +116,7 @@ public:
 	virtual bool isCausal() const = 0;
 	virtual bool isPassing() const = 0;
 	inline bool isImmediate() const { return isCausal() || isPassing(); }
+	inline bool isQuiet() const { return !isPlaying() && !isCausal() && !isPassing(); }
 
 	virtual void addTimeline(Timeline* _p) = 0;
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;

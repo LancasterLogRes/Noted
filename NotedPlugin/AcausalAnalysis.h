@@ -30,7 +30,7 @@ class NotedFace;
 class AcausalAnalysis
 {
 public:
-	AcausalAnalysis(QString const& _processName): m_name(_processName) {}
+	explicit AcausalAnalysis(QString const& _processName): m_name(_processName) {}
 	virtual ~AcausalAnalysis() {}
 
 	QString const& name() const { return m_name; }
@@ -56,3 +56,6 @@ private:
 
 typedef std::shared_ptr<AcausalAnalysis> AcausalAnalysisPtr;
 typedef std::vector<AcausalAnalysisPtr> AcausalAnalysisPtrs;
+
+template <class _S> _S& operator<<(_S& _out, AcausalAnalysis const& _ca) { return _out << "AcA(" << _ca.name() << ")"; }
+

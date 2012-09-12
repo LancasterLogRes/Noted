@@ -123,7 +123,7 @@ void MetaSpectrumView::doRender(QGLFramebufferObject* _fbo)
 		p.setBrush(Qt::NoBrush);
 		p.drawLines(pps);
 
-		if (!c()->isPlaying())
+		if (c()->isQuiet())
 			drawPeaks(p, parabolicPeaks(mag), ho, [&](float _x){ return 24 + _x * w / s; }, [&](float _y){ return h - h * _y / sc + ho; }, [&](float _x){ return QString::number(round(nyquist / (_x + 1))) + "Hz"; });
 	}
 }

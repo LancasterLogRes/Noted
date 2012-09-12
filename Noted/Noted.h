@@ -256,6 +256,7 @@ private:
 	mutable Lightbox::StreamEvents m_initEvents;
 
 	// Analysis (to be working in general)...
+	QMutex x_analysis;
 	std::set<AcausalAnalysisPtr> m_toBeAnalyzed;	// TODO: Needs a lock.
 	bool m_workFinished;
 	AcausalAnalysisPtr m_resampleWaveAcAnalysis;

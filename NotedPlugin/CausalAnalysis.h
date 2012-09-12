@@ -29,7 +29,7 @@
 class CausalAnalysis: public AcausalAnalysis // TODO: kill AcA's public API
 {
 public:
-	CausalAnalysis(QString const& _processName): AcausalAnalysis(_processName) {}
+	explicit CausalAnalysis(QString const& _processName): AcausalAnalysis(_processName) {}
 	virtual ~CausalAnalysis() {}
 
 	// public API (new)
@@ -53,3 +53,5 @@ public:// TODO: move to protected & introduce non-virtual public API.
 
 typedef std::shared_ptr<CausalAnalysis> CausalAnalysisPtr;
 typedef std::vector<CausalAnalysisPtr> CausalAnalysisPtrs;
+
+template <class _S> _S& operator<<(_S& _out, CausalAnalysis const& _ca) { return _out << "CA(" << _ca.name() << ")"; }

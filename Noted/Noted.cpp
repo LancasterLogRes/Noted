@@ -220,6 +220,9 @@ Noted::~Noted()
 		delete *m_timelines.begin();
 	qDebug() << "Killed.";
 
+	for (auto i: findChildren<Prerendered*>())
+		delete i;
+
 	delete ui;
 	delete m_glMaster;
 }
@@ -1030,14 +1033,16 @@ void Noted::on_actPlay_changed()
 		m_causalCursorIndex = -1;
 		ui->dockPlay->setEnabled(false);
 		ui->actPlayCausal->setEnabled(false);
+		ui->actPassthrough->setEnabled(false);
 		ui->actOpen->setEnabled(false);
 		if (!m_audioThread->isRunning())
 			m_audioThread->start(QThread::TimeCriticalPriority);
 	}
-	else
+	else if (ui->actPlay->isEnabled())
 	{
 		ui->dockPlay->setEnabled(true);
 		ui->actPlayCausal->setEnabled(true);
+		ui->actPassthrough->setEnabled(true);
 		ui->actOpen->setEnabled(true);
 	}
 }
@@ -1052,17 +1057,19 @@ void Noted::on_actPlayCausal_changed()
 		m_causalCursorIndex = 0;
 		ui->dockPlay->setEnabled(false);
 		ui->actPlay->setEnabled(false);
+		ui->actPassthrough->setEnabled(false);
 		ui->actOpen->setEnabled(false);
 		if (!m_audioThread->isRunning())
 			m_audioThread->start(QThread::TimeCriticalPriority);
 		m_lastIndex = cursorIndex();
 	}
-	else
+	else if (ui->actPlayCausal->isEnabled())
 	{
 		finalizeCausal();
 		m_isCausal = false;
 		m_causalCursorIndex = -1;
 		ui->dockPlay->setEnabled(true);
+		ui->actPassthrough->setEnabled(true);
 		ui->actPlay->setEnabled(true);
 		ui->actOpen->setEnabled(true);
 		resumeWork();
@@ -1080,18 +1087,20 @@ void Noted::on_actPassthrough_changed()
 		ui->dockPlay->setEnabled(false);
 		ui->actPlay->setEnabled(false);
 		ui->actPlayCausal->setEnabled(false);
+		ui->dataDisplay->setEnabled(false);
 		ui->actOpen->setEnabled(false);
 		if (!m_audioThread->isRunning())
 			m_audioThread->start(QThread::TimeCriticalPriority);
 		m_lastIndex = cursorIndex();
 	}
-	else
+	else if (ui->actPassthrough->isEnabled())
 	{
 		finalizeCausal();
 		ui->dockPlay->setEnabled(true);
 		ui->actPlay->setEnabled(true);
 		ui->actPlayCausal->setEnabled(true);
 		ui->actOpen->setEnabled(true);
+		ui->dataDisplay->setEnabled(true);
 		resumeWork();
 	}
 }
@@ -1313,6 +1322,7 @@ void Noted::on_actPanic_activated()
 {
 	ui->actPlay->setChecked(false);
 	ui->actPlayCausal->setChecked(false);
+	ui->actPassthrough->setChecked(false);
 }
 
 bool Noted::carryOn(int _progress)
@@ -1520,6 +1530,7 @@ void Noted::clearEventsCache()
 
 void Noted::rejigAudio()
 {
+	QMutexLocker l(&x_analysis);
 	auto wasToBeAnalysed = m_toBeAnalyzed;
 	m_toBeAnalyzed.clear();
 	if (wasToBeAnalysed.size())
@@ -1613,6 +1624,7 @@ AcausalAnalysisPtrs Noted::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finish
 
 void Noted::initializeCausal(CausalAnalysisPtr const& _lastComplete)
 {
+	QMutexLocker l(&x_analysis);
 	deque<CausalAnalysisPtr> todo;	// will become a member.
 	todo.push_back(_lastComplete);
 	assert(m_causalQueue.empty());
@@ -1627,8 +1639,12 @@ void Noted::initializeCausal(CausalAnalysisPtr const& _lastComplete)
 
 			m_causalQueue.push_back(ca);
 		}
-		catenate(todo, ripeCausalAnalysis(ca));
+		auto ripe = ripeCausalAnalysis(ca);
+		cdebug << m_eventsViewsDone << ca << " leads to " << ripe;
+		catenate(todo, ripe);
 	}
+
+	cdebug << "Causal queue: " << m_causalQueue;
 	m_sequenceIndex = 0;
 }
 
