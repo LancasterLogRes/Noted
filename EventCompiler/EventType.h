@@ -31,8 +31,8 @@ LIGHTBOX_TEXTUAL_ENUM_INHERITS(EventType, uint8_t,
 				Spike, Chain, Jet, EndJet,
 				Sustain, EndSustain, BackSustain, EndBackSustain,
 				PeriodSet, PeriodTweak, PeriodReset, Tick, Beat, Bar, Cycle,
-				SpikeA, SpikeB, SpikeC, SpikeD, SpikeE, SpikeF,
-				ChainA, ChainB, ChainC, ChainD, ChainE, ChainF,
+				SpikeA, SpikeB, SpikeC, SpikeD, SpikeE, SpikeF,// TODO: remove
+				ChainA, ChainB, ChainC, ChainD, ChainE, ChainF,// TODO: remove
 				Comment, GraphSpecComment, AuxComment, RhythmCandidatesComment, RhythmVectorComment, HistoryComment, PhaseVectorComment, PhaseCandidatesComment, LastBarDistanceComment,
 				WorkingComment, PDFComment,
 				SyncPoint,
@@ -50,6 +50,16 @@ static const EventTypes AllEventTypes = { Spike, Jet, Sustain, BackSustain, Peri
 static const EventTypes SustainTypes = { Sustain, BackSustain };
 static const EventTypes JustSpike = { Spike };
 static const EventTypes JustJet = { Jet };
+
+inline bool isGraph(EventType _e)
+{
+	return _e >= Graph;
+}
+
+inline bool isComment(EventType _e)
+{
+	return _e >= Comment && _e < SyncPoint;
+}
 
 inline EventType endToBegin(EventType _e)
 {
