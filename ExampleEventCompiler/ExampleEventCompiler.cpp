@@ -73,9 +73,12 @@ private:
 
 		float prob = (distro.mean > 0.01) ? normal(highEnergy.HighEnergy::get(), distro) : 1.f;
 		float beatLikelihood = -log(prob);
+
+#ifndef LIGHTBOX_CROSSCOMPILATION
 		ret.push_back(StreamEvent(Graph, highEnergy.HighEnergy::get(), 0.0f));
 		ret.push_back(StreamEvent(Graph, beatLikelihood, 0.9f));
 		ret.push_back(StreamEvent(Graph, m_decayedBL, 0.5f));
+#endif
 
 		if (beatLikelihood < m_lastBL && m_lastBL > m_lastLastBL)
 		{

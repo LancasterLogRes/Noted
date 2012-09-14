@@ -47,7 +47,7 @@ QMAKE_CXXFLAGS += -ffast-math -pipe -fexceptions
 mac: QMAKE_CXXFLAGS +=  -std=c++11
 !mac: QMAKE_CXXFLAGS +=  -std=c++0x
 crosscompilation {
-    QMAKE_CXXFLAGS += -march=btver1
+    QMAKE_CXXFLAGS += -march=amdfam10 -O2 -pipe -mno-3dnow -mcx16 -mpopcnt -msse3 -msse4a -mmmx
     DEFINES += LIGHTBOX_CROSSCOMPILATION
 }
 !crosscompilation {

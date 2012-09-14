@@ -35,6 +35,8 @@ struct LIGHTBOX_API Track
 	std::multimap<Time, StreamEvent> events;
 	std::vector<Time> syncPoints;
 
+	bool isNull() const { return !(syncPoints.size() && events.size()); }
+
 	StreamEvents eventsBetween(Time _from, Time _to) const	///< Get the stream events in range [_from, _to);
 	{
 		StreamEvents ret;
