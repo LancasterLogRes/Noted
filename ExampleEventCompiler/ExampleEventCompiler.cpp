@@ -123,9 +123,24 @@ LIGHTBOX_EVENTCOMPILER(BeatDetector);
 
 class Centroid: public EventCompilerImpl
 {
+public:
+	Centroid(unsigned _from = 0, unsigned _to = std::numeric_limits<unsigned>::max()): frequencyFrom(_from), frequencyTo(_to), minimumActive(0.01), changeBound(0.05), learnRate(0.01) {}
+
+	unsigned frequencyFrom;
+	unsigned frequencyTo;
+	float minimumActive;
+	float changeBound;
+	float learnRate;
+	LIGHTBOX_PROPERTIES(frequencyFrom, frequencyTo, minimumActive, changeBound, learnRate);
+
 private:
 	virtual StreamEvents init()
 	{
+		m_from = max<unsigned>(0, frequencyFrom / (s_baseRate / windowSize()));
+		m_to = min<unsigned>(bands(), frequencyTo / (s_baseRate / windowSize()));
+		m_onSustain = false;
+		m_lastTotal = 0;
+		m_trendTotal = 0;
 		StreamEvents ret;
 		return ret;
 	}
@@ -136,15 +151,54 @@ private:
 
 		float centroid = 0.f;
 		float total = 0.f;
-		for (unsigned i = 0; i < _mag.size(); ++i)
+		for (unsigned i = m_from; i < m_to; ++i)
 			total += sqr(_mag[i]), centroid += sqr(_mag[i]) * i;
 		if (total)
 			centroid /= total;
 
-		ret.push_back(StreamEvent(Graph, centroid, 0.f));	// orange
+		m_trendTotal = lerp(learnRate, m_trendTotal, total);
 
+		if (fabs(m_lastTotal - m_trendTotal) > changeBound)
+		{
+			if (m_trendTotal > minimumActive)
+				ret.push_back(StreamEvent(Sustain, 1, m_trendTotal));//, (centroid - m_from) / (m_to - m_from)
+			else
+				ret.push_back(StreamEvent(EndSustain));
+			m_lastTotal = m_trendTotal;
+		}
+
+#ifndef LIGHTBOX_CROSSCOMPILATION
+		ret.push_back(StreamEvent(Graph, centroid, 0.f));	// orange
+#endif
 		return ret;
 	}
+
+private:
+	unsigned m_from;
+	unsigned m_to;
+	bool m_onSustain;
+	float m_trendTotal;
+	float m_lastTotal;
 };
 
 LIGHTBOX_EVENTCOMPILER(Centroid);
+
+class PadCentroid: public Centroid
+{
+public:
+	LIGHTBOX_PROPERTIES(minimumActive, changeBound, learnRate);
+
+	PadCentroid(): Centroid(200, std::numeric_limits<unsigned>::max()) {}
+};
+
+LIGHTBOX_EVENTCOMPILER(PadCentroid);
+
+class BassCentroid: public Centroid
+{
+public:
+	LIGHTBOX_PROPERTIES(minimumActive, changeBound, learnRate);
+
+	BassCentroid(): Centroid(0, 200) {}
+};
+
+LIGHTBOX_EVENTCOMPILER(BassCentroid);

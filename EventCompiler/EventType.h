@@ -28,14 +28,11 @@ namespace Lightbox
 
 LIGHTBOX_TEXTUAL_ENUM_INHERITS(EventType, uint8_t,
 				NoEvent,
-				Spike, Chain, Jet, EndJet,
-				Sustain, EndSustain, BackSustain, EndBackSustain,
-				PeriodSet, PeriodTweak, PeriodReset, Tick, Beat, Bar, Cycle,
-				SpikeA, SpikeB, SpikeC, SpikeD, SpikeE, SpikeF,// TODO: remove
-				ChainA, ChainB, ChainC, ChainD, ChainE, ChainF,// TODO: remove
+				Spike, Chain, Jet, EndJet, Sustain, EndSustain,
+				BackSustain, EndBackSustain, // DEPRECATED! DO NOT USE! (Alternative: put Sustains on a separate channel)
+				SyncPoint, PeriodSet, PeriodTweak, PeriodReset, Tick, Beat, Bar, Cycle,
 				Comment, GraphSpecComment, AuxComment, RhythmCandidatesComment, RhythmVectorComment, HistoryComment, PhaseVectorComment, PhaseCandidatesComment, LastBarDistanceComment,
 				WorkingComment, PDFComment,
-				SyncPoint,
 				Graph, GraphUnder, GraphBar)
 
 typedef std::set<EventType> EventTypes;

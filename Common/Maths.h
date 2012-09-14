@@ -92,7 +92,7 @@ typename std::remove_reference<decltype(_Ta()[0] * _Tb()[0])>::type cosineSimila
 template <class _T>
 bool similar(_T _a, _T _b, double _ratio = 0.05)
 {
-	return (max(_a, _b) - min(_a, _b)) / double(_a + _b) < _ratio / 2;
+	return _a == _b ? true : (max(_a, _b) - min(_a, _b)) / double(fabs(_a) + fabs(_b)) < _ratio / 2;
 }
 
 template <class _T>

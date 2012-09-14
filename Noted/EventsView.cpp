@@ -248,18 +248,18 @@ void EventsView::exportEvents()
 					if (fn.endsWith(".xml"))
 					{
 						if (!timeout++)
-							out << QString("\t<time value=\"%1\">").arg(t).toStdString() << endl;
-						out << QString("\t\t<%1 strength=\"%2\" character=\"%3\" temperature=\"%4\" surprise=\"%5\" position=\"%6\" period=\"%7\" />").arg(QString::fromStdString(toString(e.type)).toLower()).arg(e.strength).arg(toString(e.character).c_str()).arg(e.temperature).arg(e.surprise).arg(e.position).arg(e.period).toStdString() << endl;
+							out << QString("\t<time value=\"%1\" ms=\"%2\">").arg(t).arg(toMsecs(t)).toStdString() << endl;
+						out << QString("\t\t<%1 strength=\"%2\" character=\"%3\" temperature=\"%4\" surprise=\"%5\" position=\"%6\" period=\"%7\" channel=\"%8\" />").arg(QString::fromStdString(toString(e.type)).toLower()).arg(e.strength).arg(toString(e.character).c_str()).arg(e.temperature).arg(e.surprise).arg(e.position).arg(e.period).arg(e.channel).toStdString() << endl;
 					}
 					else if (fn.endsWith(".events"))
 					{
 						if (!timeout++)
 							out << t << endl;
-						out << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << e.position << " " << e.period << endl;
+						out << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << e.position << " " << e.period << " " << e.channel << endl;
 					}
 					else
 					{
-						out << toSeconds(t) << " " << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << e.position << " " << e.period << endl;
+						out << toSeconds(t) << " " << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << e.position << " " << e.period << " " << e.channel << endl;
 					}
 
 				}
@@ -485,7 +485,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 								lastBackSustainEvent = e;
 								break;
 							}
-							case Lightbox::SpikeA: case Lightbox::SpikeB: case Lightbox::SpikeC: case Lightbox::SpikeD: case Lightbox::SpikeE: case Lightbox::SpikeF:
+/*							case Lightbox::SpikeA: case Lightbox::SpikeB: case Lightbox::SpikeC: case Lightbox::SpikeD: case Lightbox::SpikeE: case Lightbox::SpikeF:
 								p.setBrush(QBrush(cPastel));
 								p.setPen(cDark);
 								for (int i = 0, y = 30; i < 5; ++i)
@@ -501,7 +501,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 											y += 3;
 										}
 								}
-								break;
+								break;*/
 							case Lightbox::PeriodSet:
 							{
 								p.setPen(cDark);

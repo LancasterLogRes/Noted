@@ -98,6 +98,8 @@ struct StreamEvent
 	StreamEvent(EventType _t, float _s, float _n, Aux* _aux): type(_t), temperature(_n), strength(_s), period(0), m_aux(std::shared_ptr<Aux>(_aux)) { }
 	StreamEvent(EventType _t = NoEvent, float _s = 1.f, float _n = 0.f, Time _period = 0, Aux* _aux = nullptr, int8_t _position = -1, Character _character = Dull, float _surprise = 1.f): type(_t), position(_position), character(_character), temperature(_n), strength(_s), surprise(_surprise), period(_period), m_aux(std::shared_ptr<Aux>(_aux)) { }
 
+	StreamEvent assignedTo(int _ch) const { StreamEvent ret = *this; ret.channel = _ch; return ret; }
+
 	bool operator==(StreamEvent const& _c) const { return type == _c.type && temperature == _c.temperature && strength == _c.strength; }
 	bool operator!=(StreamEvent const& _c) const { return !operator==(_c); }
 	bool operator<(StreamEvent const& _c) const { return type < _c.type; }
@@ -107,12 +109,13 @@ struct StreamEvent
 	EventType type;				///< Type of the event.
 	int8_t position;			///< -1 unknown, 0-63 for first 16th note in super-bar, second 16th note, &c.
 	Character character;		///< The character of this event.
+	int8_t channel;				///< The channel this event is on. Typically < 4.
 
 	float temperature;			///< Abstract quantity in range [0, 1] to describe primary aspects of event.
 	float strength;				///< Non-zero quantity in range [-1, 1], to describe loudness/confidence that phenomenon actually happened. If negative describes confidence that phenomenon didn't happen.
 	float surprise;				///< Quantity [0, 1] to describe how easily predicted that this StreamEvent was. Negative strength makes this value describe surprise that the phenomenon didn't happen.
 	Time period;				///< Value to describe EventType-dependent period.
-	std::shared_ptr<Aux> m_aux;	///< Auxilliary data for the event. TODO: Deprecate in favour of some other comm. method.
+	std::shared_ptr<Aux> m_aux;	///< Auxilliary data for the event. TODO: Deprecate in favour of an index/store comm. method.
 };
 
 inline float toHue(float _temperature)

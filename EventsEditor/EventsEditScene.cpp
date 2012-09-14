@@ -204,13 +204,14 @@ void EventsEditScene::saveTo(QString _filename) const
 				last = fromSeconds(sei->pos().x() / 1000);
 				lt = &pt.add("events.time", "");
 				lt->put("<xmlattr>.value", last);
-				pt.add("events.ms", "").put("<xmlattr>.value", toMsecs(last));
+				lt->put("<xmlattr>.ms", toMsecs(last));
 			}
 			StreamEvent const& se = sei->streamEvent();
 			ptree& e = lt->add(boost::algorithm::to_lower_copy(toString(se.type)), "");
 			e.put("<xmlattr>.strength", se.strength);
 			e.put("<xmlattr>.temperature", se.temperature);
 			e.put("<xmlattr>.position", se.position);
+			e.put("<xmlattr>.channel", se.channel);
 			e.put("<xmlattr>.surprise", se.surprise);
 			e.put("<xmlattr>.period", se.period);
 			e.put("<xmlattr>.character", toString(se.character));
@@ -256,6 +257,7 @@ void EventsEditScene::loadFrom(QString _filename)
 						se.temperature = w.second.get<float>("<xmlattr>.temperature", 0.f);
 						se.period = w.second.get<Time>("<xmlattr>.period", fromMsecs(w.second.get<int64_t>("<xmlattr>.periodMs", 0)));
 						se.position = w.second.get<int>("<xmlattr>.position", -1);
+						se.channel = w.second.get<int>("<xmlattr>.channel", 0);
 						se.surprise = w.second.get<float>("<xmlattr>.surprise", 1.f);
 						se.character = toCharacter(w.second.get<string>("<xmlattr>.character", "Dull"));
 						if (StreamEventItem* sei = StreamEventItem::newItem(se))
