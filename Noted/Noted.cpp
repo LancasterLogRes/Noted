@@ -203,7 +203,7 @@ Noted::~Noted()
 	g_debugPost = simpleDebugOut;
 
 	qDebug() << "Disabling worker(s)...";
-	suspendWork(true);
+	suspendWork();
 	delete m_workerThread;
 	m_workerThread = nullptr;
 	qDebug() << "Disabled permenantly.";
@@ -943,7 +943,7 @@ bool Noted::work()
 	return true;
 }
 
-void Noted::suspendWork(bool _force)
+void Noted::suspendWork()
 {
 	cnote << "WORK Suspending..." << m_suspends;
 	if (m_workerThread && m_workerThread->isRunning())
@@ -1680,22 +1680,22 @@ foreign_vector<float> Noted::cursorWaveWindow() const
 		return waveWindow(cursorIndex()); // NOTE: only approximate - no good for Analysers.
 }
 
-foreign_vector<float> Noted::cursorMagSpectrum() const
+foreign_vector<float const> Noted::cursorMagSpectrum() const
 {
 	if (isCausal())
 		return magSpectrum(m_causalCursorIndex, 1);
 	else if (isPassing())
-		return foreign_vector<float>((vector<float>*)&m_currentMagSpectrum);
+		return foreign_vector<float const>((vector<float>*)&m_currentMagSpectrum);
 	else
 		return magSpectrum(cursorIndex(), 1); // NOTE: only approximate - no good for Analysers.
 }
 
-foreign_vector<float> Noted::cursorPhaseSpectrum() const
+foreign_vector<float const> Noted::cursorPhaseSpectrum() const
 {
 	if (isCausal())
 		return phaseSpectrum(m_causalCursorIndex, 1);			// FIXME: will return phase normalized to [0, 1] rather than [0, pi].
 	else if (isPassing())
-		return foreign_vector<float>((vector<float>*)&m_currentPhaseSpectrum);
+		return foreign_vector<float const>((vector<float>*)&m_currentPhaseSpectrum);
 	else
 		return phaseSpectrum(cursorIndex(), 1); // NOTE: only approximate - no good for Analysers.
 }

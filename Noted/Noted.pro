@@ -29,7 +29,8 @@ SOURCES += main.cpp\
 	Pager.cpp \
 	CompileEventsView.cpp \
 		PropertiesEditor.cpp \
-	NotedGLWidget.cpp
+	NotedGLWidget.cpp \
+    Cache.cpp
 
 HEADERS  += Noted.h \
 	WaveView.h \
@@ -52,7 +53,8 @@ HEADERS  += Noted.h \
 	CompileEvents.h \
 	CollateEvents.h \
 	CompileEventsView.h \
-	PropertiesEditor.h
+	PropertiesEditor.h \
+    Cache.h
 
 FORMS    += Noted.ui
 

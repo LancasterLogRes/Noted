@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <tuple>
 #include <functional>
+#include <type_traits>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
@@ -281,7 +282,7 @@ public:
 	typedef _T element_type;
 
 	foreign_vector(): m_data(nullptr), m_count(0) {}
-	foreign_vector(std::vector<_T>* _data): m_data(_data->data()), m_count(_data->size()) {}
+	foreign_vector(std::vector<typename std::remove_const<_T>::type>* _data): m_data(_data->data()), m_count(_data->size()) {}
 	foreign_vector(_T* _data, unsigned _count): m_data(_data), m_count(_count) {}
 
 	explicit operator bool() const { return m_data && m_count; }
@@ -291,6 +292,8 @@ public:
 	unsigned count() const { return m_count; }
 	unsigned size() const { return m_count; }
 	foreign_vector& tied(std::shared_ptr<void> const& _lock) { m_lock = _lock; return *this; }
+	foreign_vector<_T> next() const { return foreign_vector<_T>(m_data + m_count, m_count).tied(m_lock); }
+	foreign_vector<_T> cropped(unsigned _begin, unsigned _count) const { return foreign_vector<_T>(m_data + _begin, _count).tied(m_lock); }
 
 	_T* begin() { return m_data; }
 	_T* end() { return m_data + m_count; }

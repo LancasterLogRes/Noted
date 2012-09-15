@@ -94,10 +94,10 @@ public:
 	virtual Lightbox::foreign_vector<float> waveWindow(int _window) const = 0;
 	// TODO: extra argument/double-size vector for min/max range of each sample in o_toFill.
 	virtual bool waveBlock(Lightbox::Time _from, Lightbox::Time _duration, Lightbox::foreign_vector<float> o_toFill) const = 0;
-	virtual Lightbox::foreign_vector<float> multiSpectrum(int _i, int _n) const = 0;
-	virtual Lightbox::foreign_vector<float> magSpectrum(int _i, int _n) const = 0;
-	virtual Lightbox::foreign_vector<float> phaseSpectrum(int _i, int _n) const = 0;
-	virtual Lightbox::foreign_vector<float> deltaPhaseSpectrum(int _i, int _n) const = 0;
+	virtual Lightbox::foreign_vector<float const> multiSpectrum(int _i, int _n) const = 0;
+	virtual Lightbox::foreign_vector<float const> magSpectrum(int _i, int _n) const = 0;
+	virtual Lightbox::foreign_vector<float const> phaseSpectrum(int _i, int _n) const = 0;
+	virtual Lightbox::foreign_vector<float const> deltaPhaseSpectrum(int _i, int _n) const = 0;
 
 	virtual QList<EventsStore*> eventsStores() const = 0;
 	virtual std::vector<float> graphEvents(float _temperature) const = 0;
@@ -180,10 +180,10 @@ public:
 	virtual Lightbox::foreign_vector<float> waveWindow(int) const { return Lightbox::foreign_vector<float>(); }
 	virtual bool waveBlock(Lightbox::Time, Lightbox::Time, Lightbox::foreign_vector<float>) const { return false; }
 
-	virtual Lightbox::foreign_vector<float> multiSpectrum(int, int) const { return Lightbox::foreign_vector<float>(); }
-	virtual Lightbox::foreign_vector<float> magSpectrum(int, int) const { return Lightbox::foreign_vector<float>(); }
-	virtual Lightbox::foreign_vector<float> deltaPhaseSpectrum(int, int) const { return Lightbox::foreign_vector<float>(); }
-	virtual Lightbox::foreign_vector<float> phaseSpectrum(int, int) const { return Lightbox::foreign_vector<float>(); }
+	virtual Lightbox::foreign_vector<float const> multiSpectrum(int, int) const { return Lightbox::foreign_vector<float const>(); }
+	virtual Lightbox::foreign_vector<float const> magSpectrum(int, int) const { return Lightbox::foreign_vector<float const>(); }
+	virtual Lightbox::foreign_vector<float const> deltaPhaseSpectrum(int, int) const { return Lightbox::foreign_vector<float const>(); }
+	virtual Lightbox::foreign_vector<float const> phaseSpectrum(int, int) const { return Lightbox::foreign_vector<float const>(); }
 
 	virtual std::vector<float> graphEvents(float) const { return std::vector<float>(); }
 	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType, float = std::numeric_limits<float>::infinity(), Lightbox::Time = Lightbox::UndefinedTime) const { return Lightbox::StreamEvent(); }

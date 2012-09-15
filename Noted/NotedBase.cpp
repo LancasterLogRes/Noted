@@ -37,9 +37,7 @@ NotedBase::NotedBase(QWidget* _p):
 	NotedFace					(_p),
 	m_wave						("wave"),
 	m_blockSamples				(128),
-	m_pageBlocks				(128),
-	m_spectra					("spectrum"),
-	m_pageSpectra				(16)	// spectra are ~512 * 4 = 2K, so this would be 32K per file; 16 -> 256 -> 4096 -> 65536
+	m_pageBlocks				(128)
 {
 }
 
@@ -243,55 +241,49 @@ void setVector(v4sf& _v, float _f)
 void NotedBase::rejigSpectra()
 {
 	QMutexLocker l(&x_spectra);
+	int ss = spectrumSize();
 	if (samples())
 	{
-		m_spectra.init(calculateSpectraFingerprint(m_wave.fingerprint()), m_pageSpectra, spectrumSize() * 3);
-
-		FFTW fftw(m_windowFunction.size());
-		vector<float> lp(spectrumSize(), 0);
-
-		v4sf p4;
-		setVector(p4, (float)m_pageSpectra);
-		int ss = spectrumSize();
-		int ss2 = spectrumSize() * 2;
-
-		auto baseF = [&](unsigned index, float* sd)
+		if (!m_spectra.init(calculateSpectraFingerprint(m_wave.fingerprint()), "spectrum", ss * 3 * sizeof(float), hops()))
 		{
-			float* b = fftw.in();
-			foreign_vector<float> win = waveWindow(index);
-			assert(win.data());
-			float* d = win.data();
-			float* w = m_windowFunction.data();
-			unsigned off = m_zeroPhase ? m_windowFunction.size() / 2 : 0;
-			for (unsigned j = 0; j < m_windowFunction.size(); ++d, ++j, ++w)
-				b[(j + off) % m_windowFunction.size()] = *d * *w;
-			fftw.process();
-
-			memcpy(sd, &(fftw.mag()[0]), ss * sizeof(float));
-			float const* phase = fftw.phase().data();
-			float intpart;
-			for (int i = 0; i < ss; ++i)
+			FFTW fftw(m_windowFunction.size());
+			vector<float> lastPhase(spectrumSize(), 0);
+			for (unsigned index = 0; index < hops(); ++index)
 			{
-				sd[i + ss] = phase[i] / TwoPi;
-				sd[i + ss2] = modf((phase[i] - lp[i]) / TwoPi + 1.f, &intpart);
-			}
-		};
-		auto sumF = [&](float* current, float* acc, unsigned)
-		{
-			packTransform(acc, current, ss, [](v4sf& a, v4sf const& b){ a = a + b; });
-			// just copy over an arbitrary phase (the last one of the set, as it happens)...
-			valcpy(acc + ss, current + ss, ss2);
-		};
-		auto divideF = [&](float* sd)
-		{
-			packTransform(sd, ss, [&](v4sf& a){ a = a / p4; });
-		};
-		auto doneF = [&]() { lp = fftw.phase(); };
+				float* b = fftw.in();
+				foreign_vector<float> win = waveWindow(index);
+				assert(win.data());
+				float* d = win.data();
+				float* w = m_windowFunction.data();
+				unsigned off = m_zeroPhase ? m_windowFunction.size() / 2 : 0;
+				for (unsigned j = 0; j < m_windowFunction.size(); ++d, ++j, ++w)
+					b[(j + off) % m_windowFunction.size()] = *d * *w;
+				fftw.process();
 
-		m_spectra.fill(baseF, sumF, divideF, doneF, hops());
+				auto sd = m_spectra.item<float>(0, index);
+				valcpy(sd.data(), fftw.mag().data(), ss);
+				float const* phase = fftw.phase().data();
+				float intpart;
+				for (int i = 0; i < ss; ++i)
+				{
+					sd[i + ss] = phase[i] / TwoPi;
+					sd[i + ss*2] = modf((phase[i] - lastPhase[i]) / TwoPi + 1.f, &intpart);
+				}
+				lastPhase = fftw.phase();
+			}
+			m_spectra.generate([=](Lightbox::foreign_vector<float> a, Lightbox::foreign_vector<float> b, Lightbox::foreign_vector<float> ret)
+			{
+				Lightbox::valcpy(ret.data(), a.data(), a.size());
+				v4sf half = {.5f, .5f, .5f, .5f};
+				Lightbox::packTransform(ret.data(), b.data(), ss, [=](v4sf& rv, v4sf bv)
+				{
+					rv = (rv + bv) * half;
+				});// only do the mean combine with b for the mag spectrum.
+			}, 0.f);
+		}
 	}
 	else
 	{
-		m_spectra.fillFromExisting();
+		m_spectra.init(calculateSpectraFingerprint(m_wave.fingerprint()), "spectrum", ss * 3, 0);
 	}
 }

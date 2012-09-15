@@ -32,6 +32,7 @@
 #include <Common/Common.h>
 #include <NotedPlugin/NotedFace.h>
 #include "Pager.h"
+#include "Cache.h"
 
 class Timeline;
 class QEvent;
@@ -54,10 +55,10 @@ public:
 
 	virtual Lightbox::foreign_vector<float> waveWindow(int _window) const;
 	virtual bool waveBlock(Lightbox::Time _from, Lightbox::Time _duration, Lightbox::foreign_vector<float> o_toFill) const;
-	virtual Lightbox::foreign_vector<float> multiSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, 0, spectrumSize() * 3); }
-	virtual Lightbox::foreign_vector<float> magSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, 0, spectrumSize()); }
-	virtual Lightbox::foreign_vector<float> phaseSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, spectrumSize(), spectrumSize()); }
-	virtual Lightbox::foreign_vector<float> deltaPhaseSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.item(_i, _n, spectrumSize() * 2, spectrumSize()); }
+	virtual Lightbox::foreign_vector<float const> multiSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.items<float>(_i, _n); }
+	virtual Lightbox::foreign_vector<float const> magSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.items<float>(_i, _n).cropped(0, spectrumSize()); }
+	virtual Lightbox::foreign_vector<float const> phaseSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.items<float>(_i, _n).cropped(spectrumSize(), spectrumSize()); }
+	virtual Lightbox::foreign_vector<float const> deltaPhaseSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.items<float>(_i, _n).cropped(spectrumSize() * 2, spectrumSize()); }
 
 protected:
 	bool resampleWave();
@@ -75,6 +76,5 @@ protected:
 	unsigned m_pageBlocks;
 
 	mutable QMutex x_spectra;
-	Pager<float> m_spectra;
-	unsigned m_pageSpectra;
+	MipmappedCache m_spectra;
 };

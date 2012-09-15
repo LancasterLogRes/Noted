@@ -72,11 +72,11 @@ void SpectraView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(1, _fbo->height(), 1);
-	glColor3f(1, 1, 1);
 
 	if (!m_sm)
 	{
 		cnote << "Making shader man";
+		glColor3f(1, 1, 1);
 		m_sm = new glShaderManager;
 	}
 	if (!m_shader)

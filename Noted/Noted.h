@@ -115,11 +115,11 @@ public:
 	void updateGraphs(std::vector<std::shared_ptr<Lightbox::AuxGraphsSpec> > const& _specs);
 
 	Lightbox::foreign_vector<float> cursorWaveWindow() const;
-	Lightbox::foreign_vector<float> cursorMagSpectrum() const;
-	Lightbox::foreign_vector<float> cursorPhaseSpectrum() const;
+	Lightbox::foreign_vector<float const> cursorMagSpectrum() const;
+	Lightbox::foreign_vector<float const> cursorPhaseSpectrum() const;
 
 public slots:
-	void suspendWork(bool _force = false);
+	void suspendWork();
 	void resumeWork(bool _force = false);
 
 	virtual void info(QString const& _info, QString const& _color = "gray");
