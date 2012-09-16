@@ -25,8 +25,6 @@ SOURCES += main.cpp\
 	Grapher.cpp \
 	WaveOverview.cpp \
 	NotedBase.cpp \
-	Page.cpp \
-	Pager.cpp \
 	CompileEventsView.cpp \
 		PropertiesEditor.cpp \
 	NotedGLWidget.cpp \
@@ -48,8 +46,6 @@ HEADERS  += Noted.h \
 	WaveOverview.h \
 	NotedGLWidget.h \
 	NotedBase.h \
-	Page.h \
-	Pager.h \
 	CompileEvents.h \
 	CollateEvents.h \
 	CompileEventsView.h \
