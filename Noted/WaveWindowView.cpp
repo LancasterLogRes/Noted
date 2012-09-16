@@ -33,8 +33,8 @@ using namespace Lightbox;
 
 void WaveWindowView::doRender(QGLFramebufferObject* _fbo)
 {
-	foreign_vector<float> d = dynamic_cast<Noted*>(c())->cursorWaveWindow();
-	float* data = d.data();
+	foreign_vector<float const> d = dynamic_cast<Noted*>(c())->cursorWaveWindow();
+	float const* data = d.data();
 
 	int mean = 0;
 	float rms = 0.f;

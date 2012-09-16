@@ -37,6 +37,7 @@ public:
 
 	bool init(uint32_t _fingerprint, QString const& _type, size_t _bytes);
 	template <class _T> Lightbox::foreign_vector<_T> data() { return Lightbox::foreign_vector<_T>((_T*)m_mapping, m_bytes / sizeof(_T)); }
+	template <class _T> Lightbox::foreign_vector<_T const> data() const { assert(m_isGood); return Lightbox::foreign_vector<_T const>((_T const*)m_mapping, m_bytes / sizeof(_T)); }
 	void setGood();
 
 protected:
@@ -107,10 +108,10 @@ public:
 			Lightbox::packTransform(ret.data(), b.data(), ret.size(), [](v4sf& rv, v4sf bv){ rv = (rv + bv) * v4sf({.5f, .5f, .5f, .5f}); });
 		});
 		*/
-		generate([](Lightbox::foreign_vector<_T> a, Lightbox::foreign_vector<_T> b, Lightbox::foreign_vector<_T> ret) -> _T
+		generate([](Lightbox::foreign_vector<_T> a, Lightbox::foreign_vector<_T> b, Lightbox::foreign_vector<_T> ret)
 		{
-			int i = 0;
-			for (; i < a.size(); i += 4)
+			unsigned i = 0;
+			for (; i + 3 < a.size(); i += 4)
 			{
 				ret[i] = (a[i] + b[i]) / 2;
 				ret[i+1] = (a[i+1] + b[i+1]) / 2;

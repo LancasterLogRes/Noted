@@ -46,7 +46,7 @@ void WaveView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 	if (_dw < 1)
 		return;
 
-	vector<float> wave(_dw);
+	vector<float> wave(_dw * 2);
 
 	bool isAbsolute = c()->waveBlock(c()->timeOf(_dx), c()->durationOf(_dw), foreign_vector<float>(wave.data(), wave.size()));
 
@@ -70,9 +70,10 @@ void WaveView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 	{
 		for (int x = _dx; x < _dx + _dw; ++x)
 		{
-			int bh = max(1.f, h * wave[x - _dx]);
-			p.fillRect(x, (h - bh) / 2, 1, bh, QColor(0, 0, 0));
-			p.fillRect(x, (h - bh / 2) / 2, 1, bh / 2, QColor(127, 127, 127));
+			int bhMax = max(1.f, h * wave[(x - _dx) * 2 + 1]);
+			p.fillRect(x, (h - bhMax) / 2, 1, bhMax, QColor(0, 0, 0));
+			int bhRms = max(1.f, h * wave[(x - _dx) * 2]);
+			p.fillRect(x, (h - bhRms) / 2, 1, bhRms, QColor(127, 127, 127));
 		}
 	}
 	else

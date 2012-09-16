@@ -53,8 +53,8 @@ public:
 	explicit NotedBase(QWidget* _p);
 	~NotedBase();
 
-	virtual Lightbox::foreign_vector<float> waveWindow(int _window) const;
-	virtual bool waveBlock(Lightbox::Time _from, Lightbox::Time _duration, Lightbox::foreign_vector<float> o_toFill) const;
+	virtual Lightbox::foreign_vector<float const> waveWindow(int _window) const;
+	virtual bool waveBlock(Lightbox::Time _from, Lightbox::Time _duration, Lightbox::foreign_vector<float> o_toFill, bool _forceSamples = false) const;
 	virtual Lightbox::foreign_vector<float const> multiSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.items<float>(_i, _n); }
 	virtual Lightbox::foreign_vector<float const> magSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.items<float>(_i, _n).cropped(0, spectrumSize()); }
 	virtual Lightbox::foreign_vector<float const> phaseSpectrum(int _i, int _n) const { QMutexLocker l(&x_spectra); return m_spectra.items<float>(_i, _n).cropped(spectrumSize(), spectrumSize()); }
@@ -71,10 +71,9 @@ protected:
 	SNDFILE* m_sndfile;
 
 	mutable QMutex x_wave;
-	Pager<float> m_wave;
-	unsigned m_blockSamples;
-	unsigned m_pageBlocks;
-
+	Cache m_wave;
+	mutable QMutex x_waveProfile;
+	MipmappedCache m_waveProfile;
 	mutable QMutex x_spectra;
 	MipmappedCache m_spectra;
 };

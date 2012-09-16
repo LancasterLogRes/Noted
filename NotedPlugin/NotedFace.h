@@ -91,9 +91,9 @@ public:
 	inline unsigned hops() const { return samples() ? samples() / hopSamples() : 0; }
 	inline Lightbox::Time duration() const { return Lightbox::toBase(samples(), rate()); }
 
-	virtual Lightbox::foreign_vector<float> waveWindow(int _window) const = 0;
+	virtual Lightbox::foreign_vector<float const> waveWindow(int _window) const = 0;
 	// TODO: extra argument/double-size vector for min/max range of each sample in o_toFill.
-	virtual bool waveBlock(Lightbox::Time _from, Lightbox::Time _duration, Lightbox::foreign_vector<float> o_toFill) const = 0;
+	virtual bool waveBlock(Lightbox::Time _from, Lightbox::Time _duration, Lightbox::foreign_vector<float> o_toFill, bool _forceSamples = false) const = 0;
 	virtual Lightbox::foreign_vector<float const> multiSpectrum(int _i, int _n) const = 0;
 	virtual Lightbox::foreign_vector<float const> magSpectrum(int _i, int _n) const = 0;
 	virtual Lightbox::foreign_vector<float const> phaseSpectrum(int _i, int _n) const = 0;
@@ -177,8 +177,8 @@ public:
 
 	virtual void info(QString const&, QString const& = "gray") {}
 
-	virtual Lightbox::foreign_vector<float> waveWindow(int) const { return Lightbox::foreign_vector<float>(); }
-	virtual bool waveBlock(Lightbox::Time, Lightbox::Time, Lightbox::foreign_vector<float>) const { return false; }
+	virtual Lightbox::foreign_vector<float const> waveWindow(int) const { return Lightbox::foreign_vector<float const>(); }
+	virtual bool waveBlock(Lightbox::Time, Lightbox::Time, Lightbox::foreign_vector<float>, bool) const { return false; }
 
 	virtual Lightbox::foreign_vector<float const> multiSpectrum(int, int) const { return Lightbox::foreign_vector<float const>(); }
 	virtual Lightbox::foreign_vector<float const> magSpectrum(int, int) const { return Lightbox::foreign_vector<float const>(); }

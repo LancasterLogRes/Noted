@@ -107,7 +107,7 @@ void WaveOverview::doRender(QGLFramebufferObject* _fbo)
 	int ww = w * .95;
 	int wx = w * .025;
 
-	vector<float> wave(ww);
+	vector<float> wave(ww * 2);
 	bool isAbsolute = c()->waveBlock(Time(0), c()->duration(), foreign_vector<float>(wave.data(), wave.size()));
 
 	QPainter p(_fbo);
@@ -146,9 +146,10 @@ void WaveOverview::doRender(QGLFramebufferObject* _fbo)
 	{
 		for (int x = wx; x < wx + ww; ++x)
 		{
-			int bh = max(1.f, h * wave[x - wx]);
-			p.fillRect(x, (h - bh) / 2, 1, bh, QColor(0, 0, 127));
-			p.fillRect(x, (h - bh / 2) / 2, 1, bh / 2, QColor(127, 127, 192));
+			int bhMax = max(1.f, h * wave[(x - wx) * 2 + 1]);
+			p.fillRect(x, (h - bhMax) / 2, 1, bhMax, QColor(0, 0, 127));
+			int bhRms = max(1.f, h * wave[(x - wx) * 2]);
+			p.fillRect(x, (h - bhRms) / 2, 1, bhRms, QColor(127, 127, 192));
 		}
 	}
 	else

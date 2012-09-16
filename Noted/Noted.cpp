@@ -1170,7 +1170,7 @@ bool Noted::serviceAudio()
 				if (m_rate == m_playback->rate())
 				{
 					// no resampling necessary
-					waveBlock(m_fineCursor, toBase(f, r), &output);
+					waveBlock(m_fineCursor, toBase(f, r), &output, true);
 				}
 				else
 				{
@@ -1193,7 +1193,7 @@ bool Noted::serviceAudio()
 					while (outPos != f)
 					{
 						// At end of current (input) buffer - refill and reset position.
-						waveBlock(m_nextResample, toBase(f, m_rate), &source);
+						waveBlock(m_nextResample, toBase(f, m_rate), &source, true);
 						outPos += resample_process(m_resampler, factor, &(source[0]), f, 0, &used, &(output[outPos]), f - outPos);
 						m_nextResample += toBase(used, m_rate);
 					}
@@ -1670,12 +1670,12 @@ void Noted::updateCausal(int _from, int _count)
 	}
 }
 
-foreign_vector<float> Noted::cursorWaveWindow() const
+foreign_vector<float const> Noted::cursorWaveWindow() const
 {
 	if (isCausal())
 		return waveWindow(m_causalCursorIndex);
 	else if (isPassing())
-		return foreign_vector<float>((vector<float>*)&m_currentWave);
+		return foreign_vector<float const>((vector<float>*)&m_currentWave);
 	else
 		return waveWindow(cursorIndex()); // NOTE: only approximate - no good for Analysers.
 }

@@ -272,10 +272,6 @@ template <> struct has_contiguous_storage<std::vector<float>::const_iterator, vo
 template <class _E> struct has_contiguous_storage<_E*, void>: public std::true_type {};
 template <class _E> struct has_contiguous_storage<_E const*, void>: public std::true_type {};
 
-template <class _Iterator> struct element_of { typedef typename _Iterator::value_type type; };
-template <class _E> struct element_of<_E*> { typedef _E type; };
-template <class _E> struct element_of<_E const*> { typedef _E type; };
-
 template <class _A, class _B, class _Fbrew, class _Fdistill>
 typename element_of<_A>::type packCombine(_A const& _a, _B const& _b, unsigned _s, _Fbrew const& _brew, _Fdistill const& _distill)
 {

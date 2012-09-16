@@ -114,7 +114,7 @@ public:
 
 	void updateGraphs(std::vector<std::shared_ptr<Lightbox::AuxGraphsSpec> > const& _specs);
 
-	Lightbox::foreign_vector<float> cursorWaveWindow() const;
+	Lightbox::foreign_vector<float const> cursorWaveWindow() const;
 	Lightbox::foreign_vector<float const> cursorMagSpectrum() const;
 	Lightbox::foreign_vector<float const> cursorPhaseSpectrum() const;
 

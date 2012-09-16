@@ -382,7 +382,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 			int px = renderingPositionOf((i - 1) * c()->hop());
 			int x = renderingPositionOf(t);
 			int nx = renderingPositionOf((i + 1) * c()->hop());
-			int mx = (x + nx) / 2;
+//			int mx = (x + nx) / 2;
 			bool inView = nx >= r.left() - 160 && px <= r.right() + 160;
 			{
 				QMap<float, QPoint> comments;

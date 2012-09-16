@@ -31,7 +31,7 @@ namespace Lightbox
 
 /// Get range of numeric collection.
 template <class T>
-inline std::pair<typename T::value_type, typename T::value_type> range(T const& _t)
+inline std::pair<typename element_of<T>::type, typename element_of<T>::type> range(T const& _t)
 {
 	if (_t.begin() == _t.end())
 		return std::make_pair(0, 1);
@@ -57,18 +57,18 @@ inline std::pair<T, T> range(T const* _begin, T const* _end)
 }
 
 template <class T>
-typename T::value_type mean(T const& _distro)
+typename element_of<T>::type mean(T const& _distro)
 {
-	typename T::value_type ret = 0;
+	typename element_of<T>::type ret = 0;
 	foreach (auto v, _distro)
 		ret += v;
 	return ret / _distro.size();
 }
 
 template <class T>
-typename T::value_type mean(T const& _begin, T const& _end)
+typename element_of<T>::type mean(T const& _begin, T const& _end)
 {
-	typename T::value_type ret = 0;
+	typename element_of<T>::type ret = 0;
 	unsigned j = 0;
 	for (T i = _begin; i != _end; ++i, ++j)
 		ret += *i;
@@ -76,18 +76,18 @@ typename T::value_type mean(T const& _begin, T const& _end)
 }
 
 template <class T>
-typename T::value_type variance(T const& _distro, typename T::value_type _mean)
+typename element_of<T>::type variance(T const& _distro, typename element_of<T>::type _mean)
 {
-	typename T::value_type ret = 0;
+	typename element_of<T>::type ret = 0;
 	for (auto v: _distro)
 		ret += sqr(v - _mean);
 	return ret / _distro.size();
 }
 
 template <class T>
-typename T::value_type variance(T const& _begin, T const& _end, typename T::value_type _mean)
+typename element_of<T>::type variance(T const& _begin, T const& _end, typename element_of<T>::type _mean)
 {
-	typename T::value_type ret = 0;
+	typename element_of<T>::type ret = 0;
 	unsigned j = 0;
 	for (T i = _begin; i != _end; ++i, ++j)
 		ret += sqr(*i - _mean);
@@ -95,37 +95,37 @@ typename T::value_type variance(T const& _begin, T const& _end, typename T::valu
 }
 
 template <class T>
-typename T::value_type sigma(T const& _distro, typename T::value_type _mean)
+typename element_of<T>::type sigma(T const& _distro, typename element_of<T>::type _mean)
 {
 	return sqrt(variance(_distro, _mean));
 }
 
 template <class T>
-typename T::value_type sigma(T const& _begin, T const& _end, typename T::value_type _mean)
+typename element_of<T>::type sigma(T const& _begin, T const& _end, typename element_of<T>::type _mean)
 {
 	return sqrt(variance(_begin, _end, _mean));
 }
 
 template <class T>
-typename T::value_type variance(T const& _distro)
+typename element_of<T>::type variance(T const& _distro)
 {
 	return variance(_distro, mean(_distro));
 }
 
 template <class T>
-typename T::value_type variance(T const& _begin, T const& _end)
+typename element_of<T>::type variance(T const& _begin, T const& _end)
 {
 	return variance(_begin, _end, mean(_begin, _end));
 }
 
 template <class T>
-typename T::value_type sigma(T const& _distro)
+typename element_of<T>::type sigma(T const& _distro)
 {
 	return sigma(_distro, mean(_distro));
 }
 
 template <class T>
-typename T::value_type sigma(T const& _begin, T const& _end)
+typename element_of<T>::type sigma(T const& _begin, T const& _end)
 {
 	return sigma(_begin, _end, mean(_begin, _end));
 }
@@ -165,9 +165,9 @@ T nnormal(T _x, Gaussian _muSigma)
 }
 
 template <class T>
-typename T::value_type pInDistro(typename T::value_type _v, T const& _distro, typename T::value_type _backupSigma = 0)
+typename element_of<T>::type pInDistro(typename element_of<T>::type _v, T const& _distro, typename element_of<T>::type _backupSigma = 0)
 {
-	typedef typename T::value_type E;
+	typedef typename element_of<T>::type E;
 	E m = mean(_distro);
 	E s = _distro.size() > 1 ? sigma(_distro, m) : _backupSigma ? _backupSigma : m;
 	if (s == 0)
@@ -178,19 +178,19 @@ typename T::value_type pInDistro(typename T::value_type _v, T const& _distro, ty
 }
 
 template <class T>
-typename T::value_type pivotalBadness(T const& _distro, typename T::iterator _pivot, typename T::value_type  _minSigma = 0)
+typename element_of<T>::type pivotalBadness(T const& _distro, typename T::iterator _pivot, typename element_of<T>::type  _minSigma = 0)
 {
 	return max(_minSigma, sigma(_distro.begin(), _pivot)) + max(_minSigma, sigma(_pivot, _distro.end()));
 }
 
 template <class T>
-typename T::value_type pivotalBadness(T const& _distro, typename T::value_type _v, typename T::value_type _minSigma = 0)
+typename element_of<T>::type pivotalBadness(T const& _distro, typename element_of<T>::type _v, typename element_of<T>::type _minSigma = 0)
 {
 	return pivotalBadness(_distro, std::find(_distro.begin(), _distro.end(), _v, _minSigma));
 }
 
 template <class T>
-typename T::iterator pivot(T const& _distro, unsigned _minPartition = 1, typename T::value_type _minSigma = 0)
+typename T::iterator pivot(T const& _distro, unsigned _minPartition = 1, typename element_of<T>::type _minSigma = 0)
 {
 	// assumes _distro is sorted.
 	if (!is_sorted(_distro.begin(), _distro.end()))
@@ -200,7 +200,7 @@ typename T::iterator pivot(T const& _distro, unsigned _minPartition = 1, typenam
 
 //	cout << "   pivot: " << _distro << ": ";
 
-	typedef typename T::value_type E;
+	typedef typename element_of<T>::type E;
 	auto plower = --next(_distro.begin(), _minPartition);
 	auto pupper = ++next(_distro.begin(), _distro.size() - _minPartition);
 	auto p = next(_distro.begin(), _distro.size() / 2);

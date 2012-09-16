@@ -34,10 +34,7 @@ using namespace std;
 using namespace Lightbox;
 
 NotedBase::NotedBase(QWidget* _p):
-	NotedFace					(_p),
-	m_wave						("wave"),
-	m_blockSamples				(128),
-	m_pageBlocks				(128)
+	NotedFace					(_p)
 {
 }
 
@@ -47,7 +44,7 @@ NotedBase::~NotedBase()
 
 uint32_t NotedBase::calculateWaveFingerprint() const
 {
-	return uint32_t(qHash(m_sourceFileName)) ^ m_rate ^ m_blockSamples;
+	return uint32_t(qHash(m_sourceFileName)) ^ m_rate;
 }
 
 uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const
@@ -61,66 +58,45 @@ uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const
 	return ret;
 }
 
-bool NotedBase::waveBlock(Time _from, Time _duration, Lightbox::foreign_vector<float> o_toFill) const
+// returns true if it's pairs of max/rms, false if it's samples.
+bool NotedBase::waveBlock(Time _from, Time _duration, Lightbox::foreign_vector<float> o_toFill, bool _forceSamples) const
 {
-	QMutexLocker l(&x_wave);
-	IndexLevel il(-1, 0);
-	unsigned samplesRequired = o_toFill.count();
-	int pageBlocksRaisedLevel = 1;
-	int samplesPerPage = m_pageBlocks * m_blockSamples;
-
-	for (unsigned samples = fromBase(_duration, m_rate); samples / m_pageBlocks * 1.2 > samplesRequired; )
-	{
-		samples /= m_pageBlocks;
-		++il.level;
-		pageBlocksRaisedLevel *= m_pageBlocks;
-	}
-	// il.level is the best sampling level.
-
-	PagePtr page;
-	foreign_vector<float> data;
-	int fromSample = fromBase(_from, m_rate);
 	int samples = fromBase(_duration, m_rate);
-	int pageBlocksRaisedLevelTimesSamplesPerPage = pageBlocksRaisedLevel * samplesPerPage;
-	int lPageOffset = -1;
-	for (int i = 0; i < (int)o_toFill.count(); ++i)
+	int items = _forceSamples ? o_toFill.size() : (o_toFill.size() / 2);
+	int samplesPerItem = samples / items;
+	if (samplesPerItem < (int)m_hopSamples || _forceSamples)
 	{
-		// global sample index...
-		int si = fromSample + i * samples / o_toFill.count();
-
-		if (si < 0 || si >= (int)m_samples)	// OPTIMIZE: by memset zero and loop cropping.
-			o_toFill[i] = 0;
-		else
-		{
-			// calculate required il.index and page offset from that.
-			int pageIndex = si / pageBlocksRaisedLevelTimesSamplesPerPage;
-			int pageOffset = si / pageBlocksRaisedLevel % samplesPerPage;
-
-			if (il != IndexLevel(pageIndex, il.level))
-			{
-				il.index = pageIndex;
-				page = m_wave.page(il);
-				data = page->data<float>();
-			}
-
-			if (data)
-			{
-				o_toFill[i] = data[pageOffset];
-				bool lastPositive = i ? o_toFill[i - 1] > 0 : true;
-
-				if (pageOffset > lPageOffset + 1 && lPageOffset != -1)
-					for (int j = lPageOffset + 1; j < pageOffset; ++j)
-						o_toFill[i] = (fabs(data[j]) + (lastPositive == data[j] < 0 ? .15f : 0.f) > fabs(o_toFill[i])) ? data[j] : o_toFill[i];
-				lPageOffset = pageOffset;
-			}
-		}
+		QMutexLocker l(&x_wave);
+		int imin = -fromBase(_from, m_rate);
+		int imax = m_wave.data<float>().size() - fromBase(_from, m_rate);
+		float const* d = m_wave.data<float>().data() + fromBase(_from, m_rate);
+		for (int i = 0; i < items; ++i)
+			o_toFill[i] = (i < imin || i >= imax) ? 0 : d[samples * i / items];
+		return false;
 	}
-	return il.level > 0;
+	else
+	{
+		QMutexLocker l(&x_waveProfile);
+		int hi = _from / hop();
+		int hs = _duration / hop();
+		for (int i = 0; i < items; ++i)
+			if (hi + i * hs / items >= 0 && hi + i * hs / items < (int)hops())
+			{
+				auto d = m_waveProfile.items<float>(hi + i * hs / items, hs / items);
+				o_toFill[i * 2] = d[0];
+				o_toFill[i * 2 + 1] = d[1];
+			}
+			else
+				o_toFill[i * 2] = o_toFill[i * 2 + 1] = 0;
+		return true;
+	}
 }
 
-Lightbox::foreign_vector<float> NotedBase::waveWindow(int _window) const
+Lightbox::foreign_vector<float const> NotedBase::waveWindow(int _window) const
 {
 	QMutexLocker l(&x_wave);
+
+	_window = clamp<int, int>(_window, 0, hops());
 
 	// 0th window begins at (1 - hopsPerWindow) hops; all negative samples are 0 values.
 	int hopsPerWindow = m_windowFunction.size() / m_hopSamples;
@@ -128,25 +104,16 @@ Lightbox::foreign_vector<float> NotedBase::waveWindow(int _window) const
 	if (hop < 0)
 	{
 		shared_ptr<vector<float> > data = make_shared<vector<float> >(m_windowFunction.size(), 0.f);
-		auto i = m_wave.item(0, 0, 0, m_windowFunction.size() + hop * m_hopSamples);
-		valcpy(data->data() + m_windowFunction.size() - i.count(), i.data(), i.count());
-		return foreign_vector<float>(data->data(), m_windowFunction.size()).tied(data);
+		if (m_windowFunction.size() + hop * m_hopSamples > 0)
+		{
+			auto i = m_wave.data<float>().cropped(0, m_windowFunction.size() + hop * m_hopSamples);
+			valcpy(data->data() + m_windowFunction.size() - i.count(), i.data(), i.count());
+		}
+		return foreign_vector<float const>(data->data(), m_windowFunction.size()).tied(data);
 	}
-	else if ((hop * m_hopSamples) / (m_pageBlocks * m_blockSamples) == (hop * m_hopSamples + m_windowFunction.size() - 1) / (m_pageBlocks * m_blockSamples))
-		// same page - just return
-		return m_wave.item(hop * m_hopSamples / m_blockSamples, 0, hop * m_hopSamples % m_blockSamples, m_windowFunction.size());
 	else
-	{
-		// differing pages - need to create vector<float> and copy.
-		shared_ptr<vector<float> > data = make_shared<vector<float> >(m_windowFunction.size());
-		int length1 = m_pageBlocks * m_blockSamples - hop * m_hopSamples % (m_pageBlocks * m_blockSamples);
-		auto i1 = m_wave.item(hop * m_hopSamples / m_blockSamples, 0, hop * m_hopSamples % m_blockSamples, length1);
-		valcpy(data->data(), i1.data(), length1);
-		auto i2 = m_wave.item((hop * m_hopSamples / (m_blockSamples * m_pageBlocks) + 1) * m_pageBlocks, 0, 0, m_windowFunction.size() - length1);
-		if (i2)
-			valcpy(data->data() + length1, i2.data(), m_windowFunction.size() - length1);
-		return foreign_vector<float>(data->data(), m_windowFunction.size()).tied(data);
-	}
+		// same page - just return
+		return m_wave.data<float>().cropped(hop * m_hopSamples, m_windowFunction.size());
 }
 
 bool NotedBase::resampleWave()
@@ -155,87 +122,80 @@ bool NotedBase::resampleWave()
 	m_sndfile = sf_open(m_sourceFileName.toLocal8Bit().data(), SFM_READ, &info);
 	if (m_sndfile)
 	{
-		QMutexLocker l(&x_wave);
-		m_wave.init(calculateWaveFingerprint(), m_pageBlocks, m_blockSamples);
-
-		sf_seek(m_sndfile, 0, SEEK_SET);
-		float buffer[m_blockSamples * info.channels];
-
-		// COULDDO: could only do RMS for first level - for later levels, just do mean
-		// ...or only to max for first level - for later levels, just do mean.
-		assert(m_pageBlocks == m_blockSamples);
-		auto accF = [&](float* current, float* acc, unsigned _n)
+		QMutexLocker l1(&x_waveProfile);
+		QMutexLocker l2(&x_wave);
+		unsigned outHops = (fromBase(toBase(info.frames, info.samplerate), m_rate) + m_hopSamples - 1) / m_hopSamples;
+		m_samples = outHops * m_hopSamples;
+		bool waveOk = m_wave.init(calculateWaveFingerprint(), "wave", m_samples * sizeof(float));
+		bool waveProfileOk = m_waveProfile.init(calculateWaveFingerprint(), "waveProfile", 2 * sizeof(float), outHops);
+		if (!waveOk || !waveProfileOk)
 		{
-			acc[_n] = packEvaluate(current, m_blockSamples, [](v4sf& acc, v4sf const& in){ acc = __builtin_ia32_maxps(acc, __builtin_ia32_maxps(in, -in)); }, [](float const* acc){return max(max(acc[0], acc[1]), max(acc[2], acc[3]));});
-		};
-		auto distillF = [&](float*)
-		{
-//			packTransform(acc, m_blockSamples, [&](v4sf& a){});
-		};
+			sf_seek(m_sndfile, 0, SEEK_SET);
+			vector<float> buffer(m_hopSamples * info.channels);
 
-		if (info.samplerate == (int)m_rate)
-		{
-			// Just copy across...
-			m_samples = info.frames;
-			unsigned outBlocks = (m_samples + m_blockSamples - 1) / m_blockSamples;
-			auto baseF = [&](unsigned blockIndex, float* page)
+			float* cache = m_wave.data<float>().data();
+			float* wave = m_waveProfile.data<float>().data();
+			if (info.samplerate == (int)m_rate)
 			{
-				(void)blockIndex;
-				unsigned rc = sf_readf_float(m_sndfile, buffer, m_blockSamples);
-				valcpy<float>(page, buffer, rc, 1, info.channels);	// just take the channel 0.
-				memset(page + rc, 0, sizeof(float) * (m_blockSamples - rc));	// zeroify what's left.
-			};
-			m_wave.fill(baseF, accF, distillF, [](){}, outBlocks);
-		}
-		else
-		{
-			// Needs a resample
-			double factor = double(m_rate) / info.samplerate;
-			void* resampler = resample_open(1, factor, factor);
-			m_samples = fromBase(toBase(info.frames, info.samplerate), m_rate);
-			unsigned outBlocks = (m_samples + m_blockSamples - 1) / m_blockSamples;
-
-			unsigned bufferPos = m_blockSamples;
-
-			auto baseF = [&](unsigned blockIndex, float* page)
-			{
-				unsigned pagePos = 0;
-				while (pagePos != m_blockSamples)
+				// Just copy across...
+				for (unsigned i = 0; i < outHops; ++i, wave += 2, cache += m_hopSamples)
 				{
-					if (bufferPos == m_blockSamples)
-					{
-						// At end of current (input) buffer - refill and reset position.
-						int rc = sf_readf_float(m_sndfile, buffer, m_blockSamples);
-						if (rc < 0)
-							rc = 0;
-						valcpy<float>(buffer, buffer, rc, 1, info.channels);	// just take the channel 0.
-						memset(buffer + rc, 0, sizeof(float) * (m_blockSamples - rc));	// zeroify what's left.
-						bufferPos = 0;
-					}
-					int used = 0;
-					pagePos += resample_process(resampler, factor, buffer + bufferPos, m_blockSamples - bufferPos, blockIndex == outBlocks - 1, &used, page + pagePos, m_blockSamples - pagePos);
-					bufferPos += used;
+					unsigned rc = sf_readf_float(m_sndfile, buffer.data(), m_hopSamples);
+					valcpy<float>(cache, buffer.data(), rc, 1, info.channels);	// just take the channel 0.
+					memset(cache + rc, 0, sizeof(float) * (m_hopSamples - rc));	// zeroify what's left.
+					wave[0] = sigma(buffer);
+					auto r = range(buffer);
+					wave[1] = max(fabs(r.first), r.second);
+					WorkerThread::setCurrentProgress(i * 100 / outHops);
 				}
-				for (unsigned i = 0; i < m_blockSamples; ++i)
-					page[i] = clamp(page[i], -1.f, 1.f);
-			};
-			m_wave.fill(baseF, accF, distillF, [](){}, outBlocks);
-			resample_close(resampler);
+			}
+			else
+			{
+				// Needs a resample
+				double factor = double(m_rate) / info.samplerate;
+				void* resampler = resample_open(1, factor, factor);
+				unsigned bufferPos = m_hopSamples;
+
+				for (unsigned i = 0; i < outHops; ++i, wave += 2, cache += m_hopSamples)
+				{
+					unsigned pagePos = 0;
+					while (pagePos != m_hopSamples)
+					{
+						if (bufferPos == m_hopSamples)
+						{
+							// At end of current (input) buffer - refill and reset position.
+							int rc = sf_readf_float(m_sndfile, buffer.data(), m_hopSamples);
+							if (rc < 0)
+								rc = 0;
+							valcpy<float>(buffer.data(), buffer.data(), rc, 1, info.channels);	// just take the channel 0.
+							memset(buffer.data() + rc, 0, sizeof(float) * (m_hopSamples - rc));	// zeroify what's left.
+							bufferPos = 0;
+						}
+						int used = 0;
+						pagePos += resample_process(resampler, factor, buffer.data() + bufferPos, m_hopSamples - bufferPos, i == outHops - 1, &used, cache + pagePos, m_hopSamples - pagePos);
+						bufferPos += used;
+					}
+					for (unsigned i = 0; i < m_hopSamples; ++i)
+						cache[i] = clamp(cache[i], -1.f, 1.f);
+					wave[0] = sigma(cache, cache + m_hopSamples, 0.f);
+					auto r = range(cache, cache + m_hopSamples);
+					wave[1] = max(fabs(r.first), r.second);
+					WorkerThread::setCurrentProgress(i * 100 / outHops);
+				}
+				resample_close(resampler);
+			}
+			m_wave.setGood();
+			m_waveProfile.generate<float>();
 		}
 		sf_close(m_sndfile);
 	}
 	else
+	{
+		m_wave.init(calculateWaveFingerprint(), "wave", 0);
+		m_waveProfile.init(calculateWaveFingerprint(), "waveProfile", 2 * sizeof(float), 0);
 		return false;
+	}
 	return true;
-}
-
-void setVector(v4sf& _v, float _f)
-{
-	float* f = (float*)&_v;
-	f[0] = _f;
-	f[1] = _f;
-	f[2] = _f;
-	f[3] = _f;
 }
 
 void NotedBase::rejigSpectra()
@@ -244,16 +204,16 @@ void NotedBase::rejigSpectra()
 	int ss = spectrumSize();
 	if (samples())
 	{
-		if (!m_spectra.init(calculateSpectraFingerprint(m_wave.fingerprint()), "spectrum", ss * 3 * sizeof(float), hops()))
+		if (!m_spectra.init(calculateSpectraFingerprint(calculateWaveFingerprint()), "spectrum", ss * 3 * sizeof(float), hops()))
 		{
 			FFTW fftw(m_windowFunction.size());
 			vector<float> lastPhase(spectrumSize(), 0);
 			for (unsigned index = 0; index < hops(); ++index)
 			{
 				float* b = fftw.in();
-				foreign_vector<float> win = waveWindow(index);
+				foreign_vector<float const> win = waveWindow(index);
 				assert(win.data());
-				float* d = win.data();
+				float const* d = win.data();
 				float* w = m_windowFunction.data();
 				unsigned off = m_zeroPhase ? m_windowFunction.size() / 2 : 0;
 				for (unsigned j = 0; j < m_windowFunction.size(); ++d, ++j, ++w)
@@ -270,8 +230,10 @@ void NotedBase::rejigSpectra()
 					sd[i + ss*2] = modf((phase[i] - lastPhase[i]) / TwoPi + 1.f, &intpart);
 				}
 				lastPhase = fftw.phase();
+				WorkerThread::setCurrentProgress(index * 50 / hops());
 			}
-			m_spectra.generate([=](Lightbox::foreign_vector<float> a, Lightbox::foreign_vector<float> b, Lightbox::foreign_vector<float> ret)
+			int n = 0;
+			m_spectra.generate([&](Lightbox::foreign_vector<float> a, Lightbox::foreign_vector<float> b, Lightbox::foreign_vector<float> ret)
 			{
 				Lightbox::valcpy(ret.data(), a.data(), a.size());
 				v4sf half = {.5f, .5f, .5f, .5f};
@@ -279,11 +241,12 @@ void NotedBase::rejigSpectra()
 				{
 					rv = (rv + bv) * half;
 				});// only do the mean combine with b for the mag spectrum.
+				WorkerThread::setCurrentProgress(++n * 50 / hops());
 			}, 0.f);
 		}
 	}
 	else
 	{
-		m_spectra.init(calculateSpectraFingerprint(m_wave.fingerprint()), "spectrum", ss * 3, 0);
+		m_spectra.init(calculateSpectraFingerprint(calculateWaveFingerprint()), "spectrum", ss * 3, 0);
 	}
 }
