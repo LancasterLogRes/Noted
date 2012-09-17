@@ -31,7 +31,6 @@
 
 #include <Common/Common.h>
 #include <NotedPlugin/NotedFace.h>
-#include "Pager.h"
 #include "Cache.h"
 
 class Timeline;
@@ -68,7 +67,6 @@ protected:
 	uint32_t calculateSpectraFingerprint(uint32_t _base) const;
 
 	QString m_sourceFileName;
-	SNDFILE* m_sndfile;
 
 	mutable QMutex x_wave;
 	Cache m_wave;

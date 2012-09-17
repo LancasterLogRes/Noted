@@ -349,6 +349,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 					maxs[e.temperature] = e.strength;
 			}
 
+	const unsigned c_maxElementWidth = 16;
 	const int ySustain = 12;
 	const int yBackSustain = 20;
 	const int ySpike = 32;
@@ -356,10 +357,10 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 	const int yBar = h - 16;
 	QLinearGradient barGrad(0, 0, 0, yBar);
 
-	for (int pass = 0; pass < 4; ++pass)
+//	for (int pass = 0; pass < 4; ++pass)
 	{
 		p.setCompositionMode(QPainter::CompositionMode_Source);
-		if (pass == 0)
+/*		if (pass == 0)
 		{
 			barGrad.setColorAt(0.25, Qt::white);
 			barGrad.setColorAt(1, QColor(224, 224, 224));
@@ -368,7 +369,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 		{
 			barGrad.setColorAt(0.25, Qt::transparent);
 			barGrad.setColorAt(1, QColor(96, 96, 96));
-		}
+		}*/
 		QMap<float, QPoint> lastComments;
 		QMap<float, QPoint> lastGraphs;
 		QPoint lastSpikeChain;
@@ -376,7 +377,26 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 		QPoint lastBackSustain;
 		StreamEvent lastSustainEvent;
 		StreamEvent lastBackSustainEvent;
-		for (int i = 0; i < (int)m_events.size(); ++i)
+
+		int ifrom = c()->windowIndex(renderingTimeOf(_dx - c_maxElementWidth));
+		int ito = min(c()->hops(), c()->windowIndex(renderingTimeOf(_dx + _dw)));
+
+		auto hop = c()->hop();
+		for (auto g: m_graphEvents)
+		{
+			float n = toHue(g.first) / 360.f;
+			p.setPen(QColor::fromHsvF(n, 0.5f, 0.6f * Color::hueCorrection(n * 360)));
+			QPoint lp;
+			for (int i = ifrom; i < ito; ++i)
+			{
+				QPoint cp(renderingPositionOf(i * hop), height() - g.second[i] * height());
+				if (i != ifrom)
+					p.drawLine(lp, cp);
+				lp = cp;
+			}
+		}
+
+		for (int i = ifrom; i < ito; ++i)
 		{
 			Time t = i * c()->hop();
 			int px = renderingPositionOf((i - 1) * c()->hop());
@@ -385,8 +405,8 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 //			int mx = (x + nx) / 2;
 			bool inView = nx >= r.left() - 160 && px <= r.right() + 160;
 			{
-				QMap<float, QPoint> comments;
-				QMap<float, QPoint> graphs;
+//				QMap<float, QPoint> comments;
+//				QMap<float, QPoint> graphs;
 				BOOST_FOREACH (Lightbox::StreamEvent e, m_events[i])
 					if (eventVisible(m_selection->itemData(m_selection->currentIndex()), e) && (inView || isAlwaysVisible(e.type)))
 					{
@@ -406,7 +426,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 							p.drawText(QRect(pt.x() + 4, pt.y() - 7, 160, 14), Qt::AlignLeft | Qt::AlignVCenter, al->label.c_str());
 						}
 
-						if (pass == 3)
+//						if (pass == 3)
 							switch (e.type)
 							{
 							case Lightbox::Spike:	// strength, surprise, temperature
@@ -457,7 +477,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 							{
 								if (lastSustainEvent.type == Sustain)
 								{
-									p.fillRect(lastSustain.x(), ySustain + 1, x - lastSustain.x(), 4, QBrush(QColor::fromHsvF(toHue(lastSustainEvent.temperature) / 360.f, 0.25f, 1.0f * Color::hueCorrection(toHue(lastSustainEvent.temperature)))));
+									p.fillRect(lastSustain.x(), ySustain + 1, x - lastSustain.x(), 1 + lastSustainEvent.strength * 16, QBrush(QColor::fromHsvF(toHue(lastSustainEvent.temperature) / 360.f, 0.25f, 1.0f * Color::hueCorrection(toHue(lastSustainEvent.temperature)))));
 									p.fillRect(lastSustain.x(), ySustain, x - lastSustain.x(), 1, QBrush(QColor::fromHsvF(toHue(lastSustainEvent.temperature) / 360.f, 0.5f, 0.6f * Color::hueCorrection(toHue(lastSustainEvent.temperature)))));
 									lastSustain = QPoint(x, ySustain);
 								}
@@ -485,23 +505,6 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 								lastBackSustainEvent = e;
 								break;
 							}
-/*							case Lightbox::SpikeA: case Lightbox::SpikeB: case Lightbox::SpikeC: case Lightbox::SpikeD: case Lightbox::SpikeE: case Lightbox::SpikeF:
-								p.setBrush(QBrush(cPastel));
-								p.setPen(cDark);
-								for (int i = 0, y = 30; i < 5; ++i)
-								{
-									if (e.type - Lightbox::SpikeA == i)
-										{
-											p.drawEllipse(QRect(mx - 4, y, 8, 8));
-											y += 9;
-										}
-										else
-										{
-											p.drawLine(mx, y, mx, y + 2);
-											y += 3;
-										}
-								}
-								break;*/
 							case Lightbox::PeriodSet:
 							{
 								p.setPen(cDark);
@@ -523,70 +526,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 							default:
 								break;
 						}
-
-						if (pass == 1)
-							switch (e.type)
-							{
-							case Lightbox::Comment:
-								p.setPen(cLight);
-								if (lastComments.contains(id))
-								{
-									if (lastComments[id].y() >= h && pt.y() >= h)
-									{
-										p.setPen(cDark);
-										p.drawLine(lastComments[id].x(), h - 1, pt.x(), h - 1);
-									}
-									else if (lastComments[id].y() < 0 && pt.y() < 0)
-									{
-										p.setPen(cDark);
-										p.drawLine(lastComments[id].x(), 0, pt.x(), 0);
-									}
-									else
-										p.drawLine(lastComments[id], pt);
-								}
-								lastComments[id] = pt;
-								break;
-							case Lightbox::Graph:
-							case Lightbox::GraphUnder:
-							{
-								p.setPen(cLight);
-								if (lastGraphs.contains(id))
-								{
-									if (lastGraphs[id].y() >= h && pt.y() >= h)
-									{
-										p.setPen(cDark);
-										p.drawLine(lastGraphs[id].x(), h - 1, pt.x(), h - 1);
-									}
-									else if (lastGraphs[id].y() < 0 && pt.y() < 0)
-									{
-										p.setPen(cDark);
-										p.drawLine(lastGraphs[id].x(), 0, pt.x(), 0);
-									}
-									else
-										p.drawLine(lastGraphs[id], pt);
-
-									if (e.type == Lightbox::GraphUnder)
-									{
-										p.setPen(Qt::NoPen);
-										p.setBrush(cPastel);
-										p.drawPolygon(QPolygon(QVector<QPoint>() << QPoint(x, h) << pt << comments[id] << QPoint(comments[id].x(), h)));
-									}
-								}
-								else
-								{
-									p.setPen(Qt::NoPen);
-									p.setBrush(c);
-									p.drawEllipse(pt, 3, 3);
-								}
-								graphs[id] = pt;
-								break;
-							}
-							case Lightbox::GraphBar:
-								break;
-							default:
-								break;
-							}
-
+/*
 						if (pass == 0)
 							switch (e.type)
 							{
@@ -643,10 +583,10 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 								break;
 							default:
 								break;
-							}
+							}*/
 					} // END: Is visible.
 				// END: Each event in set.
-				if (pass == 1)
+/*				if (pass == 1)
 				{
 					for (auto it = lastGraphs.begin(); it != lastGraphs.end(); ++it)
 						if (!graphs.contains(it.key()))
@@ -656,7 +596,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 							p.drawEllipse(it.value(), 3, 3);
 						}
 					lastGraphs = graphs;
-				}
+				}*/
 			} // END: Within view.
 		} // END: Each set of events.
 	} // END: Passes.

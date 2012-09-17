@@ -136,6 +136,7 @@ void PrerenderedTimeline::paintGL()
 		glTexCoord2i(1, 1);
 		glVertex2i(r.x() + r.width(), r.top() + r.height());
 		glEnd();
+		m_needsUpdate = false;
 	}
 
 	m_lastCursorL = c()->positionOf(highlightFrom()) + 1;
@@ -158,7 +159,6 @@ void PrerenderedTimeline::paintGL()
 	glVertex2i(m_lastCursorR, r.top());
 	glVertex2i(m_lastCursorR, r.top() + r.height());
 	glEnd();
-	m_needsUpdate = false;
 }
 
 bool PrerenderedTimeline::rejigRender()
@@ -200,7 +200,6 @@ bool PrerenderedTimeline::rejigRender()
 				}
 			}
 		}
-
 
 		if (m_fbo && m_renderedPixelDuration == m_renderingPixelDuration && height() == m_fbo->height() && !m_sourceChanged)
 		{

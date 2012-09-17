@@ -26,10 +26,8 @@
 #include <QDebug>
 #include <QtGui>
 #include <Common/Common.h>
-
-#include "Page.h"
+#include "WorkerThread.h"
 #include "NotedBase.h"
-
 using namespace std;
 using namespace Lightbox;
 
@@ -119,8 +117,8 @@ Lightbox::foreign_vector<float const> NotedBase::waveWindow(int _window) const
 bool NotedBase::resampleWave()
 {
 	SF_INFO info;
-	m_sndfile = sf_open(m_sourceFileName.toLocal8Bit().data(), SFM_READ, &info);
-	if (m_sndfile)
+	auto sndfile = sf_open(m_sourceFileName.toLocal8Bit().data(), SFM_READ, &info);
+	if (sndfile)
 	{
 		QMutexLocker l1(&x_waveProfile);
 		QMutexLocker l2(&x_wave);
@@ -130,7 +128,7 @@ bool NotedBase::resampleWave()
 		bool waveProfileOk = m_waveProfile.init(calculateWaveFingerprint(), "waveProfile", 2 * sizeof(float), outHops);
 		if (!waveOk || !waveProfileOk)
 		{
-			sf_seek(m_sndfile, 0, SEEK_SET);
+			sf_seek(sndfile, 0, SEEK_SET);
 			vector<float> buffer(m_hopSamples * info.channels);
 
 			float* cache = m_wave.data<float>().data();
@@ -140,7 +138,7 @@ bool NotedBase::resampleWave()
 				// Just copy across...
 				for (unsigned i = 0; i < outHops; ++i, wave += 2, cache += m_hopSamples)
 				{
-					unsigned rc = sf_readf_float(m_sndfile, buffer.data(), m_hopSamples);
+					unsigned rc = sf_readf_float(sndfile, buffer.data(), m_hopSamples);
 					valcpy<float>(cache, buffer.data(), rc, 1, info.channels);	// just take the channel 0.
 					memset(cache + rc, 0, sizeof(float) * (m_hopSamples - rc));	// zeroify what's left.
 					wave[0] = sigma(buffer);
@@ -164,7 +162,7 @@ bool NotedBase::resampleWave()
 						if (bufferPos == m_hopSamples)
 						{
 							// At end of current (input) buffer - refill and reset position.
-							int rc = sf_readf_float(m_sndfile, buffer.data(), m_hopSamples);
+							int rc = sf_readf_float(sndfile, buffer.data(), m_hopSamples);
 							if (rc < 0)
 								rc = 0;
 							valcpy<float>(buffer.data(), buffer.data(), rc, 1, info.channels);	// just take the channel 0.
@@ -187,7 +185,7 @@ bool NotedBase::resampleWave()
 			m_wave.setGood();
 			m_waveProfile.generate<float>();
 		}
-		sf_close(m_sndfile);
+		sf_close(sndfile);
 	}
 	else
 	{
