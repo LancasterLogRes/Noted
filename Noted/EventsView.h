@@ -79,6 +79,7 @@ public slots:
 	void duplicate();
 	void onUseChanged();
 	void exportEvents();
+	void channelChanged();
 
 private:
 	virtual void doRender(QGLFramebufferObject* _fbo, int _dx, int _dw);
@@ -89,6 +90,7 @@ private:
 	QSplitter* m_actualWidget;
 	PropertiesEditor* m_propertiesEditor;
 	QComboBox* m_selection;
+	QComboBox* m_channel;
 	QPushButton* m_use;
 	QLabel* m_label;
 

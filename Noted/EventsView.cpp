@@ -45,42 +45,48 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	connect(m_propertiesEditor, SIGNAL(changed()), c(), SLOT(noteEventCompilersChanged()));
 
 	connect(c(), SIGNAL(eventsChanged()), this, SLOT(sourceChanged()));
-	auto oe = []() -> QGraphicsEffect* { auto ret = new QGraphicsOpacityEffect; ret->setOpacity(0.7); return ret; };
+
+	const float c_size = 16;
+	const float c_margin = 0;
 
 	m_label = new QLabel(this);
-	m_label->setGeometry(0, 0, 98, 16);
+	m_label->setGeometry(0, 0, (c_size + c_margin) * 5 + c_size, 14);
 	m_label->setStyleSheet("background: white");
 	m_label->setText(name());
 
 	QPushButton* b = new QPushButton(this);
-	b->setGeometry(0, 18, 23, 23);
+	b->setGeometry(0, m_label->height(), c_size, c_size);
 	b->setText("X");
-	b->setGraphicsEffect(oe());
 	connect(b, SIGNAL(clicked()), SLOT(deleteLater()));
 
 	QPushButton* ex = new QPushButton(this);
-	ex->setGeometry(25, 18, 23, 23);
+	ex->setGeometry(c_size + c_margin, m_label->height(), c_size, c_size);
 	ex->setText(">");
-	ex->setGraphicsEffect(oe());
 	connect(ex, SIGNAL(clicked()), SLOT(exportEvents()));
 
 	QPushButton* d = new QPushButton(this);
-	d->setGeometry(50, 18, 23, 23);
+	d->setGeometry((c_size + c_margin) * 2, m_label->height(), c_size, c_size);
 	d->setText("+");
-	d->setGraphicsEffect(oe());
 	connect(d, SIGNAL(clicked()), SLOT(duplicate()));
 
 	m_use = new QPushButton(this);
-	m_use->setGeometry(75, 18, 23, 23);
+	m_use->setGeometry((c_size + c_margin) * 3, m_label->height(), c_size, c_size);
 	m_use->setText("U");
-	m_use->setGraphicsEffect(oe());
 	m_use->setCheckable(true);
 	m_use->setChecked(true);
 	connect(m_use, SIGNAL(toggled(bool)), SLOT(onUseChanged()));
 
+	m_channel = new QComboBox(this);
+	m_channel->setGeometry((c_size + c_margin) * 4, m_label->height(), c_size * 2 + c_margin, c_size);
+	connect(m_channel, SIGNAL(currentIndexChanged(int)), SLOT(channelChanged()));
+	m_channel->addItem("-");
+	m_channel->addItem("0");
+	m_channel->addItem("1");
+	m_channel->addItem("2");
+	m_channel->addItem("3");
+
 	m_selection = new QComboBox(this);
-	m_selection->setGeometry(0, 43, 98, 23);
-	m_selection->setGraphicsEffect(oe());
+	m_selection->setGeometry(0, m_label->height() + c_size + c_margin * 2, (c_size + c_margin) * 5 + c_size, c_size);
 	connect(m_selection, SIGNAL(currentIndexChanged(int)), SLOT(sourceChanged()));
 
 	c()->noteEventCompilersChanged();
@@ -116,6 +122,7 @@ void EventsView::filterEvents()
 	int i = 0;
 	QList<StreamEvents> filtered;
 	filtered.reserve(m_events.size());
+	int ch = m_channel->currentIndex() - 1;
 	for (StreamEvents const& es: m_events)
 	{
 		filtered.push_back(StreamEvents());
@@ -133,10 +140,15 @@ void EventsView::filterEvents()
 				it.first->second[i] = e.aux();
 			}
 			else
-				filtered.back().push_back(e);
+				filtered.back().push_back(ch < 0 ? e : e.assignedTo(ch));
 		++i;
 	}
 	m_events = filtered;
+}
+
+void EventsView::channelChanged()
+{
+	onUseChanged();//for now...
 }
 
 shared_ptr<StreamEvent::Aux> EventsView::auxEvent(float _temperature, int _pos) const
@@ -219,6 +231,8 @@ void EventsView::readSettings(QSettings& _s, QString const& _id)
 {
 	m_savedName = _s.value(_id + "/name").toString();
 	m_savedProperties = _s.value(_id + "/properties").toString().toStdString();
+	m_use->setChecked(_s.value(_id + "/use").toBool());
+	m_channel->setCurrentIndex(_s.value(_id + "/channel").toInt());
 	restore();
 }
 
@@ -226,6 +240,8 @@ void EventsView::writeSettings(QSettings& _s, QString const& _id)
 {
 	_s.setValue(_id + "/name", name());
 	_s.setValue(_id + "/properties", QString::fromStdString(m_eventCompiler.properties().serialized()));
+	_s.setValue(_id + "/use", m_use->isChecked());
+	_s.setValue(_id + "/channel", m_channel->currentIndex());
 }
 
 void EventsView::exportEvents()
