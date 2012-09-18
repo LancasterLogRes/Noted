@@ -44,38 +44,23 @@ namespace Lightbox
 /**
  * All events use the strength, character and temperature unless otherwise noted.
  *
- * Spike represents a singularity in the time-series, generally it represent the onset
+ * Attack represents a singularity in the time-series, generally it represent the onset
  * of an energetic phenomenon, but can also represent the lack of such an eventuality.
  * It is not classified, though the temperature and character field may help distinguish.
  * It uses the position, period and surprise members of StreamEvent; period describes
  * the length of activity that can be attributed to this onset. A value of zero will
  * do something sensible.
  *
- * For non-fuzzily classified spikes, use one of the SpikeA/SpikeB/... events. In this
- * case and temperature represent the prototypical parameters.
- * They use the position and surprise members of StreamEvent.
- *
- * Chain is a Spike-like event subsequent to some other Chain or Spike, such that its
- * contextual meaning is heavily dependent on said preceeding event(s) to the point
- * where the two events may be considered a perceptually gestalt entity.
- * Chains are typically close together and similar in temperature. Echos and drum rolls would
- * be examplar.
- * There's ChainA &c. for classified onsets.
- * They all use the position, surprise and period members of StreamEvents, with
- * similar semantics as for Spike.
+ * Sustain is for voices that are truly sustained (i.e. not simply
+ * decaying slowly). It can represent only one at once and must be ended by Release
+ * Multiple Sustain events without Release tweak the temperature
+ * of the voice (e.g. sweeping through the frequencies/loudnesses). They should be given
+ * in addition to an onset (as in RT we'll have no idea whether the onset will be sustained
+ * until it has been going for some time).
  *
  * Jet is for a recurring voice without a clear phase (alignment). It'll probably be a
  * multiple of the beat period, if not the bar period itself. It can represent only one
  * at once and must be ended by EndJet. It uses the period member of StreamEvent.
- *
- * Sustain is for voices that are truly sustained (i.e. not simply
- * decaying slowly). It can represent only one at once and must be ended by EndSustain
- * Multiple Sustain events without EndSustain tweak the temperature
- * of the voice (e.g. sweeping through the frequencies/loudnesses). They should be given
- * in addition to an onset (as in RT we'll have no idea whether the onset will be sustained
- * until it has been going for some time).
- * BackSustain and EndBackSustain are equivalent but allow a secondary background
- * sustained voice to be represented also.
  *
  * Cycle should happen on a 4-bar boundary and determines the upcoming temperature and dynamics
  * through the temperature, strength and surprise properties.
@@ -101,27 +86,10 @@ struct StreamEvent
 	StreamEvent(EventType _t, float _s, float _n, Aux* _aux): type(_t), temperature(_n), strength(_s), period(0), m_aux(std::shared_ptr<Aux>(_aux)) { }
 	StreamEvent(EventType _t = NoEvent, float _s = 1.f, float _n = 0.f, Time _period = 0, Aux* _aux = nullptr, int8_t _position = -1, Character _character = Dull, float _surprise = 1.f): type(_t), position(_position), character(_character), channel(-1), temperature(_n), strength(_s), surprise(_surprise), period(_period), m_aux(std::shared_ptr<Aux>(_aux)) { }
 
-	void assign(int _channel = CompatibilityChannel)
+	void assign(int _channel)
 	{
 		if (isChannelSpecific(type))
-			if (_channel == CompatibilityChannel)
-			{
-				if (toMain(type) == Spike)
-					channel = 0;
-				else if (toMain(type) == Sustain)
-					channel = 1;
-				else if (toMain(type) == BackSustain)
-				{
-					channel = 2;
-					type = Sustain;
-				}
-				else if (toMain(type) == Jet)
-					channel = 3;
-				else
-					channel = -1;
-			}
-			else
-				channel = _channel;
+			channel = _channel;
 		else
 			channel = -1;
 	}
@@ -152,17 +120,17 @@ inline float toHue(float _temperature)
 
 /** e.g.
  *
- * Spike(strength=1; surprise=1) means onset definitely occurred that we were unable to predict (either
+ * Attack(strength=1; surprise=1) means onset definitely occurred that we were unable to predict (either
  * because it was unusual or because we haven't yet built a good enough model of the music).
  *
- * Spike(strength=0.5; surprise=1) means onset quite-possibly occurred which, in the case, would be surprising.
+ * Attack(strength=0.5; surprise=1) means onset quite-possibly occurred which, in the case, would be surprising.
  *
- * Spike(strength=1; surprise=0) means onset occurred that we had abundant reason to suppose would indeed have occurred.
+ * Attack(strength=1; surprise=0) means onset occurred that we had abundant reason to suppose would indeed have occurred.
  *
- * Spike(strength=-1; surprise=1) means onset didn't occur that we had abundant reason to suppose would have occurred.
+ * Attack(strength=-1; surprise=1) means onset didn't occur that we had abundant reason to suppose would have occurred.
  *
- * Spike(strength=-1; surprise=0) [nonsensical]
- * Spike(strength=0; surprise=?) [nonsensical]
+ * Attack(strength=-1; surprise=0) [nonsensical]
+ * Attack(strength=0; surprise=?) [nonsensical]
  */
 
 struct AuxLabel: public StreamEvent::Aux

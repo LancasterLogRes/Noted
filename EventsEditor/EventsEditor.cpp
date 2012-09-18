@@ -22,7 +22,7 @@
 #include <QtGui>
 #include <NotedPlugin/NotedFace.h>
 #include "EventsEditScene.h"
-#include "SpikeItem.h"
+#include "AttackItem.h"
 #include "EventsEditor.h"
 
 using namespace std;
@@ -63,8 +63,8 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 	connect(c(), SIGNAL(durationChanged()), SLOT(onViewParamsChanged()));
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	setMinimumHeight(78);
-	setMaximumHeight(78);
+	setMinimumHeight(16);
+	setMaximumHeight(144);
 	onViewParamsChanged();
 
 	setContextMenuPolicy(Qt::ActionsContextMenu);
@@ -243,6 +243,7 @@ void EventsEditor::onInsert ## X() \
 { \
 	StreamEventItem* it = StreamEventItem::newItem(StreamEvent(X, .125f, 0.f, FromBpm<130>::value, nullptr, -1, Dull, .125f)); \
 	scene()->addItem(it); \
+	it->setChannel(max<int>((m_lastScenePosition.y() - 16) / 32, 0)); \
 	it->setTime(m_lastScenePosition.x()); \
 }
 #include "DoEventTypes.h"

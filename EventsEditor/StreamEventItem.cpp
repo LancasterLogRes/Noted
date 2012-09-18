@@ -28,7 +28,7 @@
 #include <NotedPlugin/NotedFace.h>
 #include "EventsEditor.h"
 #include "EventsEditScene.h"
-#include "SpikeItem.h"
+#include "AttackItem.h"
 #include "SustainItem.h"
 #include "PeriodItem.h"
 #include "SyncPointItem.h"
@@ -82,7 +82,7 @@ QVariant StreamEventItem::itemChange(GraphicsItemChange _change, QVariant const&
 {
 	if (_change == ItemPositionChange)
 	{
-		QPointF v = evenUp(_value.toPointF());
+		QPointF v = QPointF(0, (m_se.channel == -1) ? 0 : (m_se.channel * 32 + 16)) + evenUp(_value.toPointF());
 
 		if (!(QApplication::keyboardModifiers() & Qt::ControlModifier) && scene())
 		{

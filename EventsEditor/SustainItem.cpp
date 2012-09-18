@@ -41,10 +41,10 @@ void SustainBarItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidge
 
 QPointF SustainSuperItem::evenUp(QPointF const& _n)
 {
-	return QPointF(_n.x(), m_yPos);
+	return QPointF(_n.x(), 2.f);
 }
 
-void SustainBasicItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
+void SustainItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
 {
 	if (isSelected())
 	{
@@ -58,7 +58,7 @@ void SustainBasicItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWid
 	_p->drawText(core().adjusted(0, 0, -4, 0), Qt::AlignCenter, QString(toChar(m_se.character)));
 }
 
-void EndSustainBasicItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
+void ReleaseItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
 {
 	if (isSelected())
 	{

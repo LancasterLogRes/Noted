@@ -361,7 +361,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 	int h = height();
 	QRect r(_dx, 0, _dw, h);
 
-	auto isAlwaysVisible = [](EventType et) { return et == Lightbox::PeriodSet || et == Sustain || et == EndSustain || et == BackSustain || et == EndBackSustain; };
+	auto isAlwaysVisible = [](EventType et) { return et == Lightbox::PeriodSet || et == Sustain || et == Release; };
 
 	p.setClipRect(r);
 
@@ -372,8 +372,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 
 	const unsigned c_maxElementWidth = 16;
 	const int ySustain = 12;
-	const int yBackSustain = 20;
-	const int ySpike = 32;
+	const int yAttack = 32;
 	const int yChain = 40;
 	const int yBar = h - 16;
 	QLinearGradient barGrad(0, 0, 0, yBar);
@@ -393,11 +392,9 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 		}*/
 		QMap<float, QPoint> lastComments;
 		QMap<float, QPoint> lastGraphs;
-		QPoint lastSpikeChain;
+		QPoint lastAttack;
 		QPoint lastSustain;
-		QPoint lastBackSustain;
 		StreamEvent lastSustainEvent;
-		StreamEvent lastBackSustainEvent;
 
 		int ifrom = c()->windowIndex(renderingTimeOf(_dx - c_maxElementWidth));
 		int ito = min(c()->hops(), c()->windowIndex(renderingTimeOf(_dx + _dw)));
@@ -446,51 +443,50 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 
 						switch (e.type)
 						{
-						case Lightbox::Spike:	// strength, surprise, temperature
-						{
-							int ox = qMax(4, nx - x);
-							if (e.strength > 0)
+						case Lightbox::Attack:	// strength, surprise, temperature
+							if (e.surprise > 0.f)
 							{
+								int ox = qMax(4, nx - x);
+								if (e.strength > 0)
+								{
+									p.setPen(cDark);
+									p.setBrush(QBrush(cPastel));
+									p.drawRect(x, yAttack, ox, 8);
+									for (int j = 0; j < log2(e.strength) + 6; ++j)
+										p.drawLine(QLine(x, yAttack + 10 + j * 2, qMax(x + 2, nx - 1), yAttack + 10 + j * 2));
+								}
+								else
+								{
+									p.setPen(cPastel);
+									p.setBrush(Qt::NoBrush);
+									p.drawRect(x, yAttack, ox, 8);
+									for (int j = 0; j < log2(-e.strength) + 6; ++j)
+										p.drawLine(QLine(x, yAttack + 10 + j * 2, qMax(x + 2, nx - 1), yAttack + 10 + j * 2));
+								}
 								p.setPen(cDark);
-								p.setBrush(QBrush(cPastel));
-								p.drawRect(x, ySpike, ox, 8);
-								for (int j = 0; j < log2(e.strength) + 6; ++j)
-									p.drawLine(QLine(x, ySpike + 10 + j * 2, qMax(x + 2, nx - 1), ySpike + 10 + j * 2));
+								if (e.surprise)
+									for (int j = 0; j < log2(e.surprise) + 6; ++j)
+									{
+										p.drawLine(QLine(x + ox + (j + 1) * 2, yAttack, x + ox + (j + 1) * 2, yAttack + 5));
+										p.drawLine(QLine(x + ox + (j + 1) * 2, yAttack + 7, x + ox + (j + 1) * 2, yAttack + 8));
+									}
+								lastAttack = QPoint(x + ox, yAttack);
 							}
 							else
 							{
-								p.setPen(cPastel);
-								p.setBrush(Qt::NoBrush);
-								p.drawRect(x, ySpike, ox, 8);
-								for (int j = 0; j < log2(-e.strength) + 6; ++j)
-									p.drawLine(QLine(x, ySpike + 10 + j * 2, qMax(x + 2, nx - 1), ySpike + 10 + j * 2));
+								p.setPen(cDark);
+								p.setBrush(QBrush(cPastel));
+								int ox = qMax(4, nx - x);
+								p.drawRect(x, yChain, ox, 4);
+								for (int j = 0; j < log2(e.strength) + 6; ++j)
+									p.drawLine(QLine(x, yChain + 6 + j * 2, qMax(x + 2, nx - 1), yChain + 6 + j * 2));
+								p.setPen(QColor(0, 0, 0, 64));
+								p.drawLine(lastAttack, QPoint(x, yChain));
+								p.drawLine(lastAttack + QPoint(0, 4), QPoint(x, yChain + 4));
+								lastAttack = QPoint(x + ox, yChain);
 							}
-							p.setPen(cDark);
-							if (e.surprise)
-								for (int j = 0; j < log2(e.surprise) + 6; ++j)
-								{
-									p.drawLine(QLine(x + ox + (j + 1) * 2, ySpike, x + ox + (j + 1) * 2, ySpike + 5));
-									p.drawLine(QLine(x + ox + (j + 1) * 2, ySpike + 7, x + ox + (j + 1) * 2, ySpike + 8));
-								}
-							lastSpikeChain = QPoint(x + ox, ySpike);
-
 							break;
-						}
-						case Lightbox::Chain:
-						{
-							p.setPen(cDark);
-							p.setBrush(QBrush(cPastel));
-							int ox = qMax(4, nx - x);
-							p.drawRect(x, yChain, ox, 4);
-							for (int j = 0; j < log2(e.strength) + 6; ++j)
-								p.drawLine(QLine(x, yChain + 6 + j * 2, qMax(x + 2, nx - 1), yChain + 6 + j * 2));
-							p.setPen(QColor(0, 0, 0, 64));
-							p.drawLine(lastSpikeChain, QPoint(x, yChain));
-							p.drawLine(lastSpikeChain + QPoint(0, 4), QPoint(x, yChain + 4));
-							lastSpikeChain = QPoint(x + ox, yChain);
-							break;
-						}
-						case Lightbox::Sustain: case Lightbox::EndSustain:
+						case Lightbox::Sustain: case Lightbox::Release:
 						{
 							if (lastSustainEvent.type == Sustain)
 							{
@@ -504,22 +500,6 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 								lastSustain = QPoint(x + 2, ySustain);
 							}
 							lastSustainEvent = e;
-							break;
-						}
-						case Lightbox::BackSustain: case Lightbox::EndBackSustain:
-						{
-							if (lastBackSustainEvent.type == BackSustain)
-							{
-								p.fillRect(lastBackSustain.x(), yBackSustain + 1, x - lastBackSustain.x(), 4, QBrush(QColor::fromHsvF(toHue(lastBackSustainEvent.temperature) / 360.f, 0.25f, 1.0f * Color::hueCorrection(toHue(lastBackSustainEvent.temperature)))));
-								p.fillRect(lastBackSustain.x(), yBackSustain, x - lastBackSustain.x(), 1, QBrush(QColor::fromHsvF(toHue(lastBackSustainEvent.temperature) / 360.f, 0.5f, 0.6f * Color::hueCorrection(toHue(lastBackSustainEvent.temperature)))));
-								lastBackSustain = QPoint(x, yBackSustain);
-							}
-							else
-							{
-								p.fillRect(x, yBackSustain, 2, 5, cDark);
-								lastBackSustain = QPoint(x + 2, yBackSustain);
-							}
-							lastBackSustainEvent = e;
 							break;
 						}
 						case Lightbox::PeriodSet:

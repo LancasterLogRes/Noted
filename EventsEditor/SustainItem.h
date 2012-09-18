@@ -44,49 +44,22 @@ private:
 class SustainSuperItem: public StreamEventItem
 {
 public:
-	SustainSuperItem(Lightbox::StreamEvent const& _se): StreamEventItem(_se), m_yPos(2) {}
+	SustainSuperItem(Lightbox::StreamEvent const& _se): StreamEventItem(_se) {}
 	virtual QPointF evenUp(QPointF const& _n);
-
-protected:
-	float m_yPos;
 };
 
-class SustainBasicItem: public SustainSuperItem
+class SustainItem: public SustainSuperItem
 {
 public:
-	SustainBasicItem(Lightbox::StreamEvent const& _se): SustainSuperItem(_se) {}
+	SustainItem(Lightbox::StreamEvent const& _se): SustainSuperItem(_se) {}
 	virtual QRectF core() const { return QRectF(0, 0, 12, 12); }
 	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 };
 
-class EndSustainBasicItem: public SustainSuperItem
+class ReleaseItem: public SustainSuperItem
 {
 public:
-	EndSustainBasicItem(Lightbox::StreamEvent const& _se): SustainSuperItem(_se) {}
+	ReleaseItem(Lightbox::StreamEvent const& _se): SustainSuperItem(_se) {}
 	virtual QRectF core() const { return QRectF(-6, 0, 6, 12); }
 	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
-};
-
-class SustainItem: public SustainBasicItem
-{
-public:
-	SustainItem(Lightbox::StreamEvent const& _se): SustainBasicItem(_se) { m_yPos = 14.f; }
-};
-
-class EndSustainItem: public EndSustainBasicItem
-{
-public:
-	EndSustainItem(Lightbox::StreamEvent const& _se): EndSustainBasicItem(_se) { m_yPos = 14.f; }
-};
-
-class BackSustainItem: public SustainBasicItem
-{
-public:
-	BackSustainItem(Lightbox::StreamEvent const& _se): SustainBasicItem(_se) { m_yPos = 1.f; }
-};
-
-class EndBackSustainItem: public EndSustainBasicItem
-{
-public:
-	EndBackSustainItem(Lightbox::StreamEvent const& _se): EndSustainBasicItem(_se) { m_yPos = 1.f; }
 };

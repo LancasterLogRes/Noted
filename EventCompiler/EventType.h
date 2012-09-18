@@ -28,8 +28,8 @@ namespace Lightbox
 
 LIGHTBOX_TEXTUAL_ENUM_INHERITS(EventType, uint8_t,
 				NoEvent,
-				Spike, Chain, Jet, EndJet, Sustain, EndSustain,
-				BackSustain, EndBackSustain, // DEPRECATED! DO NOT USE! (Alternative: put Sustains on a separate channel)
+				Attack, Sustain, Release,
+				Jet, EndJet,
 				SyncPoint, PeriodSet, PeriodTweak, PeriodReset, Tick, Beat, Bar, Cycle,
 				Comment, GraphSpecComment, AuxComment, RhythmCandidatesComment, RhythmVectorComment, HistoryComment, PhaseVectorComment, PhaseCandidatesComment, LastBarDistanceComment,
 				WorkingComment, PDFComment,
@@ -41,11 +41,11 @@ inline EventTypes operator|(EventType _a, EventType _b) { return EventTypes({_a,
 inline EventTypes operator|(EventTypes _a, EventType _b) { _a.insert(_b); return _a; }
 inline EventTypes operator|(EventType _a, EventTypes _b) { _b.insert(_a); return _b; }
 
-static const EventType BeginStandard = Spike;
+static const EventType EndSustain = Release;
+static const EventType BeginStandard = Attack;
 static const EventType EndStandard = Comment;
-static const EventTypes AllEventTypes = { Spike, Jet, Sustain, BackSustain, PeriodSet };
-static const EventTypes SustainTypes = { Sustain, BackSustain };
-static const EventTypes JustSpike = { Spike };
+static const EventTypes AllEventTypes = { Attack, Jet, PeriodSet };
+static const EventTypes JustAttack = { Attack };
 static const EventTypes JustJet = { Jet };
 
 inline bool isGraph(EventType _e)
@@ -58,19 +58,22 @@ inline bool isComment(EventType _e)
 	return _e >= Comment && _e < SyncPoint;
 }
 
+inline bool isStandard(EventType _e)
+{
+	return _e >= BeginStandard && _e < EndStandard;
+}
+
 inline bool isChannelSpecific(EventType _e)
 {
 	return _e < SyncPoint;
 }
-
 
 inline EventType endToBegin(EventType _e)
 {
 	switch (_e)
 	{
 	case EndJet: return Jet;
-	case EndSustain: return Sustain;
-	case EndBackSustain: return BackSustain;
+	case Release: return Attack;
 	case PeriodReset: return PeriodSet;
 	default: return NoEvent;
 	}
@@ -81,21 +84,10 @@ inline EventType toMain(EventType _e)
 	switch (_e)
 	{
 	case EndJet: case Jet: return Jet;
-	case EndSustain: case Sustain: return Sustain;
-	case EndBackSustain: case BackSustain: return BackSustain;
+	case Release: case Sustain: return Sustain;
+	case Attack: return Attack;
 	case PeriodReset: case PeriodTweak: case PeriodSet: return PeriodSet;
-	case Chain: case Spike: return Spike;
 	default: return _e;
-	}
-}
-
-inline EventType asSustain(EventType _e)
-{
-	switch (_e)
-	{
-	case Sustain: case EndSustain: return Sustain;
-	case BackSustain: case EndBackSustain: return BackSustain;
-	default: return NoEvent;
 	}
 }
 
@@ -103,7 +95,7 @@ inline EventType asBegin(EventType _e)
 {
 	switch (_e)
 	{
-	case BackSustain: case Sustain: case Jet: case PeriodSet: return _e;
+	case Sustain: case Attack: case Jet: case PeriodSet: return _e;
 	default: return NoEvent;
 	}
 }

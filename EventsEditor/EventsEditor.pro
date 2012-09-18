@@ -15,18 +15,18 @@ LIBS += -lCommon -lNotedPlugin
 
 SOURCES += EventsEditScene.cpp \
     EventsEditor.cpp \
-    SpikeItem.cpp \
     PeriodItem.cpp \
     StreamEventItem.cpp \
     SustainItem.cpp \
-    SyncPointItem.cpp
+    SyncPointItem.cpp \
+    AttackItem.cpp
 
 HEADERS  += EventsEditScene.h \
     EventsEditor.h \
-    SpikeItem.h \
     PeriodItem.h \
     StreamEventItem.h \
     SustainItem.h \
     DoEventTypes.h \
-    SyncPointItem.h
+    SyncPointItem.h \
+    AttackItem.h
 

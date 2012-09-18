@@ -22,13 +22,13 @@
 
 #include "StreamEventItem.h"
 
-class ChainItem;
-
-class SpikeChainItem: public StreamEventItem
+class AttackItem: public StreamEventItem
 {
 public:
-	SpikeChainItem(Lightbox::StreamEvent const& _se): StreamEventItem(_se) {}
+	AttackItem(Lightbox::StreamEvent const& _se): StreamEventItem(_se) {}
 
+	virtual QRectF core() const;
+	virtual QPointF evenUp(QPointF const& _n);
 	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 };
 
@@ -43,26 +43,4 @@ public:
 private:
 	QPointF m_begin;
 	QPointF m_end;
-};
-
-class SpikeItem: public SpikeChainItem
-{
-public:
-	SpikeItem(Lightbox::StreamEvent const& _se): SpikeChainItem(_se) {}
-
-	virtual QRectF core() const;
-	virtual QPointF evenUp(QPointF const& _n);
-
-	void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
-};
-
-class ChainItem: public SpikeChainItem
-{
-public:
-	ChainItem(Lightbox::StreamEvent const& _se): SpikeChainItem(_se) {}
-
-	virtual QRectF core() const;
-	virtual QPointF evenUp(QPointF const& _n);
-
-	void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 };

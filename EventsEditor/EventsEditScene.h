@@ -29,8 +29,6 @@
 class EventsStore;
 class EventsEditor;
 class NotedFace;
-class ChainItem;
-class SpikeChainItem;
 class Chained;
 class StreamEventItem;
 
@@ -60,8 +58,6 @@ signals:
 	void newScale();
 
 private:
-	QMap<ChainItem*, Chained*> m_toChains;
-	QMap<SpikeChainItem*, Chained*> m_fromChains;
 	mutable bool m_isDirty;
 	mutable NotedFace* m_c;
 };

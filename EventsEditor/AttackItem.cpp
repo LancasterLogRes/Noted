@@ -27,15 +27,15 @@
 #include <NotedPlugin/NotedFace.h>
 #include "EventsEditor.h"
 #include "EventsEditScene.h"
-#include "SpikeItem.h"
+#include "AttackItem.h"
 
 using namespace std;
 using namespace Lightbox;
 
-static const float s_ySpike = 32.f;
-static const float s_yChain = 42.f;
+static const float s_yAttack = 2.f;
+static const float s_yChain = 12.f;
 
-void SpikeChainItem::paint(QPainter* _p, const QStyleOptionGraphicsItem*, QWidget*)
+void AttackItem::paint(QPainter* _p, const QStyleOptionGraphicsItem*, QWidget*)
 {
 	float xscale = view()->mapToScene(QPoint(1, 0)).x() - view()->mapToScene(QPoint(0, 0)).x();
 	if (isSelected())
@@ -95,26 +95,9 @@ void Chained::paint(QPainter* _p, const QStyleOptionGraphicsItem*, QWidget*)
 }
 
 
-QRectF SpikeItem::core() const { return QRectF(0, 0, 7, 9); }
+QRectF AttackItem::core() const { return QRectF(0, 0, 7, 9); }
 
-void SpikeItem::paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w)
+QPointF AttackItem::evenUp(QPointF const& _n)
 {
-	SpikeChainItem::paint(_p, _o, _w);
-}
-
-QPointF SpikeItem::evenUp(QPointF const& _n)
-{
-	return QPointF(_n.x(), s_ySpike);
-}
-
-QPointF ChainItem::evenUp(QPointF const& _n)
-{
-	return QPointF(_n.x(), s_yChain);
-}
-
-QRectF ChainItem::core() const { return QRectF(0, 0, 7, 5); }
-
-void ChainItem::paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w)
-{
-	SpikeChainItem::paint(_p, _o, _w);
+	return m_se.surprise > 0.f ? QPointF(_n.x(), s_yAttack) : QPointF(_n.x(), s_yChain);
 }

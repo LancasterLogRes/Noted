@@ -18,13 +18,10 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-DO(Spike)
-DO(Chain)
+DO(Attack)
+DO(Sustain)
+DO(Release)
 DO(PeriodSet)
 DO(PeriodTweak)
 DO(PeriodReset)
-DO(Sustain)
-DO(EndSustain)
-DO(BackSustain)
-DO(EndBackSustain)
 DO(SyncPoint)

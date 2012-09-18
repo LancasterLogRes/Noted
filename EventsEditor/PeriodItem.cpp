@@ -32,7 +32,7 @@
 using namespace std;
 using namespace Lightbox;
 
-static const float s_yPeriod = 62.f;
+static const float s_yPeriod = 8.f;
 
 float PeriodBarItem::snapped(float _x) const
 {

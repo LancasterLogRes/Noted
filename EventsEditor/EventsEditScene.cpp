@@ -24,7 +24,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <EventCompiler/StreamEvent.h>
 #include <NotedPlugin/NotedFace.h>
-#include "SpikeItem.h"
+#include "AttackItem.h"
 #include "PeriodItem.h"
 #include "SustainItem.h"
 #include "SyncPointItem.h"
@@ -56,7 +56,7 @@ void EventsEditScene::copyFrom(EventsStore* _ev)
 			{ \
 				auto it = new X ## Item(se); \
 				addItem(it); \
-				it->setPos(it->evenUp(QPointF(i * hs, 0))); \
+				it->setPos(QPointF(0, (se.channel == -1) ? 0 : (se.channel * 32 + 16)) + it->evenUp(QPointF(i * hs, 0))); \
 				break; \
 			}
 #include "DoEventTypes.h"
@@ -72,60 +72,57 @@ void EventsEditScene::copyFrom(EventsStore* _ev)
 
 void EventsEditScene::rejigEvents()
 {
-	SpikeChainItem* lastSCI = nullptr;
-	StreamEventItem* lastPSI = nullptr;
-	SustainItem* lastSI = nullptr;
-	BackSustainItem* lastBSI = nullptr;
+	QMap<int, AttackItem*> lastSCI;
+	QMap<int, StreamEventItem*> lastPSI;
+	QMap<int, StreamEventItem*> lastSI;
 	int spOrder = 1;
 	foreach (auto it, items(Qt::AscendingOrder))
 		if (auto sei = dynamic_cast<StreamEventItem*>(it))
 		{
-			if (auto ci = dynamic_cast<ChainItem*>(sei))
-			{
-				if (lastSCI)
+			int ch = sei->streamEvent().channel;
+			if (auto ci = dynamic_cast<AttackItem*>(sei))
+				if (ci->streamEvent().surprise == 0.f && lastSCI[ch])
 				{
-					Chained* c = new Chained(ci->pos(), lastSCI->pos());
-					c->setZValue(-1);
-					addItem(c);
+					Chained* cd = new Chained(ci->pos(), lastSCI[ch]->pos());
+					cd->setZValue(-1);
+					addItem(cd);
 				}
-			}
 			StreamEventItem* pri = nullptr;
 			if ((pri = dynamic_cast<PeriodResetItem*>(sei)) || (pri = dynamic_cast<PeriodTweakItem*>(sei)))
 			{
-				if (lastPSI)
+				if (lastPSI[ch])
 				{
-					PeriodBarItem* pbi = new PeriodBarItem(lastPSI->pos(), pri->pos(), toSeconds(lastPSI->streamEvent().period) * 1000);
+					PeriodBarItem* pbi = new PeriodBarItem(lastPSI[ch]->pos(), pri->pos(), toSeconds(lastPSI[ch]->streamEvent().period) * 1000);
 					pbi->setZValue(-1);
 					addItem(pbi);
 				}
 			}
 			if (auto ssi = dynamic_cast<SustainSuperItem*>(sei))
 			{
-				if (lastSI && (dynamic_cast<SustainItem*>(ssi) || dynamic_cast<EndSustainItem*>(ssi)))
+				if (lastSI[ch] && (dynamic_cast<SustainItem*>(ssi) || dynamic_cast<ReleaseItem*>(ssi)))
 				{
-					SustainBarItem* sbi = new SustainBarItem(lastSI->pos(), ssi->pos(), lastSI->streamEvent().temperature);
-					sbi->setZValue(-1);
-					addItem(sbi);
-				}
-				if (lastBSI && (dynamic_cast<BackSustainItem*>(ssi) || dynamic_cast<EndBackSustainItem*>(ssi)))
-				{
-					SustainBarItem* sbi = new SustainBarItem(lastBSI->pos(), ssi->pos(), lastBSI->streamEvent().temperature);
+					SustainBarItem* sbi = new SustainBarItem(lastSI[ch]->pos(), ssi->pos(), lastSI[ch]->streamEvent().temperature);
 					sbi->setZValue(-1);
 					addItem(sbi);
 				}
 			}
-			if (auto sci = dynamic_cast<SpikeChainItem*>(sei))
-				lastSCI = sci;
+			if (auto sci = dynamic_cast<AttackItem*>(sei))
+			{
+				lastSCI[ch] = sci;
+				lastSI[ch] = sci;
+			}
 			if (auto psi = dynamic_cast<PeriodSetItem*>(sei))
-				lastPSI = psi;
+				lastPSI[ch] = psi;
 			if (auto si = dynamic_cast<SustainItem*>(sei))
-				lastSI = si;
-			if (dynamic_cast<EndSustainItem*>(sei))
-				lastSI = nullptr;
-			if (auto sbi = dynamic_cast<BackSustainItem*>(sei))
-				lastBSI = sbi;
-			if (dynamic_cast<EndBackSustainItem*>(sei))
-				lastBSI = nullptr;
+			{
+				lastSI[ch] = si;
+				lastSCI[ch] = nullptr;
+			}
+			if (dynamic_cast<ReleaseItem*>(sei))
+			{
+				lastSI[ch] = nullptr;
+				lastSCI[ch] = nullptr;
+			}
 			if (auto c = dynamic_cast<SyncPointItem*>(it))
 			{
 				c->setOrder(spOrder);
@@ -259,7 +256,7 @@ void EventsEditScene::loadFrom(QString _filename)
 						se.position = w.second.get<int>("<xmlattr>.position", -1);
 						se.surprise = w.second.get<float>("<xmlattr>.surprise", 1.f);
 						se.character = toCharacter(w.second.get<string>("<xmlattr>.character", "Dull"));
-						se.assign(w.second.get<int>("<xmlattr>.channel", CompatibilityChannel));
+						se.assign(w.second.get<int>("<xmlattr>.channel", 0));
 						if (StreamEventItem* sei = StreamEventItem::newItem(se))
 						{
 							sei->setPos(toSeconds(t) * 1000, sei->pos().y());

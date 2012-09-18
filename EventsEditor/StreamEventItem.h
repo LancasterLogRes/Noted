@@ -43,6 +43,7 @@ public:
 	Lightbox::StreamEvent const& streamEvent() const { return m_se; }
 	virtual QPointF evenUp(QPointF const& _n) = 0;
 	virtual void setTime(int _hopIndex);
+	virtual void setChannel(int _ch) { m_se.assign(_ch); }
 	virtual QRectF core() const = 0;
 	virtual QPainterPath shape() const { QPainterPath ret; ret.addRect(core()); return ret; }
 	virtual QRectF boundingRect() const;

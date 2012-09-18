@@ -68,15 +68,12 @@ public slots:
 	void onPaste();
 	void onDelete();
 
-	void onInsertSpike();
-	void onInsertChain();
+	void onInsertAttack();
+	void onInsertSustain();
+	void onInsertRelease();
 	void onInsertPeriodSet();
 	void onInsertPeriodTweak();
 	void onInsertPeriodReset();
-	void onInsertSustain();
-	void onInsertEndSustain();
-	void onInsertBackSustain();
-	void onInsertEndBackSustain();
 	void onInsertSyncPoint();
 
 	void onRejigRhythm();
