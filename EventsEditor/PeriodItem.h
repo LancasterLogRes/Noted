@@ -30,7 +30,7 @@ public:
 	float snapped(float _x) const;
 
 	virtual QPainterPath shape() const { QPainterPath ret; ret.addRect(boundingRect()); return ret; }
-	QRectF boundingRect() const { return QRectF(m_begin, QSizeF(m_end.x() - m_begin.x(), 10)); }
+	QRectF boundingRect() const { return QRectF(m_begin + QPointF(0, 4), QSizeF(m_end.x() - m_begin.x(), 8)); }
 	void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 
 	void setBegin(QPointF const& _p) { prepareGeometryChange(); m_begin = _p; }

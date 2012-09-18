@@ -32,7 +32,7 @@
 using namespace std;
 using namespace Lightbox;
 
-static const float s_yPeriod = 1.f;
+static const float s_yPeriod = 0.f;
 
 float PeriodBarItem::snapped(float _x) const
 {
@@ -91,7 +91,7 @@ void PeriodSetTweakItem::mouseMoveEvent(QGraphicsSceneMouseEvent* _e)
 		StreamEventItem::mouseMoveEvent(_e);
 }
 
-QRectF PeriodSetTweakItem::core() const { return QRectF(-160, 0, 160, 12); }
+QRectF PeriodSetTweakItem::core() const { return QRectF(-160, 0, 160, 16); }
 
 void PeriodSetTweakItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
 {
