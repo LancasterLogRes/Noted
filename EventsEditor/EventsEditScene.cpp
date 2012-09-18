@@ -257,9 +257,9 @@ void EventsEditScene::loadFrom(QString _filename)
 						se.temperature = w.second.get<float>("<xmlattr>.temperature", 0.f);
 						se.period = w.second.get<Time>("<xmlattr>.period", fromMsecs(w.second.get<int64_t>("<xmlattr>.periodMs", 0)));
 						se.position = w.second.get<int>("<xmlattr>.position", -1);
-						se.channel = w.second.get<int>("<xmlattr>.channel", 0);
 						se.surprise = w.second.get<float>("<xmlattr>.surprise", 1.f);
 						se.character = toCharacter(w.second.get<string>("<xmlattr>.character", "Dull"));
+						se.assign(w.second.get<int>("<xmlattr>.channel", CompatibilityChannel));
 						if (StreamEventItem* sei = StreamEventItem::newItem(se))
 						{
 							sei->setPos(toSeconds(t) * 1000, sei->pos().y());

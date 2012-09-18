@@ -68,7 +68,7 @@ public:
 	void finalizeEvents();
 	virtual Lightbox::StreamEvents events(int _i) const;
 	virtual Lightbox::StreamEvents initEvents() const { return m_initEvents; }
-	virtual Lightbox::StreamEvents cursorEvents() const { return m_current; }
+	virtual Lightbox::StreamEvents cursorEvents() const;
 	virtual unsigned eventCount() const { return 0; }
 	std::vector<float> const& graphEvents(float _temperature) const { auto it = m_graphEvents.find(_temperature); if (it != m_graphEvents.end()) return it->second; else return Lightbox::NullVectorFloat; }
 	std::shared_ptr<Lightbox::StreamEvent::Aux> auxEvent(float _temperature, int _pos) const;

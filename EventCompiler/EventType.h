@@ -58,6 +58,12 @@ inline bool isComment(EventType _e)
 	return _e >= Comment && _e < SyncPoint;
 }
 
+inline bool isChannelSpecific(EventType _e)
+{
+	return _e < SyncPoint;
+}
+
+
 inline EventType endToBegin(EventType _e)
 {
 	switch (_e)

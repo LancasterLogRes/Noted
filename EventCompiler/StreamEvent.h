@@ -86,6 +86,9 @@ namespace Lightbox
  * Beat and Bar are used to demarkate the start of beats and bars.
  * They are for informational purposes only. They use only the position member of StreamEvent.
  */
+
+static const int CompatibilityChannel = std::numeric_limits<int>::max();
+
 struct StreamEvent
 {
 	struct Aux
@@ -96,9 +99,33 @@ struct StreamEvent
 
 	StreamEvent(EventType _t, Aux* _aux): type(_t), temperature(-1.f), strength(1.f), period(0), m_aux(std::shared_ptr<Aux>(_aux)) { }
 	StreamEvent(EventType _t, float _s, float _n, Aux* _aux): type(_t), temperature(_n), strength(_s), period(0), m_aux(std::shared_ptr<Aux>(_aux)) { }
-	StreamEvent(EventType _t = NoEvent, float _s = 1.f, float _n = 0.f, Time _period = 0, Aux* _aux = nullptr, int8_t _position = -1, Character _character = Dull, float _surprise = 1.f): type(_t), position(_position), character(_character), temperature(_n), strength(_s), surprise(_surprise), period(_period), m_aux(std::shared_ptr<Aux>(_aux)) { }
+	StreamEvent(EventType _t = NoEvent, float _s = 1.f, float _n = 0.f, Time _period = 0, Aux* _aux = nullptr, int8_t _position = -1, Character _character = Dull, float _surprise = 1.f): type(_t), position(_position), character(_character), channel(-1), temperature(_n), strength(_s), surprise(_surprise), period(_period), m_aux(std::shared_ptr<Aux>(_aux)) { }
 
-	StreamEvent assignedTo(int _ch) const { StreamEvent ret = *this; ret.channel = _ch; return ret; }
+	void assign(int _channel = CompatibilityChannel)
+	{
+		if (isChannelSpecific(type))
+			if (_channel == CompatibilityChannel)
+			{
+				if (toMain(type) == Spike)
+					channel = 0;
+				else if (toMain(type) == Sustain)
+					channel = 1;
+				else if (toMain(type) == BackSustain)
+				{
+					channel = 2;
+					type = Sustain;
+				}
+				else if (toMain(type) == Jet)
+					channel = 3;
+				else
+					channel = -1;
+			}
+			else
+				channel = _channel;
+		else
+			channel = -1;
+	}
+	StreamEvent assignedTo(int _ch) const { if (isChannelSpecific(type)) { StreamEvent ret = *this; ret.channel = _ch; return ret; } return *this; }
 
 	bool operator==(StreamEvent const& _c) const { return type == _c.type && temperature == _c.temperature && strength == _c.strength; }
 	bool operator!=(StreamEvent const& _c) const { return !operator==(_c); }
@@ -109,7 +136,7 @@ struct StreamEvent
 	EventType type;				///< Type of the event.
 	int8_t position;			///< -1 unknown, 0-63 for first 16th note in super-bar, second 16th note, &c.
 	Character character;		///< The character of this event.
-	int8_t channel;				///< The channel this event is on. Typically < 4.
+	int8_t channel;				///< The channel this event is on. Typically < 4; -1 -> channel n/a or unknown.
 
 	float temperature;			///< Abstract quantity in range [0, 1] to describe primary aspects of event.
 	float strength;				///< Non-zero quantity in range [-1, 1], to describe loudness/confidence that phenomenon actually happened. If negative describes confidence that phenomenon didn't happen.
