@@ -55,5 +55,5 @@ QRectF SyncPointItem::core() const
 
 QPointF SyncPointItem::evenUp(QPointF const& _n)
 {
-	return QPointF(_n.x(), 60.f);
+	return QPointF(_n.x(), 1.f);
 }

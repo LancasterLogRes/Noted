@@ -25,10 +25,11 @@
 class SustainBarItem: public QGraphicsItem
 {
 public:
-	SustainBarItem(QPointF const& _begin, QPointF const& _end, float _temperature): m_begin(_begin), m_end(_end), m_temperature(_temperature) {}
+	SustainBarItem(QPointF const& _begin, QPointF const& _end, float _temperature, float _strength): m_begin(_begin), m_end(_end), m_temperature(_temperature), m_strength(_strength) {}
 
 	virtual QPainterPath shape() const { QPainterPath ret; ret.addRect(boundingRect()); return ret; }
-	virtual QRectF boundingRect() const { return QRectF(m_begin + QPointF(0, 3), QSizeF(m_end.x() - m_begin.x(), 6)); }
+
+	virtual QRectF boundingRect() const { return QRectF(m_begin + QPointF(0, 3), QSizeF(m_end.x() - m_begin.x(), 6 + (log2(m_strength) + 7) * 2)); }
 	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 
 	void setBegin(QPointF const& _p) { prepareGeometryChange(); m_begin = _p; }
@@ -38,7 +39,7 @@ private:
 	QPointF m_begin;
 	QPointF m_end;
 	float m_temperature;
-	float m_subNature;
+	float m_strength;
 };
 
 class SustainSuperItem: public StreamEventItem

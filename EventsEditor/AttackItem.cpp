@@ -33,7 +33,7 @@ using namespace std;
 using namespace Lightbox;
 
 static const float s_yAttack = 2.f;
-static const float s_yChain = 12.f;
+static const float s_yChain = 8.f;
 
 void AttackItem::paint(QPainter* _p, const QStyleOptionGraphicsItem*, QWidget*)
 {

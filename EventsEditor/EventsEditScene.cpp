@@ -101,7 +101,7 @@ void EventsEditScene::rejigEvents()
 			{
 				if (lastSI[ch] && (dynamic_cast<SustainItem*>(ssi) || dynamic_cast<ReleaseItem*>(ssi)))
 				{
-					SustainBarItem* sbi = new SustainBarItem(lastSI[ch]->pos(), ssi->pos(), lastSI[ch]->streamEvent().temperature);
+					SustainBarItem* sbi = new SustainBarItem(lastSI[ch]->pos(), ssi->pos(), lastSI[ch]->streamEvent().temperature, lastSI[ch]->streamEvent().strength);
 					sbi->setZValue(-1);
 					addItem(sbi);
 				}

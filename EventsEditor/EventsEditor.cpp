@@ -251,7 +251,13 @@ void EventsEditor::onInsert ## X() \
 
 void EventsEditor::drawBackground(QPainter* _p, QRectF const& _r)
 {
-	_p->fillRect(_r, Qt::white);
+	for (int x = -1; x < 4; ++x)
+	{
+		QLinearGradient g(QPointF(0, x == -1 ? 0 : (16 + x * 32)), QPointF(0, 16 + (x+1) * 32));
+		g.setColorAt(0, QColor::fromHsv(0, 0, x == -1 ? 86 : 255));
+		g.setColorAt(1, QColor::fromHsv(0, 0, x == -1 ? 48 : 232));
+		_p->fillRect(QRectF(_r.left(), 16 + x * 32, _r.width(), 32), g);
+	}
 }
 
 void EventsEditor::onRejigRhythm()
