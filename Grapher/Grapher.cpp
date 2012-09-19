@@ -173,7 +173,7 @@ void Grapher::ruleY(float _x, QColor _color, float _width) const
 	p->drawLine(xTP(_x), active.top(), xTP(_x), active.bottom());
 }
 
-void Grapher::drawLineGraph(std::function<float(float)> const& _f, QColor _color, QBrush const& _fillToZero, float _width) const
+void Grapher::drawLineGraph(std::function<float(float)> const& _f, std::function<QColor(float)> const& _color, QBrush const& _fillToZero, float _width) const
 {
 	QPoint l;
 	if (_fillToZero != Qt::NoBrush)
@@ -189,10 +189,11 @@ void Grapher::drawLineGraph(std::function<float(float)> const& _f, QColor _color
 			l = h;
 		}
 	}
-	p->setPen(QPen(_color, _width));
 	for (int x = active.left(); x <= active.right(); ++x)
 	{
-		QPoint h(x, yTP(_f(xRU(x))));
+		float xr = xRU(x);
+		QPoint h(x, yTP(_f(xr)));
+		p->setPen(QPen(_color(xr), _width));
 		if (x != active.left())
 			p->drawLine(QLine(l, h));
 		l = h;

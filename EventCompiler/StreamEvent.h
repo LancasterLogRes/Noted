@@ -33,7 +33,7 @@
 #include <Common/Time.h>
 #include <Common/Trivial.h>
 #include <Common/Maths.h>
-#include <Common/Color.h>
+#include <Common/RGBA.h>
 
 #include "EventType.h"
 #include "Character.h"
@@ -115,7 +115,8 @@ struct StreamEvent
 
 inline float toHue(float _temperature)
 {
-	return (600 - (int)(clamp(_temperature, -.25f, 1.25f) * 240)) % 360;
+	float f;
+	return std::modf((1.666666 - clamp(_temperature, -.25f, 1.25f) * .66666), &f);
 }
 
 /** e.g.
@@ -190,7 +191,7 @@ Range static const AutoRange = {std::numeric_limits<float>::infinity(), std::num
 
 struct GraphSpec
 {
-	GraphSpec(float _n, EventType _f, GraphType _t, Color _p, float _xC = 0.f, float _xM = 1.f, float _yC = 0.f, float _yM = 1.f, Range const& _xR = AutoRange, Range const& _yR = AutoRange):
+	GraphSpec(float _n, EventType _f, GraphType _t, RGBA _p, float _xC = 0.f, float _xM = 1.f, float _yC = 0.f, float _yM = 1.f, Range const& _xR = AutoRange, Range const& _yR = AutoRange):
 		temperature(_n),
 		filter(_f),
 		type(_t),
@@ -203,7 +204,7 @@ struct GraphSpec
 		yRange(_yR)
 	{}
 
-	GraphSpec(std::function<float(float)> const& _f, GraphType _t, Color _p, float _xC = 0.f, float _xM = 1.f, float _yC = 0.f, float _yM = 1.f, Range const& _xR = AutoRange, Range const& _yR = AutoRange):
+	GraphSpec(std::function<float(float)> const& _f, GraphType _t, RGBA _p, float _xC = 0.f, float _xM = 1.f, float _yC = 0.f, float _yM = 1.f, Range const& _xR = AutoRange, Range const& _yR = AutoRange):
 		filter(NoEvent),
 		type(_t),
 		primary(_p),
@@ -219,7 +220,7 @@ struct GraphSpec
 	float temperature;
 	EventType filter;
 	GraphType type;
-	Color primary;
+	RGBA primary;
 	float xC;
 	float xM;
 	float yC;

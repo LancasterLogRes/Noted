@@ -31,6 +31,7 @@
 #include "MemberCollection.h"
 #include "MemberMap.h"
 #include "Members.h"
+#include "RGBA.h"
 #include "Statistics.h"
 #include "StreamIO.h"
 #include "Time.h"

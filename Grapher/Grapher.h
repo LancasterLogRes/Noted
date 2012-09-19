@@ -87,7 +87,8 @@ public:
 
 	bool drawAxes(bool _x = true, bool _y = true) const;
 	void drawLineGraph(std::vector<float> const& _data, QColor _color = QColor(128, 128, 128), QBrush const& _fillToZero = Qt::NoBrush, float _width = 0.f) const;
-	void drawLineGraph(std::function<float(float)> const& _f, QColor _color = QColor(128, 128, 128), QBrush const& _fillToZero = Qt::NoBrush, float _width = 0.f) const;
+	void drawLineGraph(std::function<float(float)> const& _f, std::function<QColor(float)> const& _color, QBrush const& _fillToZero = Qt::NoBrush, float _width = 0.f) const;
+	void drawLineGraph(std::function<float(float)> const& _f, QColor _color = QColor(128, 128, 128), QBrush const& _fillToZero = Qt::NoBrush, float _width = 0.f) const { return drawLineGraph(_f, [=](float){return _color;}, _fillToZero, _width); }
 	void ruleY(float _x, QColor _color = QColor(128, 128, 128), float _width = 0.f) const;
 	void labelYOrderedPoints(std::map<float, float> const& _translatedData, int _maxCount = 20, float _minFactor = .01f) const;
 

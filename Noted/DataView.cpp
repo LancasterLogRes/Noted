@@ -53,7 +53,7 @@ void DataView::checkSpec()
 		m_xRangeSpec.reset();
 }
 
-QColor toQColor(Color _c, uint8_t _a = 255)
+QColor toQColor(RGBA _c, uint8_t _a = 255)
 {
 	return QColor(_c.r(), _c.g(), _c.b(), _a);
 }

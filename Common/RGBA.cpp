@@ -19,12 +19,21 @@
  */
 
 #include <cmath>
-#include "Color.h"
 using namespace std;
+
+#include "RGBA.h"
 using namespace Lightbox;
 
-float Color::hueCorrection(float _h)
+float RGBA::hueCorrection(unsigned _h)
 {
-	static const std::map<float, float> c_brightnessCurve{{0, .9f}, {.166666, .75f}, {.333333, .85f}, {.5, .85f}, {.666666, 1.f}, {.8333333, .9f}, {1, .9f}};
+	static const std::map<unsigned, float> c_brightnessCurve{{0, .9f}, {60, .75f}, {120, .85f}, {180, .85f}, {240, 1.f}, {300, .9f}, {360, .9f}};
 	return lerpLookup(c_brightnessCurve, _h);
+}
+
+std::vector<uint8_t> Lightbox::gammaTable(float _g)
+{
+	std::vector<uint8_t> ret(256);
+	for (int i = 0; i < 256; ++i)
+		ret[i] = uint8_t(pow(float(i) / 255.f, _g) * 255.f);
+	return ret;
 }

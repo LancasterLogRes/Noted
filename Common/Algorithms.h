@@ -57,15 +57,17 @@ template <class _T> std::multiset<_T> operator+(std::multiset<_T> const& _a, std
 }
 
 template <class _T, class _Fit>
-std::pair<typename std::remove_const<typename std::remove_reference<decltype(_T()[0])>::type>::type, float> findBest(_T const& _t, _Fit const& _fit)
+std::tuple<typename std::remove_const<typename std::remove_reference<decltype(_T()[0])>::type>::type, float, unsigned> findBest(_T const& _t, _Fit const& _fit)
 {
-	std::pair<typename std::remove_const<typename std::remove_reference<decltype(_T()[0])>::type>::type, float> ret;
-	ret.second = -std::numeric_limits<float>::infinity();
+	std::tuple<typename std::remove_const<typename std::remove_reference<decltype(_T()[0])>::type>::type, float, unsigned> ret;
+	std::get<1>(ret) = -std::numeric_limits<float>::infinity();
+	unsigned i = 0;
 	for (auto d: _t)
 	{
 		float f = _fit(d);
-		if (f > ret.second)
-			ret = std::make_pair(d, f);
+		if (f > std::get<1>(ret))
+			ret = std::make_tuple(d, f, i);
+		++i;
 	}
 	return ret;
 }
