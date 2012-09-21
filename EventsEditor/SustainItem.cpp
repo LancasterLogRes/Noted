@@ -32,45 +32,97 @@
 using namespace std;
 using namespace Lightbox;
 
+QRectF SustainBarItem::boundingRect() const
+{
+	return QRectF(m_begin + QPointF(0, 3), QSizeF(m_end.x() - m_begin.x(), 6 + (log2(m_strength) + 7) * 2));
+}
+
 void SustainBarItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
 {
-	QRectF br = boundingRect();
-	br.setHeight(6);
+/*	QRectF br = boundingRect();
+	br.setHeight(32);
 	_p->fillRect(br, QColor::fromHsvF(toHue(m_temperature), .25f, 1.f * Lightbox::Color::hueCorrection(toHue(m_temperature))));
 	_p->fillRect(QRectF(br.topLeft(), QSizeF(br.width(), 1)), QColor::fromHsvF(toHue(m_temperature), .5f, .6f * Lightbox::Color::hueCorrection(toHue(m_temperature))));
 	for (int j = 0; j < log2(m_strength) + 6; ++j)
-		_p->fillRect(QRectF(br.bottomLeft() + QPointF(0, j * 2 + 2), QSizeF(br.width(), 1)), QColor::fromHsvF(toHue(m_temperature), .5f, .6f * Lightbox::Color::hueCorrection(toHue(m_temperature))));
+		_p->fillRect(QRectF(br.bottomLeft() + QPointF(0, j * 2 + 2), QSizeF(br.width(), 1)), QColor::fromHsvF(toHue(m_temperature), .5f, .6f * Lightbox::Color::hueCorrection(toHue(m_temperature))));*/
 }
 
 QPointF SustainSuperItem::evenUp(QPointF const& _n)
 {
-	return QPointF(_n.x(), 2.f);
+	return QPointF(_n.x(), 15.f);
+}
+
+QRectF SustainItem::core() const
+{
+	return QRectF(0, 0, 20, 16);
 }
 
 void SustainItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
 {
-	if (isSelected())
-	{
-		_p->fillRect(QRectF(core().x(), -view()->height(), core().width(), view()->height() * 3), QColor(0, 24, 255, 32));
-		_p->fillRect(QRectF(core().x(), -view()->height(), 1, view()->height() * 3), QColor(0, 24, 255, 128));
-	}
+	handleSelected(_p);
 	_p->setPen(cDark());
 	_p->setBrush(cPastel());
-	_p->drawPolygon(QPolygonF(QVector<QPointF>() << QPointF(core().right(), core().center().y()) << QPointF(core().center().x(), core().bottom()) << core().bottomLeft() << core().topLeft() << QPointF(core().center().x(), core().top())));
-	_p->setPen(Qt::black);
-	_p->drawText(core().adjusted(0, 0, -4, 0), Qt::AlignCenter, QString(toChar(m_se.character)));
+	if (isMagnified())
+	{
+		auto cc = core().center();
+		auto cw = core().width();
+		_p->drawPolygon(QPolygonF(QVector<QPointF>() <<
+								  core().topLeft() <<
+								  QPointF(core().left() + cw / 4, cc.y()) <<
+								  core().bottomLeft() <<
+								  QPointF(core().right() - cw / 4, core().bottom()) <<
+								  QPointF(core().right(), cc.y()) <<
+								  QPointF(core().right() - cw / 4, core().top()) ));
+		_p->setPen(Qt::black);
+		_p->drawText(core(), Qt::AlignCenter, QString(toChar(m_se.character)));
+		_p->setPen(cDark());
+	}
+	_p->drawLine(core().topLeft(), QPointF(core().left(), -16));
+}
+
+QRectF DecayItem::core() const
+{
+	return QRectF(0, 0, 20, 16);
+}
+
+void DecayItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
+{
+	handleSelected(_p);
+	_p->setPen(cDark());
+	_p->setBrush(cPastel());
+	if (isMagnified())
+	{
+		auto cc = core().center();
+		auto cw = core().width();
+		_p->drawPolygon(QPolygonF(QVector<QPointF>() <<
+								  core().topLeft() <<
+								  QPointF(core().left() + cw / 4, cc.y()) <<
+								  core().bottomLeft() <<
+								  QPointF(core().right(), cc.y())));
+	}
+	_p->drawLine(core().topLeft(), QPointF(core().left(), -16));
+}
+
+QRectF ReleaseItem::core() const
+{
+	return QRectF(-20, 0, 20, 16);
 }
 
 void ReleaseItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
 {
-	if (isSelected())
+	handleSelected(_p);
+	_p->setPen(cLight());
+	_p->setBrush(Qt::NoBrush);
+	if (isMagnified())
 	{
-		_p->fillRect(QRectF(core().x(), -view()->height(), core().width(), view()->height() * 3), QColor(0, 24, 255, 32));
-		_p->fillRect(QRectF(core().right(), -view()->height(), 1, view()->height() * 3), QColor(0, 24, 255, 128));
+		auto cc = core().center();
+		auto cw = core().width();
+		_p->drawPolygon(QPolygonF(QVector<QPointF>() <<
+								  core().topLeft() <<
+								  QPointF(core().right(), cc.y()) <<
+								  core().bottomLeft() + QPointF(1, 0) <<
+								  core().bottomRight() + QPointF(1, 0) <<
+								  core().topRight()));
 	}
-	_p->setPen(QColor(128, 128, 128));
-	_p->setBrush(QColor(240, 240, 240));
-	_p->drawRect(QRectF(-6, 0, 6, 3));
-	_p->drawRect(QRectF(-6, 9, 6, 3));
-	_p->drawRect(QRectF(-1, 3, 1, 6));
+	_p->fillRect(QRectF(core().topRight(), QSizeF(1, -16)), qLinearGradient(core().topRight(), QPointF(core().right(), -16), cLight(), Qt::transparent));
 }

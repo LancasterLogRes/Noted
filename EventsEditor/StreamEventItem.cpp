@@ -122,6 +122,11 @@ void StreamEventItem::keyPressEvent(QKeyEvent* _e)
 	}
 }
 
+float StreamEventItem::magFactor() const
+{
+	return view()->mapToScene(QPoint(1, 0)).x() - view()->mapToScene(QPoint(0, 0)).x();
+}
+
 void StreamEventItem::wheelEvent(QGraphicsSceneWheelEvent* _e)
 {
 	bool isSur = (_e->modifiers() & Qt::ShiftModifier);
@@ -147,7 +152,20 @@ void StreamEventItem::wheelEvent(QGraphicsSceneWheelEvent* _e)
 	scene()->setDirty(true);
 }
 
-EventsEditScene* StreamEventItem::scene() const { return dynamic_cast<EventsEditScene*>(const_cast<StreamEventItem*>(this)->QGraphicsItem::scene()); }
+EventsEditScene* StreamEventItem::scene() const
+{
+	return dynamic_cast<EventsEditScene*>(const_cast<StreamEventItem*>(this)->QGraphicsItem::scene());
+}
+
+void StreamEventItem::handleSelected(QPainter* _p)
+{
+	_p->setRenderHint(QPainter::Antialiasing);
+	if (isSelected())
+	{
+		_p->fillRect(QRectF(core().x(), -view()->height(), core().width(), view()->height() * 3), QColor(0, 24, 255, 32));
+		_p->fillRect(QRectF(core().x(), -view()->height(), 1, view()->height() * 3), QColor(0, 24, 255, 128));
+	}
+}
 
 StreamEventItem* StreamEventItem::newItem(Lightbox::StreamEvent const& _se)
 {

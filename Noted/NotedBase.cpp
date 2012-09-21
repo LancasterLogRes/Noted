@@ -32,7 +32,10 @@ using namespace std;
 using namespace Lightbox;
 
 NotedBase::NotedBase(QWidget* _p):
-	NotedFace					(_p)
+	NotedFace					(_p),
+	x_wave(QMutex::Recursive),
+	x_waveProfile(QMutex::Recursive),
+	x_spectra(QMutex::Recursive)
 {
 }
 
@@ -65,11 +68,11 @@ bool NotedBase::waveBlock(Time _from, Time _duration, Lightbox::foreign_vector<f
 	if (samplesPerItem < (int)m_hopSamples || _forceSamples)
 	{
 		QMutexLocker l(&x_wave);
-		int imin = -fromBase(_from, m_rate);
-		int imax = m_wave.data<float>().size() - fromBase(_from, m_rate);
+		int imin = -_from * items / _duration;
+		int imax = (duration() - _from) * items / _duration;
 		float const* d = m_wave.data<float>().data() + fromBase(_from, m_rate);
 		for (int i = 0; i < items; ++i)
-			o_toFill[i] = (i < imin || i >= imax) ? 0 : d[samples * i / items];
+			o_toFill[i] = (i <= imin || i >= imax) ? 0 : d[samples * i / items];
 		return false;
 	}
 	else
@@ -111,7 +114,7 @@ Lightbox::foreign_vector<float const> NotedBase::waveWindow(int _window) const
 	}
 	else
 		// same page - just return
-		return m_wave.data<float>().cropped(hop * m_hopSamples, m_windowFunction.size());
+		return m_wave.data<float>().cropped(hop * m_hopSamples, m_windowFunction.size()).tied(std::make_shared<QMutexLocker>(&x_wave));
 }
 
 bool NotedBase::resampleWave()
@@ -228,7 +231,7 @@ void NotedBase::rejigSpectra()
 					sd[i + ss*2] = modf((phase[i] - lastPhase[i]) / TwoPi + 1.f, &intpart);
 				}
 				lastPhase = fftw.phase();
-				WorkerThread::setCurrentProgress(index * 50 / hops());
+				WorkerThread::setCurrentProgress(index * 99 / hops());
 			}
 			int n = 0;
 			m_spectra.generate([&](Lightbox::foreign_vector<float> a, Lightbox::foreign_vector<float> b, Lightbox::foreign_vector<float> ret)
@@ -239,7 +242,6 @@ void NotedBase::rejigSpectra()
 				{
 					rv = (rv + bv) * half;
 				});// only do the mean combine with b for the mag spectrum.
-				WorkerThread::setCurrentProgress(++n * 50 / hops());
 			}, 0.f);
 		}
 	}

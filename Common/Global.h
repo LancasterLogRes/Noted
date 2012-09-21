@@ -92,7 +92,8 @@
 	bool operator==(Name const& _c) const { return _c.M1 == M1 && _c.M2 == M2; } \
 	bool operator!=(Name const& _c) const { return !operator==(_c); } \
 	template <class S> friend S& operator<<(S& _out, Name const& _this) { return _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ")"; } \
-	operator std::tuple<T1, T2>() const { return std::make_tuple(M1, M2); }
+	operator std::tuple<T1, T2>() const { return std::make_tuple(M1, M2); } \
+	std::tuple<T1, T2> toTuple() const { return std::make_tuple(M1, M2); }
 
 #define LIGHTBOX_STRUCT_BASE_2(Name, T1, M1, T2, M2) \
 	T1 M1; \
@@ -108,7 +109,8 @@
 	bool operator==(Name const& _c) const { return _c.M1 == M1 && _c.M2 == M2 && _c.M3 == M3; } \
 	bool operator!=(Name const& _c) const { return !operator==(_c); } \
 	template <class S> friend S& operator<<(S& _out, Name const& _this) { _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ")"; return _out; } \
-	operator std::tuple<T1, T2, T3>() const { return std::make_tuple(M1, M2, M3); }
+	operator std::tuple<T1, T2, T3>() const { return std::make_tuple(M1, M2, M3); } \
+	std::tuple<T1, T2, T3> toTuple() const { return std::make_tuple(M1, M2, M3); }
 
 #define LIGHTBOX_STRUCT_BASE_3(Name, T1, M1, T2, M2, T3, M3) \
 	T1 M1; \
@@ -125,7 +127,8 @@
 	bool operator==(Name const& _c) const { return _c.M1 == M1 && _c.M2 == M2 && _c.M3 == M3 && _c.M4 == M4; } \
 	bool operator!=(Name const& _c) const { return !operator==(_c); } \
 	template <class S> friend S& operator<<(S& _out, Name const& _this) { return _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ", " #M4 "=" << _this.M4 << ")"; } \
-	operator std::tuple<T1, T2, T3, T4>() const { return std::make_tuple(M1, M2, M3, M4); }
+	operator std::tuple<T1, T2, T3, T4>() const { return std::make_tuple(M1, M2, M3, M4); } \
+	std::tuple<T1, T2, T3, T4> toTuple() const { return std::make_tuple(M1, M2, M3, M4); }
 
 #define LIGHTBOX_STRUCT_BASE_4(Name, T1, M1, T2, M2, T3, M3, T4, M4) \
 	T1 M1; \
@@ -143,7 +146,8 @@
 	bool operator==(Name const& _c) const { return _c.M1 == M1 && _c.M2 == M2 && _c.M3 == M3 && _c.M4 == M4 && _c.M5 == M5; } \
 	bool operator!=(Name const& _c) const { return !operator==(_c); } \
 	template <class S> friend S& operator<<(S& _out, Name const& _this) { return _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ", " #M4 "=" << _this.M4 << ", " #M5 "=" << _this.M5 << ")"; } \
-	operator std::tuple<T1, T2, T3, T4, T5>() const { return std::make_tuple(M1, M2, M3, M4, M5); }
+	operator std::tuple<T1, T2, T3, T4, T5>() const { return std::make_tuple(M1, M2, M3, M4, M5); } \
+	std::tuple<T1, T2, T3, T4, T5> toTuple() const { return std::make_tuple(M1, M2, M3, M4, M5); }
 
 #define LIGHTBOX_STRUCT_BASE_5(Name, T1, M1, T2, M2, T3, M3, T4, M4, T5, M5) \
 	T1 M1; \
@@ -162,7 +166,8 @@
 	bool operator==(Name const& _c) const { return _c.M1 == M1 && _c.M2 == M2 && _c.M3 == M3 && _c.M4 == M4 && _c.M5 == M5 && _c.M6 == M6; } \
 	bool operator!=(Name const& _c) const { return !operator==(_c); } \
 	template <class S> friend S& operator<<(S& _out, Name const& _this) { return _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ", " #M4 "=" << _this.M4 << ", " #M5 "=" << _this.M5 << ", " #M6 "=" << _this.M6 << ")"; } \
-	operator std::tuple<T1, T2, T3, T4, T5, T6>() const { return std::make_tuple(M1, M2, M3, M4, M5, M6); }
+	operator std::tuple<T1, T2, T3, T4, T5, T6>() const { return std::make_tuple(M1, M2, M3, M4, M5, M6); } \
+	std::tuple<T1, T2, T3, T4, T5, T6> toTuple() const { return std::make_tuple(M1, M2, M3, M4, M5, M6); }
 
 #define LIGHTBOX_STRUCT_BASE_6(Name, T1, M1, T2, M2, T3, M3, T4, M4, T5, M5, T6, M6) \
 	T1 M1; \
@@ -182,7 +187,8 @@
 	bool operator==(Name const& _c) const { return _c.M1 == M1 && _c.M2 == M2 && _c.M3 == M3 && _c.M4 == M4 && _c.M5 == M5 && _c.M6 == M6 && _c.M7 == M7; } \
 	bool operator!=(Name const& _c) const { return !operator==(_c); } \
 	template <class S> friend S& operator<<(S& _out, Name const& _this) { return _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ", " #M4 "=" << _this.M4 << ", " #M5 "=" << _this.M5 << ", " #M6 "=" << _this.M6 <<", " #M7 "=" << _this.M7 << ")"; } \
-	operator std::tuple<T1, T2, T3, T4, T5, T6, T7>() const { return std::make_tuple(M1, M2, M3, M4, M5, M6, M7); }
+	operator std::tuple<T1, T2, T3, T4, T5, T6, T7>() const { return std::make_tuple(M1, M2, M3, M4, M5, M6, M7); } \
+	std::tuple<T1, T2, T3, T4, T5, T6, T7> toTuple() const { return std::make_tuple(M1, M2, M3, M4, M5, M6, M7); }
 
 #define LIGHTBOX_STRUCT_BASE_7(Name, T1, M1, T2, M2, T3, M3, T4, M4, T5, M5, T6, M6, T7, M7) \
 	T1 M1; \

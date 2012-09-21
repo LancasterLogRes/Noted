@@ -29,6 +29,8 @@
 namespace Lightbox
 {
 
+template <class _T> struct zero_of { static _T value() { return _T(0); } };
+
 /// Get range of numeric collection.
 template <class T>
 inline std::pair<typename element_of<T>::type, typename element_of<T>::type> range(T const& _t)
@@ -59,8 +61,8 @@ inline std::pair<T, T> range(T const* _begin, T const* _end)
 template <class T>
 typename element_of<T>::type mean(T const& _distro)
 {
-	typename element_of<T>::type ret = 0;
-	foreach (auto v, _distro)
+	typename element_of<T>::type ret = zero_of<typename element_of<T>::type>::value();
+	for (auto v: _distro)
 		ret += v;
 	return ret / _distro.size();
 }
@@ -68,7 +70,7 @@ typename element_of<T>::type mean(T const& _distro)
 template <class T>
 typename element_of<T>::type mean(T const& _begin, T const& _end)
 {
-	typename element_of<T>::type ret = 0;
+	typename element_of<T>::type ret = zero_of<typename element_of<T>::type>::value();
 	unsigned j = 0;
 	for (T i = _begin; i != _end; ++i, ++j)
 		ret += *i;
@@ -78,7 +80,7 @@ typename element_of<T>::type mean(T const& _begin, T const& _end)
 template <class T>
 typename element_of<T>::type variance(T const& _distro, typename element_of<T>::type _mean)
 {
-	typename element_of<T>::type ret = 0;
+	typename element_of<T>::type ret = zero_of<typename element_of<T>::type>::value();
 	for (auto v: _distro)
 		ret += sqr(v - _mean);
 	return ret / _distro.size();
@@ -87,7 +89,7 @@ typename element_of<T>::type variance(T const& _distro, typename element_of<T>::
 template <class T>
 typename element_of<T>::type variance(T const& _begin, T const& _end, typename element_of<T>::type _mean)
 {
-	typename element_of<T>::type ret = 0;
+	typename element_of<T>::type ret = zero_of<typename element_of<T>::type>::value();
 	unsigned j = 0;
 	for (T i = _begin; i != _end; ++i, ++j)
 		ret += sqr(*i - _mean);
@@ -151,6 +153,8 @@ T nnormal(T _x, std::tuple<T, T> const& _muSigma)
 }
 
 LIGHTBOX_STRUCT(2, Gaussian, double, mean, double, sigma);
+
+template <class _T> LIGHTBOX_STRUCT(2, GenGaussian, _T, mean, _T, sigma);
 
 template <class T>
 T normal(T _x, Gaussian _muSigma, T _rootScale = 1)

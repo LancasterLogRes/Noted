@@ -160,11 +160,12 @@ vector<float> Lightbox::solveCubic(float a, float b, float c, float d)
 	return vector<float>({{ ret1, ret2, ret3 }});
 }
 
-/// Bias an x == y curve by some amount _z.
-float Lightbox::bias(float _x, float _z)
+static float biasHelper(float _x, float _z)
 {
-	_x = clamp(_x, -1.f, 1.f);
+	_x = clamp(_x, -1.f, 2.f);
 	_z = clamp(_z, -1.f, 1.f);
+	if (_x > 1.f)
+		return clamp(2.f - biasHelper(2.f - _x, _z), -.25f, 1.25f);
 	if (_x == 0.f)
 		return 0.f;
 	if (_x == -1.f)
@@ -174,9 +175,9 @@ float Lightbox::bias(float _x, float _z)
 	if (_z == 0.f)
 		return _x;
 	if (_x < 0.f)
-		return -bias(-_x, _z);
+		return clamp(-biasHelper(-_x, _z), -.25f, 1.25f);
 	if (_z < 0.f)
-		return 1.f - bias(1.f - _x, -_z);
+		return 1.f - biasHelper(1.f - _x, -_z);
 	auto ts = solveCubic(3 * _z - 2, 3 - 3 * _z, 0, -_x);
 	for (auto t: ts)
 		if (t >= 0.f && t <= 1.f)
@@ -192,4 +193,10 @@ float Lightbox::bias(float _x, float _z)
 			return ret;
 	}
 	return numeric_limits<float>::infinity();
+}
+
+/// Bias an x == y curve by some amount _z.
+float Lightbox::bias(float _x, float _z)
+{
+	return biasHelper(_x + .25 * _z, _z);
 }

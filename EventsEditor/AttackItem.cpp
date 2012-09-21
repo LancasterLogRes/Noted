@@ -32,56 +32,33 @@
 using namespace std;
 using namespace Lightbox;
 
-static const float s_yAttack = 2.f;
-static const float s_yChain = 8.f;
+QPointF AttackItem::evenUp(QPointF const& _n)
+{
+	return QPointF(_n.x(), 15);
+}
+
+QRectF AttackItem::core() const
+{
+	return QRectF(0, 0, 10, 16);
+}
 
 void AttackItem::paint(QPainter* _p, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	float xscale = view()->mapToScene(QPoint(1, 0)).x() - view()->mapToScene(QPoint(0, 0)).x();
-	if (isSelected())
+	handleSelected(_p);
+	_p->setPen(cDark());
+	_p->setBrush(cPastel());
+	if (isMagnified())
 	{
-		_p->fillRect(QRectF(core().x(), -view()->height(), core().width(), view()->height() * 3), QColor(0, 24, 255, 32));
-		_p->fillRect(QRectF(core().x(), -view()->height(), 1, view()->height() * 3), QColor(0, 24, 255, 128));
+		auto cc = core().center();
+		_p->drawPolygon(QPolygonF(QVector<QPointF>() <<
+								  core().topLeft() <<
+								  core().bottomLeft() <<
+								  QPointF(core().right(), cc.y()) ));
+		_p->setPen(Qt::black);
+		_p->drawText(core(), Qt::AlignCenter, QString(toChar(m_se.character)));
 	}
-
-	if (xscale < 15)
-	{
-		if (m_se.strength > 0)
-		{
-			_p->setPen(cDark());
-			_p->setBrush(cPastel());
-			_p->drawRect(core());
-			_p->fillRect(QRectF(core().topLeft(), QSizeF(1, core().height() + 4)), cDark());
-			_p->setPen(Qt::black);
-			_p->drawText(core(), Qt::AlignCenter, QString(toChar(m_se.character)));
-			for (int j = 0; j < log2(m_se.strength) + 6; ++j)
-				_p->fillRect(QRectF(core().bottomLeft() + QPointF(2, j * 2 + 2), QSizeF(core().width() - 1, 1)), cDark());
-		}
-		else
-		{
-			_p->setPen(cPastel());
-			_p->setBrush(Qt::NoBrush);
-			_p->drawRect(core());
-			_p->fillRect(QRectF(core().topLeft(), QSizeF(1, core().height() + 4)), cDark());
-			_p->setPen(Qt::black);
-			_p->drawText(core(), Qt::AlignCenter, QString(toChar(m_se.character)));
-			for (int j = 0; j < log2(-m_se.strength) + 6; ++j)
-				_p->fillRect(QRectF(core().bottomLeft() + QPointF(0, j * 2 + 2), QSizeF(core().width(), 1)), cPastel());
-		}
-		for (int j = 0; j < log2(m_se.surprise) + 6; ++j)
-		{
-			_p->fillRect(QRectF(core().topRight() + QPointF((j + 1) * 2, 0), QSizeF(1, core().height() * 5 / 8)), cDark());
-			_p->fillRect(QRectF(core().topRight() + QPointF((j + 1) * 2, core().height() * 6 / 8), QSizeF(1, core().height() * 2 / 8)), cDark());
-		}
-	}
-	else
-	{
-		_p->fillRect(QRectF(core().topLeft(), QSizeF(1, core().height())), m_se.strength > 0 ? cDark() : cPastel());
-		for (int j = 0; j < log2(fabs(m_se.strength)) + 6; ++j)
-			_p->fillRect(QRectF(core().bottomLeft() + QPointF(0, j * 2 + 2), QSizeF(1, 1)), m_se.strength > 0 ? cDark() : cPastel());
-	}
+	_p->fillRect(QRectF(core().topLeft(), QSizeF(1, -16)), qLinearGradient(core().topLeft(), QPointF(core().left(), -16), cLight(), Qt::transparent));
 }
-
 
 QRectF Chained::boundingRect() const
 {
@@ -90,14 +67,4 @@ QRectF Chained::boundingRect() const
 
 void Chained::paint(QPainter* _p, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	_p->setPen(QColor(0, 0, 0, 64));
-	_p->drawLine(m_begin, m_end);
-}
-
-
-QRectF AttackItem::core() const { return QRectF(0, 0, 7, 9); }
-
-QPointF AttackItem::evenUp(QPointF const& _n)
-{
-	return m_se.surprise > 0.f ? QPointF(_n.x(), s_yAttack) : QPointF(_n.x(), s_yChain);
 }

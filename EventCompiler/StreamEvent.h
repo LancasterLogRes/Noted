@@ -82,9 +82,9 @@ struct StreamEvent
 		virtual ~Aux() {}
 	};
 
-	StreamEvent(EventType _t, Aux* _aux): type(_t), temperature(-1.f), strength(1.f), period(0), m_aux(std::shared_ptr<Aux>(_aux)) { }
-	StreamEvent(EventType _t, float _s, float _n, Aux* _aux): type(_t), temperature(_n), strength(_s), period(0), m_aux(std::shared_ptr<Aux>(_aux)) { }
-	StreamEvent(EventType _t = NoEvent, float _s = 1.f, float _n = 0.f, Time _period = 0, Aux* _aux = nullptr, int8_t _position = -1, Character _character = Dull, float _surprise = 1.f): type(_t), position(_position), character(_character), channel(-1), temperature(_n), strength(_s), surprise(_surprise), period(_period), m_aux(std::shared_ptr<Aux>(_aux)) { }
+	StreamEvent(EventType _type, Aux* _aux): type(_type), temperature(-1.f), strength(1.f), period(0), m_aux(std::shared_ptr<Aux>(_aux)) { }
+	StreamEvent(EventType _type, float _strength, float _temperature, Aux* _aux): type(_type), temperature(_temperature), strength(_strength), period(0), m_aux(std::shared_ptr<Aux>(_aux)) { }
+	StreamEvent(EventType _type = NoEvent, float _strength = 1.f, float _temperature = -1.f, Time _period = 0, Aux* _aux = nullptr, int8_t _position = -1, Character _character = Dull, float _surprise = 1.f): type(_type), position(_position), character(_character), channel(-1), temperature(_temperature), strength(_strength), surprise(_surprise), period(_period), m_aux(std::shared_ptr<Aux>(_aux)) { }
 
 	void assign(int _channel)
 	{

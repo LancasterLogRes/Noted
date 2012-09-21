@@ -40,6 +40,7 @@ public:
 	explicit EventsEditScene(QObject *parent = 0);
 	
 	void copyFrom(EventsStore* _ev);
+	void setEvents(QList<Lightbox::StreamEvents> const& _es, int _forceChannel = -1);
 	void rejigEvents();
 
 	NotedFace* c() const;

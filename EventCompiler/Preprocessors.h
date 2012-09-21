@@ -69,6 +69,33 @@ phaseEntropyC.setHistory(c_historySize, downsampleST);
 		phaseEntropyAvg.push(phaseEntropy);
 */
 
+LIGHTBOX_STRUCT(3, GaussianMag, float, mean, float, sigma, float, mag);
+
+GaussianMag sqrt(GaussianMag const& _a) { return GaussianMag(::sqrt(_a.mean), ::sqrt(_a.sigma), ::sqrt(_a.mag)); }
+template <> struct zero_of<GaussianMag> { static GaussianMag value() { return GaussianMag(0, 0, 0); } };
+GaussianMag& operator+=(GaussianMag& _a, GaussianMag const& _b) { _a.mean += _b.mean; _a.sigma += _b.sigma; _a.mag += _b.mag; return _a; }
+GaussianMag operator/(GaussianMag const& _a, float _b) { return GaussianMag(_a.mean / _b, _a.sigma / _b, _a.mag / _b); }
+GaussianMag operator*(GaussianMag const& _a, GaussianMag const& _b) { return GaussianMag(_a.mean * _b.mean, _a.sigma * _b.sigma, _a.mag * _b.mag); }
+GaussianMag operator-(GaussianMag const& _a, GaussianMag const& _b) { return GaussianMag(_a.mean - _b.mean, _a.sigma - _b.sigma, _a.mag - _b.mag); }
+
+template <int _Base, int _Exp>
+struct Float
+{
+	constexpr static float value = Float<_Base, _Exp + 1>::value / 10.f;
+};
+
+template <int _Base>
+struct Float<_Base, 0>
+{
+	static constexpr float value = _Base;
+};
+
+template <class _PP>
+struct Info
+{
+	typedef typename std::remove_const<typename std::remove_reference<decltype(_PP().get())>::type>::type ElementType;
+};
+
 class PhaseUnity
 {
 public:
@@ -271,23 +298,6 @@ private:
 	unsigned m_count;
 };
 
-template <class _T>
-class foreign
-{
-public:
-	foreign(): m_data(nullptr), m_size(0) {}
-	foreign(_T const* _data, unsigned _size): m_data(_data), m_size(_size) {}
-
-	LIGHTBOX_STRUCT_INTERNALS_2(foreign, _T const*, m_data, unsigned, m_size)
-
-	_T const* data() const { return m_data; }
-	unsigned size() const { return m_size; }
-
-private:
-	_T const* m_data;
-	unsigned m_size;
-};
-
 template <class _PP, unsigned _ds = 8>
 class Historied: public _PP
 {
@@ -323,13 +333,53 @@ public:
 	}
 
 	bool changed() const { return _PP::changed() && m_count == 4; }
-	foreign<float> get() const { return foreign<float>(m_data.data() + 4, m_data.size() - 4); }
+	foreign_vector<float> get() const { return foreign_vector<float>(const_cast<float*>(m_data.data()) + 4, m_data.size() - 4); }
 	vector<float> const& getVector() const { return m_data; }	// note - offset by 4.
 
 private:
 	vector<float> m_data;
 	unsigned m_count;
 };
+
+template <class _PP, unsigned _ds = 8>
+class GenHistoried: public _PP
+{
+public:
+	typedef typename Info<_PP>::ElementType ElementType;
+
+	GenHistoried(unsigned _s = _ds): m_data(_s) {}
+
+	GenHistoried& setHistory(unsigned _s) { m_data.clear(); m_data.resize(_s + 4); m_count = 0; return *this; }
+
+	void init(EventCompilerImpl* _eci)
+	{
+		_PP::init(_eci);
+		setHistory(m_data.size());
+	}
+
+	void resetBefore(unsigned _bins)
+	{
+	}
+
+	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
+	{
+		_PP::execute(_eci, _t, _mag, _phase, _wave);
+		if (_PP::changed())
+		{
+			memmove(m_data.data(), m_data.data() + 1, (m_data.size() - 1) * sizeof(ElementType));
+			m_data[m_data.size() - 1] = _PP::get();
+		}
+	}
+
+	bool changed() const { return _PP::changed(); }
+	foreign_vector<ElementType> get() const { return foreign_vector<ElementType>(const_cast<ElementType*>(m_data.data()), m_data.size()); }
+	vector<ElementType> const& getVector() const { return m_data; }	// note - offset by 4.
+
+private:
+	vector<ElementType> m_data;
+	unsigned m_count;
+};
+
 
 template <class _PP, class _X>
 class Crossed: public _PP
@@ -484,6 +534,186 @@ public:
 private:
 	float m_last;
 	float m_delta;
+};
+
+class Centroid
+{
+public:
+	void init(EventCompilerImpl*) {}
+	void execute(EventCompilerImpl* _eci, Time, vector<float> const& _mag, vector<float> const&, std::vector<float> const&)
+	{
+		unsigned b = _eci->bands();
+		m_last = 0.f;
+		float total = 0.f;
+		for (unsigned i = 0; i < b; ++i)
+			total += sqr(_mag[i]), m_last += sqr(_mag[i]) * i;
+		if (total)
+			m_last /= total;
+		m_last = (m_last + 1) / b;
+		if (m_last)
+			m_last = log(m_last) / log(1.f / b);
+	}
+
+	float get() const { return m_last; }
+	bool changed() const { return true; }
+
+private:
+	float m_last;
+};
+
+template <class _PP>
+class MATHS: public Historied<_PP>
+{
+public:
+	void init(EventCompilerImpl* _eci) { _PP::init(_eci); }
+	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
+	{
+		Historied<_PP>::execute(_eci, _t, _mag, _phase, _wave);
+		if (Historied<_PP>::changed())
+		{
+			Gaussian distro;
+			distro.mean = mean(Historied<_PP>::getVector());
+			distro.sigma = max(.005f, sigma(Historied<_PP>::getVector(), distro.mean));
+			float prob = (distro.mean > 0.01) ? normal(_PP::get(), distro) : 1.f;
+			m_last = -log(prob);
+		}
+	}
+
+	float get() const { return m_last; }
+	bool changed() const { return true; }
+
+private:
+	float m_last;
+};
+
+template <unsigned _HzFrom, unsigned _HzTo>
+class BandProfile
+{
+public:
+	void init(EventCompilerImpl* _eci)
+	{
+		m_from = max<unsigned>(0, _HzFrom / (s_baseRate / _eci->windowSize()));
+		m_to = min<unsigned>(_eci->bands(), _HzTo / (s_baseRate / _eci->windowSize()));
+	}
+	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
+	{
+		m_last.mean = 0.f;
+		m_last.mag = 0.f;
+		m_last.sigma = 0.f;
+		for (unsigned i = m_from; i < m_to; ++i)
+			m_last.mag += sqr(_mag[i]), m_last.mean += sqr(_mag[i]) * float(i - m_from) / (m_to - m_from);
+		if (m_last.mag)
+			m_last.mean /= m_last.mag;
+
+		for (unsigned i = m_from; i < m_to; ++i)
+			m_last.sigma += sqr(sqr(_mag[i]) * (float(i - m_from) / (m_to - m_from) - m_last.mean));
+		if (m_last.mag)
+			m_last.sigma = ::sqrt(m_last.sigma / m_last.mag);
+	}
+
+	GaussianMag const& get() const { return m_last; }
+	bool changed() const { return true; }
+
+private:
+	unsigned m_from;
+	unsigned m_to;
+	GaussianMag m_last;
+};
+
+template <class _PP, unsigned _N>
+class TemporalGaussian: public GenHistoried<_PP, _N>
+{
+public:
+	typedef GenHistoried<_PP, _N> Super;
+	void init(EventCompilerImpl* _eci)
+	{
+		Super::init(_eci);
+	}
+	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
+	{
+		Super::execute(_eci, _t, _mag, _phase, _wave);
+		if (Super::changed())
+		{
+			m_last.mean = mean(Super::get());
+			m_last.sigma = sigma(Super::get(), m_last.mean);
+		}
+	}
+
+	GenGaussian<typename Super::ElementType> const& get() const { return m_last; }
+	bool changed() const { return true; }
+
+private:
+	GenGaussian<typename Super::ElementType> m_last;
+};
+
+template <class _PP>
+class PeakPick: public _PP
+{
+public:
+	typedef _PP Super;
+	typedef typename Info<_PP>::ElementType ElementType;
+	void init(EventCompilerImpl* _eci)
+	{
+		Super::init(_eci);
+		m_last = m_lastButOne = m_lastTrough = zero_of<ElementType>::value();
+		m_isNew = false;
+	}
+	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
+	{
+		Super::execute(_eci, _t, _mag, _phase, _wave);
+		auto n = Super::get();
+		m_isNew = (n < m_last && m_lastButOne < m_last);
+		if (!m_isNew && n > m_last && m_lastButOne > m_last)
+			m_lastTrough = m_last;
+		m_lastButOne = m_last;
+		m_last = n;
+	}
+	ElementType const& get() const { return m_lastButOne; }
+	ElementType const& getTrough() const { return m_lastTrough; }
+	bool changed() const { return m_isNew; }
+
+private:
+	ElementType m_last;
+	ElementType m_lastTrough;
+	ElementType m_lastButOne;
+	bool m_isNew;
+};
+
+template <class _PP, class _N>
+class CutOff: public _PP
+{
+public:
+	typedef _PP Super;
+	typedef typename Info<_PP>::ElementType ElementType;
+	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
+	{
+		Super::execute(_eci, _t, _mag, _phase, _wave);
+		if (Super::changed())
+		{
+			m_last = Super::get();
+			if (m_last < _N::value)
+				m_last = zero_of<ElementType>::value();
+		}
+	}
+	ElementType get() const { return m_last; }
+	bool changed() const { return m_changed; }
+
+private:
+	ElementType m_last;
+	bool m_changed;
+};
+
+template <class _PP, unsigned _I>
+class Get: public _PP
+{
+public:
+	typedef _PP Super;
+	typename remove_const<typename remove_reference<decltype(std::get<_I>(Super().get().toTuple()))>::type>::type get() const
+	{
+		auto t = Super::get();
+		auto tu = t.toTuple();
+		return std::get<_I>(tu);
+	}
 };
 
 }

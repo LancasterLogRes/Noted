@@ -146,15 +146,15 @@ inline float random(Time _t, float _min = 0.f, float _max = 1.f)
     return ::rand() / double(RAND_MAX) * (_max - _min) + _min;
 }
 
-inline float halfLifeDecay(Time _halfLife, Time _unit)
+inline float halfLifeDecay(Time _halfLife, Time _unit, float _factor = 1.f)
 {
-	return 1.f / exp2(double(_unit) / _halfLife);
+	return _factor / exp2(double(_unit) / _halfLife);
 }
 
 /// @deprecated Use halfLifeDecay() instead.
 inline float decayed(float _f, Time _hl, Time _p)
 {
-	return _f * halfLifeDecay(_p, _hl);
+	return halfLifeDecay(_p, _hl, _f);
 }
 
 }

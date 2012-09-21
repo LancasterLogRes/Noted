@@ -20,6 +20,7 @@
 
 DO(Attack)
 DO(Sustain)
+DO(Decay)
 DO(Release)
 DO(PeriodSet)
 DO(PeriodTweak)

@@ -70,6 +70,36 @@ void EventsEditScene::copyFrom(EventsStore* _ev)
 	emit newScale();
 }
 
+void EventsEditScene::setEvents(QList<Lightbox::StreamEvents> const& _es, int _forceChannel)
+{
+	int s = c()->hops();
+	double hs = toSeconds(c()->hop()) * 1000;
+	clear();
+	for (int i = 0; i < min(_es.size(), s); ++i)
+		foreach (StreamEvent se, _es[i])
+		{
+			if (_forceChannel != -1)
+				se.assign(_forceChannel);
+			switch (se.type)
+			{
+#define DO(X) \
+			case X: \
+			{ \
+				auto it = new X ## Item(se); \
+				addItem(it); \
+				it->setPos(QPointF(0, (se.channel == -1) ? 0 : (se.channel * 32 + 16)) + it->evenUp(QPointF(i * hs, 0))); \
+				break; \
+			}
+#include "DoEventTypes.h"
+#undef DO
+			default:;
+			}
+		}
+	rejigEvents();
+	m_isDirty = false;
+	emit newScale();
+}
+
 void EventsEditScene::rejigEvents()
 {
 	QMap<int, AttackItem*> lastSCI;

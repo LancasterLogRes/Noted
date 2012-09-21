@@ -37,23 +37,25 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 {
 	setFrameShape(NoFrame);
 
-	connect(c(), SIGNAL(eventsChanged()), this, SLOT(sourceChanged()));
-	auto oe = []() -> QGraphicsEffect* { auto ret = new QGraphicsOpacityEffect; ret->setOpacity(0.7); return ret; };
+	if (isIndependent())
+	{
+		connect(c(), SIGNAL(eventsChanged()), this, SLOT(sourceChanged()));
+		auto oe = []() -> QGraphicsEffect* { auto ret = new QGraphicsOpacityEffect; ret->setOpacity(0.7); return ret; };
 
-	QPushButton* b = new QPushButton(this);
-	b->setGeometry(0, 0, 23, 23);
-	b->setText("X");
-	b->setGraphicsEffect(oe());
-	connect(b, SIGNAL(clicked()), SLOT(deleteLater()));
+		QPushButton* b = new QPushButton(this);
+		b->setGeometry(0, 0, 23, 23);
+		b->setText("X");
+		b->setGraphicsEffect(oe());
+		connect(b, SIGNAL(clicked()), SLOT(deleteLater()));
 
-	m_enabled = new QPushButton(this);
-	m_enabled->setGeometry(25, 0, 23, 23);
-	m_enabled->setText("U");
-	m_enabled->setCheckable(true);
-	m_enabled->setChecked(true);
-	m_enabled->setGraphicsEffect(oe());
-	connect(m_enabled, SIGNAL(toggled(bool)), SLOT(onEnableChanged(bool)));
-
+		m_enabled = new QPushButton(this);
+		m_enabled->setGeometry(25, 0, 23, 23);
+		m_enabled->setText("U");
+		m_enabled->setCheckable(true);
+		m_enabled->setChecked(true);
+		m_enabled->setGraphicsEffect(oe());
+		connect(m_enabled, SIGNAL(toggled(bool)), SLOT(onEnableChanged(bool)));
+	}
 	setDragMode(RubberBandDrag);
 
 	m_scene = make_shared<EventsEditScene>();
@@ -73,6 +75,8 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 	connect(a, SIGNAL(triggered()), this, SLOT(onSave()));
 	insertAction(0, (a = new QAction("&Save As...", this)));
 	connect(a, SIGNAL(triggered()), this, SLOT(onSaveAs()));
+	if (isMutable())
+	{
 #define DO(X) \
 	insertAction(0, (a = new QAction("Insert " #X, this))); \
 	connect(a, SIGNAL(triggered()), this, SLOT(onInsert ## X()));
@@ -81,9 +85,12 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 	insertAction(0, (a = new QAction("Cut", this)));
 	a->setShortcut(QKeySequence::Cut);
 	connect(a, SIGNAL(triggered()), this, SLOT(onCut()));
+	}
 	insertAction(0, (a = new QAction("Copy", this)));
 	a->setShortcut(QKeySequence::Copy);
 	connect(a, SIGNAL(triggered()), this, SLOT(onCopy()));
+	if (isMutable())
+	{
 	insertAction(0, (a = new QAction("Paste", this)));
 	a->setShortcut(QKeySequence::Paste);
 	connect(a, SIGNAL(triggered()), this, SLOT(onPaste()));
@@ -91,7 +98,7 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 	insertAction(0, (a = new QAction("Delete", this)));
 	a->setShortcut(QKeySequence::Delete);
 	connect(a, SIGNAL(triggered()), this, SLOT(onDelete()));
-
+	}
 	if (!_filename.isNull())
 		m_scene->loadFrom(_filename);
 
@@ -107,20 +114,32 @@ EventsEditor::~EventsEditor()
 	c()->noteEventCompilersChanged();
 }
 
+bool EventsEditor::isIndependent() const
+{
+	return parentWidget()->objectName() == "dataDisplay";
+}
+
+void EventsEditor::setEvents(QList<Lightbox::StreamEvents> const& _es, int _forceChannel)
+{
+	m_scene->setEvents(_es, _forceChannel);
+}
+
 void EventsEditor::save(QSettings& _s) const
 {
-	_s.setValue(m_filename + ".enabled", m_enabled->isChecked());
+	if (isIndependent())
+		_s.setValue(m_filename + ".enabled", m_enabled->isChecked());
 }
 
 void EventsEditor::load(QSettings const& _s)
 {
-	m_enabled->setChecked(_s.value(m_filename + ".enabled", false).toBool());
+	if (isIndependent())
+		m_enabled->setChecked(_s.value(m_filename + ".enabled", false).toBool());
 }
 
 void EventsEditor::mousePressEvent(QMouseEvent* _e)
 {
 	m_lastScenePosition = mapToScene(_e->pos());
-	if (itemAt(_e->pos()) || !(_e->buttons() & Qt::MiddleButton))
+	if ((itemAt(_e->pos()) || !(_e->buttons() & Qt::MiddleButton)) && isMutable())
 	{
 		QGraphicsView::mousePressEvent(_e);
 		m_draggingTime = Lightbox::UndefinedTime;
@@ -159,7 +178,7 @@ StreamEvents EventsEditor::cursorEvents() const
 
 StreamEvents EventsEditor::events(int _i) const
 {
-	if (m_enabled->isChecked())
+	if (isIndependent() && m_enabled->isChecked())
 	{
 		QMutexLocker l(&x_events);
 		if (_i >= 0 && _i < m_events.size())
@@ -175,14 +194,14 @@ void EventsEditor::onEnableChanged(bool)
 
 void EventsEditor::onChanged(bool _requiresRecompile)
 {
-	if (m_enabled->isChecked())
+	if (isIndependent() && m_enabled->isChecked())
 		m_lastTimerDirty = false;
 	m_eventsDirty = _requiresRecompile;
 }
 
 void EventsEditor::timerEvent(QTimerEvent*)
 {
-	if (m_enabled->isChecked())
+	if (isIndependent() && m_enabled->isChecked())
 	{
 		if (m_lastTimerDirty)
 		{
@@ -287,7 +306,7 @@ void EventsEditor::onViewParamsChanged()
 	double hopsInWidth = toSeconds(c()->visibleDuration()) * 1000;
 	double hopsFromBeginning = toSeconds(c()->earliestVisible()) * 1000;
 	setSceneRect(hopsFromBeginning, 0, hopsInWidth, height());
-	scale(width() / hopsInWidth, 1);
+	scale(c()->activeWidth() / hopsInWidth, 1);
 }
 
 void EventsEditor::onSave()

@@ -29,7 +29,7 @@ public:
 
 	virtual QPainterPath shape() const { QPainterPath ret; ret.addRect(boundingRect()); return ret; }
 
-	virtual QRectF boundingRect() const { return QRectF(m_begin + QPointF(0, 3), QSizeF(m_end.x() - m_begin.x(), 6 + (log2(m_strength) + 7) * 2)); }
+	virtual QRectF boundingRect() const;
 	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 
 	void setBegin(QPointF const& _p) { prepareGeometryChange(); m_begin = _p; }
@@ -53,14 +53,22 @@ class SustainItem: public SustainSuperItem
 {
 public:
 	SustainItem(Lightbox::StreamEvent const& _se): SustainSuperItem(_se) {}
-	virtual QRectF core() const { return QRectF(0, 0, 12, 12); }
+	virtual QRectF core() const;
+	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
+};
+
+class DecayItem: public SustainSuperItem
+{
+public:
+	DecayItem(Lightbox::StreamEvent const& _se): SustainSuperItem(_se) { setZValue(0.f); }
+	virtual QRectF core() const;
 	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 };
 
 class ReleaseItem: public SustainSuperItem
 {
 public:
-	ReleaseItem(Lightbox::StreamEvent const& _se): SustainSuperItem(_se) {}
-	virtual QRectF core() const { return QRectF(-6, 0, 6, 12); }
+	ReleaseItem(Lightbox::StreamEvent const& _se): SustainSuperItem(_se) { setZValue(-1.f); }
+	virtual QRectF core() const;
 	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 };

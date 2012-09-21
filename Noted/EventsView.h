@@ -39,6 +39,7 @@ class QPushButton;
 class QLabel;
 class QSettings;
 class CompileEventsView;
+class EventsEditor;
 
 class EventsView: public PrerenderedTimeline, public EventsStore
 {
@@ -88,6 +89,8 @@ private:
 	Lightbox::EventCompiler m_eventCompiler;
 
 	QSplitter* m_actualWidget;
+	QSplitter* m_verticalSplitter;
+	EventsEditor* m_eventsEditor;
 	PropertiesEditor* m_propertiesEditor;
 	QComboBox* m_selection;
 	QComboBox* m_channel;

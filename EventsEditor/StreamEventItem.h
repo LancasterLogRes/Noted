@@ -28,15 +28,23 @@ class QWidget;
 class EventsEditor;
 class EventsEditScene;
 
+inline QBrush qLinearGradient(QPointF _a, QPointF _b, QColor _ac, QColor _bc)
+{
+	QLinearGradient g(_a, _b);
+	g.setColorAt(0, _ac);
+	g.setColorAt(1, _bc);
+	return QBrush(g);
+}
+
 class StreamEventItem: public QGraphicsItem
 {
 public:
 	StreamEventItem(Lightbox::StreamEvent const& _se);
 
-	QColor cDark() const { return QColor::fromHsvF(Lightbox::toHue(m_se.temperature), 0.5f, 0.6f * Lightbox::Color::hueCorrection(Lightbox::toHue(m_se.temperature))); }
-	QColor color() const { return QColor::fromHsvF(Lightbox::toHue(m_se.temperature), 1.f, 1.f * Lightbox::Color::hueCorrection(Lightbox::toHue(m_se.temperature))); }
-	QColor cLight() const { return QColor::fromHsvF(Lightbox::toHue(m_se.temperature), 0.5f, 1.0f * Lightbox::Color::hueCorrection(Lightbox::toHue(m_se.temperature))); }
-	QColor cPastel() const { return QColor::fromHsvF(Lightbox::toHue(m_se.temperature), 0.25f, 1.0f * Lightbox::Color::hueCorrection(Lightbox::toHue(m_se.temperature))); }
+	QColor cDark() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 128) : QColor::fromHsvF(Lightbox::toHue(m_se.temperature), 0.5f, 0.6f * Lightbox::Color::hueCorrection(Lightbox::toHue(m_se.temperature))); }
+	QColor color() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 160) : QColor::fromHsvF(Lightbox::toHue(m_se.temperature), 1.f, 1.f * Lightbox::Color::hueCorrection(Lightbox::toHue(m_se.temperature))); }
+	QColor cLight() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 192) : QColor::fromHsvF(Lightbox::toHue(m_se.temperature), 0.5f, 1.0f * Lightbox::Color::hueCorrection(Lightbox::toHue(m_se.temperature))); }
+	QColor cPastel() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 224) : QColor::fromHsvF(Lightbox::toHue(m_se.temperature), 0.25f, 1.0f * Lightbox::Color::hueCorrection(Lightbox::toHue(m_se.temperature))); }
 
 	EventsEditor* view() const;
 	QPointF distanceFrom(StreamEventItem* _i, QPointF const& _onThem = QPointF(0, 0), QPointF const& _onUs = QPointF(0, 0)) const;
@@ -48,6 +56,9 @@ public:
 	virtual QPainterPath shape() const { QPainterPath ret; ret.addRect(core()); return ret; }
 	virtual QRectF boundingRect() const;
 	virtual bool isCausal() const { return true; }
+	void handleSelected(QPainter* _p);
+	bool isMagnified() const { return magFactor() < 15; }
+	float magFactor() const;
 
 	static StreamEventItem* newItem(Lightbox::StreamEvent const& _se);
 	EventsEditScene* scene() const;

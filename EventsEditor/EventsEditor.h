@@ -46,6 +46,9 @@ public:
 	virtual QString niceName() const { return m_filename; }
 	virtual QWidget* widget() { return this; }
 
+	bool isIndependent() const;
+	bool isMutable() const { return isIndependent(); }
+
 	QString queryFilename();
 	EventsEditScene* scene() const { return &*m_scene; }
 	NotedFace* c() const;
@@ -53,6 +56,7 @@ public:
 	virtual Lightbox::StreamEvents initEvents() const { return Lightbox::StreamEvents(); }
 	virtual Lightbox::StreamEvents cursorEvents() const;
 	virtual unsigned eventCount() const { return m_events.size(); }
+	void setEvents(QList<Lightbox::StreamEvents> const& _es, int _forceChannel = -1);
 
 	void save(QSettings& _c) const;
 	void load(QSettings const& _c);
@@ -70,6 +74,7 @@ public slots:
 
 	void onInsertAttack();
 	void onInsertSustain();
+	void onInsertDecay();
 	void onInsertRelease();
 	void onInsertPeriodSet();
 	void onInsertPeriodTweak();

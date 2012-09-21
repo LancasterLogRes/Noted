@@ -24,6 +24,8 @@
 #include <QtGui>
 #include <QGLFramebufferObject>
 #include <EventCompiler/StreamEvent.h>
+#include <EventsEditor/EventsEditor.h>
+#include <EventsEditor/EventsEditScene.h>
 
 #include "PropertiesEditor.h"
 #include "Noted.h"
@@ -33,15 +35,23 @@ using namespace std;
 using namespace Lightbox;
 
 EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
-	PrerenderedTimeline	(new QSplitter(_parent)),
+	PrerenderedTimeline	(new QSplitter(Qt::Vertical, new QSplitter(Qt::Horizontal, _parent))),
 	m_eventCompiler		(_ec),
 	m_use				(nullptr)
 {
-	m_actualWidget = dynamic_cast<QSplitter*>(parentWidget());
+	m_verticalSplitter = dynamic_cast<QSplitter*>(parentWidget());
+	m_actualWidget = dynamic_cast<QSplitter*>(m_verticalSplitter->parentWidget());
 	m_propertiesEditor = new PropertiesEditor(m_actualWidget);
-	m_actualWidget->addWidget(this);
 	m_actualWidget->addWidget(m_propertiesEditor);
+	m_eventsEditor = new EventsEditor(m_verticalSplitter);
+	m_eventsEditor->setMaximumHeight(48);
+	m_eventsEditor->setMinimumHeight(48);
+	m_verticalSplitter->addWidget(m_eventsEditor);
+	m_verticalSplitter->addWidget(this);
 	m_propertiesEditor->setProperties(m_eventCompiler.properties());
+
+	qDebug() << m_verticalSplitter->orientation() << m_actualWidget->orientation();
+
 	connect(m_propertiesEditor, SIGNAL(changed()), c(), SLOT(noteEventCompilersChanged()));
 
 	connect(c(), SIGNAL(eventsChanged()), this, SLOT(sourceChanged()));
@@ -95,10 +105,10 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 EventsView::~EventsView()
 {
 	quit();
-	QWidget* w = parentWidget();
+	clearEvents();
+	QWidget* w = parentWidget()->parentWidget();
 	setParent(0);
 	delete w;
-	clearEvents();
 }
 
 void EventsView::onUseChanged()
@@ -114,6 +124,8 @@ void EventsView::clearEvents()
 	m_current.clear();
 	m_graphEvents.clear();
 	m_auxEvents.clear();
+	if (m_eventsEditor)
+		m_eventsEditor->scene()->clear();
 }
 
 void EventsView::filterEvents()
@@ -175,6 +187,7 @@ shared_ptr<StreamEvent::Aux> EventsView::auxEvent(float _temperature, int _pos) 
 void EventsView::finalizeEvents()
 {
 	filterEvents();
+	m_eventsEditor->setEvents(m_events, 0);
 }
 
 Lightbox::StreamEvents EventsView::events(int _i) const
@@ -357,244 +370,23 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 	if (!p.isActive())
 		return;
 
-//	int w = width();
 	int h = height();
-	QRect r(_dx, 0, _dw, h);
 
-	auto isAlwaysVisible = [](EventType et) { return et == Lightbox::PeriodSet || et == Sustain || et == Release; };
-
-	p.setClipRect(r);
-
-	p.setPen(QColor(224, 224, 224));
-	p.drawLine(_dx, h / 2, _dx + _dw - 1, h / 2);
-
-	QMutexLocker l(&x_events);
-
-	const unsigned c_maxElementWidth = 16;
-	const int ySustain = 12;
-	const int yAttack = 32;
-	const int yChain = 40;
-	const int yBar = h - 16;
-	QLinearGradient barGrad(0, 0, 0, yBar);
-
-//	for (int pass = 0; pass < 4; ++pass)
-	{
-		p.setCompositionMode(QPainter::CompositionMode_Source);
-/*		if (pass == 0)
+	int ifrom = c()->windowIndex(renderingTimeOf(_dx));
+	int ito = min(c()->hops(), c()->windowIndex(renderingTimeOf(_dx + _dw)));
+	auto hop = c()->hop();
+	for (auto g: m_graphEvents)
+		if (eventVisible(m_selection->itemData(m_selection->currentIndex()), StreamEvent(Graph, 1.f, g.first)))
 		{
-			barGrad.setColorAt(0.25, Qt::white);
-			barGrad.setColorAt(1, QColor(224, 224, 224));
-		}
-		else
-		{
-			barGrad.setColorAt(0.25, Qt::transparent);
-			barGrad.setColorAt(1, QColor(96, 96, 96));
-		}*/
-		QMap<float, QPoint> lastComments;
-		QMap<float, QPoint> lastGraphs;
-		QPoint lastAttack;
-		QPoint lastSustain;
-		StreamEvent lastSustainEvent;
-
-		int ifrom = c()->windowIndex(renderingTimeOf(_dx - c_maxElementWidth));
-		int ito = min(c()->hops(), c()->windowIndex(renderingTimeOf(_dx + _dw)));
-
-		auto hop = c()->hop();
-		for (auto g: m_graphEvents)
-			if (eventVisible(m_selection->itemData(m_selection->currentIndex()), StreamEvent(Graph, 1.f, g.first)))
+			float n = toHue(g.first);
+			p.setPen(QColor::fromHsvF(n, 0.5f, 0.6f * Color::hueCorrection(n)));
+			QPoint lp;
+			for (int i = ifrom; i < ito; ++i)
 			{
-				float n = toHue(g.first);
-				p.setPen(QColor::fromHsvF(n, 0.5f, 0.6f * Color::hueCorrection(n)));
-				QPoint lp;
-				for (int i = ifrom; i < ito; ++i)
-				{
-					QPoint cp(renderingPositionOf(i * hop), height() - g.second[i] * height());
-					if (i != ifrom)
-						p.drawLine(lp, cp);
-					lp = cp;
-				}
+				QPoint cp(renderingPositionOf(i * hop), h - g.second[i] * h);
+				if (i != ifrom)
+					p.drawLine(lp, cp);
+				lp = cp;
 			}
-
-		for (int i = ifrom; i < ito; ++i)
-		{
-			Time t = i * c()->hop();
-			int px = renderingPositionOf((i - 1) * c()->hop());
-			int x = renderingPositionOf(t);
-			int nx = renderingPositionOf((i + 1) * c()->hop());
-//			int mx = (x + nx) / 2;
-			bool inView = nx >= r.left() - 160 && px <= r.right() + 160;
-			{
-//				QMap<float, QPoint> comments;
-//				QMap<float, QPoint> graphs;
-				for (Lightbox::StreamEvent e: m_events[i])
-					if (eventVisible(m_selection->itemData(m_selection->currentIndex()), e) && (inView || isAlwaysVisible(e.type)))
-					{
-						float n = toHue(e.temperature);
-						QPoint pt(x, height() - e.strength * height());
-						QColor cDark = QColor::fromHsvF(n, 0.5f, 0.6f * Color::hueCorrection(n));
-						QColor cPastel = QColor::fromHsvF(n, 0.25f, 1.0f * Color::hueCorrection(n));
-						if (Lightbox::AuxLabel* al = dynamic_cast<AuxLabel*>(&*e.aux()))
-						{
-							p.setPen(cDark);
-							p.setBrush(cPastel);
-							p.drawRoundedRect(QRect(pt.x(), pt.y() - 7, p.fontMetrics().width(al->label.c_str()) + 8, 14), 4, 4);
-							p.drawText(QRect(pt.x() + 4, pt.y() - 7, 160, 14), Qt::AlignLeft | Qt::AlignVCenter, al->label.c_str());
-						}
-
-						switch (e.type)
-						{
-						case Lightbox::Attack:	// strength, surprise, temperature
-							if (e.surprise > 0.f)
-							{
-								int ox = qMax(4, nx - x);
-								if (e.strength > 0)
-								{
-									p.setPen(cDark);
-									p.setBrush(QBrush(cPastel));
-									p.drawRect(x, yAttack, ox, 8);
-									for (int j = 0; j < log2(e.strength) + 6; ++j)
-										p.drawLine(QLine(x, yAttack + 10 + j * 2, qMax(x + 2, nx - 1), yAttack + 10 + j * 2));
-								}
-								else
-								{
-									p.setPen(cPastel);
-									p.setBrush(Qt::NoBrush);
-									p.drawRect(x, yAttack, ox, 8);
-									for (int j = 0; j < log2(-e.strength) + 6; ++j)
-										p.drawLine(QLine(x, yAttack + 10 + j * 2, qMax(x + 2, nx - 1), yAttack + 10 + j * 2));
-								}
-								p.setPen(cDark);
-								if (e.surprise)
-									for (int j = 0; j < log2(e.surprise) + 6; ++j)
-									{
-										p.drawLine(QLine(x + ox + (j + 1) * 2, yAttack, x + ox + (j + 1) * 2, yAttack + 5));
-										p.drawLine(QLine(x + ox + (j + 1) * 2, yAttack + 7, x + ox + (j + 1) * 2, yAttack + 8));
-									}
-								lastAttack = QPoint(x + ox, yAttack);
-							}
-							else
-							{
-								p.setPen(cDark);
-								p.setBrush(QBrush(cPastel));
-								int ox = qMax(4, nx - x);
-								p.drawRect(x, yChain, ox, 4);
-								for (int j = 0; j < log2(e.strength) + 6; ++j)
-									p.drawLine(QLine(x, yChain + 6 + j * 2, qMax(x + 2, nx - 1), yChain + 6 + j * 2));
-								p.setPen(QColor(0, 0, 0, 64));
-								p.drawLine(lastAttack, QPoint(x, yChain));
-								p.drawLine(lastAttack + QPoint(0, 4), QPoint(x, yChain + 4));
-								lastAttack = QPoint(x + ox, yChain);
-							}
-							break;
-						case Lightbox::Sustain: case Lightbox::Release:
-						{
-							if (lastSustainEvent.type == Sustain)
-							{
-								p.fillRect(lastSustain.x(), ySustain + 1, x - lastSustain.x(), 1 + lastSustainEvent.strength * 16, QBrush(QColor::fromHsvF(toHue(lastSustainEvent.temperature), 0.25f, 1.0f * Color::hueCorrection(toHue(lastSustainEvent.temperature)))));
-								p.fillRect(lastSustain.x(), ySustain, x - lastSustain.x(), 1, QBrush(QColor::fromHsvF(toHue(lastSustainEvent.temperature), 0.5f, 0.6f * Color::hueCorrection(toHue(lastSustainEvent.temperature)))));
-								lastSustain = QPoint(x, ySustain);
-							}
-							else
-							{
-								p.fillRect(x, ySustain, 2, 5, cDark);
-								lastSustain = QPoint(x + 2, ySustain);
-							}
-							lastSustainEvent = e;
-							break;
-						}
-						case Lightbox::PeriodSet:
-						{
-							p.setPen(cDark);
-							QRect r(x, yBar, renderingPositionOf(t + e.period) - x, 12);
-							p.drawLine(r.left(), r.center().y(), r.right(), r.center().y());
-							p.drawLine(r.topLeft(), r.bottomLeft());
-							p.drawLine(r.topRight(), r.bottomRight());
-							p.setBrush(cPastel);
-							QString l = QString("%1 bpm").arg(round(10 * toBpm(e.period)) / 10);
-							int tw = p.fontMetrics().width(l) + 8;
-							QRect tr(r.center().x() - tw / 2, r.center().y() - 6, tw, 12);
-							p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-							p.drawRoundedRect(tr, 4, 4);
-							p.setPen(Qt::black);
-							p.drawText(tr, Qt::AlignCenter, l);
-							p.setCompositionMode(QPainter::CompositionMode_Darken);
-							break;
-						}
-						default:
-							break;
-					}
-/*
-						if (pass == 0)
-							switch (e.type)
-							{
-							case Lightbox::Beat:
-							case Lightbox::Bar:
-							case Lightbox::Cycle:
-							{
-								static int lastBeat = -100000;
-								if (lastBeat > -100000)
-								{
-									barGrad.setColorAt(1, QColor::fromHsv(0, 0, e.position / 4 % 2 ? 224 : 240));
-									p.fillRect(lastBeat, 12, x - lastBeat, h, barGrad);
-								}
-								lastBeat = x;
-								break;
-							}
-							default:;
-							}
-						if (pass == 2)
-							switch (e.type)
-							{
-							case Lightbox::Cycle:
-								p.setPen(QPen(barGrad, 0, Qt::SolidLine));
-								p.setBrush(Qt::white);
-								p.drawRect(pt.x() - 6, yBar, 12, 12);
-								p.drawLine(pt.x() - 1, 0, pt.x() - 1, yBar);
-								p.drawLine(pt.x() + 1, 0, pt.x() + 1, yBar);
-								p.drawLine(pt.x() - 1, yBar + 12, pt.x() - 1, h);
-								p.drawLine(pt.x() + 1, yBar + 12, pt.x() + 1, h);
-								p.drawText(pt.x() - 6, yBar, 12, 12, Qt::AlignCenter, "C");
-								break;
-							case Lightbox::Bar:
-								p.setPen(QPen(barGrad, 0, Qt::SolidLine));
-								p.setBrush(Qt::white);
-								p.drawRect(pt.x() - 6, yBar, 12, 12);
-								p.drawLine(pt.x() - 1, 0, pt.x() - 1, yBar);
-								p.drawLine(pt.x() + 1, 0, pt.x() + 1, yBar);
-								p.drawLine(pt.x() - 1, yBar + 12, pt.x() - 1, h);
-								p.drawLine(pt.x() + 1, yBar + 12, pt.x() + 1, h);
-								p.drawText(pt.x() - 6, yBar, 12, 12, Qt::AlignCenter, QString::number(e.position / 4 + 1));
-								break;
-							case Lightbox::Beat:
-								p.setPen(QPen(barGrad, 0, Qt::DotLine));
-								p.setBrush(Qt::white);
-								p.drawLine(pt.x(), 0, pt.x(), yBar);
-								p.drawLine(pt.x(), yBar + 12, pt.x(), h);
-								p.drawRect(pt.x() - 6, yBar, 12, 12);
-								p.drawText(pt.x() - 6, yBar, 12, 12, Qt::AlignCenter, QString::number(e.position / 4 + 1));
-								break;
-							case Lightbox::Tick:
-								p.setPen(QPen(barGrad, 0, Qt::DotLine));
-								p.drawLine(pt.x(), 0, pt.x(), yBar);
-								p.drawLine(pt.x(), yBar, pt.x(), h);
-								break;
-							default:
-								break;
-							}*/
-					} // END: Is visible.
-				// END: Each event in set.
-/*				if (pass == 1)
-				{
-					for (auto it = lastGraphs.begin(); it != lastGraphs.end(); ++it)
-						if (!graphs.contains(it.key()))
-						{
-							p.setPen(Qt::NoPen);
-							p.setBrush(QColor(it.key()));
-							p.drawEllipse(it.value(), 3, 3);
-						}
-					lastGraphs = graphs;
-				}*/
-			} // END: Within view.
-		} // END: Each set of events.
-	} // END: Passes.
-} // END: Function.
+		}
+}

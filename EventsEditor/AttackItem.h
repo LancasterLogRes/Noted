@@ -25,7 +25,7 @@
 class AttackItem: public StreamEventItem
 {
 public:
-	AttackItem(Lightbox::StreamEvent const& _se): StreamEventItem(_se) {}
+	AttackItem(Lightbox::StreamEvent const& _se): StreamEventItem(_se) { setZValue(-1.f); }
 
 	virtual QRectF core() const;
 	virtual QPointF evenUp(QPointF const& _n);

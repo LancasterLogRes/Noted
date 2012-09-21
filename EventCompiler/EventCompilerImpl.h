@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 #include <cstdlib>
 #include <unordered_map>
@@ -27,10 +28,15 @@
 #include <Common/Global.h>
 #include <Common/MemberCollection.h>
 #include <Common/Time.h>
+#include <Common/StreamIO.h>
 #include "StreamEvent.h"
 
 namespace Lightbox
 {
+
+inline std::string id(float _y) { return toString(_y); }
+inline std::string ms(float _x){ return toString(round(_x * 1000)) + (!_x ? "ms" : ""); }
+inline std::string msL(float _x, float _y) { return toString(round(_x * 1000)) + "ms (" + toString(round(_y * 100)) + "%)"; }
 
 #define LIGHTBOX_PREPROCESSORS(...) \
 	virtual void initPres() { Initer(this) , __VA_ARGS__; } \

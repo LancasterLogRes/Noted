@@ -811,8 +811,8 @@ void Noted::writeSettings()
 
 	QStringList eds;
 	QString s;
-	foreach (EventsEditor* ed, findChildren<EventsEditor*>())
-		if (!(s = ed->queryFilename()).isNull())
+	for (EventsEditor* ed: findChildren<EventsEditor*>())
+		if (ed->isIndependent() && !(s = ed->queryFilename()).isNull())
 		{
 			eds.append(s);
 			ed->save(settings);

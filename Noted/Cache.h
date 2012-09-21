@@ -72,8 +72,9 @@ public:
 
 	template <class _T> Lightbox::foreign_vector<_T const> item(unsigned _depth, unsigned _i) const
 	{
-		assert(m_isGood);
-		return Lightbox::foreign_vector<_T const>((_T*)(m_mappingAtDepth[_depth] + std::min<unsigned>(_i, m_itemsAtDepth[_depth] - 1) * m_sizeofItem), m_sizeofItem / sizeof(_T));
+		if (m_isGood && (int)_depth < m_itemsAtDepth.size() && m_itemsAtDepth[_depth] > 0)
+			return Lightbox::foreign_vector<_T const>((_T*)(m_mappingAtDepth[_depth] + std::min<unsigned>(_i, m_itemsAtDepth[_depth] - 1) * m_sizeofItem), m_sizeofItem / sizeof(_T));
+		return Lightbox::foreign_vector<_T const>();
 	}
 
 	template <class _T> Lightbox::foreign_vector<_T const> items(unsigned _i, unsigned _c) const
@@ -85,8 +86,9 @@ public:
 
 	template <class _T> Lightbox::foreign_vector<_T const> data(unsigned _depth = 0) const
 	{
-		assert(m_isGood);
-		return Lightbox::foreign_vector<_T const>((_T*)m_mappingAtDepth[_depth], m_itemsAtDepth[_depth]);
+		if (m_isGood && (int)_depth < m_itemsAtDepth.size() && m_itemsAtDepth[_depth] > 0)
+			return Lightbox::foreign_vector<_T const>((_T*)m_mappingAtDepth[_depth], m_itemsAtDepth[_depth]);
+		return Lightbox::foreign_vector<_T const>();
 	}
 
 	// _Mean must operate on three foreign_vector<_T>, of size (_sizeofItem / sizeof(_T)), such that mean(arg1, arg2) = arg3.
