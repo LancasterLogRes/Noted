@@ -23,7 +23,7 @@ using namespace Lightbox;
 
 void PhaseUnity::init(EventCompilerImpl*)
 {
-	m_buffer.resize(0);
+	m_buffer.clear();
 	m_last = 0.f;
 }
 

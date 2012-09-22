@@ -139,7 +139,7 @@ void EventsEditor::load(QSettings const& _s)
 void EventsEditor::mousePressEvent(QMouseEvent* _e)
 {
 	m_lastScenePosition = mapToScene(_e->pos());
-	if ((itemAt(_e->pos()) || !(_e->buttons() & Qt::MiddleButton)) && isMutable())
+	if ((itemAt(_e->pos()) || !(_e->buttons() & Qt::MiddleButton)))// && isMutable())
 	{
 		QGraphicsView::mousePressEvent(_e);
 		m_draggingTime = Lightbox::UndefinedTime;

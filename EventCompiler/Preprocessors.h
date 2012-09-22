@@ -137,7 +137,7 @@ public:
 	{
 		m_fftw = shared_ptr<FFTW>(new FFTW(_eci->bands() - 1));
 		m_wF = windowFunction(m_fftw->arity(), HannWindow);
-
+		m_last.clear();
 	}
 	void execute(EventCompilerImpl*, Time, vector<float> const& _mag, vector<float> const&, std::vector<float> const&)
 	{
@@ -354,6 +354,7 @@ public:
 	void init(EventCompilerImpl* _eci)
 	{
 		_PP::init(_eci);
+		m_data = vector<ElementType>(m_data.size(), zero_of<ElementType>::value());
 		setHistory(m_data.size());
 	}
 
@@ -628,6 +629,7 @@ public:
 	void init(EventCompilerImpl* _eci)
 	{
 		Super::init(_eci);
+		m_last = zero_of<GenGaussian<typename Super::ElementType> >::value();
 	}
 	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
 	{
@@ -638,9 +640,7 @@ public:
 			m_last.sigma = sigma(Super::get(), m_last.mean);
 		}
 	}
-
 	GenGaussian<typename Super::ElementType> const& get() const { return m_last; }
-	bool changed() const { return true; }
 
 private:
 	GenGaussian<typename Super::ElementType> m_last;
@@ -685,6 +685,12 @@ class CutOff: public _PP
 public:
 	typedef _PP Super;
 	typedef typename Info<_PP>::ElementType ElementType;
+	void init(EventCompilerImpl* _eci)
+	{
+		Super::init(_eci);
+		m_last = zero_of<ElementType>::value();
+		m_changed = false;
+	}
 	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
 	{
 		Super::execute(_eci, _t, _mag, _phase, _wave);
@@ -692,7 +698,10 @@ public:
 		{
 			m_last = Super::get();
 			if (m_last < _N::value)
+			{
 				m_last = zero_of<ElementType>::value();
+				m_changed = true;
+			}
 		}
 	}
 	ElementType get() const { return m_last; }

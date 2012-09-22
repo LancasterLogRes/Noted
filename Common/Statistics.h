@@ -156,6 +156,8 @@ LIGHTBOX_STRUCT(2, Gaussian, double, mean, double, sigma);
 
 template <class _T> LIGHTBOX_STRUCT(2, GenGaussian, _T, mean, _T, sigma);
 
+template <class _F> struct zero_of<GenGaussian<_F> > { static GenGaussian<_F> value() { return GenGaussian<_F>(zero_of<_F>::value(), zero_of<_F>::value()); } };
+
 template <class T>
 T normal(T _x, Gaussian _muSigma, T _rootScale = 1)
 {

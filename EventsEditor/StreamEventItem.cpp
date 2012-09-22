@@ -192,8 +192,8 @@ void StreamEventItem::setTime(int _hopIndex)
 
 QRectF StreamEventItem::boundingRect() const
 {
-	if (isSelected())
-		return QRectF(core().x() - hpw, -view()->height(), core().width() + hpw + 12, view()->height() * 3);
-	else
-		return core().adjusted(-hpw, -hpw, hpw + 12, hpw + 12);
+//	if (isSelected())
+		return QRectF(core().x() - hpw, -view()->height(), core().width() + hpw, view()->height() * 3);
+//	else
+//		return core().adjusted(-hpw, -hpw, hpw + 12, hpw + 12);
 }
