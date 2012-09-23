@@ -32,34 +32,6 @@
 using namespace std;
 using namespace Lightbox;
 
-QPointF AttackItem::evenUp(QPointF const& _n)
-{
-	return QPointF(_n.x(), 15);
-}
-
-QRectF AttackItem::core() const
-{
-	return QRectF(0, 0, 10, 16);
-}
-
-void AttackItem::paint(QPainter* _p, const QStyleOptionGraphicsItem*, QWidget*)
-{
-	handleSelected(_p);
-	_p->setPen(cDark());
-	_p->setBrush(cPastel());
-	if (isMagnified())
-	{
-		auto cc = core().center();
-		_p->drawPolygon(QPolygonF(QVector<QPointF>() <<
-								  core().topLeft() <<
-								  core().bottomLeft() <<
-								  QPointF(core().right(), cc.y()) ));
-		_p->setPen(Qt::black);
-		_p->drawText(core(), Qt::AlignCenter, QString(toChar(m_se.character)));
-	}
-	_p->fillRect(QRectF(core().topLeft(), QSizeF(1, -16)), qLinearGradient(core().topLeft(), QPointF(core().left(), -16), cLight(), Qt::transparent));
-}
-
 QRectF Chained::boundingRect() const
 {
 	return QRectF(m_begin, QSizeF(m_end.x() - m_begin.x(), m_end.y() - m_begin.y())).normalized().adjusted(0, -1, 0, 1);

@@ -54,6 +54,11 @@ float levelled(float _x, int _levels)
 	return min<float>(_levels - 1, floor(_x * _levels)) / _levels;
 }
 
+QPointF StreamEventItem::evenUp(QPointF const& _n)
+{
+	return QPointF(_n.x(), 15.f);
+}
+
 QPointF StreamEventItem::distanceFrom(StreamEventItem* _it, QPointF const& _onThem, QPointF const& _onUs) const
 {
 	auto v = view()->viewportTransform();
@@ -165,6 +170,8 @@ void StreamEventItem::handleSelected(QPainter* _p)
 		_p->fillRect(QRectF(core().x(), -view()->height(), core().width(), view()->height() * 3), QColor(0, 24, 255, 32));
 		_p->fillRect(QRectF(core().x(), -view()->height(), 1, view()->height() * 3), QColor(0, 24, 255, 128));
 	}
+	_p->setPen(cDark());
+	_p->setBrush(cPastel());
 }
 
 StreamEventItem* StreamEventItem::newItem(Lightbox::StreamEvent const& _se)

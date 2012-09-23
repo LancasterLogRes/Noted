@@ -49,7 +49,7 @@ public:
 	EventsEditor* view() const;
 	QPointF distanceFrom(StreamEventItem* _i, QPointF const& _onThem = QPointF(0, 0), QPointF const& _onUs = QPointF(0, 0)) const;
 	Lightbox::StreamEvent const& streamEvent() const { return m_se; }
-	virtual QPointF evenUp(QPointF const& _n) = 0;
+	virtual QPointF evenUp(QPointF const& _n);
 	virtual void setTime(int _hopIndex);
 	virtual void setChannel(int _ch) { m_se.assign(_ch); }
 	virtual QRectF core() const = 0;

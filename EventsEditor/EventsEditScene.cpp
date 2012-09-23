@@ -19,6 +19,7 @@
  */
 
 #include <QGraphicsSceneWheelEvent>
+#include <QTimer>
 #include <fstream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -95,14 +96,13 @@ void EventsEditScene::setEvents(QList<Lightbox::StreamEvents> const& _es, int _f
 			default:;
 			}
 		}
-	rejigEvents();
 	m_isDirty = false;
 	emit newScale();
+	QTimer::singleShot(0, this, SLOT(rejigEvents()));
 }
 
 void EventsEditScene::rejigEvents()
 {
-	QMap<int, AttackItem*> lastSCI;
 	QMap<int, StreamEventItem*> lastPSI;
 	QMap<int, StreamEventItem*> lastSI;
 	int spOrder = 1;
@@ -110,57 +110,30 @@ void EventsEditScene::rejigEvents()
 		if (auto sei = dynamic_cast<StreamEventItem*>(it))
 		{
 			int ch = sei->streamEvent().channel;
-			if (auto ci = dynamic_cast<AttackItem*>(sei))
-				if (ci->streamEvent().surprise == 0.f && lastSCI[ch])
-				{
-					Chained* cd = new Chained(ci->pos(), lastSCI[ch]->pos());
-					cd->setZValue(-1);
-					addItem(cd);
-				}
-			StreamEventItem* pri = nullptr;
-			if ((pri = dynamic_cast<PeriodResetItem*>(sei)) || (pri = dynamic_cast<PeriodTweakItem*>(sei)))
+			if ((dynamic_cast<PeriodResetItem*>(sei) || dynamic_cast<PeriodTweakItem*>(sei)) && lastPSI[ch])
 			{
-				if (lastPSI[ch])
-				{
-					PeriodBarItem* pbi = new PeriodBarItem(lastPSI[ch]->pos(), pri->pos(), toSeconds(lastPSI[ch]->streamEvent().period) * 1000);
-					pbi->setZValue(-1);
-					addItem(pbi);
-				}
+				PeriodBarItem* pbi = new PeriodBarItem(lastPSI[ch]->pos(), sei->pos(), toSeconds(lastPSI[ch]->streamEvent().period) * 1000);
+				pbi->setZValue(-1);
+				addItem(pbi);
 			}
-			if (auto ssi = dynamic_cast<SustainSuperItem*>(sei))
+			if (dynamic_cast<SustainSuperItem*>(sei) /*&& !dynamic_cast<AttackItem*>(sei)*/ && lastSI[ch])
 			{
-				if (lastSI[ch] && (dynamic_cast<SustainItem*>(ssi) || dynamic_cast<ReleaseItem*>(ssi)))
-				{
-					SustainBarItem* sbi = new SustainBarItem(lastSI[ch]->pos(), ssi->pos(), lastSI[ch]->streamEvent().temperature, lastSI[ch]->streamEvent().strength);
-					sbi->setZValue(-1);
-					addItem(sbi);
-				}
-			}
-			if (auto sci = dynamic_cast<AttackItem*>(sei))
-			{
-				lastSCI[ch] = sci;
-				lastSI[ch] = sci;
+				SustainBarItem* sbi = new SustainBarItem(lastSI[ch]->pos(), sei->pos(), lastSI[ch]->streamEvent(), sei->streamEvent());
+				sbi->setZValue(-1);
+				addItem(sbi);
 			}
 			if (auto psi = dynamic_cast<PeriodSetItem*>(sei))
 				lastPSI[ch] = psi;
-			if (auto si = dynamic_cast<SustainItem*>(sei))
-			{
-				lastSI[ch] = si;
-				lastSCI[ch] = nullptr;
-			}
 			if (dynamic_cast<ReleaseItem*>(sei))
-			{
 				lastSI[ch] = nullptr;
-				lastSCI[ch] = nullptr;
-			}
+			else if (auto ssi = dynamic_cast<SustainSuperItem*>(sei))
+				lastSI[ch] = ssi;
 			if (auto c = dynamic_cast<SyncPointItem*>(it))
 			{
 				c->setOrder(spOrder);
 				spOrder++;
 			}
 		}
-		else if (auto c = dynamic_cast<Chained*>(it))
-			delete c;
 		else if (auto c = dynamic_cast<SustainBarItem*>(it))
 			delete c;
 		else if (auto c = dynamic_cast<PeriodBarItem*>(it))
@@ -183,7 +156,7 @@ void EventsEditScene::wheelEvent(QGraphicsSceneWheelEvent* _wheelEvent)
 void EventsEditScene::itemChanged(StreamEventItem* _it)
 {
 	setDirty(_it->isCausal());
-	rejigEvents();
+	QTimer::singleShot(0, this, SLOT(rejigEvents()));
 }
 
 EventsEditor* EventsEditScene::view() const

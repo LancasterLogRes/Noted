@@ -32,24 +32,50 @@
 using namespace std;
 using namespace Lightbox;
 
+SustainBarItem::SustainBarItem(QPointF const& _begin, QPointF const& _end, Lightbox::StreamEvent const& _bEv, Lightbox::StreamEvent const& _eEv):
+	m_begin(_begin), m_end(_end), m_beginEvent(_bEv), m_endEvent(_eEv)
+{
+	setPos(m_begin);
+}
+
 QRectF SustainBarItem::boundingRect() const
 {
-	return QRectF(m_begin + QPointF(0, 3), QSizeF(m_end.x() - m_begin.x(), 6 + (log2(m_strength) + 7) * 2));
+	return QRectF(0, -15, m_end.x() - m_begin.x(), 16);
 }
 
 void SustainBarItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
 {
-/*	QRectF br = boundingRect();
-	br.setHeight(32);
-	_p->fillRect(br, QColor::fromHsvF(toHue(m_temperature), .25f, 1.f * Lightbox::Color::hueCorrection(toHue(m_temperature))));
-	_p->fillRect(QRectF(br.topLeft(), QSizeF(br.width(), 1)), QColor::fromHsvF(toHue(m_temperature), .5f, .6f * Lightbox::Color::hueCorrection(toHue(m_temperature))));
-	for (int j = 0; j < log2(m_strength) + 6; ++j)
-		_p->fillRect(QRectF(br.bottomLeft() + QPointF(0, j * 2 + 2), QSizeF(br.width(), 1)), QColor::fromHsvF(toHue(m_temperature), .5f, .6f * Lightbox::Color::hueCorrection(toHue(m_temperature))));*/
+	if (m_beginEvent.type == Attack)
+	{
+		_p->setBrush(QColor::fromHsvF(toHue(m_endEvent.temperature), .0625f, 1.f * Lightbox::Color::hueCorrection(toHue(m_endEvent.temperature))));
+		_p->setPen(Qt::NoPen);
+		_p->drawPolygon(QPolygonF() << QPointF(0, 7 - 15 - 7 * m_beginEvent.strength) << QPointF(0, -6 + 7 * m_beginEvent.strength) << QPointF(m_end.x() - m_begin.x(), 7 - 15 - 7 * m_endEvent.strength) << QPointF(m_end.x() - m_begin.x(), -6 + 7 * m_endEvent.strength));
+	}
+	else
+	{
+		_p->fillRect(QRectF(0, 7 - 15 - 7 * m_beginEvent.strength, m_end.x() - m_begin.x(), 2 + 14 * m_beginEvent.strength), QColor::fromHsvF(toHue(m_beginEvent.temperature), .25f, 1.f * Lightbox::Color::hueCorrection(toHue(m_beginEvent.temperature))));
+	}
 }
 
-QPointF SustainSuperItem::evenUp(QPointF const& _n)
+QRectF AttackItem::core() const
 {
-	return QPointF(_n.x(), 15.f);
+	return QRectF(0, 0, 10, 16);
+}
+
+void AttackItem::paint(QPainter* _p, const QStyleOptionGraphicsItem*, QWidget*)
+{
+	handleSelected(_p);
+	if (isMagnified())
+	{
+		auto cc = core().center();
+		_p->drawPolygon(QPolygonF(QVector<QPointF>() <<
+								  core().topLeft() <<
+								  core().bottomLeft() <<
+								  QPointF(core().right(), cc.y()) ));
+		_p->setPen(Qt::black);
+		_p->drawText(core(), Qt::AlignCenter, QString(toChar(m_se.character)));
+	}
+	_p->fillRect(QRectF(core().topLeft(), QSizeF(1, -16)), qLinearGradient(core().topLeft(), QPointF(core().left(), -16), cLight(), Qt::transparent));
 }
 
 QRectF SustainItem::core() const
@@ -60,8 +86,6 @@ QRectF SustainItem::core() const
 void SustainItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
 {
 	handleSelected(_p);
-	_p->setPen(cDark());
-	_p->setBrush(cPastel());
 	if (isMagnified())
 	{
 		auto cc = core().center();
@@ -88,8 +112,6 @@ QRectF DecayItem::core() const
 void DecayItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
 {
 	handleSelected(_p);
-	_p->setPen(cDark());
-	_p->setBrush(cPastel());
 	if (isMagnified())
 	{
 		auto cc = core().center();
@@ -112,7 +134,7 @@ void ReleaseItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
 {
 	handleSelected(_p);
 	_p->setPen(cLight());
-	_p->setBrush(Qt::NoBrush);
+	_p->setBrush(cPastel());
 	if (isMagnified())
 	{
 		auto cc = core().center();

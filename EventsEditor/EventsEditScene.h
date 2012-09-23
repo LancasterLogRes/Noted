@@ -41,7 +41,6 @@ public:
 	
 	void copyFrom(EventsStore* _ev);
 	void setEvents(QList<Lightbox::StreamEvents> const& _es, int _forceChannel = -1);
-	void rejigEvents();
 
 	NotedFace* c() const;
 	EventsEditor* view() const;
@@ -54,6 +53,9 @@ public:
 	QList<Lightbox::StreamEvents> events(Lightbox::Time _hop) const;
 
 	virtual void wheelEvent(QGraphicsSceneWheelEvent* _wheelEvent);
+
+public slots:
+	void rejigEvents();
 
 signals:
 	void newScale();

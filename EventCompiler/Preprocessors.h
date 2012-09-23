@@ -349,12 +349,11 @@ public:
 
 	GenHistoried(unsigned _s = _ds): m_data(_s) {}
 
-	GenHistoried& setHistory(unsigned _s) { m_data.clear(); m_data.resize(_s + 4); m_count = 0; return *this; }
+	GenHistoried& setHistory(unsigned _s) { m_data.clear(); m_data.resize(_s); m_count = 0; return *this; }
 
 	void init(EventCompilerImpl* _eci)
 	{
 		_PP::init(_eci);
-		m_data = vector<ElementType>(m_data.size(), zero_of<ElementType>::value());
 		setHistory(m_data.size());
 	}
 
@@ -374,7 +373,7 @@ public:
 
 	bool changed() const { return _PP::changed(); }
 	foreign_vector<ElementType> get() const { return foreign_vector<ElementType>(const_cast<ElementType*>(m_data.data()), m_data.size()); }
-	vector<ElementType> const& getVector() const { return m_data; }	// note - offset by 4.
+	vector<ElementType> const& getVector() const { return m_data; }
 
 private:
 	vector<ElementType> m_data;

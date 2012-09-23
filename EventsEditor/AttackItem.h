@@ -22,16 +22,6 @@
 
 #include "StreamEventItem.h"
 
-class AttackItem: public StreamEventItem
-{
-public:
-	AttackItem(Lightbox::StreamEvent const& _se): StreamEventItem(_se) { setZValue(-1.f); }
-
-	virtual QRectF core() const;
-	virtual QPointF evenUp(QPointF const& _n);
-	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
-};
-
 class Chained: public QGraphicsItem
 {
 public:
