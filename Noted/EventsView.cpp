@@ -118,6 +118,7 @@ void EventsView::onUseChanged()
 
 void EventsView::clearEvents()
 {
+	m_actualWidget->setOrientation(Qt::Horizontal);
 	QMutexLocker l(&x_events);
 	m_initEvents.clear();
 	m_events.clear();
