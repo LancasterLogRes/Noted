@@ -81,6 +81,7 @@ public slots:
 	void onUseChanged();
 	void exportEvents();
 	void channelChanged();
+	void setNewEvents();
 
 private:
 	virtual void doRender(QGLFramebufferObject* _fbo, int _dx, int _dw);

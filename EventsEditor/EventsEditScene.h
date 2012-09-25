@@ -62,5 +62,6 @@ signals:
 
 private:
 	mutable bool m_isDirty;
+	bool m_willRejig;
 	mutable NotedFace* m_c;
 };

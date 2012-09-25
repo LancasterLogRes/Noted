@@ -308,8 +308,10 @@ public:
 
 	void init(EventCompilerImpl* _eci)
 	{
+		cdebug << "Historied::init";
 		_PP::init(_eci);
 		setHistory(m_data.size());
+		m_count = 0;
 	}
 
 	void resetBefore(unsigned _bins)
@@ -319,6 +321,7 @@ public:
 
 	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
 	{
+		cdebug << "Historied::execute" << m_count;
 		_PP::execute(_eci, _t, _mag, _phase, _wave);
 		if (_PP::changed())
 		{
@@ -467,8 +470,9 @@ private:
 };
 
 template <class _PP1, class _PP2>
-class Subbed
+class Subbed: public _PP1, public _PP2
 {
+public:
 	void init(EventCompilerImpl* _eci)
 	{
 		_PP1::init(_eci);
@@ -484,7 +488,7 @@ class Subbed
 	}
 	bool changed() const { return _PP1::changed() || _PP2::changed(); }
 
-	typedef typename std::remove_const<typename std::remove_reference<decltype(_PP1().get())>::type>::type TT;
+	typedef typename Info<_PP1>::ElementType TT;
 
 	TT const& get() const { return m_last; }
 
@@ -643,6 +647,38 @@ public:
 
 private:
 	GenGaussian<typename Super::ElementType> m_last;
+};
+
+template <class _PP, class _TroughRatio = Float<1, 0> >
+class TroughLimit: public _PP
+{
+public:
+	typedef _PP Super;
+	typedef typename Info<_PP>::ElementType ElementType;
+
+	void init(EventCompilerImpl* _eci)
+	{
+		Super::init(_eci);
+		m_last = m_lastTrough = zero_of<ElementType>::value();
+		m_isNew = false;
+	}
+
+	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
+	{
+		Super::execute(_eci, _t, _mag, _phase, _wave);
+		m_isNew = Super::changed() && Super::getTrough() / get() < _TroughRatio::value;
+		if (m_isNew)
+			m_lastTrough = Super::getTrough();
+	}
+
+	using Super::get;
+	ElementType const& getTrough() const { return m_lastTrough; }
+	bool changed() const { return m_isNew; }
+
+private:
+	ElementType m_last;
+	ElementType m_lastTrough;
+	bool m_isNew;
 };
 
 template <class _PP>

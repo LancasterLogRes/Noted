@@ -98,11 +98,16 @@ void EventsEditScene::setEvents(QList<Lightbox::StreamEvents> const& _es, int _f
 		}
 	m_isDirty = false;
 	emit newScale();
-	QTimer::singleShot(0, this, SLOT(rejigEvents()));
+	if (!m_willRejig)
+	{
+		m_willRejig = true;
+		QTimer::singleShot(0, this, SLOT(rejigEvents()));
+	}
 }
 
 void EventsEditScene::rejigEvents()
 {
+	m_willRejig = false;
 	QMap<int, StreamEventItem*> lastPSI;
 	QMap<int, StreamEventItem*> lastSI;
 	int spOrder = 1;
@@ -156,7 +161,11 @@ void EventsEditScene::wheelEvent(QGraphicsSceneWheelEvent* _wheelEvent)
 void EventsEditScene::itemChanged(StreamEventItem* _it)
 {
 	setDirty(_it->isCausal());
-	QTimer::singleShot(0, this, SLOT(rejigEvents()));
+	if (!m_willRejig)
+	{
+		m_willRejig = true;
+		QTimer::singleShot(0, this, SLOT(rejigEvents()));
+	}
 }
 
 EventsEditor* EventsEditScene::view() const

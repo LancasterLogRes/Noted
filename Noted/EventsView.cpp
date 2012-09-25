@@ -188,6 +188,11 @@ shared_ptr<StreamEvent::Aux> EventsView::auxEvent(float _temperature, int _pos) 
 void EventsView::finalizeEvents()
 {
 	filterEvents();
+	QTimer::singleShot(0, this, SLOT(setNewEvents()));
+}
+
+void EventsView::setNewEvents()
+{
 	m_eventsEditor->setEvents(m_events, 0);
 }
 
@@ -373,8 +378,8 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 
 	int h = height();
 
-	int ifrom = c()->windowIndex(renderingTimeOf(_dx));
-	int ito = min(c()->hops(), c()->windowIndex(renderingTimeOf(_dx + _dw)));
+	int ifrom = c()->windowIndex(renderingTimeOf(_dx - 3)) - 1;
+	int ito = min(c()->hops(), c()->windowIndex(renderingTimeOf(_dx + _dw + 3))) + 1;
 	auto hop = c()->hop();
 	for (auto g: m_graphEvents)
 		if (eventVisible(m_selection->itemData(m_selection->currentIndex()), StreamEvent(Graph, 1.f, g.first)))

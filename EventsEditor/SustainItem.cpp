@@ -49,7 +49,7 @@ void SustainBarItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidge
 	{
 		_p->setBrush(QColor::fromHsvF(toHue(m_endEvent.temperature), .0625f, 1.f * Lightbox::Color::hueCorrection(toHue(m_endEvent.temperature))));
 		_p->setPen(Qt::NoPen);
-		_p->drawPolygon(QPolygonF() << QPointF(0, 7 - 15 - 7 * m_beginEvent.strength) << QPointF(0, -6 + 7 * m_beginEvent.strength) << QPointF(m_end.x() - m_begin.x(), 7 - 15 - 7 * m_endEvent.strength) << QPointF(m_end.x() - m_begin.x(), -6 + 7 * m_endEvent.strength));
+		_p->drawPolygon(QPolygonF() << QPointF(0, 7 - 15 - 7 * m_beginEvent.strength) << QPointF(0, -6 + 7 * m_beginEvent.strength) << QPointF(m_end.x() - m_begin.x(), -6 + 7 * m_endEvent.strength) << QPointF(m_end.x() - m_begin.x(), 7 - 15 - 7 * m_endEvent.strength));
 	}
 	else
 	{
