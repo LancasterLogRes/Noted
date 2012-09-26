@@ -29,7 +29,7 @@ namespace Lightbox
 
 enum ColorSetItem
 {
-	ChromaMax =				0x00000000,
+	ChromaToggle =			0x00000000,
 	ChromaMin =				0x00000001,
 	ChromaSelection =		0x00000002, // Use colorSelection() to determine actual set.
 	ChromaContinuous =		0x00000008,
@@ -42,7 +42,7 @@ enum ColorSetItem
 	SingleColor =			0x00001000	// Forces RGB to a value channel-wise <= to single color in selection.
 };
 
-LIGHTBOX_FLAGS(ColorSetItem, ColorSet, (ChromaMax)(ChromaMin)(ChromaSelection)(ChromaContinuous)(ValueMax)(ValueToggle)(ValueSelection)(ValueContinuous)(HueSelection)(HueContinuous)(SingleColor));
+LIGHTBOX_FLAGS(ColorSetItem, ColorSet, (ChromaToggle)(ChromaMin)(ChromaSelection)(ChromaContinuous)(ValueMax)(ValueToggle)(ValueSelection)(ValueContinuous)(HueSelection)(HueContinuous)(SingleColor));
 
 static const ColorSet DimmableSelection =		HueSelection|ChromaSelection|ValueContinuous;
 static const ColorSet DimmableMono =			SingleColor|ValueContinuous;

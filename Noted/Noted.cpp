@@ -1542,6 +1542,7 @@ void Noted::rejigAudio()
 		// OPTIMIZE: move into worker code; allow multiple workers.
 		// OPTIMIZE: consider searching tree locally and completely, putting toBeAnalyzed things onto global todo, and skipping through otherwise.
 		// ...keeping search local until RAAs needed to be done are found.
+		m_eventsViewsDone = 0;
 		while (todo.size())
 		{
 			AcausalAnalysisPtr aa = todo.front();
@@ -1610,7 +1611,8 @@ AcausalAnalysisPtrs Noted::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finish
 	else if (dynamic_cast<CompileEvents*>(&*_finished) && eventsViews().size())
 		foreach (EventsView* ev, eventsViews())
 			ret.push_back(AcausalAnalysisPtr(new CompileEventsView(ev)));
-	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !eventsViews().size()) || (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == eventsViews().size()))
+	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !eventsViews().size()) ||
+			 (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == eventsViews().size()))
 		ret.push_back(m_collateEventsAnalysis);
 
 	// Go through all other things that can give CAs; at this point, it's just the plugins
@@ -1629,6 +1631,7 @@ void Noted::initializeCausal(CausalAnalysisPtr const& _lastComplete)
 	todo.push_back(_lastComplete);
 	assert(m_causalQueue.empty());
 
+	m_eventsViewsDone = 0;
 	while (todo.size())
 	{
 		CausalAnalysisPtr ca = todo.front();
