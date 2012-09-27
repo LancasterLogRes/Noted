@@ -77,6 +77,8 @@ public:
 
 	Color& operator*=(float _x) { return attenuate(_x); }
 	Color operator*(float _x) const { return attenuated(_x); }
+	Color& operator/=(float _x) { return attenuate(1.f / _x); }
+	Color operator/(float _x) const { return attenuated(1.f / _x); }
 
 	float distance(Color _hueSat, bool _useHue = true, bool _useSat = true) const
 	{

@@ -93,7 +93,7 @@ struct StreamEvent
 		else
 			channel = -1;
 	}
-	StreamEvent assignedTo(int _ch) const { if (isChannelSpecific(type)) { StreamEvent ret = *this; ret.channel = _ch; return ret; } return *this; }
+	StreamEvent assignedTo(int _ch) const { StreamEvent ret = *this; ret.assign(_ch); return ret; }
 
 	bool operator==(StreamEvent const& _c) const { return type == _c.type && temperature == _c.temperature && strength == _c.strength; }
 	bool operator!=(StreamEvent const& _c) const { return !operator==(_c); }
@@ -117,6 +117,15 @@ inline float toHue(float _temperature)
 {
 	float f;
 	return std::modf((1.666666 - clamp(_temperature, -.25f, 1.25f) * .66666), &f);
+}
+
+inline float fromHue(float _hue)
+{
+	float f = (1.666666 - clamp(_hue, 0.f, 1.f)) * 1.5f - 1.5f;
+	if (f < -0.25f)
+		return f + 1.5f;
+	else
+		return f;
 }
 
 /** e.g.
@@ -287,7 +296,7 @@ inline StreamEvents noComment(StreamEvents const& _se)
 
 inline std::ostream& operator<<(std::ostream& _out, StreamEvent const& _e)
 {
-	return _out << "{" << _e.type << ":" << _e.strength << "@" << _e.character << "/" << _e.temperature << /*std::hex << int(_e.temperature[0]) << "," << int(_e.temperature[1]) << "," << int(_e.temperature[2]) <<*/ "}";
+	return _out << "{" << int(_e.channel) << ":" << _e.type << "@" << _e.strength << "$" << _e.character << "/" << _e.temperature << /*std::hex << int(_e.temperature[0]) << "," << int(_e.temperature[1]) << "," << int(_e.temperature[2]) <<*/ "}";
 }
 
 }

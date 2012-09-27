@@ -67,7 +67,7 @@ inline CharacterComponent component(int _index, bool _on)
  */
 enum Character: uint8_t
 {
-	Dull,		//=	(Charming|Peaceful|Chaotic|Disparate)&SimpleComponents,			// (space)
+	Dull = 0,	//=	(Charming|Peaceful|Chaotic|Disparate)&SimpleComponents,			// (space)
 	Vibrant,	//=	(Charming|Peaceful|Chaotic|Pointed)&SimpleComponents,			// ~
 	Harmonious,	//= (Charming|Peaceful|Structured|Disparate)&SimpleComponents,		// #
 	Adroit,		//=	(Charming|Peaceful|Structured|Pointed)&SimpleComponents,		// |
