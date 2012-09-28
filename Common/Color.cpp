@@ -28,3 +28,30 @@ float Color::hueCorrection(float _h)
 	static const std::map<float, float> c_brightnessCurve{{0, .9f}, {.166666, .75f}, {.333333, .85f}, {.5, .85f}, {.666666, 1.f}, {.8333333, .9f}, {1, .9f}};
 	return lerpLookup(c_brightnessCurve, _h);
 }
+
+Color Color::fromRGB(std::array<float, 3> _rgb)
+{
+	Color ret(0, 0, 0);
+	float m = min(_rgb[0], min(_rgb[1], _rgb[2]));
+	ret.m_value = max(_rgb[0], max(_rgb[1], _rgb[2]));
+	float c = ret.m_value - m;
+	if (c != 0)
+	{
+		ret.m_sat = c / ret.m_value;
+		array<float, 3> d;
+		for (int i = 0; i < 3; ++i)
+			d[i] = (((ret.m_value - _rgb[i]) / 6.f) + (c / 2.f)) / c;
+		if (_rgb[0] == ret.m_value)
+			ret.m_hue = d[2] - d[1];
+		else if (_rgb[1] == ret.m_value)
+			ret.m_hue = (1.f/3.f) + d[0] - d[2];
+		else if (_rgb[2] == ret.m_value)
+			ret.m_hue = (2.f/3.f) + d[1] - d[0];
+		if (ret.m_hue < 0.f)
+			ret.m_hue += 1.f;
+		if (ret.m_hue > 1.f)
+			ret.m_hue -= 1.f;
+	}
+	return ret;
+}
+

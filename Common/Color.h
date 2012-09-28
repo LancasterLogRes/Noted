@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <array>
 #include <vector>
 #include <map>
 #include <iostream>
@@ -63,6 +64,7 @@ public:
 	Color attenuated(float _x) const { return Color(m_hue, m_sat, m_value * _x, m_alpha); }
 
 	RGBA toRGBA() const { RGBA ret; ret.setHsv(int(m_hue * 360) % 360, clamp<int>(m_sat * 255, 0, 255), clamp<int>(m_value * 255, 0, 255), clamp<int>(m_alpha * 255, 0, 255)); return ret; }
+	static Color fromRGB(std::array<float, 3> _rgb);
 //	operator RGBA() const { return toRGBA(); }
 
 	// shorthand forms.
