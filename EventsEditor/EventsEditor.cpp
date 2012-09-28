@@ -253,7 +253,11 @@ void EventsEditor::onPaste()
 void EventsEditor::onDelete()
 {
 	foreach (QGraphicsItem* it, scene()->selectedItems())
+	{
+		if (auto sei = dynamic_cast<StreamEventItem*>(it))
+			m_scene->setDirty(sei->isCausal());
 		delete it;
+	}
 	scene()->rejigEvents();
 }
 

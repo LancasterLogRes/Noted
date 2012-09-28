@@ -166,6 +166,9 @@ inline float cubicBezierT(float _t, float _z)
 /// Bias an x == y curve by some amount _z.
 float bias(float _x, float _z);
 
+/// Power scale helper.
+float powScale(float _x, float _z);
+
 /// Get the "io" of a number.
 template <class T> inline T io(T x)
 {

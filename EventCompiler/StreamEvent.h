@@ -58,10 +58,6 @@ namespace Lightbox
  * in addition to an onset (as in RT we'll have no idea whether the onset will be sustained
  * until it has been going for some time).
  *
- * Jet is for a recurring voice without a clear phase (alignment). It'll probably be a
- * multiple of the beat period, if not the bar period itself. It can represent only one
- * at once and must be ended by EndJet. It uses the period member of StreamEvent.
- *
  * Cycle should happen on a 4-bar boundary and determines the upcoming temperature and dynamics
  * through the temperature, strength and surprise properties.
  *

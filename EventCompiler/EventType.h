@@ -29,7 +29,6 @@ namespace Lightbox
 LIGHTBOX_TEXTUAL_ENUM_INHERITS(EventType, uint8_t,
 				NoEvent,
 				Attack, Sustain, Decay, Release,
-				Jet, EndJet,
 				SyncPoint, PeriodSet, PeriodTweak, PeriodReset, Tick, Beat, Bar, Cycle,
 				Comment, GraphSpecComment, AuxComment, RhythmCandidatesComment, RhythmVectorComment, HistoryComment, PhaseVectorComment, PhaseCandidatesComment, LastBarDistanceComment,
 				WorkingComment, PDFComment,
@@ -41,12 +40,10 @@ inline EventTypes operator|(EventType _a, EventType _b) { return EventTypes({_a,
 inline EventTypes operator|(EventTypes _a, EventType _b) { _a.insert(_b); return _a; }
 inline EventTypes operator|(EventType _a, EventTypes _b) { _b.insert(_a); return _b; }
 
-static const EventType EndSustain = Release;
 static const EventType BeginStandard = Attack;
 static const EventType EndStandard = Comment;
-static const EventTypes AllEventTypes = { Attack, Jet, PeriodSet };
+static const EventTypes AllEventTypes = { Attack, PeriodSet };
 static const EventTypes JustAttack = { Attack };
-static const EventTypes JustJet = { Jet };
 
 inline bool isGraph(EventType _e)
 {
@@ -65,14 +62,18 @@ inline bool isStandard(EventType _e)
 
 inline bool isChannelSpecific(EventType _e)
 {
-	return _e < SyncPoint;
+	return _e > NoEvent && _e < SyncPoint;
+}
+
+inline bool impliesActive(EventType _e)
+{
+	return _e > NoEvent && _e < Release;
 }
 
 inline EventType endToBegin(EventType _e)
 {
 	switch (_e)
 	{
-	case EndJet: return Jet;
 	case Release: return Attack;
 	case PeriodReset: return PeriodSet;
 	default: return NoEvent;
@@ -83,7 +84,6 @@ inline EventType toMain(EventType _e)
 {
 	switch (_e)
 	{
-	case EndJet: case Jet: return Jet;
 	case Release: case Sustain: return Sustain;
 	case Attack: return Attack;
 	case PeriodReset: case PeriodTweak: case PeriodSet: return PeriodSet;
@@ -95,7 +95,7 @@ inline EventType asBegin(EventType _e)
 {
 	switch (_e)
 	{
-	case Sustain: case Attack: case Jet: case PeriodSet: return _e;
+	case Sustain: case Attack: case PeriodSet: return _e;
 	default: return NoEvent;
 	}
 }

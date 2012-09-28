@@ -198,5 +198,15 @@ static float biasHelper(float _x, float _z)
 /// Bias an x == y curve by some amount _z.
 float Lightbox::bias(float _x, float _z)
 {
-	return biasHelper(_x + .25 * _z, _z);
+	if (_z > 0)
+		return biasHelper(_x + .25 * _z, _z) * (1.f - _z) + _z;
+	else
+		return biasHelper(_x + .25 * _z, _z) * (_z + 1.f);
+}
+
+float Lightbox::powScale(float _x, float _z)
+{
+	if (_z == -1)
+		return 0.f;
+	return clamp(_x * exp2(_z), -1.f, 1.f);
 }

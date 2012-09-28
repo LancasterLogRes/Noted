@@ -37,6 +37,7 @@ static const int64_t s_baseRate = 7056000000;
 typedef int64_t Time;
 
 static const Time UndefinedTime = std::numeric_limits<Time>::min();
+static const Time BigBang = std::numeric_limits<Time>::min() + 1;
 
 static inline Time toBase(int64_t _srcTicks, uint64_t _srcRate)
 {
