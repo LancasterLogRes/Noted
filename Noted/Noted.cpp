@@ -1051,9 +1051,9 @@ void Noted::on_actPlayCausal_changed()
 	if (ui->actPlayCausal->isChecked())
 	{
 		suspendWork();
-		initializeCausal(nullptr);
 		m_isCausal = true;
 		m_causalCursorIndex = 0;
+		initializeCausal(nullptr);
 		ui->dockPlay->setEnabled(false);
 		ui->actPlay->setEnabled(false);
 		ui->actPassthrough->setEnabled(false);
@@ -1064,6 +1064,8 @@ void Noted::on_actPlayCausal_changed()
 	}
 	else if (ui->actPlayCausal->isEnabled())
 	{
+		while (m_audioThread->isRunning())
+			usleep(100000);
 		finalizeCausal();
 		m_isCausal = false;
 		ui->dockPlay->setEnabled(true);

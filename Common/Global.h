@@ -91,7 +91,7 @@
 	bool operator<(Name const& _c) const { return M1 < _c.M1 || (M1 == _c.M1 && M2 < _c.M2); } \
 	bool operator==(Name const& _c) const { return _c.M1 == M1 && _c.M2 == M2; } \
 	bool operator!=(Name const& _c) const { return !operator==(_c); } \
-	template <class S> friend S& operator<<(S& _out, Name const& _this) { return _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ")"; } \
+	template <class S> friend S& operator<<(S& _out, Name const& _this) { _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ")"; return _out; } \
 	operator std::tuple<T1, T2>() const { return std::make_tuple(M1, M2); } \
 	std::tuple<T1, T2> toTuple() const { return std::make_tuple(M1, M2); }
 
@@ -126,7 +126,7 @@
 	bool operator<(Name const& _c) const { return M1 < _c.M1 || (M1 == _c.M1 && (M2 < _c.M2 || (M2 == _c.M2 && (M3 < _c.M3 || (M3 == _c.M3 && M4 < _c.M4))))); } \
 	bool operator==(Name const& _c) const { return _c.M1 == M1 && _c.M2 == M2 && _c.M3 == M3 && _c.M4 == M4; } \
 	bool operator!=(Name const& _c) const { return !operator==(_c); } \
-	template <class S> friend S& operator<<(S& _out, Name const& _this) { return _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ", " #M4 "=" << _this.M4 << ")"; } \
+	template <class S> friend S& operator<<(S& _out, Name const& _this) { _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ", " #M4 "=" << _this.M4 << ")"; return _out; } \
 	operator std::tuple<T1, T2, T3, T4>() const { return std::make_tuple(M1, M2, M3, M4); } \
 	std::tuple<T1, T2, T3, T4> toTuple() const { return std::make_tuple(M1, M2, M3, M4); }
 
@@ -145,7 +145,7 @@
 	bool operator<(Name const& _c) const { return M1 < _c.M1 || (M1 == _c.M1 && (M2 < _c.M2 || (M2 == _c.M2 && (M3 < _c.M3 || (M3 == _c.M3 && (M4 < _c.M4 || (M4 == _c.M4 && M5 < _c.M5))))))); } \
 	bool operator==(Name const& _c) const { return _c.M1 == M1 && _c.M2 == M2 && _c.M3 == M3 && _c.M4 == M4 && _c.M5 == M5; } \
 	bool operator!=(Name const& _c) const { return !operator==(_c); } \
-	template <class S> friend S& operator<<(S& _out, Name const& _this) { return _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ", " #M4 "=" << _this.M4 << ", " #M5 "=" << _this.M5 << ")"; } \
+	template <class S> friend S& operator<<(S& _out, Name const& _this) { _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ", " #M4 "=" << _this.M4 << ", " #M5 "=" << _this.M5 << ")"; return _out; } \
 	operator std::tuple<T1, T2, T3, T4, T5>() const { return std::make_tuple(M1, M2, M3, M4, M5); } \
 	std::tuple<T1, T2, T3, T4, T5> toTuple() const { return std::make_tuple(M1, M2, M3, M4, M5); }
 
@@ -165,7 +165,7 @@
 	bool operator<(Name const& _c) const { return M1 < _c.M1 || (M1 == _c.M1 && (M2 < _c.M2 || (M2 == _c.M2 && (M3 < _c.M3 || (M3 == _c.M3 && (M4 < _c.M4 || (M4 == _c.M4 && (M5 < _c.M5 || (M5 == _c.M5 && M6 < _c.M6))))))))); } \
 	bool operator==(Name const& _c) const { return _c.M1 == M1 && _c.M2 == M2 && _c.M3 == M3 && _c.M4 == M4 && _c.M5 == M5 && _c.M6 == M6; } \
 	bool operator!=(Name const& _c) const { return !operator==(_c); } \
-	template <class S> friend S& operator<<(S& _out, Name const& _this) { return _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ", " #M4 "=" << _this.M4 << ", " #M5 "=" << _this.M5 << ", " #M6 "=" << _this.M6 << ")"; } \
+	template <class S> friend S& operator<<(S& _out, Name const& _this) { _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ", " #M4 "=" << _this.M4 << ", " #M5 "=" << _this.M5 << ", " #M6 "=" << _this.M6 << ")"; return _out; } \
 	operator std::tuple<T1, T2, T3, T4, T5, T6>() const { return std::make_tuple(M1, M2, M3, M4, M5, M6); } \
 	std::tuple<T1, T2, T3, T4, T5, T6> toTuple() const { return std::make_tuple(M1, M2, M3, M4, M5, M6); }
 
@@ -186,7 +186,7 @@
 	bool operator<(Name const& _c) const { return M1 < _c.M1 || (M1 == _c.M1 && (M2 < _c.M2 || (M2 == _c.M2 && (M3 < _c.M3 || (M3 == _c.M3 && (M4 < _c.M4 || (M4 == _c.M4 && (M5 < _c.M5 || (M5 == _c.M5 && (M6 < _c.M6 || (M6 == _c.M6 && M7 < _c.M7))))))))))); } \
 	bool operator==(Name const& _c) const { return _c.M1 == M1 && _c.M2 == M2 && _c.M3 == M3 && _c.M4 == M4 && _c.M5 == M5 && _c.M6 == M6 && _c.M7 == M7; } \
 	bool operator!=(Name const& _c) const { return !operator==(_c); } \
-	template <class S> friend S& operator<<(S& _out, Name const& _this) { return _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ", " #M4 "=" << _this.M4 << ", " #M5 "=" << _this.M5 << ", " #M6 "=" << _this.M6 <<", " #M7 "=" << _this.M7 << ")"; } \
+	template <class S> friend S& operator<<(S& _out, Name const& _this) { _out << #Name << "(" #M1 "=" << _this.M1 << ", " #M2 "=" << _this.M2 << ", " #M3 "=" << _this.M3 << ", " #M4 "=" << _this.M4 << ", " #M5 "=" << _this.M5 << ", " #M6 "=" << _this.M6 <<", " #M7 "=" << _this.M7 << ")"; return _out; } \
 	operator std::tuple<T1, T2, T3, T4, T5, T6, T7>() const { return std::make_tuple(M1, M2, M3, M4, M5, M6, M7); } \
 	std::tuple<T1, T2, T3, T4, T5, T6, T7> toTuple() const { return std::make_tuple(M1, M2, M3, M4, M5, M6, M7); }
 
