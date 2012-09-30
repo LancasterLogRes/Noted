@@ -156,22 +156,22 @@ inline unsigned maxInRange(_T const& _t)
 }
 
 template <class _T>
+inline unsigned minInRange(_T const& _t)
+{
+	unsigned ret = (unsigned)-1;
+	for (unsigned i = 0; i < (unsigned)_t.size(); ++i)
+		if (ret == (unsigned)-1 || _t[ret] > _t[i])
+			ret = i;
+	return ret;
+}
+
+template <class _T>
 inline _T maxInRange(_T const& _begin, _T const& _end)
 {
 	_T ret = _begin;
 	for (auto it = _begin + 1; it < _end; ++it)
 		if (*ret < *it)
 			ret = it;
-	return ret;
-}
-
-template <class _T>
-inline unsigned minInRange(_T const& _t)
-{
-	unsigned ret = -1;
-	for (unsigned i = 0; i < _t.size(); ++i)
-		if (ret == -1 || _t[ret] > _t[i])
-			ret = i;
 	return ret;
 }
 
