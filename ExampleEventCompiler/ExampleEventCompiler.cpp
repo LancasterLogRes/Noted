@@ -72,9 +72,9 @@ private:
 		float beatLikelihood = -log(prob);
 
 		// Graph the latest values directly (on the timeline).
-		ret.push_back(StreamEvent(Graph, highEnergy.HighEnergy::get(), 0.0f));
-		ret.push_back(StreamEvent(Graph, beatLikelihood, 0.9f));
-		ret.push_back(StreamEvent(Graph, m_decayedBL, 0.5f));
+		ret.push_back(StreamEvent(highEnergy.HighEnergy::get(), 0.0f));
+		ret.push_back(StreamEvent(beatLikelihood, 0.9f));
+		ret.push_back(StreamEvent(m_decayedBL, 0.5f));
 
 		if (beatLikelihood < m_lastBL && m_lastBL > m_lastLastBL)
 		{
@@ -83,7 +83,7 @@ private:
 				// Just past a peak
 				m_maxBeatLikelihood = max(m_maxBeatLikelihood, m_lastBL);
 				if (m_lastBL > m_decayedBL && m_lastBL / m_maxBeatLikelihood > 0.0625)
-					ret.push_back(StreamEvent(Attack, m_lastBL / m_maxBeatLikelihood, 0.1, 0, nullptr, -1, Dull, 1.f));
+					ret.push_back(StreamEvent(Attack, m_lastBL / m_maxBeatLikelihood, .1f, Dull));
 				m_decayedBL = max(m_decayedBL, m_lastBL * 5);
 				m_lastLastBL = m_lastBL;
 				m_lastBL = beatLikelihood;

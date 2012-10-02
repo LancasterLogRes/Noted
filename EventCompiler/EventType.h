@@ -70,34 +70,4 @@ inline bool impliesActive(EventType _e)
 	return _e > NoEvent && _e < Release;
 }
 
-inline EventType endToBegin(EventType _e)
-{
-	switch (_e)
-	{
-	case Release: return Attack;
-	case PeriodReset: return PeriodSet;
-	default: return NoEvent;
-	}
-}
-
-inline EventType toMain(EventType _e)
-{
-	switch (_e)
-	{
-	case Release: case Sustain: return Sustain;
-	case Attack: return Attack;
-	case PeriodReset: case PeriodTweak: case PeriodSet: return PeriodSet;
-	default: return _e;
-	}
-}
-
-inline EventType asBegin(EventType _e)
-{
-	switch (_e)
-	{
-	case Sustain: case Attack: case PeriodSet: return _e;
-	default: return NoEvent;
-	}
-}
-
 }
