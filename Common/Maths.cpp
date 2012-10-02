@@ -206,7 +206,5 @@ float Lightbox::bias(float _x, float _z)
 
 float Lightbox::powScale(float _x, float _z)
 {
-	if (_z == -1)
-		return 0.f;
-	return clamp(_x * exp2(_z), -1.f, 1.f);
+	return clamp(_x * exp10(_z), -1.f, 1.f);
 }

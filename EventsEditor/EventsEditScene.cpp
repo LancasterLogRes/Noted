@@ -117,7 +117,7 @@ void EventsEditScene::rejigEvents()
 			int ch = sei->streamEvent().channel;
 			if ((dynamic_cast<PeriodResetItem*>(sei) || dynamic_cast<PeriodTweakItem*>(sei)) && lastPSI[ch])
 			{
-				PeriodBarItem* pbi = new PeriodBarItem(lastPSI[ch]->pos(), sei->pos(), toSeconds(lastPSI[ch]->streamEvent().period) * 1000);
+				PeriodBarItem* pbi = new PeriodBarItem(lastPSI[ch]->pos(), sei->pos(), lastPSI[ch]->streamEvent().constancy * 1000);
 				pbi->setZValue(-1);
 				addItem(pbi);
 			}
@@ -222,7 +222,8 @@ void EventsEditScene::saveTo(QString _filename) const
 			e.put("<xmlattr>.position", se.position);
 			e.put("<xmlattr>.channel", se.channel);
 			e.put("<xmlattr>.surprise", se.surprise);
-			e.put("<xmlattr>.period", se.period);
+			e.put("<xmlattr>.constancy", se.constancy);
+			e.put("<xmlattr>.jitter", se.jitter);
 			e.put("<xmlattr>.character", toString(se.character));
 		}
 
@@ -264,7 +265,8 @@ void EventsEditScene::loadFrom(QString _filename)
 						se.type = toEventType(w.first, false);
 						se.strength = w.second.get<float>("<xmlattr>.strength", 1.f);
 						se.temperature = w.second.get<float>("<xmlattr>.temperature", 0.f);
-						se.period = w.second.get<Time>("<xmlattr>.period", fromMsecs(w.second.get<int64_t>("<xmlattr>.periodMs", 0)));
+						se.jitter = w.second.get<float>("<xmlattr>.jitter", 0.f);
+						se.constancy = w.second.get<float>("<xmlattr>.constancy", 0.f);
 						se.position = w.second.get<int>("<xmlattr>.position", -1);
 						se.surprise = w.second.get<float>("<xmlattr>.surprise", 1.f);
 						se.character = toCharacter(w.second.get<string>("<xmlattr>.character", "Dull"));

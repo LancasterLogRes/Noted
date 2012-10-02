@@ -301,17 +301,17 @@ void EventsView::exportEvents()
 					{
 						if (!timeout++)
 							out << QString("\t<time value=\"%1\" ms=\"%2\">").arg(t).arg(toMsecs(t)).toStdString() << endl;
-						out << QString("\t\t<%1 strength=\"%2\" character=\"%3\" temperature=\"%4\" surprise=\"%5\" position=\"%6\" period=\"%7\" channel=\"%8\" />").arg(QString::fromStdString(toString(e.type)).toLower()).arg(e.strength).arg(toString(e.character).c_str()).arg(e.temperature).arg(e.surprise).arg(e.position).arg(e.period).arg(e.channel).toStdString() << endl;
+						out << QString("\t\t<%1 strength=\"%2\" character=\"%3\" temperature=\"%4\" surprise=\"%5\" position=\"%6\" constancy=\"%7\" jitter=\"%8\" channel=\"%9\" />").arg(QString::fromStdString(toString(e.type)).toLower()).arg(e.strength).arg(toString(e.character).c_str()).arg(e.temperature).arg(e.surprise).arg(e.position).arg(e.constancy).arg(e.jitter).arg(e.channel).toStdString() << endl;
 					}
 					else if (fn.endsWith(".events"))
 					{
 						if (!timeout++)
 							out << t << endl;
-						out << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << e.position << " " << e.period << " " << e.channel << endl;
+						out << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << e.position << " " << e.jitter << " " << e.constancy << " " << e.channel << endl;
 					}
 					else
 					{
-						out << toSeconds(t) << " " << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << e.position << " " << e.period << " " << e.channel << endl;
+						out << toSeconds(t) << " " << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << e.position << " " << e.jitter << " " << e.constancy << " " << e.channel << endl;
 					}
 
 				}

@@ -71,8 +71,6 @@ struct LIGHTBOX_API Track
 			if (se.type == SyncPoint)
 				syncPoints.push_back(t);
 			memset(&se.m_aux, 0, sizeof(se.m_aux));		// shouldn't be set, but just in case...
-			if (doSwap)
-				se.period = __bswap_64(se.period);	// period needs twiddling as the only multi-byte integer.
 			events.insert(std::make_pair(t, se));
 		}
 	}

@@ -41,12 +41,30 @@
 namespace Lightbox
 {
 
+template <class _T> std::set<_T>& operator+=(std::set<_T>& _a, std::set<_T> const& _b)
+{
+	for (_T const& t: _b)
+		_a.insert(t);
+	return _a;
+}
+
 template <class _T> std::set<_T> operator+(std::set<_T> const& _a, std::set<_T> const& _b)
 {
-	std::set<_T> ret = _a;
-	for (_T const& t: _b)
-		ret.insert(t);
+	std::set<_T> ret(_a);
+	ret += _b;
 	return ret;
+}
+
+template <class _T, class _U> std::map<_T, _U>& operator+=(std::map<_T, _U>& _a, std::map<_T, _U> const& _b)
+{
+	for (std::pair<_T, _U> const& t: _b)
+		_a.insert(t);
+	return _a;
+}
+
+template <class _T, class _U> std::map<_T, _U> operator+(std::map<_T, _U> const& _a, std::map<_T, _U> const& _b)
+{
+	return std::map<_T, _U>(_a) += _b;
 }
 
 template <class _T> std::multiset<_T> operator+(std::multiset<_T> const& _a, std::multiset<_T> const& _b)

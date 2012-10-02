@@ -82,7 +82,7 @@ void PeriodSetTweakItem::mouseMoveEvent(QGraphicsSceneMouseEvent* _e)
 		int d = angularSubtraction(th, lth) * 12 / TwoPi * (mag - 1);
 		if (lth == 0.f || d)
 			lth = th;
-		m_se.period += toSeconds(d) * 1000 / 4;
+		m_se.constancy += toSeconds(d) * 1000 / 4;
 		update();
 		scene()->itemChanged(this);
 		_e->accept();
@@ -100,7 +100,7 @@ void PeriodSetTweakItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QW
 	_p->setPen(cDark());
 	_p->setBrush(cPastel());
 
-	QString l = QString("%1 bpm").arg(round(toBpm(m_se.period) * 10) / 10);
+	QString l = QString("%1 bpm").arg(round(toBpm(fromSeconds(m_se.constancy)) * 10) / 10);
 	int tw = _p->fontMetrics().width(l) + 8;
 	QRect tr(-tw, 0, tw, 12);
 	if (isSelected())

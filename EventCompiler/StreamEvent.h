@@ -78,9 +78,11 @@ struct StreamEvent
 		virtual ~Aux() {}
 	};
 
-	StreamEvent(EventType _type, Aux* _aux): type(_type), temperature(-1.f), strength(1.f), period(0), m_aux(std::shared_ptr<Aux>(_aux)) { }
-	StreamEvent(EventType _type, float _strength, float _temperature, Aux* _aux): type(_type), temperature(_temperature), strength(_strength), period(0), m_aux(std::shared_ptr<Aux>(_aux)) { }
-	StreamEvent(EventType _type = NoEvent, float _strength = 1.f, float _temperature = -1.f, Time _period = 0, Aux* _aux = nullptr, int8_t _position = -1, Character _character = Dull, float _surprise = 1.f): type(_type), position(_position), character(_character), channel(-1), temperature(_temperature), strength(_strength), surprise(_surprise), period(_period), m_aux(std::shared_ptr<Aux>(_aux)) { }
+	StreamEvent(EventType _type, Aux* _aux): type(_type), temperature(-1.f), strength(1.f), jitter(0.5f), constancy(0.5f), m_aux(std::shared_ptr<Aux>(_aux)) {}
+	StreamEvent(float _strength, float _temperature): type(Graph), temperature(_temperature), strength(_strength), jitter(0.5f), constancy(0.5f) {}
+	StreamEvent(EventType _type, float _strength, float _temperature, Aux* _aux): type(_type), temperature(_temperature), strength(_strength), jitter(0.5f), constancy(0.5f), m_aux(std::shared_ptr<Aux>(_aux)) { }
+	StreamEvent(EventType _type, float _strength, Character _character, float _temperature, float _jitter, float _constancy, int8_t _position = -1, float _surprise = 1.f, Aux* _aux = nullptr): type(_type), position(_position), character(_character), channel(-1), temperature(_temperature), strength(_strength), surprise(_surprise), jitter(_jitter), constancy(_constancy), m_aux(std::shared_ptr<Aux>(_aux)) { }
+	StreamEvent(EventType _type = NoEvent, float _strength = 1.f, float _temperature = -1.f, Time = 0, Aux* _aux = nullptr, int8_t _position = -1, Character _character = Dull, float _surprise = 1.f): type(_type), position(_position), character(_character), channel(-1), temperature(_temperature), strength(_strength), surprise(_surprise), jitter(0.5f), constancy(0.5f), m_aux(std::shared_ptr<Aux>(_aux)) { }
 
 	void assign(int _channel)
 	{
@@ -95,6 +97,8 @@ struct StreamEvent
 	bool operator!=(StreamEvent const& _c) const { return !operator==(_c); }
 	bool operator<(StreamEvent const& _c) const { return type < _c.type; }
 
+	void sanitize() { memset(&m_aux, 0, sizeof(m_aux)); }
+
 	std::shared_ptr<Aux> const& aux() const { return m_aux; }
 
 	EventType type;				///< Type of the event.
@@ -105,7 +109,8 @@ struct StreamEvent
 	float temperature;			///< Abstract quantity in range [0, 1] to describe primary aspects of event.
 	float strength;				///< Non-zero quantity in range [-1, 1], to describe loudness/confidence that phenomenon actually happened. If negative describes confidence that phenomenon didn't happen.
 	float surprise;				///< Quantity [0, 1] to describe how easily predicted that this StreamEvent was. Negative strength makes this value describe surprise that the phenomenon didn't happen.
-	Time period;				///< Value to describe EventType-dependent period.
+	float jitter;				///< Between [0, 1]; adds random stuff into decay (Attack/Decay) or easing error limit before snap change (Sustain).
+	float constancy;			///< "Slowness" between [0, 1]. Decay period (Attack/Decay) or inverse of easing speed (Sustain).
 	std::shared_ptr<Aux> m_aux;	///< Auxilliary data for the event. TODO: Deprecate in favour of an index/store comm. method.
 };
 

@@ -51,7 +51,8 @@ LIGHTBOX_API void Track::readFile(string const& _filename)
 						se.type = toEventType(w.first, false);
 						se.strength = w.second.get<float>("<xmlattr>.strength", 1.f);
 						se.temperature = w.second.get<float>("<xmlattr>.temperature", 0.f);
-						se.period = w.second.get<Time>("<xmlattr>.period", fromMsecs(w.second.get<int64_t>("<xmlattr>.periodMs", 0)));
+						se.jitter = w.second.get<float>("<xmlattr>.jitter", 0.f);
+						se.constancy = w.second.get<float>("<xmlattr>.constancy", 0.f);
 						se.position = w.second.get<int>("<xmlattr>.position", -1);
 						se.surprise = w.second.get<float>("<xmlattr>.surprise", 1.f);
 						se.character = toCharacter(w.second.get<string>("<xmlattr>.character", "Dull"));
