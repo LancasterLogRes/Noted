@@ -264,7 +264,7 @@ void EventsEditor::onDelete()
 #define DO(X) \
 void EventsEditor::onInsert ## X() \
 { \
-	StreamEventItem* it = StreamEventItem::newItem(StreamEvent(X, .125f, 0.f, FromBpm<130>::value, nullptr, -1, Dull, .125f)); \
+	StreamEventItem* it = StreamEventItem::newItem(StreamEvent(X, .125f, 0.f, Dull, .5f, .5f)); \
 	scene()->addItem(it); \
 	it->setChannel(max<int>((m_lastScenePosition.y() - 16) / 32, 0)); \
 	it->setTime(m_lastScenePosition.x()); \

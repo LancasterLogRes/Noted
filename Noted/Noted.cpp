@@ -596,7 +596,7 @@ StreamEvent Noted::eventOf(EventType _et, float _temperature, Time _t) const
 {
 	if (_t == UndefinedTime)
 		_t = cursor();
-	StreamEvent ret(NoEvent);
+	StreamEvent ret;
 	if (_t < duration() && _et != NoEvent)
 	{
 		bool careAboutNature = isFinite(_temperature);

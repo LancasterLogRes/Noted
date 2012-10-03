@@ -382,7 +382,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 	int ito = min(c()->hops(), c()->windowIndex(renderingTimeOf(_dx + _dw + 3))) + 1;
 	auto hop = c()->hop();
 	for (auto g: m_graphEvents)
-		if (eventVisible(m_selection->itemData(m_selection->currentIndex()), StreamEvent(Graph, 1.f, g.first)))
+		if (eventVisible(m_selection->itemData(m_selection->currentIndex()), StreamEvent(1.f, g.first)))
 		{
 			float n = toHue(g.first);
 			p.setPen(QColor::fromHsvF(n, 0.5f, 0.6f * Color::hueCorrection(n)));
