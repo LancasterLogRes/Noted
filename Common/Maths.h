@@ -27,6 +27,7 @@
 #include <boost/math/special_functions/fpclassify.hpp>
 
 #include "Global.h"
+#include "Statistics.h"
 #include "UnitTesting.h"
 
 namespace Lightbox
@@ -38,12 +39,6 @@ static const float MinusInfinity = -std::numeric_limits<float>::infinity();
 template <int _x> inline float lerp(float _a, float _b) { return _a * (1.f - _x / 1000.f) + _b * _x / 1000.f; }
 
 template <class T> inline T lerp(double _x, T _a, T _b) { return _a + (_b - _a) * _x; }
-
-/// Square a number.
-template <class T> inline T sqr(T _t) { return _t * _t; }
-
-/// Sign of a number
-template <class T> inline T sign(T _t) { return _t ? _t > 0 ? 1 : -1 : 0; }
 
 template <class _T>
 typename std::remove_reference<decltype(_T()[0])>::type sumOf(_T const& _r)
@@ -94,13 +89,13 @@ typename std::remove_reference<decltype(_Ta()[0] * _Tb()[0])>::type cosineSimila
 template <class _T>
 bool similar(_T _a, _T _b, double _ratio = 0.05)
 {
-	return _a == _b ? true : (max(_a, _b) - min(_a, _b)) / double(fabs(_a) + fabs(_b)) < _ratio / 2;
+	return _a == _b ? true : (std::max(_a, _b) - std::min(_a, _b)) / double(fabs(_a) + fabs(_b)) < _ratio / 2;
 }
 
 template <class _T>
 double dissimilarity(_T _a, _T _b)
 {
-	return (max(_a, _b) - min(_a, _b)) / double(_a + _b) * 2;
+	return (std::max(_a, _b) - std::min(_a, _b)) / double(_a + _b) * 2;
 }
 
 template <class _T, class _U>
@@ -146,12 +141,12 @@ inline bool isFinite(float _x)
 
 template <class T, class U> inline T clamp(T _v, U _min, U _max)
 {
-	return _v < _min ? _min : _v > _max ? _max : isFinite(_v) ? _v : _min;
+	return _v < (T)_min ? (T)_min : _v > (T)_max ? (T)_max : isFinite(_v) ? _v : (T)_min;
 }
 
 template <class T, class U> inline T clamp(T _v, std::pair<U, U> const& _minMax)
 {
-	return _v < _minMax.first ? _minMax.first : _v < _minMax.second ? _v : _minMax.second;
+	return _v < (T)_minMax.first ? (T)_minMax.first : _v < (T)_minMax.second ? _v : (T)_minMax.second;
 }
 
 template <class _T> _T cubed(_T _x) { return _x * _x * _x; }

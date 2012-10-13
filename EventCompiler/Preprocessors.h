@@ -69,7 +69,17 @@ phaseEntropyC.setHistory(c_historySize, downsampleST);
 		phaseEntropyAvg.push(phaseEntropy);
 */
 
-LIGHTBOX_STRUCT(3, GaussianMag, float, mean, float, sigma, float, mag);
+struct GaussianMag
+{
+	GaussianMag(): mean(0.f), sigma(0.f), mag(0.f) {}
+	GaussianMag(GaussianMag const& _s): mean(_s.mean), sigma(_s.sigma), mag(_s.mag) {}
+	GaussianMag(float _mean, float _sigma, float _mag): mean(_mean), sigma(_sigma), mag(_mag) {}
+	LIGHTBOX_STRUCT_INTERNALS_3 (GaussianMag, float, mean, float, sigma, float, mag)
+
+	float mean;
+	float sigma;
+	float mag;
+};
 
 GaussianMag sqrt(GaussianMag const& _a) { return GaussianMag(::sqrt(_a.mean), ::sqrt(_a.sigma), ::sqrt(_a.mag)); }
 template <> struct zero_of<GaussianMag> { static GaussianMag value() { return GaussianMag(0, 0, 0); } };
@@ -598,6 +608,9 @@ public:
 	{
 		m_from = max<unsigned>(0, _HzFrom / (s_baseRate / _eci->windowSize()));
 		m_to = min<unsigned>(_eci->bands(), _HzTo / (s_baseRate / _eci->windowSize()));
+		m_last.mean = 0.f;
+		m_last.mag = 0.f;
+		m_last.sigma = 0.f;
 	}
 	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
 	{

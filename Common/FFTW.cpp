@@ -20,8 +20,7 @@
 
 #include <cmath>
 #include <unistd.h>
-#include <boost/thread/mutex.hpp>
-#include <boost/system/config.hpp>
+#include <mutex>
 #include <fftw3.h>
 #include "Maths.h"
 #include "FFTW.h"
@@ -30,7 +29,7 @@ using namespace Lightbox;
 
 FFTW::FFTW(unsigned _arity): m_arity(_arity), m_plan(nullptr)
 {
-	static boost::mutex m;
+	static std::mutex m;
 	m.lock();
 	m_in = (float *)fftwf_malloc(sizeof(float) * m_arity);
 	m_work = (float *)fftwf_malloc(sizeof(float) * m_arity);

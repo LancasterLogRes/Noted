@@ -36,25 +36,26 @@ namespace Lightbox
 class RGBA
 {
 public:
-	RGBA() { m_data.value = 0; m_data.rgb.a = 255; }
-	explicit RGBA(uint8_t _val) { r() = _val; g() = _val; b() = _val; }
-	RGBA(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a = 255) { m_data.value = 0; r() = _r; g() = _g; b() = _b; a() = _a; }
+	RGBA() { m_a = 255; }
+	explicit RGBA(uint8_t _val) { m_r = _val; m_g = _val; m_b = _val; }
+	RGBA(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a = 255) { m_r = _r; m_g = _g; m_b = _b; m_a = _a; }
+	RGBA(RGBA const& _s) { m_r = _s.m_r; m_g = _s.m_g; m_b = _s.m_b; m_a = _s.m_a; }
+	RGBA& operator=(RGBA const& _s) { m_r = _s.m_r; m_g = _s.m_g; m_b = _s.m_b; m_a = _s.m_a; return *this; }
 
-	uint8_t* data() { return (uint8_t*)&m_data; }
-	uint8_t const* data() const { return (uint8_t const*)&m_data; }
-	uint32_t uint32() const { return m_data.rgb.value(); }
-	uint8_t r() const { return m_data.rgb.r; }
-	uint8_t g() const { return m_data.rgb.g; }
-	uint8_t b() const { return m_data.rgb.b; }
-	uint8_t a() const { return m_data.rgb.a; }
-	uint8_t& r() { return m_data.rgb.r; }
-	uint8_t& g() { return m_data.rgb.g; }
-	uint8_t& b() { return m_data.rgb.b; }
-	uint8_t& a() { return m_data.rgb.a; }
-	void setR(uint8_t _r) { m_data.rgb.r = _r; }
-	void setG(uint8_t _g) { m_data.rgb.g = _g; }
-	void setB(uint8_t _b) { m_data.rgb.b = _b; }
-	void setA(uint8_t _a) { m_data.rgb.a = _a; }
+	uint8_t* data() { return &m_r; }
+	uint8_t const* data() const { return &m_r; }
+	uint8_t r() const { return m_r; }
+	uint8_t g() const { return m_g; }
+	uint8_t b() const { return m_b; }
+	uint8_t a() const { return m_a; }
+	uint8_t& r() { return m_r; }
+	uint8_t& g() { return m_g; }
+	uint8_t& b() { return m_b; }
+	uint8_t& a() { return m_a; }
+	void setR(uint8_t _r) { m_r = _r; }
+	void setG(uint8_t _g) { m_g = _g; }
+	void setB(uint8_t _b) { m_b = _b; }
+	void setA(uint8_t _a) { m_a = _a; }
 	uint8_t chroma() const { return maxRgb() - minRgb(); }
 	uint8_t maxRgb() const { return std::max(r(), std::max(g(), b())); }
 	uint8_t minRgb() const { return std::min(r(), std::min(g(), b())); }
@@ -85,9 +86,9 @@ public:
 
 	void setHsv(unsigned _h, uint8_t _s, uint8_t _v, uint8_t _a = 255)
 	{
-		a() = _a;
+		m_a = _a;
 		if (_s == 0)
-			r() = g() = b() = _v;
+			m_r = m_g = m_b = _v;
 		else
 		{
 			int z = _v * (255 - _s) / 255;
@@ -96,35 +97,27 @@ public:
 			int q = _v * ( 255 - _s * f / 999 ) / 255;
 			int t = _v * ( 255 - _s * ( 999 - f ) / 999 ) / 255;
 			if (h_ < 1000)
-			{	r() = _v; g() = t; b() = z; }
+			{	m_r = _v; m_g = t; m_b = z; }
 			else if (h_ < 2000)
-			{	r() = q; g() = _v; b() = z; }
+			{	m_r = q; m_g = _v; m_b = z; }
 			else if (h_ < 3000)
-			{	r() = z; g() = _v; b() = t; }
+			{	m_r = z; m_g = _v; m_b = t; }
 			else if (h_ < 4000)
-			{	r() = z; g() = q; b() = _v; }
+			{	m_r = z; m_g = q; m_b = _v; }
 			else if (h_ < 5000)
-			{	r() = t; g() = z; b() = _v; }
+			{	m_r = t; m_g = z; m_b = _v; }
 			else
-			{	r() = _v; g() = z; b() = q; }
+			{	m_r = _v; m_g = z; m_b = q; }
 		}
 	}
 
 	friend inline std::ostream& operator<<(std::ostream& _o, RGBA const& _this) { return _o << "#" << std::hex << std::setw(2) << std::setfill('0') << (int)_this.r() << std::setw(2) << std::setfill('0') << (int)_this.g() << std::setw(2) << std::setfill('0') << (int)_this.b() << std::dec; }
 
 private:
-	union
-	{
-		uint32_t value;
-		struct
-		{
-			uint8_t r;
-			uint8_t g;
-			uint8_t b;
-			uint8_t a;
-			uint8_t value() const { return uint8_t((unsigned(r) + unsigned(g) + unsigned(b)) / 3); }
-		} rgb;
-	} m_data;
+	uint8_t m_r;
+	uint8_t m_g;
+	uint8_t m_b;
+	uint8_t m_a;
 };
 
 LIGHTBOX_API std::vector<uint8_t> gammaTable(float _g);

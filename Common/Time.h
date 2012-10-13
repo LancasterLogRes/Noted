@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <cmath>
 #include <sstream>
 #include <string>
@@ -164,5 +165,32 @@ inline float decayed(float _f, Time _hl, Time _p)
 {
 	return halfLifeDecay(_p, _hl, _f);
 }
+
+class Timer
+{
+	typedef std::chrono::high_resolution_clock Clock;
+public:
+	Timer() { reset(); }
+	void reset() { m_start = Clock::now(); }
+	Time elapsed() const
+	{
+		Clock::time_point t = Clock::now();
+		Clock::duration d = t - m_start;
+//			if (m_start > t)
+//				d = t + Clock::duration() - m_start;
+		return std::chrono::duration_cast<std::chrono::duration<int64_t, std::ratio<1, s_baseRate>>>(d).count();
+	}
+private:
+	Clock::time_point m_start;
+};
+
+class AccTimer: public Timer
+{
+public:
+	AccTimer(Time& _acc): m_acc(_acc) {}
+	~AccTimer() { m_acc += elapsed(); }
+private:
+	Time& m_acc;
+};
 
 }

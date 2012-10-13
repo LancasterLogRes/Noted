@@ -31,6 +31,12 @@ namespace Lightbox
 
 template <class _T> struct zero_of { static _T value() { return _T(0); } };
 
+/// Square a number.
+template <class T> inline T sqr(T _t) { return _t * _t; }
+
+/// Sign of a number
+template <class T> inline T sign(T _t) { return _t ? _t > 0 ? 1 : -1 : 0; }
+
 /// Get range of numeric collection.
 template <class T>
 inline std::pair<typename element_of<T>::type, typename element_of<T>::type> range(T const& _t)

@@ -47,7 +47,24 @@ QMAKE_CXXFLAGS += -ffast-math -pipe -fexceptions
 mac: QMAKE_CXXFLAGS +=  -std=c++11
 !mac: QMAKE_CXXFLAGS +=  -std=c++0x
 crosscompilation {
-    QMAKE_CXXFLAGS += -march=amdfam10 -O2 -pipe -mno-3dnow -mcx16 -mpopcnt -msse3 -msse4a -mmmx
+    pi {
+        # modified straight out of arm-none-linux-gnueabi's qmakespec
+        # /usr/share/qt4/mkspecs/qws/linux-arm-gnueabi-g++
+        QMAKE_CC                = arm-unknown-linux-gnueabi-gcc
+        QMAKE_CXX               = arm-unknown-linux-gnueabi-g++
+        QMAKE_LINK              = arm-unknown-linux-gnueabi-g++
+        QMAKE_LINK_SHLIB        = arm-unknown-linux-gnueabi-g++
+        QMAKE_AR                = arm-unknown-linux-gnueabi-ar cqs
+        QMAKE_OBJCOPY           = arm-unknown-linux-gnueabi-objcopy
+        QMAKE_STRIP             = arm-unknown-linux-gnueabi-strip
+
+        QMAKE_CXXFLAGS += -O2 -pipe -march=armv6zk -mfpu=vfp -mfloat-abi=hard -mcpu=arm1176jzf-s
+
+        DEFINES += LIGHTBOX_CROSSCOMPILATION_PI
+    }
+    !pi {
+        QMAKE_CXXFLAGS += -march=amdfam10 -O2 -pipe -mno-3dnow -mcx16 -mpopcnt -msse3 -msse4a -mmmx
+    }
     DEFINES += LIGHTBOX_CROSSCOMPILATION
 }
 !crosscompilation {
