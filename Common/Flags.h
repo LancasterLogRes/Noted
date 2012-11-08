@@ -73,7 +73,7 @@ public:
 		bool operator!=(Flags _c) const { return v != _c.v; }
 		bool operator<(Flags _c) const { return v < _c.v; }
 
-		operator bool() const { return v; }
+		operator unsigned() const { return (unsigned)v; }
 		_Enum highestSet() const { return _Enum(Lightbox::highestBitOnly(long(v))); }
 
 private:
