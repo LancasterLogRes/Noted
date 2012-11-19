@@ -141,18 +141,32 @@ inline float oscillator(Time _t, Time _cycle, float _min = 0.f, float _max = 1.f
 	return _min + d * (1 + sin(double(_t) / _cycle * 3.14159265358 * 2));
 }
 
-/// Pseudo-random factor in interval [_min, _max], determined entire by _t.
-inline float random(Time _t, float _min, float _max)
+/// Pseudo-random number, determined entirely by _t.
+inline uint32_t random(Time _t)
 {
-	::srand(_t);
-	return ::rand() / double(RAND_MAX) * (_max - _min) + _min;
+	uint32_t w = (_t & 0x55555555) | ((_t & 0xaaaaaaaa00000000) >> 32);    /* must not be zero */
+	uint32_t z = (_t & 0xaaaaaaaa) | ((_t & 0x5555555500000000) >> 32);    /* must not be zero */
+
+	if (!w)
+		++w;
+	if (!z)
+		++z;
+
+	z = 36969 * (z & 65535) + (z >> 16);
+	w = 18000 * (w & 65535) + (w >> 16);
+	return (z << 16) + w;
 }
 
 /// Pseudo-random factor in interval [_min, _max], determined entire by _t.
-inline float random(Time _t, int _delta)
+inline float random(Time _t, float _min, float _max)
 {
-	::srand(_t);
-	return _delta ? _delta > 0 ? ::rand() / (RAND_MAX / _delta) : -(::rand() / (RAND_MAX / -_delta)) : 0;
+	return random(_t) / double(UINT32_MAX) * (_max - _min) + _min;
+}
+
+/// Pseudo-random factor in interval [0, _delta - 1], determined entire by _t.
+inline int random(Time _t, int _delta)
+{
+	return _delta ? _delta > 0 ? random(_t) / (UINT32_MAX / _delta) : -(random(_t) / (UINT32_MAX / -_delta)) : 0;
 }
 
 inline float halfLifeDecay(Time _halfLife, Time _unit, float _factor = 1.f)

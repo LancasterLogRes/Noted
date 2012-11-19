@@ -331,7 +331,7 @@ public:
 
 	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
 	{
-		cdebug << "Historied::execute" << m_count;
+//		cdebug << "Historied::execute" << m_count;
 		_PP::execute(_eci, _t, _mag, _phase, _wave);
 		if (_PP::changed())
 		{
@@ -352,6 +352,46 @@ public:
 private:
 	vector<float> m_data;
 	unsigned m_count;
+};
+
+template <class _PP, unsigned _ds = 8>
+class SlowHistoried: public _PP
+{
+public:
+	SlowHistoried(unsigned _s = _ds): m_data(_s) {}
+
+	SlowHistoried& setHistory(unsigned _s) { m_data.clear(); m_data.resize(_s + 4, 0); m_offset = 0; return *this; }
+
+	void init(EventCompilerImpl* _eci)
+	{
+		cdebug << "Historied::init";
+		_PP::init(_eci);
+		setHistory(m_data.size() - 4);
+	}
+
+	void resetBefore(unsigned _bins) {}
+
+	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
+	{
+		_PP::execute(_eci, _t, _mag, _phase, _wave);
+		if (_PP::changed())
+		{
+			m_data[m_data.size() - 4 + m_offset] = _PP::get();
+			++m_offset;
+			if (m_offset == 4)
+			{
+				memmove(m_data.data(), m_data.data() + 4, (m_data.size() - 4) * sizeof(float));
+				m_offset = 0;
+			}
+		}
+	}
+
+	bool changed() const { return _PP::changed(); }
+	foreign_vector<float> get() const { return foreign_vector<float>(const_cast<float*>(m_data.data()) + m_offset, m_data.size() - 4); }
+
+private:
+	vector<float> m_data;
+	unsigned m_offset;
 };
 
 template <class _PP, unsigned _ds = 8>
@@ -393,6 +433,45 @@ private:
 	unsigned m_count;
 };
 
+template <class _PP, class _X>
+class DirectCrossed: public _PP
+{
+public:
+	void init(EventCompilerImpl* _eci)
+	{
+		_PP::init(_eci);
+		m_lastAc.clear();
+	}
+	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
+	{
+		_PP::execute(_eci, _t, _mag, _phase, _wave);
+		if (_PP::changed())
+		{
+			auto const& h = _PP::get();
+			assert(isFinite(h[0]));
+			unsigned s = h.size() - 4;
+			if (m_lastAc.empty())
+				m_lastAc.resize(s / 4, 0.0001);
+			autocross(h.begin(), s, _X::call, s / 4, 4, m_lastAc);
+			assert(isFinite(m_lastAc[0]));
+		}
+	}
+
+	vector<float> const& get() const { return m_lastAc; }
+	using _PP::changed;
+
+	unsigned best() const
+	{
+		unsigned ret = 2;
+		for (unsigned i = 3; i < m_lastAc.size(); ++i)
+			if (m_lastAc[ret] < m_lastAc[i])
+				ret = i;
+		return ret;
+	}
+
+private:
+	vector<float> m_lastAc;
+};
 
 template <class _PP, class _X>
 class Crossed: public _PP
@@ -408,7 +487,7 @@ public:
 		_PP::execute(_eci, _t, _mag, _phase, _wave);
 		if (_PP::changed())
 		{
-			vector<float> const& h = _PP::getVector();
+			auto const& h = _PP::getVector();
 			assert(isFinite(h[0]));
 			unsigned s = h.size() - 4;
 			if (m_lastAc.empty())
@@ -452,6 +531,36 @@ class AreaNormalized: public _PP
 {
 public:
 	AreaNormalized() {}
+
+	void init(EventCompilerImpl* _eci)
+	{
+		_PP::init(_eci);
+		m_data.clear();
+	}
+	void execute(EventCompilerImpl* _eci, Time _t, vector<float> const& _mag, vector<float> const& _phase, std::vector<float> const& _wave)
+	{
+		_PP::execute(_eci, _t, _mag, _phase, _wave);
+		if (_PP::changed())
+		{
+			m_data = _PP::get();
+			assert(isFinite(m_data[0]));
+			makeTotalUnit(m_data);
+			assert(isFinite(m_data[0]));
+		}
+	}
+	using _PP::changed;
+
+	vector<float> const& get() const { return m_data; }
+
+private:
+	vector<float> m_data;
+};
+
+template <class _PP>
+class RangeAndAreaNormalized: public _PP
+{
+public:
+	RangeAndAreaNormalized() {}
 
 	void init(EventCompilerImpl* _eci)
 	{

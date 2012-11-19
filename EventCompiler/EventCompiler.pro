@@ -22,4 +22,5 @@ HEADERS += StreamEvent.h \
 
 SOURCES += \
     Preprocessors.cpp \
-    Track.cpp
+    Track.cpp \
+    StreamEvent.cpp

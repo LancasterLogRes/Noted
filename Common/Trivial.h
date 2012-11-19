@@ -46,7 +46,6 @@ LIGHTBOX_FLAGS(ColorSetItem, ColorSet, (ChromaToggle)(ChromaMin)(ChromaSelection
 
 static const ColorSet DimmableSelection =		HueSelection|ChromaSelection|ValueContinuous;
 static const ColorSet DimmableMono =			SingleColor|ValueContinuous;
-static const ColorSet WhiteOnly =				ChromaMin|ValueMax;
 static const ColorSet FullColorSet =			HueContinuous|ChromaContinuous|ValueContinuous;
 
 LIGHTBOX_STRUCT(6, Meter, float, period, float, Wstrength, float, Hstrength, float, Qstrength, float, Dstrength, float, Tstrength);

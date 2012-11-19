@@ -22,6 +22,7 @@
 
 #include <cassert>
 #include <string>
+#include <iterator>
 #include <algorithm>
 #include <tuple>
 #include <list>
@@ -379,10 +380,10 @@ typename element_of<_A>::type packCombine(_A const& _a, _B const& _b, unsigned _
 					if (bgood)
 					{
 						_brew(accv, *(v4sf const*)&*a, *(v4sf const*)&*b);
-						advance(a, 4);
-						advance(b, 4);
-						advance(ap3, 4);
-						advance(bp3, 4);
+						std::advance(a, 4);
+						std::advance(b, 4);
+						std::advance(ap3, 4);
+						std::advance(bp3, 4);
 					}
 					else
 					{
@@ -391,9 +392,9 @@ typename element_of<_A>::type packCombine(_A const& _a, _B const& _b, unsigned _
 						bt[2] = *b++;
 						bt[3] = *b++;
 						_brew(accv, *(v4sf const*)&*a, btv);
-						advance(a, 4);
-						advance(ap3, 4);
-						advance(bp3, 4);
+						std::advance(a, 4);
+						std::advance(ap3, 4);
+						std::advance(bp3, 4);
 					}
 				}
 				else if (bgood)
@@ -403,9 +404,9 @@ typename element_of<_A>::type packCombine(_A const& _a, _B const& _b, unsigned _
 					at[2] = *a++;
 					at[3] = *a++;
 					_brew(accv, atv, *(v4sf const*)&*b);
-					advance(b, 4);
-					advance(ap3, 4);
-					advance(bp3, 4);
+					std::advance(b, 4);
+					std::advance(ap3, 4);
+					std::advance(bp3, 4);
 				}
 				else
 				{

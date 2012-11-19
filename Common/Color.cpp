@@ -54,4 +54,3 @@ Color Color::fromRGB(std::array<float, 3> _rgb)
 	}
 	return ret;
 }
-

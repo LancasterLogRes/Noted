@@ -80,7 +80,8 @@ struct StreamEvent
 
 	StreamEvent(EventType _type, float _strength, float _temperature, Character _character, float _jitter = .5f, float _constancy = .5f, int8_t _position = -1, float _surprise = 1.f, Aux* _aux = nullptr): type(_type), position(_position), character(_character), channel(-1), temperature(_temperature), strength(_strength), surprise(_surprise), jitter(_jitter), constancy(_constancy), m_aux(std::shared_ptr<Aux>(_aux)) { }
 	StreamEvent(float _strength, float _temperature): type(Graph), position(0), character(Dull), channel(-1), temperature(_temperature), strength(_strength), surprise(1.f), jitter(0.5f), constancy(0.5f) {}
-	StreamEvent(EventType _type, float _temperature, Time _period, Aux* _aux): type(_type), position(0), character(Dull), channel(-1), temperature(_temperature), strength(1.f), surprise(1.f), jitter(0.5f), constancy(toSeconds(_period)), m_aux(_aux) {}
+	StreamEvent(EventType _type, float _strength, Time _period, float _temperature): type(_type), position(0), character(Dull), channel(-1), temperature(_temperature), strength(_strength), surprise(1.f), jitter(0.5f), constancy(toSeconds(_period)), m_aux(nullptr) {}
+	StreamEvent(EventType _type, float _temperature, Time _period, Aux* _aux): type(_type), position(0), character(Dull), channel(-1), temperature(_temperature), strength(0.f), surprise(1.f), jitter(0.5f), constancy(toSeconds(_period)), m_aux(_aux) {}
 	StreamEvent(EventType _type = NoEvent): type(_type), position(0), character(Dull), channel(-1), temperature(-1.f), strength(1.f), surprise(1.f), jitter(0.5f), constancy(0.5f) {}
 
 	void assign(int _channel)
@@ -155,7 +156,8 @@ struct AuxVector: public StreamEvent::Aux
 {
 	AuxVector() {}
 	AuxVector(std::vector<_T> const& _d): data(_d) {}
-	AuxVector(_T const* _d, unsigned _s): data(std::vector<_T>(_s)) { memcpy(data.data(), _d, _s * sizeof(_T)); }
+	AuxVector(_T const* _d, unsigned _s): data(std::vector<_T>(_d, _d + _s)) {}
+	AuxVector(foreign_vector<_T> const& _v): data(std::vector<_T>(_v.begin(), _v.end())) {}
 	virtual ~AuxVector() {}
 	std::vector<_T> data;
 };
@@ -238,6 +240,12 @@ struct GraphSpec
 	std::pair<float, float> xRange;
 	std::pair<float, float> yRange;
 };
+
+std::string id(float _y);
+std::string ms(float _x);
+std::string msL(float _x, float _y);
+std::string bpm(float _x);
+std::string bpmL(float _x, float _y);
 
 struct AuxGraphsSpec: public StreamEvent::Aux
 {
