@@ -19,9 +19,8 @@
  */
 
 #include <cmath>
-using namespace std;
-
 #include "RGBA.h"
+using namespace std;
 using namespace Lightbox;
 
 float RGBA::hueCorrection(unsigned _h)

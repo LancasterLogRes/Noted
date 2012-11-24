@@ -6,6 +6,8 @@ DEFINES += "LIGHTBOX_TARGET_NAME=$$TARGET"
 
 crosscompilation: CONFIG += force_static
 !crosscompilation: CONFIG += force_shared
+crosscompilation: !pi: !android: CONFIG += x86
+!crosscompilation: CONFIG += x86
 
 CONFIG(release, debug|release) {
 	CONFIG += release ndebug
@@ -62,7 +64,7 @@ crosscompilation {
 
         DEFINES += LIGHTBOX_CROSSCOMPILATION_PI
     }
-    !pi {
+    x86 {
         QMAKE_CXXFLAGS += -march=amdfam10 -O2 -pipe -mno-3dnow -mcx16 -mpopcnt -msse3 -msse4a -mmmx
     }
     DEFINES += LIGHTBOX_CROSSCOMPILATION

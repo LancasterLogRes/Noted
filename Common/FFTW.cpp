@@ -48,7 +48,7 @@ FFTW::~FFTW()
 
 void FFTW::process()
 {
-/*	for (uint i = 0; i < m_arity; i++)
+/*	for (unsigned i = 0; i < m_arity; i++)
 		if (m_in[i] > 1.f || m_in[i] < -1.f)
 		{
 			cerr << "!!! Bad input data - " << m_in[i] << " outside unity. Clamping." << endl;

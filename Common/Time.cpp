@@ -19,10 +19,9 @@
  */
 
 #include <map>
-using namespace std;
-
 #include "Time.h"
 #include "Algorithms.h"
+using namespace std;
 using namespace Lightbox;
 
 float Lightbox::sensiblePrior(Time _period)

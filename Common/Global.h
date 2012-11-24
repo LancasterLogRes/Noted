@@ -279,10 +279,10 @@ template <class _E> struct element_of<_E*> { typedef _E type; };
 template <class _E> struct element_of<_E const*> { typedef _E type; };
 
 template <class _T> std::vector<_T>& operator+=(std::vector<_T>& _v, _T const& _t) { _v.push_back(_t); return _v; }
-template <class _T> std::vector<_T>& operator+=(std::vector<_T>& _v1, std::vector<_T> const& _v2) { return catenate(_v1, _v2); return _v1; }
+template <class _T> std::vector<_T>& operator+=(std::vector<_T>& _v1, std::vector<_T> const& _v2) { catenate(_v1, _v2); return _v1; }
 template <class _T> std::vector<_T> operator+(std::vector<_T> const& _v, _T const& _t) { auto v = _v; v.push_back(_t); return v; }
 template <class _T> std::vector<_T> operator+(_T const& _t, std::vector<_T> const& _v) { return operator+(_v, _t); }
-template <class _T> std::vector<_T> operator+(std::vector<_T> const& _v1, std::vector<_T> const& _v2) { auto v = _v1; return catenate(v, _v2); return v; }
+template <class _T> std::vector<_T> operator+(std::vector<_T> const& _v1, std::vector<_T> const& _v2) { auto v = _v1; catenate(v, _v2); return v; }
 
 template <class _T>
 class foreign_vector

@@ -80,7 +80,7 @@ struct StreamEvent
 
 	StreamEvent(EventType _type, float _strength, float _temperature, Character _character, float _jitter = .5f, float _constancy = .5f, int8_t _position = -1, float _surprise = 1.f, Aux* _aux = nullptr): type(_type), position(_position), character(_character), channel(-1), temperature(_temperature), strength(_strength), surprise(_surprise), jitter(_jitter), constancy(_constancy), m_aux(std::shared_ptr<Aux>(_aux)) { }
 	StreamEvent(float _strength, float _temperature): type(Graph), position(0), character(Dull), channel(-1), temperature(_temperature), strength(_strength), surprise(1.f), jitter(0.5f), constancy(0.5f) {}
-	StreamEvent(EventType _type, float _strength, Time _period, float _temperature): type(_type), position(0), character(Dull), channel(-1), temperature(_temperature), strength(_strength), surprise(1.f), jitter(0.5f), constancy(toSeconds(_period)), m_aux(nullptr) {}
+	StreamEvent(EventType _type, float _strength, Time _period, Time _phase): type(_type), position(0), character(Dull), channel(-1), temperature(0.f), strength(_strength), surprise(1.f), jitter(toSeconds(_phase)), constancy(toSeconds(_period)), m_aux(nullptr) {}
 	StreamEvent(EventType _type, float _temperature, Time _period, Aux* _aux): type(_type), position(0), character(Dull), channel(-1), temperature(_temperature), strength(0.f), surprise(1.f), jitter(0.5f), constancy(toSeconds(_period)), m_aux(_aux) {}
 	StreamEvent(EventType _type = NoEvent): type(_type), position(0), character(Dull), channel(-1), temperature(-1.f), strength(1.f), surprise(1.f), jitter(0.5f), constancy(0.5f) {}
 

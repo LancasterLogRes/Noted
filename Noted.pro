@@ -1,5 +1,6 @@
 TEMPLATE = subdirs
 system(echo $$CONFIG)
+!android {
 SUBDIRS = \
     Common \
     EventCompiler \
@@ -15,3 +16,4 @@ SUBDIRS = \
     TestPlugin \
     PluginTest \
     Test
+}

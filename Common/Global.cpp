@@ -22,9 +22,11 @@
 #include <cstring>
 #include <string>
 #include <algorithm>
-using namespace std;
-
+#if LIGHTBOX_CROSSCOMPILATION_ANDROID
+#include <android/log.h>
+#endif
 #include "Global.h"
+using namespace std;
 using namespace Lightbox;
 
 namespace Lightbox
@@ -34,8 +36,12 @@ bool g_debugEnabled[256] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 void simpleDebugOut(std::string const& _s, unsigned char _id)
 {
-    if (g_debugEnabled[_id])
+	if (g_debugEnabled[_id])
+#if LIGHTBOX_CROSSCOMPILATION_ANDROID
+		(void)__android_log_print(_id == 255 ? ANDROID_LOG_ERROR : _id == 254 ? ANDROID_LOG_WARN : _id == 253 ? ANDROID_LOG_INFO : ANDROID_LOG_INFO, LIGHTBOX_BITS_STRINGIFY("Lightbox"), "%s\n", _s.c_str())
+#else
         std::cout << ((_id == 255) ? "!!! " : (_id == 254) ? "*** " : (_id == 253) ? "--- " : "    ") << _s << std::endl << std::flush;
+#endif
 }
 
 std::function<void(std::string const&, unsigned char)> g_debugPost = simpleDebugOut;

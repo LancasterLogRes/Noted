@@ -10,7 +10,7 @@ TEMPLATE = lib
 include ( ../Common.pri )
 
 # required for non-windows platforms, it seems...
-!win32: LIBS += -lboost_system
+!win32: !android: LIBS += -lboost_system
 
 # for windows, it doesn't seem to find libboost_system, so we do it manually.
 win32 {
