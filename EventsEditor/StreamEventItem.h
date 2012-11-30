@@ -21,7 +21,7 @@
 #pragma once
 
 #include <EventCompiler/StreamEvent.h>
-#include <Common/RGBA.h>
+#include <Common/RGBA8.h>
 #include <QGraphicsItem>
 
 class QWidget;

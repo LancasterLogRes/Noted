@@ -99,7 +99,7 @@ public:
 		{
 			auto s = m_c->magSpectrum(m_c->cursorIndex(), 1);
 			unsigned i = maxInRange(s.begin(), s.end()) - s.begin();
-			glColor3ubv(Color(p[i], 1, 1).toRGBA().data());
+			glColor3ubv(Color(p[i], 1, 1).toRGBA8().data());
 		}
 
 		glBindTexture(GL_TEXTURE_1D, m_texture[0]);
