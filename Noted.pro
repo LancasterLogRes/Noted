@@ -5,7 +5,7 @@ SUBDIRS = \
     EventCompiler \
     ExampleEventCompiler \
     Audio
-!crosscompilation: SUBDIRS += \
+!cross: SUBDIRS += \
     contrib \
 	NotedPlugin \
 	Grapher \
