@@ -233,7 +233,6 @@ void NotedBase::rejigSpectra()
 				lastPhase = fftw.phase();
 				WorkerThread::setCurrentProgress(index * 99 / hops());
 			}
-			int n = 0;
 			m_spectra.generate([&](Lightbox::foreign_vector<float> a, Lightbox::foreign_vector<float> b, Lightbox::foreign_vector<float> ret)
 			{
 				Lightbox::valcpy(ret.data(), a.data(), a.size());

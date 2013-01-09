@@ -1,3 +1,4 @@
+include (Common.pri)
 TEMPLATE = subdirs
 system(echo $$CONFIG)
 !android {
