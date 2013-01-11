@@ -1,15 +1,12 @@
-include (Common.pri)
 TEMPLATE = subdirs
-system(echo $$CONFIG)
+include (Common.pri)
 !android {
 SUBDIRS = \
-    EventCompiler \
-    ExampleEventCompiler \
     Audio
-!cross: SUBDIRS += \
+native: SUBDIRS += \
     contrib \
-	NotedPlugin \
 	Grapher \
+	NotedPlugin \
     ExamplePlugin \
     EventsEditor \
     Noted \

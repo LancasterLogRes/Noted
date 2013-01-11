@@ -1,16 +1,10 @@
-#-------------------------------------------------
-#
-# Project created by QtCreator 2010-07-06T12:35:08
-#
-#-------------------------------------------------
-
-TARGET = PluginTest
 TEMPLATE = app
+include ( ../Common.pri )
+
 CONFIG   += qt
 QT       += core gui opengl
 
-include ( ../Common.pri )
-
 LIBS += -lCommon -lNotedPlugin
+linux: LIBS += -lboost_system
 
 SOURCES += main.cpp

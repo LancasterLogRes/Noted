@@ -1,11 +1,7 @@
-TARGET = Audio
-CONFIG	-= qt
 TEMPLATE = lib
-
-LIBS += -lportaudio
-
 include ( ../Common.pri )
 
+LIBS += -lportaudio
 SOURCES += \
         Playback.cpp \
         Capture.cpp \

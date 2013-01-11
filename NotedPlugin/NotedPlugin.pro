@@ -1,15 +1,8 @@
-#-------------------------------------------------
-#
-# Project created by QtCreator 2010-07-07T12:57:53
-#
-#-------------------------------------------------
-
-TARGET = NotedPlugin
 TEMPLATE = lib
-QT       += core gui opengl
-CONFIG += qt
-
 include ( ../Common.pri )
+
+CONFIG += qt
+QT       += core gui opengl
 
 LIBS += -lCommon -lEventCompiler
 
