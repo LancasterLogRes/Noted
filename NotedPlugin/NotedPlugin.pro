@@ -4,8 +4,6 @@ include ( ../Common.pri )
 CONFIG += qt
 QT       += core gui opengl
 
-LIBS += -lCommon -lEventCompiler
-
 SOURCES += Timeline.cpp \
 	PrerenderedTimeline.cpp \
 	NotedFace.cpp \

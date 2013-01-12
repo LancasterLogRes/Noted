@@ -5,7 +5,7 @@ win32: RC_FILE = Noted.rc
 CONFIG += qt uic
 QT       += core gui xml opengl
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-LIBS += -lAudio -lCommon -lEventsEditor -lNotedPlugin $$FFTW3_LIBS $$SNDFILE_LIBS -lresample -lcontrib $$GL_LIBS
+LIBS += $$FFTW3_LIBS $$SNDFILE_LIBS -lresample -lcontrib $$GL_LIBS
 linux: LIBS += -lboost_system
 
 SOURCES += main.cpp\

@@ -1,0 +1,9 @@
+Audio.depends =
+Grapher.depends = Common
+NotedPlugin.depends = EventCompiler
+ExamplePlugin.depends = NotedPlugin
+EventsEditor.depends = NotedPlugin
+Noted.depends = EventsEditor Audio
+TestPlugin.depends = NotedPlugin
+PluginTest.depends = NotedPlugin
+NotedTest.depends = Common

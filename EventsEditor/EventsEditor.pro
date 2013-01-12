@@ -4,8 +4,6 @@ include ( ../Common.pri )
 CONFIG += qt uic
 QT       += core gui opengl
 
-LIBS += -lCommon -lNotedPlugin
-
 SOURCES += EventsEditScene.cpp \
     EventsEditor.cpp \
     PeriodItem.cpp \

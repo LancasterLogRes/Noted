@@ -5,7 +5,6 @@ include ( ../Common.pri )
 CONFIG += qt uic
 QT += core gui opengl xml
 
-LIBS += -lCommon -lNotedPlugin
 linux: LIBS += -lGLU
 
 SOURCES += TestPlugin.cpp

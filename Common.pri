@@ -1,5 +1,6 @@
 LIGHTBOX_ROOT_PROJECT = Noted
 LIGHTBOX_USES_PROJECTS = Lightbox
+include ( Noted.depends )
 include ( ../Lightbox/Common.pri )
 
 FTDI_LIBS = -lftdi -L$$TP/libftdi/src -Wl,-rpath,$$TP/libftdi/src -lusb-1.0

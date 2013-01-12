@@ -12,5 +12,7 @@ native: SUBDIRS += \
     Noted \
     TestPlugin \
     PluginTest \
-    Test
+	NotedTest
 }
+
+tidy()
