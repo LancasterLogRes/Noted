@@ -82,7 +82,7 @@
    </property>
    <widget class="QMenu" name="menuOutput">
     <property name="title">
-     <string>&amp;Output</string>
+     <string>&amp;Driver</string>
     </property>
     <addaction name="actPlay"/>
     <addaction name="actPlayCausal"/>

@@ -36,7 +36,7 @@
 class Timeline;
 class QEvent;
 class QPainter;
-class OutputItem;
+class DriverItem;
 class EventsView;
 class Noted;
 class NotedBase;
