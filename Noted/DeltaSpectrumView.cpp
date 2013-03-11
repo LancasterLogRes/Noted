@@ -34,6 +34,8 @@ using namespace Lightbox;
 
 void DeltaSpectrumView::doRender(QGLFramebufferObject* _fbo)
 {
+	if (m_i < 0)
+		return;
 	auto phase = c()->phaseSpectrum(m_i, 1);
 	auto lPhase = c()->phaseSpectrum(m_i - 1, 1);
 	auto llPhase = c()->phaseSpectrum(m_i - 2, 1);

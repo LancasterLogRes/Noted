@@ -204,7 +204,7 @@ foreign_vector<float const> NotedBase::multiSpectrum(int _i, int _n) const
 	qDebug() << "multiSpectrum";
 	QMutexLocker l(&x_spectra);
 	qDebug() << "multiSpectrum L";
-	return m_spectra.items<float>(_i, _n).tied(std::make_shared<QMutexLocker>(&x_spectra));
+	return m_spectra.items<float>(max(0, _i), _n).tied(std::make_shared<QMutexLocker>(&x_spectra));
 }
 
 foreign_vector<float const> NotedBase::magSpectrum(int _i, int _n) const
@@ -212,7 +212,7 @@ foreign_vector<float const> NotedBase::magSpectrum(int _i, int _n) const
 	qDebug() << "magSpectrum";
 	QMutexLocker l(&x_spectra);
 	qDebug() << "magSpectrum L";
-	return m_spectra.items<float>(_i, _n).cropped(0, spectrumSize()).tied(std::make_shared<QMutexLocker>(&x_spectra));
+	return m_spectra.items<float>(max(0, _i), _n).cropped(0, spectrumSize()).tied(std::make_shared<QMutexLocker>(&x_spectra));
 }
 
 foreign_vector<float const> NotedBase::phaseSpectrum(int _i, int _n) const
@@ -220,7 +220,7 @@ foreign_vector<float const> NotedBase::phaseSpectrum(int _i, int _n) const
 	qDebug() << "phaseSpectrum";
 	QMutexLocker l(&x_spectra);
 	qDebug() << "phaseSpectrum L";
-	return m_spectra.items<float>(_i, _n).cropped(spectrumSize(), spectrumSize()).tied(std::make_shared<QMutexLocker>(&x_spectra));
+	return m_spectra.items<float>(max(0, _i), _n).cropped(spectrumSize(), spectrumSize()).tied(std::make_shared<QMutexLocker>(&x_spectra));
 }
 
 foreign_vector<float const> NotedBase::deltaPhaseSpectrum(int _i, int _n) const
@@ -228,7 +228,7 @@ foreign_vector<float const> NotedBase::deltaPhaseSpectrum(int _i, int _n) const
 	qDebug() << "dpSpectrum";
 	QMutexLocker l(&x_spectra);
 	qDebug() << "dpSpectrum L";
-	return m_spectra.items<float>(_i, _n).cropped(spectrumSize() * 2, spectrumSize()).tied(std::make_shared<QMutexLocker>(&x_spectra));
+	return m_spectra.items<float>(max(0, _i), _n).cropped(spectrumSize() * 2, spectrumSize()).tied(std::make_shared<QMutexLocker>(&x_spectra));
 }
 
 void NotedBase::rejigSpectra()
