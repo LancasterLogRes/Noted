@@ -29,6 +29,13 @@ using namespace Lightbox;
 
 void Grapher::init(QPainter* _p, std::pair<float, float> _xRange, std::pair<float, float> _yRange, std::function<std::string(float)> _xLabel, std::function<std::string(float)> _yLabel, std::function<std::string(float, float)> _pLabel, int _leftGutter, int _bottomGutter)
 {
+	fontPixelSize = QFontInfo(QFont("Ubuntu", 10)).pixelSize();
+
+	if (_leftGutter)
+		_leftGutter = max<int>(_leftGutter, fontPixelSize * 2);
+	if (_bottomGutter)
+		_bottomGutter = max<int>(_bottomGutter, fontPixelSize * 1.25);
+
 	QRect a(_leftGutter, 0, _p->viewport().width() - _leftGutter, _p->viewport().height() - _bottomGutter);
 	init(_p, _xRange, _yRange, _xLabel, _yLabel, _pLabel, a);
 }
@@ -42,12 +49,13 @@ bool Grapher::drawAxes(bool _x, bool _y) const
 	int t = active.top();
 	int b = active.bottom();
 
+	p->setFont(QFont("Ubuntu", 10));
 	p->fillRect(p->viewport(), qRgb(255, 255, 255));
 
 	static const int c_markLength = 2;
 	static const int c_markSpacing = 2;
-	static const int c_xSpacing = 32;
-	static const int c_ySpacing = 18;
+	static const int c_xSpacing = fontPixelSize * 3;
+	static const int c_ySpacing = fontPixelSize * 1.25;
 
 	if (w < c_xSpacing || h < c_ySpacing || !p->viewport().contains(active))
 		return false;
@@ -56,25 +64,26 @@ bool Grapher::drawAxes(bool _x, bool _y) const
 	{
 		GraphParameters<float> yParams(yRange, h / c_ySpacing, 1.f);
 		float dy = fabs(yRange.second - yRange.first);
-		for (float f = yParams.from; f < yParams.to; f += yParams.incr)
-		{
-			int y = b - h * (f - yParams.from) / dy;
-			if (yParams.isMajor(f))
+		if (dy > .001)
+			for (float f = yParams.from; f < yParams.to; f += yParams.incr)
 			{
-				p->setPen(QColor(208, 208, 208));
-				p->drawLine(l - c_markLength, y, r, y);
-				if (l > p->viewport().left())
+				int y = b - h * (f - yParams.from) / dy;
+				if (yParams.isMajor(f))
 				{
-					p->setPen(QColor(144, 144, 144));
-					p->drawText(QRect(0, y - c_ySpacing / 2, l - c_markLength - c_markSpacing, c_ySpacing), Qt::AlignRight|Qt::AlignVCenter, QString::fromStdString(yLabel(round(f * 100000) / 100000)));
+					p->setPen(QColor(208, 208, 208));
+					p->drawLine(l - c_markLength, y, r, y);
+					if (l > p->viewport().left())
+					{
+						p->setPen(QColor(144, 144, 144));
+						p->drawText(QRect(0, y - c_ySpacing / 2, l - c_markLength - c_markSpacing, c_ySpacing), Qt::AlignRight|Qt::AlignVCenter, QString::fromStdString(yLabel(round(f * 100000) / 100000)));
+					}
+				}
+				else
+				{
+					p->setPen(QColor(236, 236, 236));
+					p->drawLine(l, y, r, y);
 				}
 			}
-			else
-			{
-				p->setPen(QColor(236, 236, 236));
-				p->drawLine(l, y, r, y);
-			}
-		}
 		p->setPen(QColor(192,192,192));
 		p->drawLine(l - c_markSpacing, b, r, b);
 	}

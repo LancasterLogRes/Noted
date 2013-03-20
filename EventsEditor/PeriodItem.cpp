@@ -79,7 +79,7 @@ void PeriodSetTweakItem::mouseMoveEvent(QGraphicsSceneMouseEvent* _e)
 		static float lth = 0.f;
 		int mag = sqrt(sqr(rc.x()) + sqr(rc.y())) / 32;
 		float th = atan2(rc.x(), rc.y());
-		int d = angularSubtraction(th, lth) * 12 / TwoPi * (mag - 1);
+		int d = angularSubtraction(th, lth) * 12 / twoPi<float>() * (mag - 1);
 		if (lth == 0.f || d)
 			lth = th;
 		m_se.constancy += toSeconds(d) * 1000 / 4;

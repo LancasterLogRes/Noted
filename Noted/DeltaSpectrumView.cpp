@@ -49,7 +49,7 @@ void DeltaSpectrumView::doRender(QGLFramebufferObject* _fbo)
 		QPainter p(_fbo);
 		p.fillRect(rect(), qRgb(255, 255, 255));
 
-		float sc = 2 * Pi;
+		float sc = twoPi<float>();
 
 		GraphParameters<float> minorParams(make_pair(0.f, sc), h / 18, ForceMinor);
 		p.setPen(QColor(236, 236, 236));
@@ -111,14 +111,14 @@ void DeltaSpectrumView::doRender(QGLFramebufferObject* _fbo)
 			int y = h - h * dp / sc;
 
 			int phaseChangeSamples = (2 * s / c()->hopSamples());
-			float standingWavePhaseChange = float(i % phaseChangeSamples) * 2 * Pi / phaseChangeSamples;
-			if (standingWavePhaseChange > Pi)
-				standingWavePhaseChange = 2 * Pi - standingWavePhaseChange;	// cyclic reflection
+			float standingWavePhaseChange = float(i % phaseChangeSamples) * twoPi<float>() / phaseChangeSamples;
+			if (standingWavePhaseChange > pi<float>())
+				standingWavePhaseChange = twoPi<float>() - standingWavePhaseChange;	// cyclic reflection
 
-			float changeOverStandingWaveSqr = sqr((dp - standingWavePhaseChange) / Pi);
+			float changeOverStandingWaveSqr = sqr((dp - standingWavePhaseChange) / pi<float>());
 			pdRms += changeOverStandingWaveSqr;
 			int dsy = h * changeOverStandingWaveSqr / sc;
-			int ddsy = h * ddp / Pi / sc;
+			int ddsy = h * ddp / pi<float>() / sc;
 			if (i)
 			{
 				p.setPen(Qt::NoPen);

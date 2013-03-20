@@ -166,7 +166,10 @@ void Prerendered::paintGL()
 		if (!m_fbo || m_fbo->size() != size())
 		{
 			delete m_fbo;
-			m_fbo = new QGLFramebufferObject(size());
+			auto s = size();
+			if (s.isNull() || s.width() < 1 || s.height() < 1)
+				s = QSize(1, 1);
+			m_fbo = new QGLFramebufferObject(s);
 		}
 		m_fbo->bind();
 		doRender(m_fbo);

@@ -92,6 +92,8 @@ protected:
 	std::function<std::string(float _f)> yLabel;
 	std::function<std::string(float _x, float _y)> pLabel;
 
+	float fontPixelSize;
+
 	// Translate from raw indexed data into x/y graph units. Only relevant for indexed data.
 	float xT(float _dataIndex) const { return _dataIndex * xM + xC; }
 	float yT(float _dataValue) const { return _dataValue * yM + yC; }

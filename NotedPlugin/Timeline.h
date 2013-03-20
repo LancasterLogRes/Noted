@@ -46,6 +46,7 @@ public:
 	virtual ~Timeline();
 
 	void initTimeline(NotedFace* _nf);
+	void finiTimeline();
 
 	virtual QWidget* widget() = 0;
 	virtual QColor cursorColor() { return Qt::black; }

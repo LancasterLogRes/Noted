@@ -340,6 +340,7 @@ void DataView::doRender(QGLFramebufferObject* _fbo)
 	QPainter p(_fbo);
 
 	vector<StreamEvent> ses;
+
 	foreach (GraphSpec s, spec->graphs)
 		ses.push_back(c()->eventOf(s.filter, s.temperature));
 

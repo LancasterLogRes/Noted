@@ -22,8 +22,9 @@
 #include <string>
 #include <QtCore>
 #include <Common/Common.h>
+#include <EventCompiler/EventCompilerImpl.h>
 
-class ProcessEventCompiler: public Lightbox::EventCompilerImpl
+class ProcessEventCompiler: public Lightbox::EventCompilerNativeImpl<float>
 {
 public:
 	ProcessEventCompiler(QString const& _program): m_s(&m_p), m_program(_program) {}

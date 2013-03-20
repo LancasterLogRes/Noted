@@ -99,11 +99,14 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	m_selection->setGeometry(0, m_label->height() + c_size + c_margin * 2, (c_size + c_margin) * 5 + c_size, c_size);
 	connect(m_selection, SIGNAL(currentIndexChanged(int)), SLOT(sourceChanged()));
 
+	initTimeline(c());
+
 	c()->noteEventCompilersChanged();
 }
 
 EventsView::~EventsView()
 {
+	finiTimeline();
 	quit();
 	clearEvents();
 	QWidget* w = parentWidget()->parentWidget();
@@ -118,6 +121,7 @@ void EventsView::onUseChanged()
 
 void EventsView::clearEvents()
 {
+	cnote << "CLEARING EVENTS OF" << (void*)this << m_savedName;
 	m_actualWidget->setOrientation(Qt::Horizontal);
 	QMutexLocker l(&x_events);
 	m_initEvents.clear();
@@ -250,9 +254,7 @@ void EventsView::save()
 	m_eventCompiler = EventCompiler();
 
 	// Have to clear at the moment, since auxilliary StreamEvent data can have hooks into the shared library that will be unloaded.
-	QMutexLocker l(&x_events);
-	m_events.clear();
-	m_initEvents.clear();
+	clearEvents();
 }
 
 void EventsView::restore()

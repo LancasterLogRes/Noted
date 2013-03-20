@@ -34,7 +34,6 @@ PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop): Pr
 {
 	m_renderingContext = new QGLWidget(0, this);
 	connect(c(), SIGNAL(analysisFinished()), SLOT(sourceChanged()));
-	initTimeline(c());
 }
 
 PrerenderedTimeline::~PrerenderedTimeline()

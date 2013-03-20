@@ -201,41 +201,41 @@ bool NotedBase::resampleWave()
 
 foreign_vector<float const> NotedBase::multiSpectrum(int _i, int _n) const
 {
-	qDebug() << "multiSpectrum";
+//	qDebug() << "multiSpectrum";
 	QMutexLocker l(&x_spectra);
-	qDebug() << "multiSpectrum L";
+//	qDebug() << "multiSpectrum L";
 	return m_spectra.items<float>(max(0, _i), _n).tied(std::make_shared<QMutexLocker>(&x_spectra));
 }
 
 foreign_vector<float const> NotedBase::magSpectrum(int _i, int _n) const
 {
-	qDebug() << "magSpectrum";
+//	qDebug() << "magSpectrum";
 	QMutexLocker l(&x_spectra);
-	qDebug() << "magSpectrum L";
+//	qDebug() << "magSpectrum L";
 	return m_spectra.items<float>(max(0, _i), _n).cropped(0, spectrumSize()).tied(std::make_shared<QMutexLocker>(&x_spectra));
 }
 
 foreign_vector<float const> NotedBase::phaseSpectrum(int _i, int _n) const
 {
-	qDebug() << "phaseSpectrum";
+//	qDebug() << "phaseSpectrum";
 	QMutexLocker l(&x_spectra);
-	qDebug() << "phaseSpectrum L";
+//	qDebug() << "phaseSpectrum L";
 	return m_spectra.items<float>(max(0, _i), _n).cropped(spectrumSize(), spectrumSize()).tied(std::make_shared<QMutexLocker>(&x_spectra));
 }
 
 foreign_vector<float const> NotedBase::deltaPhaseSpectrum(int _i, int _n) const
 {
-	qDebug() << "dpSpectrum";
+//	qDebug() << "dpSpectrum";
 	QMutexLocker l(&x_spectra);
-	qDebug() << "dpSpectrum L";
+//	qDebug() << "dpSpectrum L";
 	return m_spectra.items<float>(max(0, _i), _n).cropped(spectrumSize() * 2, spectrumSize()).tied(std::make_shared<QMutexLocker>(&x_spectra));
 }
 
 void NotedBase::rejigSpectra()
 {
-	qDebug() << "rejigSpectra";
+//	qDebug() << "rejigSpectra";
 	QMutexLocker l(&x_spectra);
-	qDebug() << "rejigSpectra L";
+//	qDebug() << "rejigSpectra L";
 	int ss = spectrumSize();
 	if (samples())
 	{
@@ -261,8 +261,8 @@ void NotedBase::rejigSpectra()
 				float intpart;
 				for (int i = 0; i < ss; ++i)
 				{
-					sd[i + ss] = phase[i] / TwoPi;
-					sd[i + ss*2] = modf((phase[i] - lastPhase[i]) / TwoPi + 1.f, &intpart);
+					sd[i + ss] = phase[i] / twoPi<float>();
+					sd[i + ss*2] = modf((phase[i] - lastPhase[i]) / twoPi<float>() + 1.f, &intpart);
 				}
 				lastPhase = fftw.phase();
 				WorkerThread::setCurrentProgress(index * 99 / hops());

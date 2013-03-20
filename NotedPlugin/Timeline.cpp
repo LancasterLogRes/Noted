@@ -26,12 +26,16 @@ using namespace std;
 
 Timeline::~Timeline()
 {
-	m_nf->timelineDead(this);
 }
 
 void Timeline::initTimeline(NotedFace* _nf)
 {
 	m_nf = _nf;
+}
+
+void Timeline::finiTimeline()
+{
+	m_nf->timelineDead(this);
 }
 
 Lightbox::Time Timeline::earliestVisible() const

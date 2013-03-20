@@ -40,10 +40,12 @@ SpectraView::SpectraView(QWidget* _parent):
 	m_shader			(nullptr)
 {
 	m_texture[0] = 0;
+	initTimeline(c());
 }
 
 SpectraView::~SpectraView()
 {
+	finiTimeline();
 	quit();
 }
 

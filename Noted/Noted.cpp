@@ -208,6 +208,11 @@ Noted::~Noted()
 	m_workerThread = nullptr;
 	qDebug() << "Disabled permenantly.";
 
+	qDebug() << "Killing timelines...";
+	while (m_timelines.size())
+		delete *m_timelines.begin();
+	qDebug() << "Killed.";
+
 	qDebug() << "Unloading libraries...";
 	while (m_libraries.size())
 	{
@@ -215,11 +220,6 @@ Noted::~Noted()
 		m_libraries.erase(m_libraries.begin());
 	}
 	qDebug() << "Unloaded all libraries.";
-
-	qDebug() << "Killing timelines...";
-	while (m_timelines.size())
-		delete *m_timelines.begin();
-	qDebug() << "Killed.";
 
 	for (auto i: findChildren<Prerendered*>())
 		delete i;
@@ -504,6 +504,7 @@ void Noted::unload(RealLibraryPtr const& _dl)
 			_dl->aux.reset();
 		}
 		cnote << "UNLOAD" << _dl->filename;
+
 		_dl->unload();
 	}
 	m_libraryWatcher.removePath(_dl->filename);
@@ -611,6 +612,8 @@ StreamEvent Noted::eventOf(EventType _et, float _temperature, Time _t) const
 						ret = e;
 						goto OK;
 					}
+//					else
+//						cdebug << "Not event" << e;
 		OK:;
 //		foreach (EventsView* ev, evs)
 //			ev->mutex()->unlock();
@@ -1258,8 +1261,8 @@ bool Noted::serviceAudio()
 			float intpart;
 			for (int i = 0; i < ss; ++i)
 			{
-				sd[i + ss] = phase[i] / TwoPi;
-				sd[i + ss2] = modf((phase[i] - lp[i]) / TwoPi + 1.f, &intpart);
+				sd[i + ss] = phase[i] / twoPi<float>();
+				sd[i + ss2] = modf((phase[i] - lp[i]) / twoPi<float>() + 1.f, &intpart);
 			}
 			*/
 
