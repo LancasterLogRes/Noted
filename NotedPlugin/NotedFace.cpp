@@ -37,6 +37,7 @@ NotedFace::NotedFace(QWidget* _p):
 	m_hopSamples				(2),
 	m_samples					(0),
 	m_zeroPhase					(false),
+	m_floatFFT					(true),
 	m_fineCursor				(0),
 	m_timelineOffset			(0),
 	m_pixelDuration				(1)

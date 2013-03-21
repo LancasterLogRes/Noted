@@ -78,6 +78,7 @@ public:
 	inline unsigned spectrumSize() const { return m_windowFunction.size() / 2 + 1; }
 	inline std::vector<float> const& windowFunction() const { return m_windowFunction; }
 	inline bool isZeroPhase() const { return m_zeroPhase; }
+	inline bool isFloatFFT() const { return m_floatFFT; }
 	inline unsigned samples() const { return m_samples; }
 
 	inline Lightbox::Time hop() const { return Lightbox::toBase(hopSamples(), rate()); }
@@ -150,6 +151,7 @@ protected:
 	unsigned m_hopSamples;
 	unsigned m_samples;
 	bool m_zeroPhase;
+	bool m_floatFFT;
 	std::vector<float> m_windowFunction;
 
 	Lightbox::Time m_fineCursor;

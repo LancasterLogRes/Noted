@@ -734,6 +734,7 @@ void Noted::readSettings()
 		DO(hopSlider, setValue, toInt);
 		DO(windowSizeSlider, setValue, toInt);
 		DO(zeroPhase, setChecked, toBool);
+		DO(floatFFT, setChecked, toBool);
 	}
 
 	if (settings.contains("playRate"))
@@ -837,6 +838,7 @@ void Noted::writeSettings()
 	DO(hopSlider, value);
 	DO(windowSizeSlider, value);
 	DO(zeroPhase, isChecked);
+	DO(floatFFT, isChecked);
 	DO(force16Bit, isChecked);
 	DO(playChunkSamples, value);
 	DO(playChunks, value);
@@ -1525,6 +1527,7 @@ void Noted::updateParameters()
 	m_hopSamples = ui->hop->value();
 	m_windowFunction = Lightbox::windowFunction(ui->windowSize->value(), WindowFunction(ui->windowFunction->currentIndex()));
 	m_zeroPhase = ui->zeroPhase->isChecked();
+	m_floatFFT = ui->floatFFT->isChecked();
 }
 
 void Noted::clearEventsCache()

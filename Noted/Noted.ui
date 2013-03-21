@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>852</width>
-    <height>489</height>
+    <width>1849</width>
+    <height>1208</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -76,8 +76,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>852</width>
-     <height>22</height>
+     <width>1849</width>
+     <height>38</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuOutput">
@@ -165,8 +165,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>320</width>
-     <height>79</height>
+     <width>604</width>
+     <height>136</height>
     </size>
    </property>
    <property name="features">
@@ -186,7 +186,16 @@
      <property name="spacing">
       <number>0</number>
      </property>
-     <property name="margin">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
       <number>0</number>
      </property>
      <item>
@@ -194,21 +203,30 @@
        <property name="spacing">
         <number>2</number>
        </property>
-       <property name="margin">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
         <number>0</number>
        </property>
        <item>
         <widget class="QComboBox" name="sampleRate">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
            <width>0</width>
            <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>23</height>
           </size>
          </property>
          <property name="currentIndex">
@@ -273,11 +291,11 @@
        </item>
        <item>
         <widget class="QComboBox" name="windowFunction">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>23</height>
-          </size>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
          <property name="currentIndex">
           <number>1</number>
@@ -320,18 +338,31 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="zeroPhase">
+        <widget class="QToolButton" name="floatFFT">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>23</height>
-          </size>
+         <property name="text">
+          <string>1.f</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="zeroPhase">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
          <property name="text">
           <string>0φ</string>
@@ -359,7 +390,7 @@
          <item>
           <widget class="QSlider" name="windowSizeSlider">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
              <horstretch>5</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -368,12 +399,6 @@
             <size>
              <width>0</width>
              <height>0</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>23</height>
             </size>
            </property>
            <property name="minimum">
@@ -392,16 +417,16 @@
          </item>
          <item>
           <widget class="QSlider" name="hopSlider">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
              <width>32</width>
              <height>0</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>23</height>
             </size>
            </property>
            <property name="minimum">
@@ -433,12 +458,6 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>23</height>
-            </size>
-           </property>
           </widget>
          </item>
          <item row="0" column="1">
@@ -448,12 +467,6 @@
              <horstretch>4</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>23</height>
-            </size>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -473,14 +486,7 @@
           </widget>
          </item>
          <item row="1" column="0">
-          <widget class="QLineEdit" name="hopPeriod">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>23</height>
-            </size>
-           </property>
-          </widget>
+          <widget class="QLineEdit" name="hopPeriod"/>
          </item>
          <item row="1" column="1">
           <widget class="QSpinBox" name="hop">
@@ -489,12 +495,6 @@
              <horstretch>1</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>23</height>
-            </size>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -542,7 +542,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>160</width>
+     <width>185</width>
      <height>80</height>
     </size>
    </property>
@@ -557,7 +557,16 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
     <layout class="QGridLayout" name="gridLayout_2">
-     <property name="margin">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
       <number>0</number>
      </property>
      <property name="spacing">
@@ -577,18 +586,12 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QPushButton" name="addEventsView">
+      <widget class="QToolButton" name="addEventsView">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+        <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>23</width>
-         <height>23</height>
-        </size>
        </property>
        <property name="text">
         <string>+</string>
@@ -601,8 +604,8 @@
   <widget class="QDockWidget" name="dockWidget_2a">
    <property name="minimumSize">
     <size>
-     <width>199</width>
-     <height>94</height>
+     <width>427</width>
+     <height>149</height>
     </size>
    </property>
    <property name="features">
@@ -616,7 +619,16 @@
    </attribute>
    <widget class="QWidget" name="dockPlay">
     <layout class="QGridLayout" name="gridLayout_4">
-     <property name="margin">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
       <number>0</number>
      </property>
      <property name="spacing">
@@ -624,21 +636,21 @@
      </property>
      <item row="0" column="0" colspan="2">
       <widget class="QComboBox" name="playDevice">
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>23</height>
-        </size>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
       </widget>
      </item>
      <item row="3" column="0">
       <widget class="QSpinBox" name="playChunkSamples">
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>23</height>
-        </size>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
        <property name="suffix">
         <string> samples</string>
@@ -661,16 +673,16 @@
        </property>
        <item>
         <widget class="QComboBox" name="playRate">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
            <width>0</width>
            <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>23</height>
           </size>
          </property>
          <property name="currentIndex">
@@ -744,12 +756,12 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="force16Bit">
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>23</height>
-          </size>
+        <widget class="QToolButton" name="force16Bit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
          <property name="text">
           <string>16</string>
@@ -764,15 +776,15 @@
        </item>
        <item>
         <widget class="QToolButton" name="refreshAudioDevices">
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>23</height>
-          </size>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
          <property name="font">
           <font>
-           <pointsize>16</pointsize>
+           <pointsize>12</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
@@ -800,11 +812,11 @@
      </item>
      <item row="3" column="1">
       <widget class="QSpinBox" name="playChunks">
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>23</height>
-        </size>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
        <property name="specialValueText">
         <string>Default</string>
@@ -833,7 +845,7 @@
    <property name="minimumSize">
     <size>
      <width>300</width>
-     <height>80</height>
+     <height>94</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -856,7 +868,16 @@
      <property name="spacing">
       <number>2</number>
      </property>
-     <property name="margin">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
       <number>0</number>
      </property>
      <item>
@@ -874,8 +895,8 @@
         <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Ubuntu'; font-size:11pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
       </widget>
      </item>
@@ -898,12 +919,12 @@ p, li { white-space: pre-wrap; }
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="lockLog">
-         <property name="maximumSize">
-          <size>
-           <width>23</width>
-           <height>23</height>
-          </size>
+        <widget class="QToolButton" name="lockLog">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
          <property name="text">
           <string>L</string>
@@ -919,16 +940,10 @@ p, li { white-space: pre-wrap; }
        <item>
         <widget class="QToolButton" name="clearInfo">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>23</width>
-           <height>23</height>
-          </size>
          </property>
          <property name="text">
           <string>X</string>
@@ -958,7 +973,16 @@ p, li { white-space: pre-wrap; }
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_3">
     <layout class="QGridLayout" name="gridLayout_3">
-     <property name="margin">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
       <number>0</number>
      </property>
      <property name="spacing">
@@ -1062,7 +1086,16 @@ p, li { white-space: pre-wrap; }
      <property name="spacing">
       <number>0</number>
      </property>
-     <property name="margin">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
       <number>0</number>
      </property>
      <item>
@@ -1099,7 +1132,16 @@ p, li { white-space: pre-wrap; }
      <property name="spacing">
       <number>0</number>
      </property>
-     <property name="margin">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
       <number>0</number>
      </property>
      <item>
@@ -1142,7 +1184,16 @@ p, li { white-space: pre-wrap; }
      <property name="spacing">
       <number>0</number>
      </property>
-     <property name="margin">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
       <number>0</number>
      </property>
      <item>
@@ -1179,7 +1230,16 @@ p, li { white-space: pre-wrap; }
      <property name="spacing">
       <number>0</number>
      </property>
-     <property name="margin">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
       <number>0</number>
      </property>
      <item>
@@ -1216,7 +1276,16 @@ p, li { white-space: pre-wrap; }
      <property name="spacing">
       <number>0</number>
      </property>
-     <property name="margin">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
       <number>0</number>
      </property>
      <item>
@@ -1283,7 +1352,16 @@ p, li { white-space: pre-wrap; }
      <property name="spacing">
       <number>0</number>
      </property>
-     <property name="margin">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
       <number>0</number>
      </property>
      <item>

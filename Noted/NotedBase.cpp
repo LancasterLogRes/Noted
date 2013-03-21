@@ -54,6 +54,8 @@ uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const
 	ret ^= (uint32_t&)m_windowFunction[m_windowFunction.size() * 7 / 13];
 	if (!m_zeroPhase)
 		ret *= 69;
+	if (!m_floatFFT)
+		ret *= 42;
 	ret ^= m_hopSamples << 8;
 	ret ^= m_windowFunction.size() << 16;
 	return ret;
@@ -241,31 +243,66 @@ void NotedBase::rejigSpectra()
 	{
 		if (!m_spectra.init(calculateSpectraFingerprint(calculateWaveFingerprint()), "spectrum", ss * 3 * sizeof(float), hops()))
 		{
-			FFTW fftw(m_windowFunction.size());
-			vector<float> lastPhase(spectrumSize(), 0);
-			for (unsigned index = 0; index < hops(); ++index)
+			if (m_floatFFT)
 			{
-				float* b = fftw.in();
-				foreign_vector<float const> win = waveWindow(index);
-				assert(win.data());
-				float const* d = win.data();
-				float* w = m_windowFunction.data();
-				unsigned off = m_zeroPhase ? m_windowFunction.size() / 2 : 0;
-				for (unsigned j = 0; j < m_windowFunction.size(); ++d, ++j, ++w)
-					b[(j + off) % m_windowFunction.size()] = *d * *w;
-				fftw.process();
-
-				auto sd = m_spectra.item<float>(0, index);
-				valcpy(sd.data(), fftw.mag().data(), ss);
-				float const* phase = fftw.phase().data();
-				float intpart;
-				for (int i = 0; i < ss; ++i)
+				FFT<float> fft(m_windowFunction.size());
+				vector<float> lastPhase(spectrumSize(), 0);
+				for (unsigned index = 0; index < hops(); ++index)
 				{
-					sd[i + ss] = phase[i] / twoPi<float>();
-					sd[i + ss*2] = modf((phase[i] - lastPhase[i]) / twoPi<float>() + 1.f, &intpart);
+					float* b = fft.in();
+					foreign_vector<float const> win = waveWindow(index);
+					assert(win.data());
+					float const* d = win.data();
+					float* w = m_windowFunction.data();
+					unsigned off = m_zeroPhase ? m_windowFunction.size() / 2 : 0;
+					for (unsigned j = 0; j < m_windowFunction.size(); ++d, ++j, ++w)
+						b[(j + off) % m_windowFunction.size()] = *d * *w;
+					fft.process();
+
+					auto sd = m_spectra.item<float>(0, index);
+					valcpy(sd.data(), fft.mag().data(), ss);
+					float const* phase = fft.phase().data();
+					float intpart;
+					for (int i = 0; i < ss; ++i)
+					{
+						sd[i + ss] = phase[i] / twoPi<float>();
+						sd[i + ss*2] = modf((phase[i] - lastPhase[i]) / twoPi<float>() + 1.f, &intpart);
+					}
+					lastPhase = fft.phase();
+					WorkerThread::setCurrentProgress(index * 99 / hops());
 				}
-				lastPhase = fftw.phase();
-				WorkerThread::setCurrentProgress(index * 99 / hops());
+			}
+			else
+			{
+				FFT<Fixed16> fft(m_windowFunction.size());
+				vector<float> lastPhase(spectrumSize(), 0);
+				for (unsigned index = 0; index < hops(); ++index)
+				{
+					Fixed<1, 15>* b = fft.in();
+					foreign_vector<float const> win = waveWindow(index);
+					assert(win.data());
+					float const* d = win.data();
+					float* w = m_windowFunction.data();
+					unsigned off = m_zeroPhase ? m_windowFunction.size() / 2 : 0;
+					for (unsigned j = 0; j < m_windowFunction.size(); ++d, ++j, ++w)
+						b[(j + off) % m_windowFunction.size()] = *d * *w;
+					fft.process();
+
+					auto sd = m_spectra.item<float>(0, index);
+					Fixed16 const* mag = fft.mag().data();
+					for (int i = 0; i < ss; ++i)
+						sd[i] = (float)mag[i];
+
+					Fixed16 const* phase = fft.phase().data();
+					float intpart;
+					for (int i = 0; i < ss; ++i)
+					{
+						sd[i + ss] = (float)phase[i] / twoPi<float>();
+						sd[i + ss*2] = modf(((float)phase[i] - lastPhase[i]) / twoPi<float>() + 1.f, &intpart);
+						lastPhase[i] = (float)phase[i];
+					}
+					WorkerThread::setCurrentProgress(index * 99 / hops());
+				}
 			}
 			m_spectra.generate([&](Lightbox::foreign_vector<float> a, Lightbox::foreign_vector<float> b, Lightbox::foreign_vector<float> ret)
 			{

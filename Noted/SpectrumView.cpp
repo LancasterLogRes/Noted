@@ -95,7 +95,7 @@ void SpectrumView::doRender(QGLFramebufferObject* _fbo)
 			int ly = h - h * mag[i - 1] / sc + ho;
 			int x = 24 + i * w / s;
 			int y = h - h * mag[i] / sc + ho;
-			float dp = abs(phase[i] - phase[i - 1]);	// delta-phase
+			float dp = fabs(phase[i] - phase[i - 1]);	// delta-phase
 			if (dp > pi<float>())
 				dp = twoPi<float>() - dp;	// cyclic reflection
 			dp /= pi<float>();	// normalize

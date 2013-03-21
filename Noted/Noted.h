@@ -24,7 +24,7 @@
 #include <set>
 #include <vector>
 
-#include <Common/FFTW.h>
+#include <Common/FFT.h>
 #include <Audio/Capture.h>
 #include <Audio/Playback.h>
 #include <EventCompiler/EventCompiler.h>
@@ -158,6 +158,7 @@ private slots:
 	void on_sampleRate_currentIndexChanged(int = 0);
 	void on_windowFunction_currentIndexChanged(int = 0) { noteLastValidIs(nullptr); }
 	void on_zeroPhase_toggled(bool = false) { noteLastValidIs(nullptr); }
+	void on_floatFFT_toggled(bool = false) { noteLastValidIs(nullptr); }
 	void on_normalize_toggled(bool = false) { noteLastValidIs(nullptr); }
 	void on_addEventsView_clicked();
 	void on_addLibrary_clicked();
