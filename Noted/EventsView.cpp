@@ -378,11 +378,41 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 	if (!p.isActive())
 		return;
 
-	int h = height();
+	int y = 0;
+	int h = height() / (m_eventCompiler.asA<EventCompilerImpl>().graphs().size() + 1);
 
+	auto hop = c()->hop();
+
+	for (CompilerGraph* g: m_eventCompiler.asA<EventCompilerImpl>().graphs())
+		if (GraphSpectrum* s = dynamic_cast<GraphSpectrum*>(g))
+		{
+			auto d = s->data();
+			auto ifrom = d.lower_bound(renderingTimeOf(_dx - 3));
+			if (ifrom != d.begin())
+				--ifrom;
+			auto ito = d.upper_bound(renderingTimeOf(_dx + _dw + 3));
+			if (ito != d.end())
+				++ito;
+			int lx = 0;
+			auto li = d.begin();
+			for (auto i = ifrom; i != ito; ++i)
+			{
+				int x = renderingPositionOf(i->first);
+				if (i != ifrom)
+					for (unsigned b = 0, bs = i->second.size(); b < bs; ++b)
+					{
+						float v = clamp((li->second[b] - s->min()) / s->delta());
+						p.fillRect(QRect(lx, y + b * h / bs, x - lx, (b + 1) * h / bs - b * h / bs), QBrush(QColor(clamp(v * 767, 0, 255), clamp(v * 767 - 256, 0, 255), clamp(v * 767 - 512, 0, 255))));
+					}
+				lx = x;
+				li = i;
+			}
+			y += h;
+		}
+
+	h = height() - y;	// don't waste any space :)
 	int ifrom = c()->windowIndex(renderingTimeOf(_dx - 3)) - 1;
 	int ito = min(c()->hops(), c()->windowIndex(renderingTimeOf(_dx + _dw + 3))) + 1;
-	auto hop = c()->hop();
 	for (auto g: m_graphEvents)
 		if (eventVisible(m_selection->itemData(m_selection->currentIndex()), StreamEvent(1.f, g.first)))
 		{
@@ -391,7 +421,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 			QPoint lp;
 			for (int i = ifrom; i < ito; ++i)
 			{
-				QPoint cp(renderingPositionOf(i * hop), h - g.second[i] * h);
+				QPoint cp(renderingPositionOf(i * hop), y + h - g.second[i] * h);
 				if (i != ifrom)
 					p.drawLine(lp, cp);
 				lp = cp;

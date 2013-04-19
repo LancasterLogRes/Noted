@@ -104,8 +104,8 @@ void DeltaSpectrumView::doRender(QGLFramebufferObject* _fbo)
 		float pdRms = 0.f;
 		for (int i = 0; i < (int)s; ++i)
 		{
-			float dp = Lightbox::withReflection(abs(phase[i] - lPhase[i]));		// delta-phase
-			float ddp = Lightbox::withReflection(abs(phase[i] + llPhase[i] - 2 * lPhase[i]));		// delta-delta-phase
+			float dp = Lightbox::withReflection(fabs(phase[i] - lPhase[i]));		// delta-phase
+			float ddp = Lightbox::withReflection(fabs(phase[i] + llPhase[i] - 2 * lPhase[i]));		// delta-delta-phase
 
 			int x = 24 + i * w / s;
 			int y = h - h * dp / sc;
