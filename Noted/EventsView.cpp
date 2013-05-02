@@ -72,7 +72,7 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	QPushButton* ex = new QPushButton(this);
 	ex->setGeometry(c_size + c_margin, m_label->height(), c_size, c_size);
 	ex->setText(">");
-	connect(ex, SIGNAL(clicked()), SLOT(exportEvents()));
+	connect(ex, SIGNAL(clicked()), SLOT(exportGraph()));
 
 	QPushButton* d = new QPushButton(this);
 	d->setGeometry((c_size + c_margin) * 2, m_label->height(), c_size, c_size);
@@ -282,7 +282,7 @@ void EventsView::writeSettings(QSettings& _s, QString const& _id)
 	_s.setValue(_id + "/channel", m_channel->currentIndex());
 }
 
-void EventsView::exportEvents()
+/*void EventsView::exportEvents()
 {
 	QString fn = QFileDialog::getSaveFileName(this, "Export a series of events", QDir::currentPath(), "Native format (*.events);;XML format (*.xml);;CSV format (*.csv *.txt)");
 	ofstream out;
@@ -297,6 +297,7 @@ void EventsView::exportEvents()
 		{
 			int timeout = 0;
 			foreach (StreamEvent e, se)
+			{
 				if (eventVisible(v, e))
 				{
 					if (fn.endsWith(".xml"))
@@ -309,14 +310,58 @@ void EventsView::exportEvents()
 					{
 						if (!timeout++)
 							out << t << endl;
-						out << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << e.position << " " << e.jitter << " " << e.constancy << " " << e.channel << endl;
+						out << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << (int)e.position << " " << e.jitter << " " << e.constancy << " " << (int)e.channel << endl;
 					}
 					else
 					{
-						out << toSeconds(t) << " " << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << e.position << " " << e.jitter << " " << e.constancy << " " << e.channel << endl;
+						out << toSeconds(t) << " " << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << (int)e.position << " " << e.jitter << " " << e.constancy << " " << (int)e.channel << endl;
 					}
 
 				}
+			}
+			if (timeout)
+			{
+				if (fn.endsWith(".xml"))
+					out << "\t</time>" << endl;
+				else if (fn.endsWith(".events"))
+					out << endl;
+			}
+			t += c()->hop();
+		}
+	}
+	if (fn.endsWith(".xml"))
+		out << "</events>" << endl;
+}*/
+
+void EventsView::exportGraph()
+{
+	QString fn = QFileDialog::getSaveFileName(this, "Export a series of events", QDir::currentPath(), "Native format (*.graph);;CSV format (*.csv *.txt)");
+	ofstream out;
+	out.open(fn.toLocal8Bit(), ios::trunc);
+	if (out)
+	{
+		Time t = 0;
+		QVariant v = m_selection->itemData(m_selection->currentIndex());
+		foreach (StreamEvents se, m_events)
+		{
+			int timeout = 0;
+			foreach (StreamEvent e, se)
+			{
+				if (eventVisible(v, e))
+				{
+					if (fn.endsWith(".events"))
+					{
+						if (!timeout++)
+							out << t << endl;
+						out << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << (int)e.position << " " << e.jitter << " " << e.constancy << " " << (int)e.channel << endl;
+					}
+					else
+					{
+						out << toSeconds(t) << " " << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << (int)e.position << " " << e.jitter << " " << e.constancy << " " << (int)e.channel << endl;
+					}
+
+				}
+			}
 			if (timeout)
 			{
 				if (fn.endsWith(".xml"))
@@ -330,6 +375,7 @@ void EventsView::exportEvents()
 	if (fn.endsWith(".xml"))
 		out << "</events>" << endl;
 }
+
 
 void updateCombo(QComboBox* _box, set<float> const& _temperatures, set<EventType> _types)
 {
@@ -394,6 +440,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 			if (ito != d.end())
 				++ito;
 			int lx = 0;
+			bool post = s->isPost();
 			auto li = d.begin();
 			for (auto i = ifrom; i != ito; ++i)
 			{
@@ -401,7 +448,7 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 				if (i != ifrom)
 					for (unsigned b = 0, bs = i->second.size(); b < bs; ++b)
 					{
-						float v = clamp((li->second[b] - s->min()) / s->delta());
+						float v = clamp(((post ? i : li)->second[b] - s->min()) / s->delta());
 						p.fillRect(QRect(lx, y + b * h / bs, x - lx, (b + 1) * h / bs - b * h / bs), QBrush(QColor(clamp(v * 767, 0, 255), clamp(v * 767 - 256, 0, 255), clamp(v * 767 - 512, 0, 255))));
 					}
 				lx = x;

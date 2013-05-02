@@ -22,11 +22,19 @@
 #include <Common/Common.h>
 #include "Noted.h"
 
+extern "C"
+{
+void XInitThreads();
+}
+
 int main(int argc, char *argv[])
 {
 	if (!Lightbox::UnitTesting<100>::go())
 		return -1;
-	QApplication::setAttribute(Qt::AA_X11InitThreads);
+//	QApplication::setAttribute(Qt::AA_X11InitThreads);
+#ifdef Q_WS_X11
+	XInitThreads();
+#endif
 	QApplication a(argc, argv);
 	Noted w;
 #if defined(Q_WS_S60)

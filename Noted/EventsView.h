@@ -79,7 +79,7 @@ public:
 public slots:
 	void duplicate();
 	void onUseChanged();
-	void exportEvents();
+	void exportGraph();
 	void channelChanged();
 	void setNewEvents();
 

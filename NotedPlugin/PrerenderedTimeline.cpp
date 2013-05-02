@@ -238,7 +238,7 @@ bool PrerenderedTimeline::rejigRender()
 			doRender(m_renderingFrame, 0, w);
 		}
 		m_renderingFrame->release();
-		m_renderingContext->doneCurrent();
+//		m_renderingContext->doneCurrent();
 
 		QMutexLocker l(&m_lock);
 		swap(m_renderingFrame, m_fbo);

@@ -935,17 +935,39 @@ bool Noted::work()
 		bool worked = false;
 		{
 			QMutexLocker l(&x_timelines);
-			foreach (Timeline* t, m_timelines)
+			for (Timeline* t: m_timelines)
 				if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
 					if (pt->rejigRender())
 						worked = true;
 		}
+
+		{
+			QMutexLocker l(&x_prerendereds);
+			for (Prerendered* t: m_prerendereds)
+				if (t->check())
+					worked = true;
+		}
+
 		if (!worked)
 		{
 			Sleeper::usleep(100000);
 		}
 	}
 	return true;
+}
+
+void Noted::ensureRegistered(Prerendered* _p)
+{
+	x_prerendereds.lock();
+	m_prerendereds.insert(_p);
+	x_prerendereds.unlock();
+}
+
+void Noted::ensureUnregistered(Prerendered* _p)
+{
+	x_prerendereds.lock();
+	m_prerendereds.remove(_p);
+	x_prerendereds.unlock();
 }
 
 void Noted::suspendWork()

@@ -56,12 +56,14 @@ Prerendered::~Prerendered()
 
 void Prerendered::paintEvent(QPaintEvent*)
 {
-	if (!m_display.isRunning())
+	doneCurrent();
+	c()->ensureRegistered(this);
+/*	if (!m_display.isRunning())
 	{
 		m_quitting = false;
 		doneCurrent();
 		m_display.start();
-	}
+	}*/
 	m_newSize = size();
 }
 
@@ -72,17 +74,18 @@ bool Prerendered::needsRepaint() const
 
 void Prerendered::quit()
 {
-	m_quitting = true;
+	c()->ensureUnregistered(this);
+/*	m_quitting = true;
 	m_display.wait(1000);
 	while (m_display.isRunning())
 	{
 		m_display.terminate();
 		m_display.wait(1000);
-	}
+	}*/
 	makeCurrent();
 }
 
-void Prerendered::hideEvent(QShowEvent*)
+void Prerendered::hideEvent(QHideEvent*)
 {
 	quit();
 }
@@ -102,22 +105,8 @@ void Prerendered::run()
 	makeCurrent();
 	initializeGL();
 	while (!m_quitting)
-	{
-		bool resized = false;
-		if (m_newSize.isValid())
-		{
-			resizeGL(m_newSize.width(), m_newSize.height());
-			m_newSize = QSize();
-			resized = true;
-		}
-		if (resized || needsRepaint())
-		{
-			paintGL();
-			swapBuffers();
-		}
-		else
+		if (!check())
 			m_display.msleep(5);
-	}
 	doneCurrent();
 }
 
@@ -132,6 +121,26 @@ NotedFace* Prerendered::c() const
 
 void Prerendered::rerender()
 {
+}
+
+bool Prerendered::check()
+{
+	makeCurrent();
+	bool resized = false;
+	if (m_newSize.isValid())
+	{
+		initializeGL();
+		resizeGL(m_newSize.width(), m_newSize.height());
+		m_newSize = QSize();
+		resized = true;
+	}
+	if (resized || needsRepaint())
+	{
+		paintGL();
+		swapBuffers();
+		return true;
+	}
+	return false;
 }
 
 void Prerendered::initializeGL()

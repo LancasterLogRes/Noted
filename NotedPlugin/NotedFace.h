@@ -50,6 +50,7 @@ class CausalAnalysis;
 class QGLWidget;
 class NotedPlugin;
 class AuxLibraryFace;
+class Prerendered;
 
 class NotedFace: public QMainWindow
 {
@@ -119,6 +120,8 @@ public:
 	inline bool isImmediate() const { return isCausal() || isPassing(); }
 	inline bool isQuiet() const { return !isPlaying() && !isCausal() && !isPassing(); }
 
+	virtual void ensureRegistered(Prerendered*) {}
+	virtual void ensureUnregistered(Prerendered*) {}
 	virtual void addTimeline(Timeline* _p) = 0;
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d) = 0;

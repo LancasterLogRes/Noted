@@ -208,10 +208,16 @@ private:
 	// Just for Timeline class.
 	virtual void timelineDead(Timeline* _tl);
 
+	virtual void ensureRegistered(Prerendered* _p);
+	virtual void ensureUnregistered(Prerendered* _p);
+
 	Ui::Noted* ui;
 
 	QSet<Timeline*> m_timelines;
 	mutable QMutex x_timelines;
+
+	QSet<Prerendered*> m_prerendereds;
+	mutable QMutex x_prerendereds;
 
 	// Old working stuff...
 	WorkerThread* m_workerThread;

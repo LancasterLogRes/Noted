@@ -87,6 +87,7 @@ public:
 
 public slots:
 	void rerender();
+	bool check();
 
 protected:
 	virtual bool needsRepaint() const;
@@ -99,9 +100,10 @@ protected:
 	virtual void run();
 
 	virtual void paintEvent(QPaintEvent*);
-	virtual void hideEvent(QShowEvent*);
+	virtual void hideEvent(QHideEvent*);
 	virtual void closeEvent(QCloseEvent*);
 	virtual void resizeEvent(QResizeEvent* _e);
+	virtual void timerEvent(QTimerEvent*) { check(); }
 
 protected:
 	void quit();
