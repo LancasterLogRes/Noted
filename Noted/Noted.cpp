@@ -999,7 +999,7 @@ void Noted::resumeWork(bool _force)
 	{
 		if (m_workerThread && !m_workerThread->isRunning())
 		{
-			m_workerThread->start(QThread::LowPriority);
+			m_workerThread->start();//QThread::LowPriority);
 			cnote << "WORK Resumed" << m_suspends;
 		}
 		m_suspends = 0;

@@ -335,45 +335,61 @@ void EventsView::writeSettings(QSettings& _s, QString const& _id)
 
 void EventsView::exportGraph()
 {
-	QString fn = QFileDialog::getSaveFileName(this, "Export a series of events", QDir::currentPath(), "Native format (*.graph);;CSV format (*.csv *.txt)");
+	QString fn = QFileDialog::getSaveFileName(this, "Export the graphs", QDir::currentPath(), "CSV format (*.csv *.txt)");
 	ofstream out;
 	out.open(fn.toLocal8Bit(), ios::trunc);
 	if (out)
 	{
-		Time t = 0;
-		QVariant v = m_selection->itemData(m_selection->currentIndex());
-		foreach (StreamEvents se, m_events)
-		{
-			int timeout = 0;
-			foreach (StreamEvent e, se)
-			{
-				if (eventVisible(v, e))
-				{
-					if (fn.endsWith(".events"))
-					{
-						if (!timeout++)
-							out << t << endl;
-						out << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << (int)e.position << " " << e.jitter << " " << e.constancy << " " << (int)e.channel << endl;
-					}
-					else
-					{
-						out << toSeconds(t) << " " << (int)e.type << " " << e.strength << " " << (int)e.character << " " << e.temperature << " " << e.surprise << " " << (int)e.position << " " << e.jitter << " " << e.constancy << " " << (int)e.channel << endl;
-					}
+		out << "index,time";
+		Time h = c()->hop();
+		unsigned tiMax = 0;
 
+		vector<vector<float> const*> charts;
+		for (CompilerGraph* g: m_eventCompiler.asA<EventCompilerImpl>().graphs())
+			if (GraphChart* s = dynamic_cast<GraphChart*>(g))
+			{
+				charts.push_back(&s->data());
+				tiMax = max<unsigned>(tiMax, s->data().size());
+				out << "," << s->name();
+			}
+
+		vector<map<Time, vector<float>> const*> spectra;
+		for (CompilerGraph* g: m_eventCompiler.asA<EventCompilerImpl>().graphs())
+			if (GraphSpectrum* s = dynamic_cast<GraphSpectrum*>(g))
+			{
+				if (s->data().size())
+				{
+					spectra.push_back(&s->data());
+					tiMax = max<unsigned>(tiMax, prev(s->data().end())->first / h + 1);
+					for (unsigned i = 0; i < s->bandCount(); ++i)
+						out << "," << s->name() << "_" << i;
 				}
 			}
-			if (timeout)
+
+		out << endl;
+
+		Time t = 0;
+		unsigned ti = 0;
+		auto inner = [&]()
+		{
+			out << ti << "," << toSeconds(t);
+			for (vector<float> const* s: charts)
+				out << "," << (ti < s->size() ? s->at(ti) : 0);
+			for (map<Time, vector<float>> const* s: spectra)
 			{
-				if (fn.endsWith(".xml"))
-					out << "\t</time>" << endl;
-				else if (fn.endsWith(".events"))
-					out << endl;
+				auto si = s->upper_bound(t);
+				if (si != s->begin())
+					--si;
+				for (auto f: si->second)
+					out << "," << f;
 			}
-			t += c()->hop();
-		}
+			out << endl;
+		};
+
+		if (charts.size())
+			for (ti = 0; ti < tiMax; ++ti, t += h)
+				inner();
 	}
-	if (fn.endsWith(".xml"))
-		out << "</events>" << endl;
 }
 
 
@@ -418,14 +434,14 @@ void EventsView::updateEventTypes()
 
 void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 {
-	if (_fbo->size().isEmpty())
+	if (_fbo->size().isEmpty() || !m_eventCompiler.asA<EventCompilerImpl>().graphs().size())
 		return;
 	QPainter p(_fbo);
 	if (!p.isActive())
 		return;
 
 	int y = 0;
-	int h = height() / (m_eventCompiler.asA<EventCompilerImpl>().graphs().size() + 1);
+	int h = height() / (m_eventCompiler.asA<EventCompilerImpl>().graphs().size());
 
 	auto hop = c()->hop();
 
@@ -456,7 +472,25 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 			}
 			y += h;
 		}
-
+		else if (GraphChart* s = dynamic_cast<GraphChart*>(g))
+		{
+			auto d = s->data();
+			int ifrom = max<int>(0, c()->windowIndex(renderingTimeOf(_dx - 1)) - 1);
+			int ito = min<int>(d.size(), c()->windowIndex(renderingTimeOf(_dx + _dw + 1)) + 1);
+			auto r = range(&(d[ifrom]), &(d[ito]));
+			auto scale = (r.second != r.first) ? h / (r.second - r.first) : h;
+			p.setPen(QColor(64, 64, 64));
+			QPoint lp;
+			for (int i = ifrom; i < ito; ++i)
+			{
+				QPoint cp(renderingPositionOf(i * hop), y + h - (d[i] - r.first) * scale);
+				if (i != ifrom)
+					p.drawLine(lp, cp);
+				lp = cp;
+			}
+			y += h;
+		}
+/*
 	h = height() - y;	// don't waste any space :)
 	int ifrom = c()->windowIndex(renderingTimeOf(_dx - 3)) - 1;
 	int ito = min(c()->hops(), c()->windowIndex(renderingTimeOf(_dx + _dw + 3))) + 1;
@@ -474,4 +508,5 @@ void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 				lp = cp;
 			}
 		}
+	*/
 }
