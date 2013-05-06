@@ -178,8 +178,8 @@ bool NotedBase::resampleWave()
 						pagePos += resample_process(resampler, factor, buffer.data() + bufferPos, m_hopSamples - bufferPos, i == outHops - 1, &used, cache + pagePos, m_hopSamples - pagePos);
 						bufferPos += used;
 					}
-					for (unsigned i = 0; i < m_hopSamples; ++i)
-						cache[i] = clamp(cache[i], -1.f, 1.f);
+					for (unsigned j = 0; j < m_hopSamples; ++j)
+						cache[j] = clamp(cache[j], -1.f, 1.f);
 					wave[0] = sigma(cache, cache + m_hopSamples, 0.f);
 					auto r = range(cache, cache + m_hopSamples);
 					wave[1] = max(fabs(r.first), r.second);
