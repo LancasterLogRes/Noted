@@ -22,7 +22,7 @@
   <widget class="QSplitter" name="fullDisplay">
    <property name="orientation">
     <enum>Qt::Vertical</enum>
-   </property>
+   </property>Me
    <widget class="WaveOverview" name="overview" native="true">
     <property name="sizePolicy">
      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -1554,43 +1554,43 @@ p, li { white-space: pre-wrap; }
   <customwidget>
    <class>SpectraView</class>
    <extends>QWidget</extends>
-   <header>SpectraView.h</header>
+   <header>Noted/SpectraView.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>WaveOverview</class>
    <extends>QWidget</extends>
-   <header>WaveOverview.h</header>
+   <header>Noted/WaveOverview.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>WaveView</class>
    <extends>QWidget</extends>
-   <header>WaveView.h</header>
+   <header>Noted/WaveView.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>WaveWindowView</class>
    <extends>QWidget</extends>
-   <header>WaveWindowView.h</header>
+   <header>Noted/WaveWindowView.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>SpectrumView</class>
    <extends>QWidget</extends>
-   <header>SpectrumView.h</header>
+   <header>Noted/SpectrumView.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>DeltaSpectrumView</class>
    <extends>QWidget</extends>
-   <header>DeltaSpectrumView.h</header>
+   <header>Noted/DeltaSpectrumView.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>MetaSpectrumView</class>
    <extends>QWidget</extends>
-   <header>MetaSpectrumView.h</header>
+   <header>Noted/MetaSpectrumView.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

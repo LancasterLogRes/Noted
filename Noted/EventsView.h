@@ -84,7 +84,7 @@ public slots:
 	void setNewEvents();
 
 private:
-	virtual void doRender(QGLFramebufferObject* _fbo, int _dx, int _dw);
+	virtual void renderGL();
 	void filterEvents();
 
 	Lightbox::EventCompiler m_eventCompiler;

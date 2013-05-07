@@ -23,6 +23,7 @@
 #include <utility>
 #include <map>
 #include <Common/Common.h>
+#include <QtOpenGL>
 #include <QPainter>
 #include <QDebug>
 #include <QMouseEvent>
@@ -45,45 +46,27 @@ public:
 
 	virtual QWidget* widget() { return this; }
 
-	/// Called from the worker thread.
-	bool rejigRender();
-
-	virtual bool needsRepaint() const;
-
 	using Prerendered::event;
 
-public slots:
-	void sourceChanged();
-
 protected:
-	/// These two are frozen at the zoom configuration as it was prior to rendering; this is necessary as the real offset/visibleduration may change during rendering (which is happening asynchronously).
+	/// These two are frozen at the zoom configuration as it was prior to rendering; this is necessary as the real offset/visible duration may change during rendering (which is happening asynchronously).
 	int renderingPositionOf(Lightbox::Time _t) const;
 	Lightbox::Time renderingTimeOf(int _x) const;
 
-	virtual void doRender(QGLFramebufferObject* _fbo, int _dx, int _dw) = 0;
+	virtual bool needsRepaint() const;
+	virtual bool needsRerender() const;
 
 	virtual void paintGL();
-	virtual void resizeGL(int _w, int _h);
+	virtual void renderGL();
+
 	virtual void mousePressEvent(QMouseEvent* _e);
 	virtual void mouseReleaseEvent(QMouseEvent* _e);
 	virtual void mouseMoveEvent(QMouseEvent* _e);
 	virtual void wheelEvent(QWheelEvent* _e);
 
-	mutable QMutex m_lock;
 	Lightbox::Time m_draggingTime;
-	bool m_cursorSizeIsHop;
+
 	Lightbox::Time m_renderedOffset;
 	Lightbox::Time m_renderedPixelDuration;
-	Lightbox::Time m_renderingOffset;
-	Lightbox::Time m_renderingPixelDuration;
-	QGLWidget* m_renderingContext;
-	QGLFramebufferObject* m_renderingFrame;
-
-	bool m_needsUpdate;
-	bool m_sourceChanged;
-
-	int m_lastCursorL;
-	int m_lastCursorR;
-	Lightbox::Time m_lastOffset;
-	Lightbox::Time m_lastPixelDuration;
+	unsigned m_paintedCursorIndex;
 };

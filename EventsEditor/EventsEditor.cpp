@@ -20,6 +20,8 @@
 
 #include <memory>
 #include <QtGui>
+#include <QtWidgets>
+#include <QGraphicsOpacityEffect>
 #include <NotedPlugin/NotedFace.h>
 #include "EventsEditScene.h"
 #include "AttackItem.h"
@@ -39,7 +41,7 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 
 	if (isIndependent())
 	{
-		connect(c(), SIGNAL(eventsChanged()), this, SLOT(sourceChanged()));
+		connect(c(), SIGNAL(eventsChanged()), this, SLOT(rerender()));
 		auto oe = []() -> QGraphicsEffect* { auto ret = new QGraphicsOpacityEffect; ret->setOpacity(0.7); return ret; };
 
 		QPushButton* b = new QPushButton(this);

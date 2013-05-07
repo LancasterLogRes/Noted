@@ -32,13 +32,14 @@ using namespace Lightbox;
 
 #include "DeltaSpectrumView.h"
 
-void DeltaSpectrumView::doRender(QGLFramebufferObject* _fbo)
+void DeltaSpectrumView::renderGL()
 {
-	if (m_i < 0)
+	int cursorIndex = c()->cursorIndex();
+	if (cursorIndex < 0)
 		return;
-	auto phase = c()->phaseSpectrum(m_i, 1);
-	auto lPhase = c()->phaseSpectrum(m_i - 1, 1);
-	auto llPhase = c()->phaseSpectrum(m_i - 2, 1);
+	auto phase = c()->phaseSpectrum(cursorIndex, 1);
+	auto lPhase = c()->phaseSpectrum(cursorIndex - 1, 1);
+	auto llPhase = c()->phaseSpectrum(cursorIndex - 2, 1);
 	unsigned s = c()->spectrumSize();
 
 	if (phase && lPhase && llPhase)
@@ -46,7 +47,9 @@ void DeltaSpectrumView::doRender(QGLFramebufferObject* _fbo)
 		int w = width();
 		int h = height() - 16;
 
-		QPainter p(_fbo);
+		QOpenGLPaintDevice glpd(size());
+		QPainter p(&glpd);
+
 		p.fillRect(rect(), qRgb(255, 255, 255));
 
 		float sc = twoPi<float>();

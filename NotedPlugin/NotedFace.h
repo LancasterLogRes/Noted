@@ -120,6 +120,7 @@ public:
 	inline bool isImmediate() const { return isCausal() || isPassing(); }
 	inline bool isQuiet() const { return !isPlaying() && !isCausal() && !isPassing(); }
 
+	virtual void setupPrerendered(Prerendered*) {}
 	virtual void ensureRegistered(Prerendered*) {}
 	virtual void ensureUnregistered(Prerendered*) {}
 	virtual void addTimeline(Timeline* _p) = 0;

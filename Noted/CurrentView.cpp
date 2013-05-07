@@ -22,15 +22,16 @@
 
 #include "CurrentView.h"
 
-CurrentView::CurrentView(QWidget* _parent): Prerendered(_parent), m_i(-1)
+CurrentView::CurrentView(QWidget* _parent): Prerendered(_parent), m_paintedCursorIndex(-1)
 {}
 
 bool CurrentView::needsRepaint() const
 {
-	if (Prerendered::needsRepaint() && (m_i != (int)c()->cursorIndex() || c()->isImmediate()))
-	{
-		m_i = c()->cursorIndex();
-		return true;
-	}
-	return false;
+	return Prerendered::needsRepaint() || m_paintedCursorIndex != c()->cursorIndex() || c()->isImmediate();
+}
+
+void CurrentView::paintGL()
+{
+	m_paintedCursorIndex = c()->cursorIndex();
+	Prerendered::paintGL();
 }

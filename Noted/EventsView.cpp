@@ -22,6 +22,7 @@
 #include <fstream>
 #include <cmath>
 #include <QtGui>
+#include <QtWidgets>
 #include <QGLFramebufferObject>
 #include <EventCompiler/StreamEvent.h>
 #include <EventsEditor/EventsEditor.h>
@@ -54,7 +55,7 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 
 	connect(m_propertiesEditor, SIGNAL(changed()), c(), SLOT(noteEventCompilersChanged()));
 
-	connect(c(), SIGNAL(eventsChanged()), this, SLOT(sourceChanged()));
+	connect(c(), SIGNAL(eventsChanged()), this, SLOT(rerender()));
 
 	const float c_size = 16;
 	const float c_margin = 0;
@@ -97,7 +98,7 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 
 	m_selection = new QComboBox(this);
 	m_selection->setGeometry(0, m_label->height() + c_size + c_margin * 2, (c_size + c_margin) * 5 + c_size, c_size);
-	connect(m_selection, SIGNAL(currentIndexChanged(int)), SLOT(sourceChanged()));
+	connect(m_selection, SIGNAL(currentIndexChanged(int)), SLOT(rerender()));
 
 	initTimeline(c());
 
@@ -122,7 +123,6 @@ void EventsView::onUseChanged()
 void EventsView::clearEvents()
 {
 	cnote << "CLEARING EVENTS OF" << (void*)this << m_savedName;
-	m_actualWidget->setOrientation(Qt::Horizontal);
 	QMutexLocker l(&x_events);
 	m_initEvents.clear();
 	m_events.clear();
@@ -432,14 +432,20 @@ void EventsView::updateEventTypes()
 	updateCombo(m_selection, temperatures, types);
 }
 
-void EventsView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
+void EventsView::renderGL()
 {
-	if (_fbo->size().isEmpty() || !m_eventCompiler.asA<EventCompilerImpl>().graphs().size())
+	PrerenderedTimeline::renderGL();
+
+	if (size().isEmpty() || m_eventCompiler.isNull() || !m_eventCompiler.asA<EventCompilerImpl>().graphs().size())
 		return;
-	QPainter p(_fbo);
+	QOpenGLPaintDevice glpd(size());
+	QPainter p(&glpd);
+
 	if (!p.isActive())
 		return;
 
+	int _dx = 0;
+	int _dw = width();
 	int y = 0;
 	int h = height() / (m_eventCompiler.asA<EventCompilerImpl>().graphs().size());
 

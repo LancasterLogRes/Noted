@@ -24,12 +24,13 @@
 #include <map>
 #include <Common/Common.h>
 #include <QThread>
-#include <QGLWidget>
+#include <QtOpenGL>
 #include <QMutex>
 #include <QPainter>
 #include <QDebug>
 #include <QMouseEvent>
 #include <QWidget>
+#include <Noted/WorkerThread.h>
 
 class NotedFace;
 class Prerendered;
@@ -60,19 +61,6 @@ void drawPeaks(QPainter& _p, std::map<float, float> const& _ps, int _yoffset, _F
 			break;
 }
 
-class DisplayThread: public QThread
-{
-public:
-	DisplayThread(Prerendered* _p): m_p(_p) {}
-
-	virtual void run();
-
-	using QThread::msleep;
-
-private:
-	Prerendered* m_p;
-};
-
 class Prerendered: public QGLWidget
 {
 	Q_OBJECT
@@ -85,35 +73,38 @@ public:
 
 	NotedFace* c() const;
 
+	bool shouldRepaint() const { return !size().isEmpty() && isVisible() && (needsRepaint() || shouldRerender()); }
+	bool shouldRerender() const { return needsRerender(); }
+
 public slots:
-	void rerender();
-	bool check();
+	void repaint() { m_needsRepaint = true; }
+	void rerender() { m_needsRerender = true; }
 
 protected:
-	virtual bool needsRepaint() const;
-	virtual void doRender(QGLFramebufferObject*) {}
+	virtual bool needsRepaint() const { return m_needsRepaint; }
+	virtual bool needsRerender() const { return m_needsRerender; }
 
 	virtual void initializeGL();
 	virtual void resizeGL(int _w, int _h);
 	virtual void paintGL();
-
-	virtual void run();
+	virtual void renderGL() {}
 
 	virtual void paintEvent(QPaintEvent*);
 	virtual void hideEvent(QHideEvent*);
 	virtual void closeEvent(QCloseEvent*);
 	virtual void resizeEvent(QResizeEvent* _e);
-	virtual void timerEvent(QTimerEvent*) { check(); }
 
-protected:
 	void quit();
 
-	QGLFramebufferObject* m_fbo;
-
 private:
-	DisplayThread m_display;
-	bool m_quitting;
+	bool serviceRender();
+
+	WorkerThread* m_renderThread;
 
 	mutable NotedFace* m_c;
-	QSize m_newSize;
+
+	bool m_needsRepaint;
+	bool m_needsRerender;
+	QSize m_resize;
+	QSize m_size;
 };

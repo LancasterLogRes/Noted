@@ -41,17 +41,24 @@ Lightbox::Time WaveView::highlightDuration() const
 	return m_nf->windowSize();
 }
 
-void WaveView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
+void WaveView::renderGL()
 {
-	if (_dw < 1)
+	PrerenderedTimeline::renderGL();
+
+	if (width() < 1)
 		return;
 
-	vector<float> wave(_dw * 2);
+	vector<float> wave(width() * 2);
 
-	bool isAbsolute = c()->waveBlock(c()->timeOf(_dx), c()->durationOf(_dw), foreign_vector<float>(wave.data(), wave.size()));
+	bool isAbsolute = c()->waveBlock(c()->timeOf(0), c()->durationOf(width()), foreign_vector<float>(wave.data(), wave.size()));
 
 	int h = height();
-	QPainter p(_fbo);
+	QOpenGLPaintDevice glpd(size());
+	QPainter p(&glpd);
+
+	int _dx = 0;
+	int _dw = width();
+
 	QRect r(_dx, 0, _dw, h);
 	p.setClipRect(r);
 	p.translate(0, 10);

@@ -31,5 +31,5 @@ public:
 	~MetaSpectrumView() { quit(); }
 
 private:
-	virtual void doRender(QGLFramebufferObject* _fbo);
+	virtual void renderGL();
 };

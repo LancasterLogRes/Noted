@@ -31,8 +31,10 @@ public:
 	explicit CurrentView(QWidget* _parent = 0);
 	~CurrentView() {}
 
+protected:
+	virtual void paintGL();
 	virtual bool needsRepaint() const;
 
-protected:
-	mutable int m_i;
+private:
+	unsigned m_paintedCursorIndex;
 };

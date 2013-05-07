@@ -63,17 +63,18 @@ QByteArray fileDump(QString const& _name)
 	return ret;
 }
 
-void SpectraView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
+void SpectraView::renderGL()
 {
+	PrerenderedTimeline::renderGL();
+
 	unsigned bc = c()->spectrumSize();
 	unsigned s = c()->hops();
 	NotedFace* br = dynamic_cast<NotedFace*>(c());
 
-	_fbo->bind();
 	glEnable(GL_TEXTURE_1D);
 	glPushMatrix();
 	glLoadIdentity();
-	glScalef(1, _fbo->height(), 1);
+	glScalef(1, height(), 1);
 
 	if (!m_sm)
 	{
@@ -96,7 +97,7 @@ void SpectraView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 		m_shader->begin();
 	if (s && bc > 2)
 	{
-		for (int x = _dx; x < _dx + _dw; ++x)
+		for (int x = 0; x < width(); ++x)
 		{
 			int fi = renderingTimeOf(x) > 0 ? renderingTimeOf(x) / c()->hop() : -1;
 			int ti = qMax<int>(fi + 1, renderingTimeOf(x + 1) / c()->hop());
@@ -138,5 +139,4 @@ void SpectraView::doRender(QGLFramebufferObject* _fbo, int _dx, int _dw)
 	if (m_shader->GetProgramObject())
 		m_shader->end();
 	glPopMatrix();
-	_fbo->release();
 }

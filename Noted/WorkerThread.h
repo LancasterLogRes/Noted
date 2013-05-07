@@ -59,3 +59,18 @@ private:
 };
 
 template <class _F> static TypedWorkerThread<_F>* createWorkerThread(_F const& _f) { return new TypedWorkerThread<_F>(_f); }
+
+template <class _F, class _I, class _E>
+class TypedInitFiniWorkerThread: public WorkerThread
+{
+public:
+	TypedInitFiniWorkerThread(_F const& _f, _I const& _i, _E const& _e): m_f(_f), m_i(_i), m_e(_e) {}
+	virtual void run() { m_i(); while (!m_quitting) { if (!m_f()) m_quitting = true; } m_e(); }
+
+private:
+	_F m_f;
+	_I m_i;
+	_E m_e;
+};
+
+template <class _F, class _I, class _E> static TypedInitFiniWorkerThread<_F, _I, _E>* createWorkerThread(_F const& _f, _I const& _i, _E const& _e) { return new TypedInitFiniWorkerThread<_F, _I, _E>(_f, _i, _e); }

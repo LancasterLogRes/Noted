@@ -116,7 +116,7 @@ public:
 		QMutexLocker l(&dynamic_cast<Noted*>(noted())->x_timelines);
 		foreach (Timeline* t, dynamic_cast<Noted*>(noted())->m_timelines)
 			if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
-				pt->sourceChanged();
+				pt->rerender();
 		dynamic_cast<Noted*>(noted())->m_workFinished = true;
 	}
 };
@@ -124,7 +124,7 @@ public:
 Noted::Noted(QWidget* _p):
 	NotedBase					(_p),
 	ui							(new Ui::Noted),
-	m_workerThread				(nullptr),
+	m_computeThread				(nullptr),
 	m_suspends					(0),
 	m_fineCursorWas				(UndefinedTime),
 	m_nextResample				(UndefinedTime),
@@ -142,6 +142,9 @@ Noted::Noted(QWidget* _p):
 {
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
 
+	m_computeThread = createWorkerThread([=](){return serviceCompute();});
+	m_audioThread = createWorkerThread([=](){return serviceAudio();});
+
 	ui->setupUi(this);
 	ui->loadedLibraries->clear();
 	setWindowIcon(QIcon(":/Noted.png"));
@@ -154,9 +157,6 @@ Noted::Noted(QWidget* _p):
 
 	m_timelines.insert(ui->waveform);
 	m_timelines.insert(ui->spectra);
-
-	m_workerThread = createWorkerThread([=](){return work();});
-	m_audioThread = createWorkerThread([=](){return serviceAudio();});
 
 	{
 		QLabel* l = new QLabel("No audio");
@@ -204,8 +204,8 @@ Noted::~Noted()
 
 	qDebug() << "Disabling worker(s)...";
 	suspendWork();
-	delete m_workerThread;
-	m_workerThread = nullptr;
+	delete m_computeThread;
+	m_computeThread = nullptr;
 	qDebug() << "Disabled permenantly.";
 
 	qDebug() << "Killing timelines...";
@@ -233,7 +233,7 @@ QGLWidget* Noted::glMaster() const
 	return m_glMaster;
 }
 
-void Noted::on_actAbout_activated()
+void Noted::on_actAbout_triggered()
 {
 	QMessageBox::about(this, "About Noted!", "<h1>Noted!</h1>Copyright (c)2011, 2012 Lancaster Logic Response Limited. This code is released under version 2 of the GNU General Public Licence.");
 }
@@ -686,7 +686,7 @@ void Noted::on_killLibrary_clicked()
 	}
 }
 
-void Noted::on_actReadSettings_activated()
+void Noted::on_actReadSettings_triggered()
 {
 	QSettings s("LancasterLogicResponse", "Noted");
 	for (auto d: findChildren<QDockWidget*>())
@@ -694,7 +694,7 @@ void Noted::on_actReadSettings_activated()
 	readBaseSettings(s);
 }
 
-void Noted::on_actWriteSettings_activated()
+void Noted::on_actWriteSettings_triggered()
 {
 	QSettings s("LancasterLogicResponse", "Noted");
 	for (auto d: findChildren<QDockWidget*>())
@@ -862,12 +862,12 @@ void Noted::on_addEventsView_clicked()
 		addTimeline(new EventsView(ui->dataDisplay, newEventCompiler(ui->eventCompilersList->currentItem()->data(0).toString())));
 }
 
-void Noted::on_actNewEvents_activated()
+void Noted::on_actNewEvents_triggered()
 {
 	addTimeline(new EventsEditor(ui->dataDisplay));
 }
 
-void Noted::on_actNewEventsFrom_activated()
+void Noted::on_actNewEventsFrom_triggered()
 {
 	QStringList esns;
 	auto ess = eventsStores();
@@ -882,12 +882,12 @@ void Noted::on_actNewEventsFrom_activated()
 	}
 }
 
-void Noted::on_actQuit_activated()
+void Noted::on_actQuit_triggered()
 {
 	QApplication::quit();
 }
 
-void Noted::on_actOpenEvents_activated()
+void Noted::on_actOpenEvents_triggered()
 {
 	QString s = QFileDialog::getOpenFileName(this, "Open a Stream Events File", QDir::homePath(), "*.xml");
 	if (!s.isNull())
@@ -926,57 +926,22 @@ void Noted::timelineDead(Timeline* _tl)
 	clearEventsCache();
 }
 
-bool Noted::work()
+bool Noted::serviceCompute()
 {
 	if (m_toBeAnalyzed.size())
 		rejigAudio();
 	else
-	{
-		bool worked = false;
-		{
-			QMutexLocker l(&x_timelines);
-			for (Timeline* t: m_timelines)
-				if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
-					if (pt->rejigRender())
-						worked = true;
-		}
-
-		{
-			QMutexLocker l(&x_prerendereds);
-			for (Prerendered* t: m_prerendereds)
-				if (t->check())
-					worked = true;
-		}
-
-		if (!worked)
-		{
-			Sleeper::usleep(100000);
-		}
-	}
+		Sleeper::usleep(100000);
 	return true;
-}
-
-void Noted::ensureRegistered(Prerendered* _p)
-{
-	x_prerendereds.lock();
-	m_prerendereds.insert(_p);
-	x_prerendereds.unlock();
-}
-
-void Noted::ensureUnregistered(Prerendered* _p)
-{
-	x_prerendereds.lock();
-	m_prerendereds.remove(_p);
-	x_prerendereds.unlock();
 }
 
 void Noted::suspendWork()
 {
 	cnote << "WORK Suspending..." << m_suspends;
-	if (m_workerThread && m_workerThread->isRunning())
+	if (m_computeThread && m_computeThread->isRunning())
 	{
-		m_workerThread->quit();
-		while (!m_workerThread->wait(1000))
+		m_computeThread->quit();
+		while (!m_computeThread->wait(1000))
 			cwarn << "Worker thread not responding :-(";
 		m_suspends = 0;
 		cnote << "WORK Suspended";
@@ -997,9 +962,9 @@ void Noted::resumeWork(bool _force)
 	}
 	else
 	{
-		if (m_workerThread && !m_workerThread->isRunning())
+		if (m_computeThread && !m_computeThread->isRunning())
 		{
-			m_workerThread->start();//QThread::LowPriority);
+			m_computeThread->start();//QThread::LowPriority);
 			cnote << "WORK Resumed" << m_suspends;
 		}
 		m_suspends = 0;
@@ -1032,7 +997,7 @@ void Noted::on_actFollow_changed()
 {
 }
 
-void Noted::on_actOpen_activated()
+void Noted::on_actOpen_triggered()
 {
 	QString s = QFileDialog::getOpenFileName(this, "Open an audio file", QDir::homePath(), "All Audio files (*.wav *.WAV *.aiff *.AIFF *.aif *.AIF *.aifc *.AIFC *.au *.AU *.snd *.SND *.nist *.NIST *.iff *.IFF *.svx *.SVX *.paf *.PAF *.w64 *.W64 *.voc *.VOC *.sf *.SF *.caf *.CAF *.htk *.HTK *.xi *.XI *.pvf *.PVF *.mat5 *.mat4 *.MAT5 *.MAT4 *.sd2 *.SD2 *.flac *.FLAC *.ogg *.OGG );;Microsoft Wave (*.wav *.WAV);;SGI/Apple (*.AIFF *.AIFC *.aiff *.aifc);;Sun/DEC/NeXT (*.AU *.SND *.au *.snd);;Paris Audio File (*.PAF *.paf);;Commodore Amiga (*.IFF *.SVX *.iff *.svx);;Sphere Nist (*.NIST *.nist);;IRCAM (*.SF *.sf);;Creative (*.VOC *.voc);;Soundforge (*.W64 *.w64);;GNU Octave 2.0 (*.MAT4 *.mat4);;GNU Octave 2.1 (*.MAT5 *.mat5);;Portable Voice Format (*.PVF *.pvf);;Fasttracker 2 (*.XI *.xi);;HMM Tool Kit (*.HTK *.htk);;Apple CAF (*.CAF *.caf);;Sound Designer II (*.SD2 *.sd2);;Free Lossless Audio Codec (*.FLAC *.flac);;Ogg Vorbis (*.OGG *.ogg)");
 	if (!s.isNull())
@@ -1328,27 +1293,27 @@ QList<EventsView*> Noted::eventsViews() const
 	return ret;
 }
 
-void Noted::on_actZoomOut_activated()
+void Noted::on_actZoomOut_triggered()
 {
 	zoomTimeline((cursor() > earliestVisible() && cursor() < latestVisible()) ? positionOf(cursor()) : (activeWidth() / 2), 1.2);
 }
 
-void Noted::on_actZoomIn_activated()
+void Noted::on_actZoomIn_triggered()
 {
 	zoomTimeline((cursor() > earliestVisible() && cursor() < latestVisible()) ? positionOf(cursor()) : (activeWidth() / 2), 1 / 1.2);
 }
 
-void Noted::on_actPanBack_activated()
+void Noted::on_actPanBack_triggered()
 {
 	setTimelineOffset(m_timelineOffset - visibleDuration() / 4);
 }
 
-void Noted::on_actPanForward_activated()
+void Noted::on_actPanForward_triggered()
 {
 	setTimelineOffset(m_timelineOffset + visibleDuration() / 4);
 }
 
-void Noted::on_actPanic_activated()
+void Noted::on_actPanic_triggered()
 {
 	ui->actPlay->setChecked(false);
 	ui->actPlayCausal->setChecked(false);
@@ -1437,7 +1402,7 @@ void Noted::timerEvent(QTimerEvent*)
 	if (++i % 10 == 0)
 	{
 		QProgressBar* pb = ui->statusBar->findChild<QProgressBar*>();
-		if (m_workerThread->progress() < 100)
+		if (m_computeThread->progress() < 100)
 		{
 			if (!pb)
 			{
@@ -1448,8 +1413,8 @@ void Noted::timerEvent(QTimerEvent*)
 				pb->setMaximumHeight(17);
 				ui->statusBar->addPermanentWidget(pb);
 			}
-			pb->setValue(m_workerThread->progress());
-			statusBar()->showMessage(m_workerThread->description());
+			pb->setValue(m_computeThread->progress());
+			statusBar()->showMessage(m_computeThread->description());
 		}
 		else if (pb)
 			delete pb;
@@ -1462,7 +1427,7 @@ void Noted::timerEvent(QTimerEvent*)
 			m_cursorDirty = true;
 			if (pb)
 				delete pb;
-			m_workerThread->setProgress(100);
+			m_computeThread->setProgress(100);
 			statusBar()->showMessage("Ready");
 		}
 
@@ -1535,7 +1500,7 @@ void Noted::info(QString const& _info, int _id)
 {
 	QString color = (_id == 255) ? "#700" : (_id == 254) ? "#007" : (_id == 253) ? "#440" : "#fff";
 	QMutexLocker l(&x_infos);
-	m_infos += "<div style=\"margin-top: 1px;\"><span style=\"background-color:" + color + ";\">&nbsp;</span> " + Qt::escape(_info) + "</div>";
+	m_infos += "<div style=\"margin-top: 1px;\"><span style=\"background-color:" + color + ";\">&nbsp;</span> " + _info.toHtmlEscaped() + "</div>";
 }
 
 void Noted::info(QString const& _info, QString const& _c)

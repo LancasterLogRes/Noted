@@ -27,7 +27,7 @@ class WaveView: public PrerenderedTimeline
 	Q_OBJECT
 
 public:
-	explicit WaveView(QWidget* _parent = 0): PrerenderedTimeline(_parent, false) { initTimeline(c()); }
+	explicit WaveView(QWidget* _parent = 0): PrerenderedTimeline(_parent) { initTimeline(c()); }
 	~WaveView() { finiTimeline(); quit(); }
 
 	virtual Lightbox::Time highlightDuration() const;
@@ -37,5 +37,5 @@ signals:
 	void resized();
 
 private:
-	virtual void doRender(QGLFramebufferObject* _fbo, int _dx, int _dw);
+	virtual void renderGL();
 };

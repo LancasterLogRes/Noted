@@ -28,6 +28,7 @@
 #include <QFrame>
 #include <QPaintEvent>
 #include <QPainter>
+#include <QtWidgets>
 #include <Common/Common.h>
 #include <NotedPlugin/NotedFace.h>
 
@@ -97,7 +98,6 @@ void DataView::dropEvent(QDropEvent* _e)
 	else
 		m_xRangeSpec = findSpec(_e->mimeData()->text());
 	_e->acceptProposedAction();
-	rerender();
 }
 
 class OurGrapher: public Grapher
@@ -332,12 +332,14 @@ pair<pair<float, float>, pair<float, float> > DataView::ranges(bool _needX, bool
 	return make_pair(xRange, yRange);
 }
 
-void DataView::doRender(QGLFramebufferObject* _fbo)
+void DataView::renderGL()
 {
 	shared_ptr<AuxGraphsSpec> spec = m_spec.lock();
 	if (!spec)
 		return;
-	QPainter p(_fbo);
+		QOpenGLPaintDevice glpd(size());
+	QPainter p(&glpd);
+
 
 	vector<StreamEvent> ses;
 

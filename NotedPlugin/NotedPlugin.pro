@@ -2,7 +2,7 @@ TEMPLATE = lib
 include ( ../Common.pri )
 
 CONFIG += qt
-QT       += core gui opengl
+QT       += core gui opengl widgets
 
 SOURCES += Timeline.cpp \
 	PrerenderedTimeline.cpp \

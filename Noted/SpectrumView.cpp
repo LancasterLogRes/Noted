@@ -33,7 +33,7 @@
 using namespace std;
 using namespace Lightbox;
 
-void SpectrumView::doRender(QGLFramebufferObject* _fbo)
+void SpectrumView::renderGL()
 {
 	auto mag = dynamic_cast<Noted*>(c())->cursorMagSpectrum();
 	auto phase = dynamic_cast<Noted*>(c())->cursorPhaseSpectrum();
@@ -45,7 +45,9 @@ void SpectrumView::doRender(QGLFramebufferObject* _fbo)
 		int ho = height() / 5;
 		int h = height() - 16 - ho;
 
-		QPainter p(_fbo);
+			QOpenGLPaintDevice glpd(size());
+	QPainter p(&glpd);
+
 		p.fillRect(rect(), qRgb(255, 255, 255));
 
 		float sc = qMax(1.f, Lightbox::range(mag.begin(), mag.end()).second);

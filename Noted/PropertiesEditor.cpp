@@ -19,6 +19,7 @@
  */
 
 #include <QtGui>
+#include <QtWidgets>
 
 #include "PropertiesEditor.h"
 

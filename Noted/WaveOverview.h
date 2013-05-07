@@ -46,7 +46,7 @@ signals:
 private:
 	using CurrentView::event;
 
-	virtual void doRender(QGLFramebufferObject* _fbo);
+	virtual void renderGL();
 	virtual void mousePressEvent(QMouseEvent* _e);
 	virtual void mouseMoveEvent(QMouseEvent* _e);
 	virtual void initializeGL();

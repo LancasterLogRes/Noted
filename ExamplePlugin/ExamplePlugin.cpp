@@ -21,6 +21,7 @@
 #include <array>
 #include <iostream>
 #include <QtGui>
+#include <QtWidgets>
 
 #ifdef Q_OS_MAC
 #include <OpenGL/gl.h>

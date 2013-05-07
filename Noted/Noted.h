@@ -134,23 +134,23 @@ public slots:
 	virtual void setCursor(qint64 _c, bool _warp = false);
 
 private slots:
-	void on_actOpen_activated();
-	void on_actQuit_activated();
+	void on_actOpen_triggered();
+	void on_actQuit_triggered();
 	void on_actPlay_changed();
 	void on_actPlayCausal_changed();
 	void on_actPassthrough_changed();
-	void on_actPanic_activated();
+	void on_actPanic_triggered();
 	void on_actFollow_changed();
-	void on_actZoomIn_activated();
-	void on_actZoomOut_activated();
-	void on_actPanBack_activated();
-	void on_actPanForward_activated();
-	void on_actViewAll_activated() { normalizeView(); }
-	void on_actRedoEvents_activated() { noteEventCompilersChanged(); }
-	void on_actNewEvents_activated();
-	void on_actNewEventsFrom_activated();
-	void on_actOpenEvents_activated();
-	void on_actAbout_activated();
+	void on_actZoomIn_triggered();
+	void on_actZoomOut_triggered();
+	void on_actPanBack_triggered();
+	void on_actPanForward_triggered();
+	void on_actViewAll_triggered() { normalizeView(); }
+	void on_actRedoEvents_triggered() { noteEventCompilersChanged(); }
+	void on_actNewEvents_triggered();
+	void on_actNewEventsFrom_triggered();
+	void on_actOpenEvents_triggered();
+	void on_actAbout_triggered();
 	void on_clearInfo_clicked();
 
 	void on_windowSizeSlider_valueChanged(int = 0);
@@ -166,8 +166,8 @@ private slots:
 	void on_refreshAudioDevices_clicked() { updateAudioDevices(); }
 	void on_loadedLibraries_itemClicked(QTreeWidgetItem* _it, int);
 
-	void on_actReadSettings_activated();
-	void on_actWriteSettings_activated();
+	void on_actReadSettings_triggered();
+	void on_actWriteSettings_triggered();
 
 	void onDataViewDockClosed();
 	void updateEventStuff();
@@ -195,7 +195,7 @@ private:
 	virtual bool carryOn(int _progress);
 	void updateParameters();
 	bool serviceAudio();
-	bool work();
+	bool serviceCompute();
 	void rejigAudio();
 	void setAudio(QString const& _filename);
 
@@ -208,19 +208,13 @@ private:
 	// Just for Timeline class.
 	virtual void timelineDead(Timeline* _tl);
 
-	virtual void ensureRegistered(Prerendered* _p);
-	virtual void ensureUnregistered(Prerendered* _p);
-
 	Ui::Noted* ui;
 
 	QSet<Timeline*> m_timelines;
 	mutable QMutex x_timelines;
 
-	QSet<Prerendered*> m_prerendereds;
-	mutable QMutex x_prerendereds;
-
 	// Old working stuff...
-	WorkerThread* m_workerThread;
+	WorkerThread* m_computeThread;
 	int m_suspends;
 
 	bool m_cursorDirty;

@@ -67,6 +67,9 @@ void WaveOverview::paintGL()
 	m_timelineChanged = false;
 	CurrentView::paintGL();
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	int cursorL = positionOf(c()->earliestVisible());
 	int cursorR = positionOf(c()->latestVisible());
 	int cursorM = positionOf(c()->cursor());
@@ -97,7 +100,7 @@ bool WaveOverview::needsRepaint() const
 	return CurrentView::needsRepaint() || m_timelineChanged;
 }
 
-void WaveOverview::doRender(QGLFramebufferObject* _fbo)
+void WaveOverview::renderGL()
 {
 	int w = width();
 	int h = height();
@@ -110,7 +113,9 @@ void WaveOverview::doRender(QGLFramebufferObject* _fbo)
 	vector<float> wave(ww * 2);
 	bool isAbsolute = c()->waveBlock(Time(0), c()->duration(), foreign_vector<float>(wave.data(), wave.size()));
 
-	QPainter p(_fbo);
+	QOpenGLPaintDevice glpd(size());
+	QPainter p(&glpd);
+
 	p.fillRect(rect(), Qt::white);
 	GraphParameters<Time> nor(make_pair(0, c()->duration()), width() / 80, toBase(1, 1000000));
 	for (Time t = nor.from; t < nor.to; t += nor.incr)

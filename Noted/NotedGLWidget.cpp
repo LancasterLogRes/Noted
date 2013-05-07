@@ -73,7 +73,7 @@ void NotedGLWidget::quit()
 		terminate();
 		wait(1000);
 	}
-	makeCurrent();
+//	makeCurrent();
 }
 
 void NotedGLWidget::hideEvent(QShowEvent*)
@@ -93,7 +93,7 @@ void NotedGLWidget::resizeEvent(QResizeEvent* _e)
 
 void NotedGLWidget::run()
 {
-	makeCurrent();
+//	makeCurrent();
 	m_v->initializeGL();
 	while (!m_quitting)
 	{

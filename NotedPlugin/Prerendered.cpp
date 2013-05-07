@@ -36,78 +36,54 @@
 using namespace std;
 using namespace Lightbox;
 
-void DisplayThread::run()
+Prerendered::Prerendered(QWidget* _p): QGLWidget(_p), m_renderThread(nullptr), m_c(nullptr)
 {
-	m_p->run();
-}
-
-Prerendered::Prerendered(QWidget* _p): QGLWidget(_p), m_fbo(nullptr), m_display(this), m_c(nullptr)
-{
-	setAutoBufferSwap(false);
 }
 
 Prerendered::~Prerendered()
 {
-	if (m_display.isRunning())
-		cwarn << "BAD!!! Prerendered's destructor was called without a called to quit() first! Call quit() in the destructor of the final class.";
 	quit();
-	delete m_fbo;
 }
 
-void Prerendered::paintEvent(QPaintEvent*)
+void Prerendered::paintEvent(QPaintEvent* _e)
 {
-	doneCurrent();
-	c()->ensureRegistered(this);
-/*	if (!m_display.isRunning())
+	if (!m_renderThread)
 	{
-		m_quitting = false;
-		doneCurrent();
-		m_display.start();
-	}*/
-	m_newSize = size();
-}
-
-bool Prerendered::needsRepaint() const
-{
-	return !size().isEmpty() && isVisible();
+		setAutoBufferSwap(false);
+		m_renderThread = createWorkerThread([=](){serviceRender(); return true;}, [=](){context()->makeCurrent(); initializeGL();}, [=](){context()->doneCurrent();});
+		context()->moveToThread(m_renderThread);
+		m_resize = size();
+		m_size = QSize();
+		m_needsRepaint = true;
+		m_needsRerender = true;
+		m_renderThread->start();
+	}
 }
 
 void Prerendered::quit()
 {
-	c()->ensureUnregistered(this);
-/*	m_quitting = true;
-	m_display.wait(1000);
-	while (m_display.isRunning())
+	if (m_renderThread)
 	{
-		m_display.terminate();
-		m_display.wait(1000);
-	}*/
-	makeCurrent();
+		m_renderThread->quit();
+		m_renderThread->wait();
+		delete m_renderThread;
+		m_renderThread = nullptr;
+	}
 }
 
-void Prerendered::hideEvent(QHideEvent*)
+void Prerendered::hideEvent(QHideEvent* _e)
 {
 	quit();
 }
 
-void Prerendered::closeEvent(QCloseEvent*)
+void Prerendered::closeEvent(QCloseEvent* _e)
 {
 	quit();
 }
 
 void Prerendered::resizeEvent(QResizeEvent* _e)
 {
-	m_newSize = _e->size();
-}
-
-void Prerendered::run()
-{
-	makeCurrent();
-	initializeGL();
-	while (!m_quitting)
-		if (!check())
-			m_display.msleep(5);
-	doneCurrent();
+	m_resize = _e->size();
 }
 
 NotedFace* Prerendered::c() const
@@ -119,28 +95,28 @@ NotedFace* Prerendered::c() const
 	return m_c;
 }
 
-void Prerendered::rerender()
+bool Prerendered::serviceRender()
 {
-}
-
-bool Prerendered::check()
-{
-	makeCurrent();
+	bool ret = false;
 	bool resized = false;
-	if (m_newSize.isValid())
+	if (m_resize.isValid())
 	{
-		initializeGL();
-		resizeGL(m_newSize.width(), m_newSize.height());
-		m_newSize = QSize();
+		m_size = QSize();
+		swap(m_size, m_resize);
+		resizeGL(m_size.width(), m_size.height());
 		resized = true;
 	}
-	if (resized || needsRepaint())
+	if (resized || shouldRepaint())
 	{
+		m_needsRepaint = false;
 		paintGL();
 		swapBuffers();
-		return true;
+		ret = true;
 	}
-	return false;
+
+	if (!ret)
+		usleep(10000);
+	return true;
 }
 
 void Prerendered::initializeGL()
@@ -169,32 +145,8 @@ void Prerendered::resizeGL(int _w, int _h)
 
 void Prerendered::paintGL()
 {
-//	cbug(42) << __PRETTY_FUNCTION__;
-	if ((true || !m_fbo || m_fbo->size() != size()) && c()->samples())
-	{
-		if (!m_fbo || m_fbo->size() != size())
-		{
-			delete m_fbo;
-			auto s = size();
-			if (s.isNull() || s.width() < 1 || s.height() < 1)
-				s = QSize(1, 1);
-			m_fbo = new QGLFramebufferObject(s);
-		}
-		m_fbo->bind();
-		doRender(m_fbo);
-		m_fbo->release();
-		initializeGL();
-	}
-	glColor4f(1.f, 1.f, 1.f, 1.f);
-	glBindTexture(GL_TEXTURE_2D, m_fbo ? m_fbo->texture() : 0);
-	glBegin(GL_TRIANGLE_STRIP);
-	glTexCoord2i(0, 0);
-	glVertex2i(0, 0);
-	glTexCoord2i(1, 0);
-	glVertex2i(width(), 0);
-	glTexCoord2i(0, 1);
-	glVertex2i(0, height());
-	glTexCoord2i(1, 1);
-	glVertex2i(width(), height());
-	glEnd();
+	glLoadIdentity();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	m_needsRerender = false;
+	renderGL();
 }
