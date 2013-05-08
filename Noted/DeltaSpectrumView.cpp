@@ -27,10 +27,9 @@
 #include <QGLFramebufferObject>
 #include <Common/Common.h>
 #include <NotedPlugin/NotedFace.h>
+#include "DeltaSpectrumView.h"
 using namespace std;
 using namespace Lightbox;
-
-#include "DeltaSpectrumView.h"
 
 void DeltaSpectrumView::renderGL()
 {
