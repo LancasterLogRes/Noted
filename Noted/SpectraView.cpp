@@ -63,9 +63,9 @@ QByteArray fileDump(QString const& _name)
 	return ret;
 }
 
-void SpectraView::renderGL()
+void SpectraView::renderGL(QSize _s)
 {
-	PrerenderedTimeline::renderGL();
+	PrerenderedTimeline::renderGL(_s);
 
 	unsigned bc = c()->spectrumSize();
 	unsigned s = c()->hops();

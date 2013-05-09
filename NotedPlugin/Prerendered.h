@@ -86,8 +86,9 @@ protected:
 
 	virtual void initializeGL();
 	virtual void resizeGL(int _w, int _h);
-	virtual void paintGL();
-	virtual void renderGL() {}
+	virtual void paintGL() { paintGL(size()); }
+	virtual void paintGL(QSize);
+	virtual void renderGL(QSize) {}
 
 	virtual void paintEvent(QPaintEvent*);
 	virtual void hideEvent(QHideEvent*);

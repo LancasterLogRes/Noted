@@ -41,9 +41,9 @@ Lightbox::Time WaveView::highlightDuration() const
 	return m_nf->windowSize();
 }
 
-void WaveView::renderGL()
+void WaveView::renderGL(QSize _s)
 {
-	PrerenderedTimeline::renderGL();
+	PrerenderedTimeline::renderGL(_s);
 
 	if (width() < 1)
 		return;

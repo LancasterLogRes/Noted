@@ -46,11 +46,11 @@ signals:
 private:
 	using CurrentView::event;
 
-	virtual void renderGL();
+	virtual void renderGL(QSize);
 	virtual void mousePressEvent(QMouseEvent* _e);
 	virtual void mouseMoveEvent(QMouseEvent* _e);
 	virtual void initializeGL();
-	virtual void paintGL();
+	virtual void paintGL(QSize);
 
 	bool m_timelineChanged;
 };

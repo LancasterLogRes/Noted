@@ -48,7 +48,7 @@ private:
 	virtual void dropEvent(QDropEvent* _e);
 	virtual void dragEnterEvent(QDragEnterEvent* _e);
 
-	virtual void renderGL();
+	virtual void renderGL(QSize);
 
 	std::pair<std::pair<float, float>, std::pair<float, float> > ranges(bool _needX, bool _needY, std::shared_ptr<Lightbox::AuxGraphsSpec> _spec, std::vector<Lightbox::StreamEvent> const& _ses = std::vector<Lightbox::StreamEvent>());
 	std::shared_ptr<Lightbox::AuxGraphsSpec> findSpec(QString const& _n) const;

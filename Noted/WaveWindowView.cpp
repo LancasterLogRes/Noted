@@ -31,7 +31,7 @@
 using namespace std;
 using namespace Lightbox;
 
-void WaveWindowView::renderGL()
+void WaveWindowView::renderGL(QSize _s)
 {
 	foreign_vector<float const> d = dynamic_cast<Noted*>(c())->cursorWaveWindow();
 	float const* data = d.data();
@@ -59,8 +59,8 @@ void WaveWindowView::renderGL()
 		int w = width();
 		int h = height();
 
-			QOpenGLPaintDevice glpd(size());
-	QPainter p(&glpd);
+		QOpenGLPaintDevice glpd(_s);
+		QPainter p(&glpd);
 
 		p.fillRect(rect(), Qt::white);
 

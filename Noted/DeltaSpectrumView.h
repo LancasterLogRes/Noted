@@ -31,5 +31,5 @@ public:
 	~DeltaSpectrumView() { quit(); }
 
 private:
-	virtual void renderGL();
+	virtual void renderGL(QSize);
 };

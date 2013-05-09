@@ -36,7 +36,7 @@ public:
 	Lightbox::Time period() const;
 
 private:
-	virtual void renderGL();
+	virtual void renderGL(QSize);
 
 	unsigned m_texture[1];
 	cwc::glShaderManager* m_sm;

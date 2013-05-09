@@ -30,8 +30,8 @@ bool CurrentView::needsRepaint() const
 	return Prerendered::needsRepaint() || m_paintedCursorIndex != c()->cursorIndex() || c()->isImmediate();
 }
 
-void CurrentView::paintGL()
+void CurrentView::paintGL(QSize _s)
 {
 	m_paintedCursorIndex = c()->cursorIndex();
-	Prerendered::paintGL();
+	Prerendered::paintGL(_s);
 }

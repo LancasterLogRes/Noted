@@ -33,7 +33,7 @@
 using namespace std;
 using namespace Lightbox;
 
-void MetaSpectrumView::renderGL()
+void MetaSpectrumView::renderGL(QSize _s)
 {
 	if (c()->spectrumSize() > 4)
 	{
@@ -56,8 +56,8 @@ void MetaSpectrumView::renderGL()
 		int ho = height() / 5;
 		int h = height() - 16 - ho;
 
-			QOpenGLPaintDevice glpd(size());
-	QPainter p(&glpd);
+		QOpenGLPaintDevice glpd(_s);
+		QPainter p(&glpd);
 
 		p.fillRect(rect(), qRgb(255, 255, 255));
 

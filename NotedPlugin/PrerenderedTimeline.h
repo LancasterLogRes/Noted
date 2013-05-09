@@ -56,8 +56,8 @@ protected:
 	virtual bool needsRepaint() const;
 	virtual bool needsRerender() const;
 
-	virtual void paintGL();
-	virtual void renderGL();
+	virtual void paintGL(QSize);
+	virtual void renderGL(QSize);
 
 	virtual void mousePressEvent(QMouseEvent* _e);
 	virtual void mouseReleaseEvent(QMouseEvent* _e);

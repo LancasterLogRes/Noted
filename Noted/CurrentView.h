@@ -32,7 +32,7 @@ public:
 	~CurrentView() {}
 
 protected:
-	virtual void paintGL();
+	virtual void paintGL(QSize);
 	virtual bool needsRepaint() const;
 
 private:

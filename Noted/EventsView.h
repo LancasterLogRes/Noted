@@ -84,7 +84,7 @@ public slots:
 	void setNewEvents();
 
 private:
-	virtual void renderGL();
+	virtual void renderGL(QSize);
 	void filterEvents();
 
 	Lightbox::EventCompiler m_eventCompiler;

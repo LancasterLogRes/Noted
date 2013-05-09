@@ -37,5 +37,5 @@ signals:
 	void resized();
 
 private:
-	virtual void renderGL();
+	virtual void renderGL(QSize);
 };

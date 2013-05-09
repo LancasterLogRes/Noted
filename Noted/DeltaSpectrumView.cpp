@@ -31,7 +31,7 @@
 using namespace std;
 using namespace Lightbox;
 
-void DeltaSpectrumView::renderGL()
+void DeltaSpectrumView::renderGL(QSize _s)
 {
 	int cursorIndex = c()->cursorIndex();
 	if (cursorIndex < 0)
@@ -46,7 +46,7 @@ void DeltaSpectrumView::renderGL()
 		int w = width();
 		int h = height() - 16;
 
-		QOpenGLPaintDevice glpd(size());
+		QOpenGLPaintDevice glpd(_s);
 		QPainter p(&glpd);
 
 		p.fillRect(rect(), qRgb(255, 255, 255));

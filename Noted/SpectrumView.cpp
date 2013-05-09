@@ -33,7 +33,7 @@
 using namespace std;
 using namespace Lightbox;
 
-void SpectrumView::renderGL()
+void SpectrumView::renderGL(QSize _s)
 {
 	auto mag = dynamic_cast<Noted*>(c())->cursorMagSpectrum();
 	auto phase = dynamic_cast<Noted*>(c())->cursorPhaseSpectrum();
@@ -45,8 +45,8 @@ void SpectrumView::renderGL()
 		int ho = height() / 5;
 		int h = height() - 16 - ho;
 
-			QOpenGLPaintDevice glpd(size());
-	QPainter p(&glpd);
+		QOpenGLPaintDevice glpd(_s);
+		QPainter p(&glpd);
 
 		p.fillRect(rect(), qRgb(255, 255, 255));
 

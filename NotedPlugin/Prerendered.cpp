@@ -132,7 +132,7 @@ bool Prerendered::serviceRender()
 	if (resized || shouldRepaint())
 	{
 		m_needsRepaint = false;
-		paintGL();
+		paintGL(m_size);
 		swapBuffers();
 		ret = true;
 	}
@@ -166,10 +166,10 @@ void Prerendered::resizeGL(int _w, int _h)
 	glLoadIdentity();
 }
 
-void Prerendered::paintGL()
+void Prerendered::paintGL(QSize _s)
 {
 	glLoadIdentity();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	m_needsRerender = false;
-	renderGL();
+	renderGL(_s);
 }

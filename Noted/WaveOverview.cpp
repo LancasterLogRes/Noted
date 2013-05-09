@@ -61,11 +61,11 @@ void WaveOverview::initializeGL()
 	CurrentView::initializeGL();
 }
 
-void WaveOverview::paintGL()
+void WaveOverview::paintGL(QSize _s)
 {
 //	cbug(42) << __PRETTY_FUNCTION__;
 	m_timelineChanged = false;
-	CurrentView::paintGL();
+	CurrentView::paintGL(_s);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -100,7 +100,7 @@ bool WaveOverview::needsRepaint() const
 	return CurrentView::needsRepaint() || m_timelineChanged;
 }
 
-void WaveOverview::renderGL()
+void WaveOverview::renderGL(QSize _s)
 {
 	int w = width();
 	int h = height();
@@ -113,7 +113,7 @@ void WaveOverview::renderGL()
 	vector<float> wave(ww * 2);
 	bool isAbsolute = c()->waveBlock(Time(0), c()->duration(), foreign_vector<float>(wave.data(), wave.size()));
 
-	QOpenGLPaintDevice glpd(size());
+	QOpenGLPaintDevice glpd(_s);
 	QPainter p(&glpd);
 
 	p.fillRect(rect(), Qt::white);

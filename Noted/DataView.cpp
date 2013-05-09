@@ -332,12 +332,12 @@ pair<pair<float, float>, pair<float, float> > DataView::ranges(bool _needX, bool
 	return make_pair(xRange, yRange);
 }
 
-void DataView::renderGL()
+void DataView::renderGL(QSize _s)
 {
 	shared_ptr<AuxGraphsSpec> spec = m_spec.lock();
 	if (!spec)
 		return;
-	QOpenGLPaintDevice glpd(size());
+	QOpenGLPaintDevice glpd(_s);
 	QPainter p(&glpd);
 
 	vector<StreamEvent> ses;

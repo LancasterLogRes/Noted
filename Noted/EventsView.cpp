@@ -432,9 +432,9 @@ void EventsView::updateEventTypes()
 	updateCombo(m_selection, temperatures, types);
 }
 
-void EventsView::renderGL()
+void EventsView::renderGL(QSize _s)
 {
-	PrerenderedTimeline::renderGL();
+	PrerenderedTimeline::renderGL(_s);
 
 	if (size().isEmpty() || m_eventCompiler.isNull() || !m_eventCompiler.asA<EventCompilerImpl>().graphMap().size())
 		return;

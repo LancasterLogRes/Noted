@@ -17,31 +17,33 @@ GraphView::~GraphView()
 
 void GraphView::addGraph(CompilerGraph* _g)
 {
-	m_graphs.push_back({c()->getEventCompilerName(_g->ec()).toStdString(), _g->name()});
+	m_graphs.push_back({c()->getEventCompilerName(_g->ec()).toStdString(), _g->name(), NullColor});
 }
 
-void GraphView::renderGL()
+QColor toQColor(Color _c) { return QColor::fromHsvF(_c.h(), _c.s(), _c.v(), _c.a()); }
+
+void GraphView::renderGL(QSize _s)
 {
-	for (auto gr: m_graphs)
+	QOpenGLPaintDevice glpd(_s);
+	QPainter p(&glpd);
+
+	Grapher grapher;
+	int i = 0;
+	unsigned s = m_graphs.size();
+
+	for (CompilerGraphSpec const& gr: m_graphs)
 	{
 		EventCompiler ec = c()->findEventCompiler(QString::fromStdString(gr.ec));
 		if (!ec.isNull())
-			if (CompilerGraph* g = ec.asA<EventCompilerImpl>()->graph(gr.graph))
-			{
-				Grapher g;
-/*				g.init(&p, xRange, yRange, spec->xLabel, spec->yLabel, spec->pLabel, 30, m_xRangeSpec.lock() ? 0 : 16);
-				if (g.drawAxes())
+			if (CompilerGraph* cg = ec.asA<EventCompilerImpl>().graph(gr.graph))
+				if (GraphSparseDense* g = dynamic_cast<GraphSparseDense*>(cg))
 				{
-					for (unsigned i = 0; i < ses.size(); ++i)
-					{
-						GraphSpec const& s = spec->graphs[i];
-						StreamEvent const& e = ses[i];
-						g.setDataTransform(s.xM, s.xC, s.yM, s.yC);
-					}
-				}*/
-				// TODO: work out axes.
-				// TODO: draw graph.
-			}
+					if (!i)
+						grapher.init(&p, g->xrangeReal(), g->yrangeReal(), id, id, idL, 30, 16);
+					grapher.setDataTransform(g->xtx().scale(), g->xtx().offset());
+					grapher.drawLineGraph(g->dataPoint(c()->cursorIndex()), toQColor(defaultTo(gr.c, Color(float(i) / s, 0.7, 0.5), NullColor)), Qt::NoBrush, 0.f);
+					++i;
+				}
 	}
 }
 

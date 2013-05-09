@@ -31,5 +31,5 @@ public:
 	~WaveWindowView() { quit(); }
 
 private:
-	virtual void renderGL();
+	virtual void renderGL(QSize);
 };

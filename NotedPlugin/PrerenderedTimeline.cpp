@@ -88,9 +88,9 @@ bool PrerenderedTimeline::needsRepaint() const
 	return Prerendered::needsRepaint() || m_paintedCursorIndex != c()->cursorIndex();
 }
 
-void PrerenderedTimeline::paintGL()
+void PrerenderedTimeline::paintGL(QSize _s)
 {
-	Prerendered::paintGL();
+	Prerendered::paintGL(_s);
 
 	QRect r = rect();
 
@@ -120,7 +120,7 @@ void PrerenderedTimeline::paintGL()
 	glEnd();
 }
 
-void PrerenderedTimeline::renderGL()
+void PrerenderedTimeline::renderGL(QSize)
 {
 	m_renderedOffset = c()->earliestVisible();
 	m_renderedPixelDuration = c()->pixelDuration();

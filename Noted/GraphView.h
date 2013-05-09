@@ -30,10 +30,11 @@
 namespace Lightbox
 {
 
-struct CompilerGraphRef
+struct CompilerGraphSpec
 {
 	std::string ec;
 	std::string graph;
+	Lightbox::Color c;
 };
 
 class GraphView: public CurrentView
@@ -48,9 +49,9 @@ public slots:
 	void rejig();
 
 private:
-	virtual void renderGL();
+	virtual void renderGL(QSize);
 
-	std::vector<CompilerGraphRef> m_graphs;
+	std::vector<CompilerGraphSpec> m_graphs;
 };
 
 }
