@@ -337,9 +337,8 @@ void DataView::renderGL()
 	shared_ptr<AuxGraphsSpec> spec = m_spec.lock();
 	if (!spec)
 		return;
-		QOpenGLPaintDevice glpd(size());
+	QOpenGLPaintDevice glpd(size());
 	QPainter p(&glpd);
-
 
 	vector<StreamEvent> ses;
 

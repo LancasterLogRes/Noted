@@ -18,25 +18,41 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <QPainter>
-#include <QDebug>
-#include <QApplication>
-#include <QEvent>
-#include <QGraphicsSceneWheelEvent>
-#include <Common/Angular.h>
-#include <NotedPlugin/NotedFace.h>
-#include "EventsEditor.h"
-#include "EventsEditScene.h"
-#include "AttackItem.h"
+#pragma once
 
-using namespace std;
-using namespace Lightbox;
+#include <memory>
+#include <utility>
 
-QRectF Chained::boundingRect() const
+#include <EventCompiler/EventCompiler.h>
+
+#include "CurrentView.h"
+
+namespace Lightbox
 {
-	return QRectF(m_begin, QSizeF(m_end.x() - m_begin.x(), m_end.y() - m_begin.y())).normalized().adjusted(0, -1, 0, 1);
+
+struct CompilerGraphRef
+{
+	std::string ec;
+	std::string graph;
+};
+
+class GraphView: public CurrentView
+{
+public:
+	GraphView(QWidget* _parent, QString const& _name);
+	virtual ~GraphView();
+
+	void addGraph(CompilerGraph* _g);
+
+public slots:
+	void rejig();
+
+private:
+	virtual void renderGL();
+
+	std::vector<CompilerGraphRef> m_graphs;
+};
+
 }
 
-void Chained::paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*)
-{
-}
+

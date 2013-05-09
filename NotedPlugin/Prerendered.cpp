@@ -36,17 +36,23 @@
 using namespace std;
 using namespace Lightbox;
 
+#define USE_RENDER_THREAD 1
+
 Prerendered::Prerendered(QWidget* _p): QGLWidget(_p), m_renderThread(nullptr), m_c(nullptr)
 {
 }
 
 Prerendered::~Prerendered()
 {
+#if USE_RENDER_THREAD
 	quit();
+#endif
 }
 
 void Prerendered::paintEvent(QPaintEvent* _e)
 {
+#if USE_RENDER_THREAD
+	(void)_e;
 	if (!m_renderThread)
 	{
 		setAutoBufferSwap(false);
@@ -58,6 +64,9 @@ void Prerendered::paintEvent(QPaintEvent* _e)
 		m_needsRerender = true;
 		m_renderThread->start();
 	}
+#else
+	QGLWidget::paintEvent(_e);
+#endif
 }
 
 void Prerendered::quit()
@@ -73,17 +82,31 @@ void Prerendered::quit()
 
 void Prerendered::hideEvent(QHideEvent* _e)
 {
+#if USE_RENDER_THREAD
+	(void)_e;
 	quit();
+#else
+	QGLWidget::hideEvent(_e);
+#endif
 }
 
 void Prerendered::closeEvent(QCloseEvent* _e)
 {
+#if USE_RENDER_THREAD
+	(void)_e;
 	quit();
+#else
+	QGLWidget::closeEvent(_e);
+#endif
 }
 
 void Prerendered::resizeEvent(QResizeEvent* _e)
 {
+#if USE_RENDER_THREAD
 	m_resize = _e->size();
+#else
+	QGLWidget::resizeEvent(_e);
+#endif
 }
 
 NotedFace* Prerendered::c() const

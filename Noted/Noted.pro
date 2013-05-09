@@ -26,7 +26,8 @@ SOURCES += main.cpp\
 	CompileEventsView.cpp \
 		PropertiesEditor.cpp \
 	NotedGLWidget.cpp \
-    Cache.cpp
+    Cache.cpp \
+    GraphView.cpp
 
 HEADERS  += Noted.h \
 	WaveView.h \
@@ -48,7 +49,8 @@ HEADERS  += Noted.h \
 	CollateEvents.h \
 	CompileEventsView.h \
 	PropertiesEditor.h \
-    Cache.h
+    Cache.h \
+    GraphView.h
 
 FORMS    += Noted.ui
 

@@ -645,6 +645,26 @@ EventCompiler Noted::newEventCompiler(QString const& _name)
 	return EventCompiler();
 }
 
+EventCompiler Noted::findEventCompiler(QString const& _name)
+{
+	QMutexLocker l(&x_timelines);
+	for (auto tl: m_timelines)
+		if (auto ev = dynamic_cast<EventsView*>(tl->widget()))
+			if (ev->name() == _name)
+				return ev->eventCompiler();
+	return EventCompiler();
+}
+
+QString Noted::getEventCompilerName(EventCompilerImpl* _ec)
+{
+	QMutexLocker l(&x_timelines);
+	for (auto tl: m_timelines)
+		if (auto ev = dynamic_cast<EventsView*>(tl->widget()))
+			if (&ev->eventCompiler().asA<EventCompilerImpl>() == _ec)
+				return ev->name();
+	return QString();
+}
+
 void Noted::addTimeline(Timeline* _tl)
 {
 	ui->dataDisplay->addWidget(_tl->widget());

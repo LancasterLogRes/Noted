@@ -436,7 +436,7 @@ void EventsView::renderGL()
 {
 	PrerenderedTimeline::renderGL();
 
-	if (size().isEmpty() || m_eventCompiler.isNull() || !m_eventCompiler.asA<EventCompilerImpl>().graphs().size())
+	if (size().isEmpty() || m_eventCompiler.isNull() || !m_eventCompiler.asA<EventCompilerImpl>().graphMap().size())
 		return;
 	QOpenGLPaintDevice glpd(size());
 	QPainter p(&glpd);
@@ -447,7 +447,7 @@ void EventsView::renderGL()
 	int _dx = 0;
 	int _dw = width();
 	int y = 0;
-	int h = height() / (m_eventCompiler.asA<EventCompilerImpl>().graphs().size());
+	int h = height() / (m_eventCompiler.asA<EventCompilerImpl>().graphMap().size());
 
 	auto hop = c()->hop();
 
@@ -455,44 +455,52 @@ void EventsView::renderGL()
 		if (GraphSpectrum* s = dynamic_cast<GraphSpectrum*>(g))
 		{
 			auto d = s->data();
-			auto ifrom = d.lower_bound(renderingTimeOf(_dx - 3));
-			if (ifrom != d.begin())
-				--ifrom;
-			auto ito = d.upper_bound(renderingTimeOf(_dx + _dw + 3));
-			if (ito != d.end())
-				++ito;
-			int lx = 0;
-			bool post = s->isPost();
-			auto li = d.begin();
-			for (auto i = ifrom; i != ito; ++i)
+			if (d.size())
 			{
-				int x = renderingPositionOf(i->first);
-				if (i != ifrom)
-					for (unsigned b = 0, bs = i->second.size(); b < bs; ++b)
-					{
-						float v = clamp(((post ? i : li)->second[b] - s->min()) / s->delta());
-						p.fillRect(QRect(lx, y + b * h / bs, x - lx, (b + 1) * h / bs - b * h / bs), QBrush(QColor(clamp(v * 767, 0, 255), clamp(v * 767 - 256, 0, 255), clamp(v * 767 - 512, 0, 255))));
-					}
-				lx = x;
-				li = i;
+				auto ifrom = d.lower_bound(renderingTimeOf(_dx - 3));
+				if (ifrom != d.begin())
+					--ifrom;
+				auto ito = d.upper_bound(renderingTimeOf(_dx + _dw + 3));
+				if (ito != d.end())
+					++ito;
+				auto xo = XOf::toUnity(s->yrangeReal());
+				int lx = 0;
+				auto li = d.begin();
+				for (auto i = ifrom; i != ito; ++i)
+				{
+					int x = renderingPositionOf(i->first);
+					if (i != ifrom)
+						for (unsigned b = 0, bs = i->second.size(); b < bs; ++b)
+						{
+							float v = li->second[b];
+							float v0to767 = xo.apply(v) * 767;
+							p.fillRect(QRect(lx, y + b * h / bs, x - lx, (b + 1) * h / bs - b * h / bs), QBrush(QColor(clamp(v0to767, 0, 255), clamp(v0to767 - 256, 0, 255), clamp(v0to767 - 512, 0, 255))));
+						}
+					lx = x;
+					li = i;
+				}
 			}
 			y += h;
 		}
 		else if (GraphChart* s = dynamic_cast<GraphChart*>(g))
 		{
 			auto d = s->data();
-			int ifrom = max<int>(0, c()->windowIndex(renderingTimeOf(_dx - 1)) - 1);
-			int ito = min<int>(d.size(), c()->windowIndex(renderingTimeOf(_dx + _dw + 1)) + 1);
-			auto r = range(&(d[ifrom]), &(d[ito]));
-			auto scale = (r.second != r.first) ? h / (r.second - r.first) : h;
-			p.setPen(QColor(64, 64, 64));
-			QPoint lp;
-			for (int i = ifrom; i < ito; ++i)
+			cnote << d.size();
+			if (d.size())
 			{
-				QPoint cp(renderingPositionOf(i * hop), y + h - (d[i] - r.first) * scale);
-				if (i != ifrom)
-					p.drawLine(lp, cp);
-				lp = cp;
+				int ifrom = max<int>(0, c()->windowIndex(renderingTimeOf(_dx - 1)) - 1);
+				int ito = min<int>(d.size(), c()->windowIndex(renderingTimeOf(_dx + _dw + 1)) + 1);
+				auto r = range(&(d[ifrom]), &(d[ito]));
+				auto scale = (r.second != r.first) ? h / (r.second - r.first) : h;
+				p.setPen(QColor(64, 64, 64));
+				QPoint lp;
+				for (int i = ifrom; i < ito; ++i)
+				{
+					QPoint cp(renderingPositionOf(i * hop), y + h - (d[i] - r.first) * scale);
+					if (i != ifrom)
+						p.drawLine(lp, cp);
+					lp = cp;
+				}
 			}
 			y += h;
 		}

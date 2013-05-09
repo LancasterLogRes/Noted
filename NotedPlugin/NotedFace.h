@@ -106,6 +106,8 @@ public:
 	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType _et, float _temperature = std::numeric_limits<float>::infinity(), Lightbox::Time _t = Lightbox::UndefinedTime) const = 0;
 	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType _et, float _temperature = std::numeric_limits<float>::infinity()) const = 0;
 	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name) = 0;
+	virtual Lightbox::EventCompiler findEventCompiler(QString const& _name) = 0;
+	virtual QString getEventCompilerName(Lightbox::EventCompilerImpl* _ec) = 0;
 
 	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a = nullptr) = 0;
 	virtual AcausalAnalysisPtr spectraAcAnalysis() const = 0;
@@ -196,6 +198,8 @@ public:
 	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType, float = std::numeric_limits<float>::infinity()) const { return Lightbox::StreamEvents(); }
 	virtual QList<EventsStore*> eventsStores() const { return QList<EventsStore*>(); }
 	virtual Lightbox::EventCompiler newEventCompiler(QString const&) { return Lightbox::EventCompiler(); }
+	virtual Lightbox::EventCompiler findEventCompiler(QString const&) { return Lightbox::EventCompiler(); }
+	virtual QString getEventCompilerName(Lightbox::EventCompilerImpl*) { return ""; }
 
 	virtual void noteLastValidIs(AcausalAnalysisPtr const& = nullptr) {}
 	virtual AcausalAnalysisPtr spectraAcAnalysis() const { return nullptr; }

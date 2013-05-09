@@ -108,6 +108,8 @@ public:
 	virtual std::vector<float> graphEvents(float _temperature) const;
 	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType _et, float _temperature, Lightbox::Time _t = Lightbox::UndefinedTime) const;
 	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name);
+	virtual Lightbox::EventCompiler findEventCompiler(QString const& _name);
+	virtual QString getEventCompilerName(Lightbox::EventCompilerImpl* _ec);
 	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType _et, float _temperature = std::numeric_limits<float>::infinity()) const;
 
 	using QWidget::event;

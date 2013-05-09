@@ -138,7 +138,7 @@ void ReleaseItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidget*)
 	if (isMagnified())
 	{
 		auto cc = core().center();
-		auto cw = core().width();
+//		auto cw = core().width();
 		_p->drawPolygon(QPolygonF(QVector<QPointF>() <<
 								  core().topLeft() <<
 								  QPointF(core().right(), cc.y()) <<
