@@ -39,6 +39,8 @@ struct CompilerGraphSpec
 
 class GraphView: public CurrentView
 {
+	Q_OBJECT
+
 public:
 	GraphView(QWidget* _parent, QString const& _name);
 	virtual ~GraphView();

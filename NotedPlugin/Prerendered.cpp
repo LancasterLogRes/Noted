@@ -47,6 +47,7 @@ Prerendered::~Prerendered()
 #if USE_RENDER_THREAD
 	quit();
 #endif
+	delete m_renderThread;
 }
 
 void Prerendered::paintEvent(QPaintEvent* _e)
@@ -56,8 +57,11 @@ void Prerendered::paintEvent(QPaintEvent* _e)
 	if (!m_renderThread)
 	{
 		setAutoBufferSwap(false);
-		m_renderThread = createWorkerThread([=](){serviceRender(); return true;}, [=](){context()->makeCurrent(); initializeGL();}, [=](){context()->doneCurrent();});
+		m_renderThread = createWorkerThread([=](){serviceRender(); return true;}, [=](){context()->makeCurrent(); initializeGL();}, [=](){context()->doneCurrent(); });
 		context()->moveToThread(m_renderThread);
+	}
+	if (!m_renderThread->isRunning())
+	{
 		m_resize = size();
 		m_size = QSize();
 		m_needsRepaint = true;
@@ -75,8 +79,6 @@ void Prerendered::quit()
 	{
 		m_renderThread->quit();
 		m_renderThread->wait();
-		delete m_renderThread;
-		m_renderThread = nullptr;
 	}
 }
 

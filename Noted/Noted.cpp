@@ -38,6 +38,7 @@
 #include <NotedPlugin/AcausalAnalysis.h>
 #include <NotedPlugin/CausalAnalysis.h>
 
+#include "GraphView.h"
 #include "DataView.h"
 #include "EventsView.h"
 #include "WorkerThread.h"
@@ -124,6 +125,7 @@ public:
 Noted::Noted(QWidget* _p):
 	NotedBase					(_p),
 	ui							(new Ui::Noted),
+	x_timelines					(QMutex::Recursive),
 	m_computeThread				(nullptr),
 	m_suspends					(0),
 	m_fineCursorWas				(UndefinedTime),
@@ -485,7 +487,7 @@ void Noted::unload(RealLibraryPtr const& _dl)
 			foreach (auto f, _dl->cf)
 			{
 				// NOTE: A bit messy, this?
-				foreach (EventsView* ev, eventsViews())
+				for (EventsView* ev: eventsViews())
 					if (ev->name() == QString::fromStdString(f.first))
 						ev->save();
 				delete ui->eventCompilersList->findItems(QString::fromStdString(f.first), 0).front();
@@ -533,7 +535,7 @@ void Noted::reloadDirties()
 		suspendWork();
 
 		// OPTIMIZE: only bother saving for EVs whose EC is given by a dirty library.
-		foreach (EventsView* ev, eventsViews())
+		for (EventsView* ev: eventsViews())
 			ev->save();
 
 		foreach (QString const& name, m_dirtyLibraries)
@@ -648,20 +650,18 @@ EventCompiler Noted::newEventCompiler(QString const& _name)
 EventCompiler Noted::findEventCompiler(QString const& _name)
 {
 	QMutexLocker l(&x_timelines);
-	for (auto tl: m_timelines)
-		if (auto ev = dynamic_cast<EventsView*>(tl->widget()))
-			if (ev->name() == _name)
-				return ev->eventCompiler();
+	for (auto ev: eventsViews())
+		if (ev->name() == _name)
+			return ev->eventCompiler();
 	return EventCompiler();
 }
 
 QString Noted::getEventCompilerName(EventCompilerImpl* _ec)
 {
 	QMutexLocker l(&x_timelines);
-	for (auto tl: m_timelines)
-		if (auto ev = dynamic_cast<EventsView*>(tl->widget()))
-			if (&ev->eventCompiler().asA<EventCompilerImpl>() == _ec)
-				return ev->name();
+	for (auto ev: eventsViews())
+		if (&ev->eventCompiler().asA<EventCompilerImpl>() == _ec)
+			return ev->name();
 	return QString();
 }
 
@@ -826,7 +826,7 @@ void Noted::writeSettings()
 	writeBaseSettings(settings);
 
 	int evc = 0;
-	foreach (EventsView* ev, eventsViews())
+	for (EventsView* ev: eventsViews())
 	{
 		ev->writeSettings(settings, QString("eventsView%1").arg(evc));
 		++evc;
@@ -1382,6 +1382,7 @@ void Noted::newDataView(QString const& _n)
 
 void Noted::updateGraphs(vector<shared_ptr<AuxGraphsSpec> > const& _specs)
 {
+
 	foreach (DataView* dv, findChildren<DataView*>())
 		dv->setEnabled(false);
 
@@ -1412,8 +1413,30 @@ void Noted::updateEventStuff()
 		gspecs.push_back(dynamic_pointer_cast<AuxGraphsSpec>(e.aux()));
 	updateGraphs(gspecs);
 
-	foreach (EventsView* ev, eventsViews())
+	QMutexLocker l(&x_timelines);
+	for (EventsView* ev: eventsViews())
+	{
+		for (auto g: ev->eventCompiler().asA<EventCompilerImpl>().graphMap())
+			if (dynamic_cast<GraphSparseDense*>(g.second))
+			{
+				QString n = ev->name() + "/" + QString::fromStdString(g.second->name());
+				if (!findChild<GraphView*>(n))
+				{
+					cnote << "Creating" << n.toStdString();
+					QDockWidget* dw = new QDockWidget(n, this);
+					dw->setObjectName(n + "-Dock");
+					GraphView* dv = new GraphView(dw, n);
+					dv->addGraph(g.second);
+					dw->setAllowedAreas(Qt::AllDockWidgetAreas);
+					QMainWindow::addDockWidget(Qt::BottomDockWidgetArea, dw, Qt::Horizontal);
+					dw->setFeatures(dw->features() | QDockWidget::DockWidgetVerticalTitleBar);
+					dw->setWidget(dv);
+					connect(dw, SIGNAL(visibilityChanged(bool)), this, SLOT(onDataViewDockClosed()));
+					dw->show();
+				}
+			}
 		ev->updateEventTypes();
+	}
 }
 
 void Noted::timerEvent(QTimerEvent*)

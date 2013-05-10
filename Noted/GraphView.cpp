@@ -20,7 +20,14 @@ void GraphView::addGraph(CompilerGraph* _g)
 	m_graphs.push_back({c()->getEventCompilerName(_g->ec()).toStdString(), _g->name(), NullColor});
 }
 
-QColor toQColor(Color _c) { return QColor::fromHsvF(_c.h(), _c.s(), _c.v(), _c.a()); }
+QColor toQColor(Color _c)
+{
+	return QColor::fromHsvF(_c.h(), _c.s(), _c.v(), _c.a());
+}
+
+void GraphView::rejig()
+{
+}
 
 void GraphView::renderGL(QSize _s)
 {
@@ -40,6 +47,7 @@ void GraphView::renderGL(QSize _s)
 				{
 					if (!i)
 						grapher.init(&p, g->xrangeReal(), g->yrangeReal(), id, id, idL, 30, 16);
+					grapher.drawAxes();
 					grapher.setDataTransform(g->xtx().scale(), g->xtx().offset());
 					grapher.drawLineGraph(g->dataPoint(c()->cursorIndex()), toQColor(defaultTo(gr.c, Color(float(i) / s, 0.7, 0.5), NullColor)), Qt::NoBrush, 0.f);
 					++i;

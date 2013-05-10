@@ -353,14 +353,14 @@ void EventsView::exportGraph()
 				out << "," << s->name();
 			}
 
-		vector<map<Time, vector<float>> const*> spectra;
+		vector<map<int, vector<float>> const*> spectra;
 		for (CompilerGraph* g: m_eventCompiler.asA<EventCompilerImpl>().graphs())
 			if (GraphSpectrum* s = dynamic_cast<GraphSpectrum*>(g))
 			{
 				if (s->data().size())
 				{
 					spectra.push_back(&s->data());
-					tiMax = max<unsigned>(tiMax, prev(s->data().end())->first / h + 1);
+					tiMax = max<unsigned>(tiMax, prev(s->data().end())->first * h + 1);
 					for (unsigned i = 0; i < s->bandCount(); ++i)
 						out << "," << s->name() << "_" << i;
 				}
@@ -375,9 +375,9 @@ void EventsView::exportGraph()
 			out << ti << "," << toSeconds(t);
 			for (vector<float> const* s: charts)
 				out << "," << (ti < s->size() ? s->at(ti) : 0);
-			for (map<Time, vector<float>> const* s: spectra)
+			for (map<int, vector<float>> const* s: spectra)
 			{
-				auto si = s->upper_bound(t);
+				auto si = s->upper_bound(t / h);
 				if (si != s->begin())
 					--si;
 				for (auto f: si->second)
@@ -457,10 +457,10 @@ void EventsView::renderGL(QSize _s)
 			auto d = s->data();
 			if (d.size())
 			{
-				auto ifrom = d.lower_bound(renderingTimeOf(_dx - 3));
+				auto ifrom = d.lower_bound(renderingTimeOf(_dx - 3) / hop);
 				if (ifrom != d.begin())
 					--ifrom;
-				auto ito = d.upper_bound(renderingTimeOf(_dx + _dw + 3));
+				auto ito = d.upper_bound(renderingTimeOf(_dx + _dw + 3) / hop);
 				if (ito != d.end())
 					++ito;
 				auto xo = XOf::toUnity(s->yrangeReal());
@@ -468,7 +468,7 @@ void EventsView::renderGL(QSize _s)
 				auto li = d.begin();
 				for (auto i = ifrom; i != ito; ++i)
 				{
-					int x = renderingPositionOf(i->first);
+					int x = renderingPositionOf(i->first * hop);
 					if (i != ifrom)
 						for (unsigned b = 0, bs = i->second.size(); b < bs; ++b)
 						{
@@ -485,7 +485,6 @@ void EventsView::renderGL(QSize _s)
 		else if (GraphChart* s = dynamic_cast<GraphChart*>(g))
 		{
 			auto d = s->data();
-			cnote << d.size();
 			if (d.size())
 			{
 				int ifrom = max<int>(0, c()->windowIndex(renderingTimeOf(_dx - 1)) - 1);
