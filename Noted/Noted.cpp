@@ -31,6 +31,7 @@
 #include <QtGui>
 #include <QtXml>
 #include <QtOpenGL>
+#include <QtQuick>
 #include <Common/Common.h>
 #include <EventsEditor/EventsEditor.h>
 #include <EventsEditor/EventsEditScene.h>
@@ -122,6 +123,81 @@ public:
 	}
 };
 
+EventCompiler GraphItem::eventCompiler() const
+{
+	return NotedFace::get()->findEventCompiler(QString::fromStdString(spec().ec));
+}
+
+QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
+{
+	QSGTransformNode *base = static_cast<QSGTransformNode*>(_old);
+	if (!base)
+		base = new QSGTransformNode;
+
+	QMatrix4x4 gmx;
+	gmx.translate(0, height());
+	gmx.scale(1, -height());
+
+	// Update - TODO: optimise by chunking (according to how stored on disk) and only inserting new chunks - use boundingRect to work out what chunks are necessary
+//	base->removeAllChildNodes();
+	EventCompiler ec = eventCompiler();
+	if (GraphChart* g = ec.isNull() ? nullptr : dynamic_cast<GraphChart*>(ec.asA<EventCompilerImpl>().graph(spec().graph)))
+	{
+		if (!m_geo)
+		{
+			m_geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), g->data().size());
+			m_geo->setDrawingMode(GL_LINE_STRIP);
+			m_geo->setLineWidth(1);
+			float* v = static_cast<float*>(m_geo->vertexData());
+			for (unsigned i = 0; i < g->data().size(); ++i, v += 2)
+			{
+				v[0] = i;
+				v[1] = g->data()[i];
+			}
+		}
+
+		QSGFlatColorMaterial *m = new QSGFlatColorMaterial;
+		m->setColor(QColor(255, 255, 255));
+		QSGGeometryNode* n = new QSGGeometryNode();
+		n->setGeometry(m_geo);
+		n->setFlag(QSGNode::OwnsGeometry);
+		n->setMaterial(m);
+		n->setFlag(QSGNode::OwnsMaterial);
+		base->appendChildNode(n);
+
+		// Normalize height so within range [0,1] for the height xform.
+		float yf = m_yFrom;
+		float yd = m_yDelta;
+		if (m_yMode == 1)
+		{
+			yf = g->yrangeReal().first;
+			yd = g->yrangeReal().second - g->yrangeReal().first;
+		}
+		if (m_yMode == 2)
+		{
+			yf = g->yrangeHint().first;
+			yd = g->yrangeHint().second - g->yrangeHint().first;
+		}
+		gmx.translate(0, yf);
+		gmx.scale(1, 1.f / yd);
+	}
+
+	base->setMatrix(gmx);
+	return base;
+}
+
+QSGNode* TimelinesItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
+{
+	QSGSimpleRectNode *base = static_cast<QSGSimpleRectNode*>(_old);
+	if (!base)
+	{
+		base = new QSGSimpleRectNode();
+	}
+	base->setRect(boundingRect());
+	base->setColor(Qt::red);
+	return base;
+}
+
 Noted::Noted(QWidget* _p):
 	NotedBase					(_p),
 	ui							(new Ui::Noted),
@@ -150,6 +226,17 @@ Noted::Noted(QWidget* _p):
 	ui->setupUi(this);
 	ui->loadedLibraries->clear();
 	setWindowIcon(QIcon(":/Noted.png"));
+
+	qmlRegisterType<ChartItem>("com.llr", 1, 0, "Chart");
+	qmlRegisterType<TimelinesItem>("com.llr", 1, 0, "Timelines");
+
+	view = new QQuickView(QUrl("qrc:/Noted.qml"));
+	QWidget* w = QWidget::createWindowContainer(view);
+	view->setResizeMode(QQuickView::SizeRootObjectToView);
+	ui->fullDisplay->addWidget(w);
+
+	for (auto i: findChildren<PrerenderedTimeline*>())
+		i->hide();
 
 	updateAudioDevices();
 

@@ -44,14 +44,17 @@
 #include <QBuffer>
 #include <QSlider>
 #include <QGraphicsScene>
-
+#include <QQuickItem>
+#include "GraphView.h"
 #include "NotedBase.h"
 
 namespace Ui { class Noted; }
 
+class QSGGeometry;
 class QTemporaryFile;
 class QTreeWidgetItem;
 class QComboBox;
+class QQuickView;
 class WorkerThread;
 class PrerenderedTimeline;
 class EventsView;
@@ -211,6 +214,7 @@ private:
 	virtual void timelineDead(Timeline* _tl);
 
 	Ui::Noted* ui;
+	QQuickView* view;
 
 	QSet<Timeline*> m_timelines;
 	mutable QMutex x_timelines;
@@ -280,4 +284,112 @@ private:
 	QGLWidget* m_glMaster;
 
 	bool m_constructed;
+};
+
+class TimelineItem: public QQuickItem
+{
+	Q_OBJECT
+
+public:
+	TimelineItem(QQuickItem* _p = nullptr): QQuickItem(_p)
+	{
+		setFlag(ItemHasContents, true);
+	}
+
+	int offset() const { return m_offset; }
+	int pitch() const { return m_pitch; }
+	void setOffset(int _t) { m_offset = _t; timeScaleChanged(); update(); }
+	void setPitch(int _t) { m_pitch = _t; timeScaleChanged(); update(); }
+
+signals:
+	void timeScaleChanged();
+
+private:
+	Q_PROPERTY(int offset READ offset WRITE setOffset NOTIFY timeScaleChanged)
+	Q_PROPERTY(int pitch READ pitch WRITE setPitch NOTIFY timeScaleChanged)
+
+	int m_offset;			///< in hops.
+	int m_pitch;			///< in hops.
+};
+
+class GraphItem: public TimelineItem
+{
+	Q_OBJECT
+
+public:
+	CompilerGraphSpec spec() const { return m_spec; }
+	QString ecName() const { return QString::fromStdString(m_spec.ec); }
+	QString graphName() const { return QString::fromStdString(m_spec.graph); }
+	void setEcName(QString const& _s) { m_spec.ec = _s.toStdString(); graphChanged(); update(); }
+	void setGraphName(QString const& _s) { m_spec.graph = _s.toStdString(); graphChanged(); update(); }
+
+	Lightbox::EventCompiler eventCompiler() const;
+
+signals:
+	void graphChanged();
+
+private:
+	Q_PROPERTY(QString ec READ ecName WRITE setEcName NOTIFY graphChanged)
+	Q_PROPERTY(QString graph READ graphName WRITE setGraphName NOTIFY graphChanged)
+
+	CompilerGraphSpec m_spec;
+};
+
+class ChartItem: public GraphItem
+{
+	Q_OBJECT
+
+public:
+	float yFrom() const { return m_yFrom; }
+	float yDelta() const { return m_yDelta; }
+	int yMode() const { return m_yMode; }
+	void setYFrom(float _v) { m_yFrom = _v; yScaleChanged(); update(); }
+	void setYDelta(float _v) { m_yDelta = _v; yScaleChanged(); update(); }
+	void setYMode(int _m) { m_yMode = _m; yScaleChanged(); update(); }
+
+signals:
+	void yScaleChanged();
+
+private:
+	Q_PROPERTY(float yFrom READ yFrom WRITE setYFrom NOTIFY yScaleChanged)
+	Q_PROPERTY(float yDelta READ yDelta WRITE setYDelta NOTIFY yScaleChanged)
+	Q_PROPERTY(int yMode READ yMode WRITE setYMode NOTIFY yScaleChanged)
+
+	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
+
+	float m_yFrom = 0;
+	float m_yDelta = 1;
+	int m_yMode = 0;		///< 0 -> yFrom/yDelta, 1 -> auto (global), 2 -> hint
+
+	QSGGeometry* m_geo = nullptr;
+};
+
+class TimelinesItem: public QQuickItem
+{
+	Q_OBJECT
+
+public:
+	TimelinesItem(QQuickItem* _p = nullptr): QQuickItem(_p)
+	{
+		setFlag(ItemHasContents, true);
+		connect(this, SIGNAL(changed()), SLOT(update()));
+	}
+
+	int offset() const { return m_offset; }
+	int pitch() const { return m_pitch; }
+
+	void setOffset(int _t) { m_offset = _t; emit timeScaleChanged(); }
+	void setPitch(int _t) { m_pitch = _t; emit timeScaleChanged(); }
+
+signals:
+	void timeScaleChanged();
+
+private:
+	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
+
+	Q_PROPERTY(int offset READ offset WRITE setOffset NOTIFY timeScaleChanged)
+	Q_PROPERTY(int pitch READ pitch WRITE setPitch NOTIFY timeScaleChanged)
+
+	int m_offset = 0;	///< in hops.
+	int m_pitch = 1;	///< in hops.
 };

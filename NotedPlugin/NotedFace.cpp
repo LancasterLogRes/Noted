@@ -21,15 +21,15 @@
 #include <cstdlib>
 #include <memory>
 #include <unordered_map>
-using namespace std;
-
 #include <QDebug>
 #include <QtGui>
-
 #include <Common/Common.h>
+#include "NotedFace.h"
+
+using namespace std;
 using namespace Lightbox;
 
-#include "NotedFace.h"
+NotedFace* NotedFace::s_this = nullptr;
 
 NotedFace::NotedFace(QWidget* _p):
 	QMainWindow					(_p),
@@ -42,6 +42,7 @@ NotedFace::NotedFace(QWidget* _p):
 	m_timelineOffset			(0),
 	m_pixelDuration				(1)
 {
+	s_this = this;
 }
 
 NotedFace::~NotedFace()

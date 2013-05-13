@@ -133,6 +133,8 @@ public:
 
 	inline void zoomTimeline(int _xFocus, double _factor) { auto pivot = timeOf(_xFocus); m_timelineOffset = pivot - (m_pixelDuration *= _factor) * _xFocus; emit durationChanged(); }
 
+	static NotedFace* get() { assert(s_this); return s_this; }
+
 public slots:
 	virtual void setCursor(qint64 _c, bool _warp = false) = 0;
 	inline void setTimelineOffset(qint64 _o) { if (m_timelineOffset != _o) { m_timelineOffset = _o; emit offsetChanged(); } }
@@ -163,6 +165,8 @@ protected:
 	Lightbox::Time m_fineCursor;
 	Lightbox::Time m_timelineOffset;
 	Lightbox::Time m_pixelDuration;
+
+	static NotedFace* s_this;
 };
 
 static const QVector<int16_t> DummyQVectorInt16;

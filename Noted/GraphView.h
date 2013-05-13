@@ -27,15 +27,16 @@
 
 #include "CurrentView.h"
 
-namespace Lightbox
-{
-
 struct CompilerGraphSpec
 {
 	std::string ec;
 	std::string graph;
 	Lightbox::Color c;
 };
+
+namespace Lightbox {
+class CompilerGraph;
+}
 
 class GraphView: public CurrentView
 {
@@ -45,7 +46,7 @@ public:
 	GraphView(QWidget* _parent, QString const& _name);
 	virtual ~GraphView();
 
-	void addGraph(CompilerGraph* _g);
+	void addGraph(Lightbox::CompilerGraph* _g);
 
 public slots:
 	void rejig();
@@ -55,7 +56,5 @@ private:
 
 	std::vector<CompilerGraphSpec> m_graphs;
 };
-
-}
 
 
