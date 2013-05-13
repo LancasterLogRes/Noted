@@ -138,13 +138,15 @@ QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 	gmx.translate(0, height());
 	gmx.scale(1, -height());
 
-	// Update - TODO: optimise by chunking (according to how stored on disk) and only inserting new chunks - use boundingRect to work out what chunks are necessary
-//	base->removeAllChildNodes();
+	// Update - TODO: optimise by chunking (according to how stored on disk) and only inserting new chunks - use boundingRect to work out what chunks are necessary.
+	// transform each chunk separately.
 	EventCompiler ec = eventCompiler();
 	if (GraphChart* g = ec.isNull() ? nullptr : dynamic_cast<GraphChart*>(ec.asA<EventCompilerImpl>().graph(spec().graph)))
 	{
 		if (!m_geo)
 		{
+			qDebug() << g << m_geo;
+			cnote << ec.name();
 			m_geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), g->data().size());
 			m_geo->setDrawingMode(GL_LINE_STRIP);
 			m_geo->setLineWidth(1);
@@ -155,6 +157,8 @@ QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 				v[1] = g->data()[i];
 			}
 		}
+
+		base->removeAllChildNodes();
 
 		QSGFlatColorMaterial *m = new QSGFlatColorMaterial;
 		m->setColor(QColor(255, 255, 255));
@@ -179,7 +183,8 @@ QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 			yd = g->yrangeHint().second - g->yrangeHint().first;
 		}
 		gmx.translate(0, yf);
-		gmx.scale(1, 1.f / yd);
+		gmx.scale(Noted::get()->hop() / (double)fromSeconds(m_pitch), 1.f / yd);
+		gmx.translate(fromSeconds(m_offset) / -(double)Noted::get()->hop(), 0);
 	}
 
 	base->setMatrix(gmx);
@@ -194,7 +199,27 @@ QSGNode* TimelinesItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 		base = new QSGSimpleRectNode();
 	}
 	base->setRect(boundingRect());
-	base->setColor(Qt::red);
+	base->setColor(QColor(255, 0, 0, 64));
+	return base;
+}
+
+void XLabelsItem::paint(QPainter* _p)
+{
+}
+
+void YLabelsItem::paint(QPainter* _p)
+{
+}
+
+QSGNode* YScaleItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
+{
+	QSGSimpleRectNode *base = static_cast<QSGSimpleRectNode*>(_old);
+	if (!base)
+	{
+		base = new QSGSimpleRectNode();
+	}
+	base->setRect(boundingRect());
+	base->setColor(QColor(0, 0, 255, 64));
 	return base;
 }
 
@@ -229,11 +254,20 @@ Noted::Noted(QWidget* _p):
 
 	qmlRegisterType<ChartItem>("com.llr", 1, 0, "Chart");
 	qmlRegisterType<TimelinesItem>("com.llr", 1, 0, "Timelines");
+	qmlRegisterType<XLabelsItem>("com.llr", 1, 0, "XLabels");
+	qmlRegisterType<YLabelsItem>("com.llr", 1, 0, "YLabels");
+	qmlRegisterType<YScaleItem>("com.llr", 1, 0, "YScale");
 
 	view = new QQuickView(QUrl("qrc:/Noted.qml"));
+
 	QWidget* w = QWidget::createWindowContainer(view);
 	view->setResizeMode(QQuickView::SizeRootObjectToView);
 	ui->fullDisplay->addWidget(w);
+	view->create();
+
+	auto tls = view->rootObject();
+	connect(this, SIGNAL(offsetChanged()), tls, SIGNAL(offsetChanged()));
+	connect(this, SIGNAL(durationChanged()), tls, SIGNAL(pitchChanged()));
 
 	for (auto i: findChildren<PrerenderedTimeline*>())
 		i->hide();

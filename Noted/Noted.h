@@ -45,6 +45,7 @@
 #include <QSlider>
 #include <QGraphicsScene>
 #include <QQuickItem>
+#include <QQuickPaintedItem>
 #include "GraphView.h"
 #include "NotedBase.h"
 
@@ -73,6 +74,8 @@ struct RealLibrary: public Library
 };
 
 typedef std::shared_ptr<RealLibrary> RealLibraryPtr;
+
+class TimelinesItem;
 
 class Noted: public NotedBase
 {
@@ -294,22 +297,20 @@ public:
 	TimelineItem(QQuickItem* _p = nullptr): QQuickItem(_p)
 	{
 		setFlag(ItemHasContents, true);
+		connect(this, SIGNAL(offsetChanged()), SLOT(update()));
+		connect(this, SIGNAL(pitchChanged()), SLOT(update()));
 	}
 
-	int offset() const { return m_offset; }
-	int pitch() const { return m_pitch; }
-	void setOffset(int _t) { m_offset = _t; timeScaleChanged(); update(); }
-	void setPitch(int _t) { m_pitch = _t; timeScaleChanged(); update(); }
-
 signals:
-	void timeScaleChanged();
+	void offsetChanged();
+	void pitchChanged();
 
-private:
-	Q_PROPERTY(int offset READ offset WRITE setOffset NOTIFY timeScaleChanged)
-	Q_PROPERTY(int pitch READ pitch WRITE setPitch NOTIFY timeScaleChanged)
+protected:
+	Q_PROPERTY(double offset MEMBER m_offset NOTIFY offsetChanged)
+	Q_PROPERTY(double pitch MEMBER m_pitch NOTIFY pitchChanged)
 
-	int m_offset;			///< in hops.
-	int m_pitch;			///< in hops.
+	double m_offset;
+	double m_pitch;
 };
 
 class GraphItem: public TimelineItem
@@ -328,7 +329,7 @@ public:
 signals:
 	void graphChanged();
 
-private:
+protected:
 	Q_PROPERTY(QString ec READ ecName WRITE setEcName NOTIFY graphChanged)
 	Q_PROPERTY(QString graph READ graphName WRITE setGraphName NOTIFY graphChanged)
 
@@ -350,7 +351,7 @@ public:
 signals:
 	void yScaleChanged();
 
-private:
+protected:
 	Q_PROPERTY(float yFrom READ yFrom WRITE setYFrom NOTIFY yScaleChanged)
 	Q_PROPERTY(float yDelta READ yDelta WRITE setYDelta NOTIFY yScaleChanged)
 	Q_PROPERTY(int yMode READ yMode WRITE setYMode NOTIFY yScaleChanged)
@@ -364,6 +365,74 @@ private:
 	QSGGeometry* m_geo = nullptr;
 };
 
+class YScaleItem: public QQuickItem
+{
+	Q_OBJECT
+
+public:
+	YScaleItem(QQuickItem* _p = nullptr): QQuickItem(_p)
+	{
+		setFlag(ItemHasContents, true);
+	}
+
+signals:
+	void changed();
+
+protected:
+	Q_PROPERTY(float yFrom MEMBER m_yFrom NOTIFY changed)
+	Q_PROPERTY(float yDelta MEMBER m_yDelta NOTIFY changed)
+
+	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
+
+	float m_yFrom = 0;
+	float m_yDelta = 1;
+};
+
+class YLabelsItem: public QQuickPaintedItem
+{
+	Q_OBJECT
+
+public:
+
+signals:
+	void changed();
+
+protected:
+	Q_PROPERTY(float yFrom MEMBER m_yFrom NOTIFY changed)
+	Q_PROPERTY(float yDelta MEMBER m_yDelta NOTIFY changed)
+
+	virtual void paint(QPainter* _p);
+
+	float m_yFrom = 0;
+	float m_yDelta = 1;
+};
+
+class XLabelsItem: public QQuickPaintedItem
+{
+	Q_OBJECT
+
+public:
+	XLabelsItem(QQuickItem* _p = nullptr): QQuickPaintedItem(_p)
+	{
+		setFlag(ItemHasContents, true);
+		connect(this, SIGNAL(offsetChanged()), SLOT(update()));
+		connect(this, SIGNAL(pitchChanged()), SLOT(update()));
+	}
+
+signals:
+	void offsetChanged();
+	void pitchChanged();
+
+protected:
+	Q_PROPERTY(double offset MEMBER m_offset NOTIFY offsetChanged)
+	Q_PROPERTY(double pitch MEMBER m_pitch NOTIFY pitchChanged)
+
+	virtual void paint(QPainter* _p);
+
+	double m_offset = 0;
+	double m_pitch = 1;
+};
+
 class TimelinesItem: public QQuickItem
 {
 	Q_OBJECT
@@ -372,24 +441,22 @@ public:
 	TimelinesItem(QQuickItem* _p = nullptr): QQuickItem(_p)
 	{
 		setFlag(ItemHasContents, true);
-		connect(this, SIGNAL(changed()), SLOT(update()));
+		connect(this, SIGNAL(offsetChanged()), SLOT(update()));
+		connect(this, SIGNAL(pitchChanged()), SLOT(update()));
 	}
 
-	int offset() const { return m_offset; }
-	int pitch() const { return m_pitch; }
-
-	void setOffset(int _t) { m_offset = _t; emit timeScaleChanged(); }
-	void setPitch(int _t) { m_pitch = _t; emit timeScaleChanged(); }
+	double offset() const { return Lightbox::toSeconds(Noted::get()->earliestVisible()); }
+	double pitch() const { return Lightbox::toSeconds(Noted::get()->pixelDuration()); }
+	void setOffset(double _s) const { Noted::get()->setTimelineOffset(Lightbox::fromSeconds(_s)); }
+	void setPitch(double _s) const { Noted::get()->setPixelDuration(Lightbox::fromSeconds(_s)); }
 
 signals:
-	void timeScaleChanged();
+	void offsetChanged();
+	void pitchChanged();
 
 private:
+	Q_PROPERTY(double offset READ offset WRITE setOffset NOTIFY offsetChanged)
+	Q_PROPERTY(double pitch READ pitch WRITE setPitch NOTIFY pitchChanged)
+
 	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
-
-	Q_PROPERTY(int offset READ offset WRITE setOffset NOTIFY timeScaleChanged)
-	Q_PROPERTY(int pitch READ pitch WRITE setPitch NOTIFY timeScaleChanged)
-
-	int m_offset = 0;	///< in hops.
-	int m_pitch = 1;	///< in hops.
 };

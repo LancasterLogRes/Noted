@@ -131,7 +131,7 @@ public:
 	virtual void info(QString const& _info, QString const& _color = "gray") = 0;
 	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const& _mangledName) = 0;
 
-	inline void zoomTimeline(int _xFocus, double _factor) { auto pivot = timeOf(_xFocus); m_timelineOffset = pivot - (m_pixelDuration *= _factor) * _xFocus; emit durationChanged(); }
+	inline void zoomTimeline(int _xFocus, double _factor) { auto pivot = timeOf(_xFocus); m_timelineOffset = pivot - (m_pixelDuration *= _factor) * _xFocus; emit durationChanged(); emit offsetChanged(); }
 
 	static NotedFace* get() { assert(s_this); return s_this; }
 
