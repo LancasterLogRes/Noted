@@ -27,7 +27,9 @@ SOURCES += main.cpp\
 		PropertiesEditor.cpp \
 	NotedGLWidget.cpp \
     Cache.cpp \
-    GraphView.cpp
+    GraphView.cpp \
+    DataMan.cpp \
+    DataSet.cpp
 
 HEADERS  += Noted.h \
 	WaveView.h \
@@ -50,7 +52,10 @@ HEADERS  += Noted.h \
 	CompileEventsView.h \
 	PropertiesEditor.h \
     Cache.h \
-    GraphView.h
+    GraphView.h \
+    DataMan.h \
+    Global.h \
+    DataSet.h
 
 FORMS    += Noted.ui
 

@@ -9,7 +9,7 @@ Timelines {
 
     onOffsetChanged: console.log("Offset changed" + offset)
     onPitchChanged: console.log("Pitch changed" + pitch)
-    Row { spacing: 20; Text { text: timelines.offset;  } Text { text: timelines.pitch; } }
+//    Row { spacing: 20; Text { text: timelines.offset;  } Text { text: timelines.pitch; } }
     Column {
         anchors.fill: parent
         XLabels {
@@ -17,6 +17,8 @@ Timelines {
             anchors.left: parent.left
             anchors.right: parent.right
             height: 30
+            offset: timelines.offset
+            pitch: timelines.pitch
         }
 
         Item {
@@ -71,7 +73,7 @@ Timelines {
                     offset: timelines.offset + mapToItem(timelines, 0, 0).x * pitch
                     pitch: timelines.pitch
                     anchors.fill: parent
-                    Row { spacing: 20; Text { text: parent.parent.offset;  } Text { text: parent.parent.pitch; } Text { text: timelines.offset + mapToItem(timelines, 0, 0).x * pitch; } }
+//                    Row { spacing: 20; Text { text: parent.parent.offset;  } Text { text: parent.parent.pitch; } Text { text: timelines.offset + mapToItem(timelines, 0, 0).x * pitch; } }
                 }
                 Chart {
                     ec: "RhythmDetectorFloat"

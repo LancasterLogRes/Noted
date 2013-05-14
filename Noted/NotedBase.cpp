@@ -45,7 +45,7 @@ NotedBase::~NotedBase()
 
 uint32_t NotedBase::calculateWaveFingerprint() const
 {
-	return uint32_t(qHash(m_sourceFileName)) ^ m_rate;
+	return uint32_t(qHash(m_sourceFileName)) ^ rate();
 }
 
 uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const
@@ -56,7 +56,7 @@ uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const
 		ret *= 69;
 	if (!m_floatFFT)
 		ret *= 42;
-	ret ^= m_hopSamples << 8;
+	ret ^= hopSamples() << 8;
 	ret ^= m_windowFunction.size() << 16;
 	return ret;
 }
@@ -64,15 +64,15 @@ uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const
 // returns true if it's pairs of max/rms, false if it's samples.
 bool NotedBase::waveBlock(Time _from, Time _duration, Lightbox::foreign_vector<float> o_toFill, bool _forceSamples) const
 {
-	int samples = fromBase(_duration, m_rate);
+	int samples = fromBase(_duration, rate());
 	int items = _forceSamples ? o_toFill.size() : (o_toFill.size() / 2);
 	int samplesPerItem = samples / items;
-	if (samplesPerItem < (int)m_hopSamples || _forceSamples)
+	if (samplesPerItem < (int)hopSamples() || _forceSamples)
 	{
 		QMutexLocker l(&x_wave);
 		int imin = -_from * items / _duration;
 		int imax = (duration() - _from) * items / _duration;
-		float const* d = m_wave.data<float>().data() + fromBase(_from, m_rate);
+		float const* d = m_wave.data<float>().data() + fromBase(_from, rate());
 		for (int i = 0; i < items; ++i)
 			o_toFill[i] = (i <= imin || i >= imax) ? 0 : d[samples * i / items];
 		return false;
@@ -102,21 +102,21 @@ Lightbox::foreign_vector<float const> NotedBase::waveWindow(int _window) const
 	_window = clamp<int, int>(_window, 0, hops());
 
 	// 0th window begins at (1 - hopsPerWindow) hops; all negative samples are 0 values.
-	int hopsPerWindow = m_windowFunction.size() / m_hopSamples;
+	int hopsPerWindow = m_windowFunction.size() / hopSamples();
 	int hop = _window + 1 - hopsPerWindow;
 	if (hop < 0)
 	{
 		shared_ptr<vector<float> > data = make_shared<vector<float> >(m_windowFunction.size(), 0.f);
-		if (m_windowFunction.size() + hop * m_hopSamples > 0)
+		if (m_windowFunction.size() + hop * hopSamples() > 0)
 		{
-			auto i = m_wave.data<float>().cropped(0, m_windowFunction.size() + hop * m_hopSamples);
+			auto i = m_wave.data<float>().cropped(0, m_windowFunction.size() + hop * hopSamples());
 			valcpy(data->data() + m_windowFunction.size() - i.count(), i.data(), i.count());
 		}
 		return foreign_vector<float const>(data->data(), m_windowFunction.size()).tied(data);
 	}
 	else
 		// same page - just return
-		return m_wave.data<float>().cropped(hop * m_hopSamples, m_windowFunction.size()).tied(std::make_shared<QMutexLocker>(&x_wave));
+		return m_wave.data<float>().cropped(hop * hopSamples(), m_windowFunction.size()).tied(std::make_shared<QMutexLocker>(&x_wave));
 }
 
 bool NotedBase::resampleWave()
@@ -127,25 +127,25 @@ bool NotedBase::resampleWave()
 	{
 		QMutexLocker l1(&x_waveProfile);
 		QMutexLocker l2(&x_wave);
-		unsigned outHops = (fromBase(toBase(info.frames, info.samplerate), m_rate) + m_hopSamples - 1) / m_hopSamples;
-		m_samples = outHops * m_hopSamples;
-		bool waveOk = m_wave.init(calculateWaveFingerprint(), "wave", m_samples * sizeof(float));
+		unsigned outHops = (fromBase(toBase(info.frames, info.samplerate), rate()) + hopSamples() - 1) / hopSamples();
+		m_incomingAudio->setSamples(outHops * hopSamples());
+		bool waveOk = m_wave.init(calculateWaveFingerprint(), "wave", samples() * sizeof(float));
 		bool waveProfileOk = m_waveProfile.init(calculateWaveFingerprint(), "waveProfile", 2 * sizeof(float), outHops);
 		if (!waveOk || !waveProfileOk)
 		{
 			sf_seek(sndfile, 0, SEEK_SET);
-			vector<float> buffer(m_hopSamples * info.channels);
+			vector<float> buffer(hopSamples() * info.channels);
 
 			float* cache = m_wave.data<float>().data();
 			float* wave = m_waveProfile.data<float>().data();
-			if (info.samplerate == (int)m_rate)
+			if (info.samplerate == (int)rate())
 			{
 				// Just copy across...
-				for (unsigned i = 0; i < outHops; ++i, wave += 2, cache += m_hopSamples)
+				for (unsigned i = 0; i < outHops; ++i, wave += 2, cache += hopSamples())
 				{
-					unsigned rc = sf_readf_float(sndfile, buffer.data(), m_hopSamples);
+					unsigned rc = sf_readf_float(sndfile, buffer.data(), hopSamples());
 					valcpy<float>(cache, buffer.data(), rc, 1, info.channels);	// just take the channel 0.
-					memset(cache + rc, 0, sizeof(float) * (m_hopSamples - rc));	// zeroify what's left.
+					memset(cache + rc, 0, sizeof(float) * (hopSamples() - rc));	// zeroify what's left.
 					wave[0] = sigma(buffer);
 					auto r = range(buffer);
 					wave[1] = max(fabs(r.first), r.second);
@@ -155,33 +155,33 @@ bool NotedBase::resampleWave()
 			else
 			{
 				// Needs a resample
-				double factor = double(m_rate) / info.samplerate;
+				double factor = double(rate()) / info.samplerate;
 				void* resampler = resample_open(1, factor, factor);
-				unsigned bufferPos = m_hopSamples;
+				unsigned bufferPos = hopSamples();
 
-				for (unsigned i = 0; i < outHops; ++i, wave += 2, cache += m_hopSamples)
+				for (unsigned i = 0; i < outHops; ++i, wave += 2, cache += hopSamples())
 				{
 					unsigned pagePos = 0;
-					while (pagePos != m_hopSamples)
+					while (pagePos != hopSamples())
 					{
-						if (bufferPos == m_hopSamples)
+						if (bufferPos == hopSamples())
 						{
 							// At end of current (input) buffer - refill and reset position.
-							int rc = sf_readf_float(sndfile, buffer.data(), m_hopSamples);
+							int rc = sf_readf_float(sndfile, buffer.data(), hopSamples());
 							if (rc < 0)
 								rc = 0;
 							valcpy<float>(buffer.data(), buffer.data(), rc, 1, info.channels);	// just take the channel 0.
-							memset(buffer.data() + rc, 0, sizeof(float) * (m_hopSamples - rc));	// zeroify what's left.
+							memset(buffer.data() + rc, 0, sizeof(float) * (hopSamples() - rc));	// zeroify what's left.
 							bufferPos = 0;
 						}
 						int used = 0;
-						pagePos += resample_process(resampler, factor, buffer.data() + bufferPos, m_hopSamples - bufferPos, i == outHops - 1, &used, cache + pagePos, m_hopSamples - pagePos);
+						pagePos += resample_process(resampler, factor, buffer.data() + bufferPos, hopSamples() - bufferPos, i == outHops - 1, &used, cache + pagePos, hopSamples() - pagePos);
 						bufferPos += used;
 					}
-					for (unsigned j = 0; j < m_hopSamples; ++j)
+					for (unsigned j = 0; j < hopSamples(); ++j)
 						cache[j] = clamp(cache[j], -1.f, 1.f);
-					wave[0] = sigma(cache, cache + m_hopSamples, 0.f);
-					auto r = range(cache, cache + m_hopSamples);
+					wave[0] = sigma(cache, cache + hopSamples(), 0.f);
+					auto r = range(cache, cache + hopSamples());
 					wave[1] = max(fabs(r.first), r.second);
 					WorkerThread::setCurrentProgress(i * 100 / outHops);
 				}

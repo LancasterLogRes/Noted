@@ -152,7 +152,7 @@ void EventsEditScene::wheelEvent(QGraphicsSceneWheelEvent* _wheelEvent)
 	{
 		int x = view()->mapFromScene(_wheelEvent->scenePos()).x();
 		Lightbox::Time t = c()->timeOf(x);
-		c()->setPixelDuration(c()->pixelDuration() * exp(_wheelEvent->delta() / 240.0));
+		c()->setPixelDuration(c()->pixelDuration() * exp(-_wheelEvent->delta() / 240.0));
 		c()->setTimelineOffset(t - x * c()->pixelDuration());
 	}
 	_wheelEvent->accept();

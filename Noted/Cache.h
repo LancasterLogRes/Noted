@@ -24,29 +24,46 @@
 #include <memory>
 #include <cstdint>
 #include <QString>
+#include <QHash>
 #include <QFile>
 #include <Common/Global.h>
 #include <Common/Algorithms.h>
 #include <Common/Time.h>
 
+typedef uint32_t DataKey;
+
 // Usage: call init(), then initialize data with call to data(), then mention it's good with setGood(). data() can then be used to read data.
 class Cache
 {
+	enum { IsGood = 1 };
+	struct Header
+	{
+		uint32_t flags;
+		uint32_t sourceKey;
+		uint32_t operationKey;
+		uint32_t bytes;
+	};
+
 public:
 	Cache();
 
-	bool init(uint32_t _fingerprint, QString const& _type, size_t _bytes);
-	template <class _T> Lightbox::foreign_vector<_T> data() { return Lightbox::foreign_vector<_T>((_T*)m_mapping, m_bytes / sizeof(_T)); }
-	template <class _T> Lightbox::foreign_vector<_T const> data() const { assert(m_isGood); return Lightbox::foreign_vector<_T const>((_T const*)m_mapping, m_bytes / sizeof(_T)); }
-	void setGood();
+	bool init(uint32_t _fingerprint, QString const& _type, size_t _bytes) { return init(_fingerprint, qHash(_type), 0, _bytes); }
+	bool init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, size_t _bytes);
+
+	bool isMapped() const { return !!m_mapping; }
+	bool isGood() const { assert(isMapped()); return header().flags & IsGood; }
+	size_t bytes() const { assert(isMapped()); return header().bytes; }
+
+	void setGood() { header().flags |= IsGood; }
+
+	template <class _T> Lightbox::foreign_vector<_T> data() { assert(isMapped()); return Lightbox::foreign_vector<_T>(payload<_T>(), bytes() / sizeof(_T)); }
+	template <class _T> Lightbox::foreign_vector<_T const> data() const { assert(isGood()); return Lightbox::foreign_vector<_T const>((_T const*)payload<_T>(), bytes() / sizeof(_T)); }
 
 protected:
-	uint32_t m_fingerprint;
-	QString m_type;
-	size_t m_bytes;
-	bool m_isGood;
+	template <class _T> _T* payload() const { return (_T*)(m_mapping + sizeof(Header)); }
+	Header& header() const { return *(Header*)m_mapping; }
 
-	uint8_t* m_mapping;
+	uint8_t* m_mapping = nullptr;
 	QFile m_file;
 };
 
@@ -56,7 +73,8 @@ class MipmappedCache: protected Cache
 public:
 	MipmappedCache();
 
-	bool init(uint32_t _fingerprint, QString const& _type, unsigned _sizeofItem, unsigned _items);
+	bool init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, unsigned _sizeofItem, unsigned _items);
+	bool init(uint32_t _fingerprint, QString const& _type, unsigned _sizeofItem, unsigned _items) { return init(_fingerprint, qHash(_type), (uint32_t)-1, _sizeofItem, _items); }
 
 	unsigned levels() const { return m_itemsAtDepth.size(); }
 
@@ -72,7 +90,7 @@ public:
 
 	template <class _T> Lightbox::foreign_vector<_T const> item(unsigned _depth, unsigned _i) const
 	{
-		if (m_isGood && (int)_depth < m_itemsAtDepth.size() && m_itemsAtDepth[_depth] > 0)
+		if (isGood() && (int)_depth < m_itemsAtDepth.size() && m_itemsAtDepth[_depth] > 0)
 			return Lightbox::foreign_vector<_T const>((_T*)(m_mappingAtDepth[_depth] + std::min<unsigned>(_i, m_itemsAtDepth[_depth] - 1) * m_sizeofItem), m_sizeofItem / sizeof(_T));
 		return Lightbox::foreign_vector<_T const>();
 	}
@@ -86,12 +104,12 @@ public:
 
 	template <class _T> Lightbox::foreign_vector<_T const> data(unsigned _depth = 0) const
 	{
-		if (m_isGood && (int)_depth < m_itemsAtDepth.size() && m_itemsAtDepth[_depth] > 0)
+		if (isGood() && (int)_depth < m_itemsAtDepth.size() && m_itemsAtDepth[_depth] > 0)
 			return Lightbox::foreign_vector<_T const>((_T*)m_mappingAtDepth[_depth], m_itemsAtDepth[_depth]);
 		return Lightbox::foreign_vector<_T const>();
 	}
 
-	// _Mean must operate on three foreign_vector<_T>, of size (_sizeofItem / sizeof(_T)), such that mean(arg1, arg2) = arg3.
+	// _Mean must operate on three foreign_vector<_T>, of size (_sizeofItem / sizeof(_T)), such that mean(arg1, arg2) = arg3; arg1 and arg2 are guaranteed sequential.
 	template <class _Mean, class _T> void generate(_Mean _mean, _T)
 	{
 		for (int d = 1; d < m_mappingAtDepth.size(); ++d)
@@ -129,7 +147,7 @@ private:
 	QList<uint8_t*> m_mappingAtDepth;
 	QList<size_t> m_itemsAtDepth;
 
-	size_t m_sizeofItem;
-	unsigned m_items;
-	unsigned m_levels;
+	size_t m_sizeofItem = 0;
+	unsigned m_items = 0;
+	unsigned m_levels = 0;
 };

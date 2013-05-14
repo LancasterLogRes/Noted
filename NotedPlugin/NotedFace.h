@@ -51,6 +51,44 @@ class QGLWidget;
 class NotedPlugin;
 class AuxLibraryFace;
 class Prerendered;
+class DataMan;
+
+typedef uint32_t SimpleHash;
+
+class IncomingAudio: public QObject
+{
+	Q_OBJECT
+
+public:
+	SimpleHash key() const { return m_key; }
+
+	QString const& filename() const { return m_filename; }
+	inline unsigned rate() const { return m_rate; }
+	inline unsigned hopSamples() const { return m_hopSamples; }
+	inline unsigned samples() const { return m_samples; }
+
+	void setRate(unsigned _s) { m_rate = _s; rejig(); emit changed(); }
+	void setHopSamples(unsigned _s) { m_hopSamples = _s; rejig(); emit changed(); }
+	void setSamples(unsigned _s) { m_samples = _s; rejig(); emit changed(); }
+	void setFilename(QString const& _fn) { m_filename = _fn; rejig(); emit changed(); }
+
+	inline unsigned hops() const { return samples() ? samples() / hopSamples() : 0; }
+	inline Lightbox::Time duration() const { return Lightbox::toBase(samples(), rate()); }
+	inline Lightbox::Time hop() const { return Lightbox::toBase(hopSamples(), rate()); }
+	inline unsigned index(Lightbox::Time _t) const { return (_t < 0) ? 0 : std::min<unsigned>(_t / hop(), samples() / hopSamples()); }
+
+signals:
+	void changed();
+
+private:
+	void rejig() { m_key = qHash(m_filename) ^ qHash(m_hopSamples) ^ qHash(m_rate); }
+
+	QString m_filename;
+	SimpleHash m_key = 0;
+	unsigned m_rate = 1;
+	unsigned m_hopSamples = 2;
+	unsigned m_samples = 0;
+};
 
 class NotedFace: public QMainWindow
 {
@@ -73,14 +111,14 @@ public:
 	inline Lightbox::Time latestVisible() const { return earliestVisible() + visibleDuration(); }
 	inline Lightbox::Time visibleDuration() const { return activeWidth() * pixelDuration(); }
 
-	inline unsigned hopSamples() const { return m_hopSamples; }
+	inline unsigned hopSamples() const { return m_incomingAudio->hopSamples(); }
 	inline unsigned windowSizeSamples() const { return m_windowFunction.size(); }
-	inline unsigned rate() const { return m_rate; }
+	inline unsigned rate() const { return m_incomingAudio->rate(); }
 	inline unsigned spectrumSize() const { return m_windowFunction.size() / 2 + 1; }
 	inline std::vector<float> const& windowFunction() const { return m_windowFunction; }
 	inline bool isZeroPhase() const { return m_zeroPhase; }
 	inline bool isFloatFFT() const { return m_floatFFT; }
-	inline unsigned samples() const { return m_samples; }
+	inline unsigned samples() const { return m_incomingAudio->samples(); }
 
 	inline Lightbox::Time hop() const { return Lightbox::toBase(hopSamples(), rate()); }
 	inline Lightbox::Time windowSize() const { return Lightbox::toBase(windowSizeSamples(), rate()); }
@@ -134,6 +172,8 @@ public:
 	inline void zoomTimeline(int _xFocus, double _factor) { auto pivot = timeOf(_xFocus); m_timelineOffset = pivot - (m_pixelDuration *= _factor) * _xFocus; emit durationChanged(); emit offsetChanged(); }
 
 	static NotedFace* get() { assert(s_this); return s_this; }
+	static IncomingAudio* audio() { return get()->m_incomingAudio; }
+	// TODO: static DataMan* data() const { return get()->m_dataMan; }
 
 public slots:
 	virtual void setCursor(qint64 _c, bool _warp = false) = 0;
@@ -155,9 +195,8 @@ signals:
 protected:
 	virtual void timelineDead(Timeline* _tl) = 0;
 
-	unsigned m_rate;
-	unsigned m_hopSamples;
-	unsigned m_samples;
+	IncomingAudio* m_incomingAudio = new IncomingAudio;
+
 	bool m_zeroPhase;
 	bool m_floatFFT;
 	std::vector<float> m_windowFunction;

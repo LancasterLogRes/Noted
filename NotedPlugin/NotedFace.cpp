@@ -33,9 +33,6 @@ NotedFace* NotedFace::s_this = nullptr;
 
 NotedFace::NotedFace(QWidget* _p):
 	QMainWindow					(_p),
-	m_rate						(1),
-	m_hopSamples				(2),
-	m_samples					(0),
 	m_zeroPhase					(false),
 	m_floatFFT					(true),
 	m_fineCursor				(0),

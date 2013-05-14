@@ -21,47 +21,49 @@
 #include <QDir>
 #include "Cache.h"
 
-Cache::Cache(): m_fingerprint(0), m_bytes(0), m_mapping(nullptr)
-{
-}
+Cache::Cache() {}
 
-bool Cache::init(uint32_t _fingerprint, QString const& _type, size_t _bytes)
+bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, size_t _bytes)
 {
-	m_fingerprint = _fingerprint;
-	m_type = _type;
-	m_bytes = _bytes;
+	if (m_mapping)
+		m_file.unmap(m_mapping);
 	m_file.close();
-	QString p = (QDir::tempPath() + "/Noted-%1").arg(m_fingerprint, 8, 16, QChar('0'));
+
+	QString p = (QDir::tempPath() + "/Noted-%1").arg(_sourceKey, 8, 16, QChar('0'));
 	QDir().mkpath(p);
-	QString f = (p + "/%1").arg(m_type);
+	QString f = (p + "/%1-%2").arg(_operationKey, 8, 16, QChar('0')).arg(_extraKey, 8, 16, QChar('0'));
 	m_file.setFileName(f);
 	m_file.open(QIODevice::ReadWrite);
-	m_isGood = false;
-	if (m_file.size() == (int)(_bytes + 4))
+
+	if (m_file.size() == (int)(_bytes + sizeof(Header)))
 	{
-		uint32_t good;
-		if (m_file.read((char*)&good, 4) == 4 && good == _bytes)
-			m_isGood = true;
+		// File looks the right size - map it and check the header.
+		m_mapping = m_file.map(0, m_file.size());
+		if (header().bytes == _bytes && header().operationKey == _operationKey && header().sourceKey == _sourceKey)
+			// Header agrees with parameters - trust the flags on whether it's complete.
+			return isGood();
+		// Header wrong - something changed between now and then or it's corrupt. In any case, reinitialize.
 	}
 	else
-		m_file.resize(_bytes + 4);
-	m_mapping = m_file.map(4, m_bytes);
-	assert(!m_bytes || m_mapping);
-	return m_isGood;
+	{
+		// File wrong size - resize and (re)initialize.
+		m_file.resize(_bytes + sizeof(Header));
+		m_mapping = m_file.map(0, m_file.size());
+	}
+
+	// Initialize header - we'll (re)compute payload.
+	header().bytes = _bytes;
+	header().flags = 0;
+	header().operationKey = _operationKey;
+	header().sourceKey = _sourceKey;
+
+	assert(isMapped());
+	return false;
 }
 
-void Cache::setGood()
-{
-	m_file.seek(0);
-	m_file.write((char*)&m_bytes, 4);
-	m_isGood = true;
-}
+MipmappedCache::MipmappedCache() {}
 
-MipmappedCache::MipmappedCache(): m_sizeofItem(0), m_items(0)
-{
-}
-
-bool MipmappedCache::init(uint32_t _fingerprint, QString const& _type, unsigned _sizeofItem, unsigned _items)
+bool MipmappedCache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, unsigned _sizeofItem, unsigned _items)
 {
 	m_sizeofItem = _sizeofItem;
 	m_items = _items;
@@ -79,12 +81,12 @@ bool MipmappedCache::init(uint32_t _fingerprint, QString const& _type, unsigned 
 		totalItems += levelItems;
 	}
 
-	bool ret = Cache::init(_fingerprint, _type, totalItems * m_sizeofItem);
+	bool ret = Cache::init(_sourceKey, _operationKey, _extraKey, totalItems * m_sizeofItem);
 	for (unsigned i = 0; i < levels(); ++i)
 	{
 		m_mappingAtDepth[i] += (size_t)m_mapping;
 		assert(m_mappingAtDepth[i] >= m_mapping);
-		assert(m_mappingAtDepth[i] + m_itemsAtDepth[i] * m_sizeofItem <= m_mapping + m_bytes);
+		assert(m_mappingAtDepth[i] + m_itemsAtDepth[i] * m_sizeofItem <= m_mapping + bytes());
 	}
 
 	return ret;

@@ -134,10 +134,6 @@ QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 	if (!base)
 		base = new QSGTransformNode;
 
-	QMatrix4x4 gmx;
-	gmx.translate(0, height());
-	gmx.scale(1, -height());
-
 	// Update - TODO: optimise by chunking (according to how stored on disk) and only inserting new chunks - use boundingRect to work out what chunks are necessary.
 	// transform each chunk separately.
 	EventCompiler ec = eventCompiler();
@@ -145,8 +141,6 @@ QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 	{
 		if (!m_geo)
 		{
-			qDebug() << g << m_geo;
-			cnote << ec.name();
 			m_geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), g->data().size());
 			m_geo->setDrawingMode(GL_LINE_STRIP);
 			m_geo->setLineWidth(1);
@@ -161,7 +155,7 @@ QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 		base->removeAllChildNodes();
 
 		QSGFlatColorMaterial *m = new QSGFlatColorMaterial;
-		m->setColor(QColor(255, 255, 255));
+		m->setColor(Qt::black);
 		QSGGeometryNode* n = new QSGGeometryNode();
 		n->setGeometry(m_geo);
 		n->setFlag(QSGNode::OwnsGeometry);
@@ -182,33 +176,96 @@ QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 			yf = g->yrangeHint().first;
 			yd = g->yrangeHint().second - g->yrangeHint().first;
 		}
+		QMatrix4x4 gmx;
+		gmx.translate(0, height());
+		gmx.scale(1, -height());
 		gmx.translate(0, yf);
 		gmx.scale(Noted::get()->hop() / (double)fromSeconds(m_pitch), 1.f / yd);
 		gmx.translate(fromSeconds(m_offset) / -(double)Noted::get()->hop(), 0);
+		base->setMatrix(gmx);
 	}
 
-	base->setMatrix(gmx);
 	return base;
 }
 
 QSGNode* TimelinesItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 {
-	QSGSimpleRectNode *base = static_cast<QSGSimpleRectNode*>(_old);
+	QSGTransformNode *base = static_cast<QSGTransformNode*>(_old);
 	if (!base)
+		base = new QSGTransformNode;
+
+	base->removeAllChildNodes();
+
+	unsigned majorCount = 0;
+	unsigned minorCount = 0;
+	GraphParameters<Time> nor(make_pair(Noted::get()->earliestVisible(), Noted::get()->earliestVisible() + Noted::get()->pixelDuration() * width()), width() / 80, toBase(1, 1000000));
+	for (Time t = nor.from; t < nor.to; t += nor.incr)
+		(nor.isMajor(t) ? majorCount : minorCount)++;
+
+	auto majorGeo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), majorCount * 2);
+	auto minorGeo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), minorCount * 2);
+
+	float* majorData = static_cast<float*>(majorGeo->vertexData());
+	float* minorData = static_cast<float*>(minorGeo->vertexData());
+	for (Time t = nor.from; t < nor.to; t += nor.incr)
 	{
-		base = new QSGSimpleRectNode();
+		float*& d = nor.isMajor(t) ? majorData : minorData;
+		d[0] = d[2] = t - Noted::get()->earliestVisible();
+		d[1] = 0;
+		d[3] = 1;
+		d += 4;
 	}
-	base->setRect(boundingRect());
-	base->setColor(QColor(255, 0, 0, 64));
+	assert(majorData == static_cast<float*>(majorGeo->vertexData()) + majorCount * 4);
+	assert(minorData == static_cast<float*>(minorGeo->vertexData()) + minorCount * 4);
+
+	minorGeo->setDrawingMode(GL_LINES);
+	majorGeo->setDrawingMode(GL_LINES);
+
+	QSGFlatColorMaterial* majorMaterial = new QSGFlatColorMaterial;
+	majorMaterial->setColor(QColor(127, 127, 127));
+	QSGGeometryNode* majorNode = new QSGGeometryNode();
+	majorNode->setGeometry(majorGeo);
+	majorNode->setFlag(QSGNode::OwnsGeometry);
+	majorNode->setMaterial(majorMaterial);
+	majorNode->setFlag(QSGNode::OwnsMaterial);
+	base->appendChildNode(majorNode);
+
+	QSGFlatColorMaterial* minorMaterial = new QSGFlatColorMaterial;
+	minorMaterial->setColor(QColor(192, 192, 192));
+	QSGGeometryNode* minorNode = new QSGGeometryNode();
+	minorNode->setGeometry(minorGeo);
+	minorNode->setFlag(QSGNode::OwnsGeometry);
+	minorNode->setMaterial(minorMaterial);
+	minorNode->setFlag(QSGNode::OwnsMaterial);
+	base->appendChildNode(minorNode);
+
+	QMatrix4x4 gmx;
+	gmx.scale(1 / (double)Noted::get()->pixelDuration(), height());
+	base->setMatrix(gmx);
+
 	return base;
 }
 
 void XLabelsItem::paint(QPainter* _p)
 {
+	_p->fillRect(_p->window(), QBrush(Qt::white));
+	GraphParameters<Time> nor(make_pair(Noted::get()->earliestVisible(), Noted::get()->earliestVisible() + Noted::get()->pixelDuration() * width()), width() / 80, toBase(1, 1000000));
+	for (Time t = nor.from; t < nor.to; t += nor.incr)
+		if (nor.isMajor(t))
+		{
+			float x = (t - Noted::get()->earliestVisible()) / (double)Noted::get()->pixelDuration();
+			QString s = QString::fromStdString(textualTime(t, nor.delta, nor.major));
+			_p->setPen(QColor(128, 128, 128));
+			QSize z = _p->fontMetrics().boundingRect(s).size();
+			z = QSize(z.width() + z.height(), z.height() * 1.5);
+			QRect r(x - z.width() / 2 , 0, z.width(), z.height());
+			_p->drawText(r, Qt::AlignCenter, s);
+		}
 }
 
 void YLabelsItem::paint(QPainter* _p)
 {
+	_p->fillRect(_p->window(), QBrush(Qt::white));
 }
 
 QSGNode* YScaleItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
@@ -219,7 +276,7 @@ QSGNode* YScaleItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 		base = new QSGSimpleRectNode();
 	}
 	base->setRect(boundingRect());
-	base->setColor(QColor(0, 0, 255, 64));
+	base->setColor(QColor(255, 255, 255, 192));
 	return base;
 }
 
@@ -909,7 +966,7 @@ void Noted::readSettings()
 	foreach (QString s, settings.value("dataViews").toStringList())
 		newDataView(s);
 
-	m_hopSamples = ui->hop->value();
+	m_incomingAudio->setHopSamples(ui->hop->value());
 	if (settings.contains("eventEditors"))
 		foreach (QString n, settings.value("eventEditors").toStringList())
 		{
@@ -1040,7 +1097,7 @@ void Noted::on_actOpenEvents_triggered()
 
 void Noted::on_sampleRate_currentIndexChanged(int)
 {
-	m_rate = ui->sampleRate->currentText().left(ui->sampleRate->currentText().size() - 3).toInt();
+	m_incomingAudio->setRate(ui->sampleRate->currentText().left(ui->sampleRate->currentText().size() - 3).toInt());
 	ui->hopPeriod->setText(QString("%1ms %2%").arg(fromBase(toBase(ui->hop->value(), rate()), 100000) / 100.0).arg(((ui->windowSize->value() - ui->hop->value()) * 1000 / ui->windowSize->value()) / 10.0));
 	ui->windowPeriod->setText(QString("%1ms %2Hz").arg(fromBase(toBase(ui->windowSize->value(), rate()), 100000) / 100.0).arg((rate() * 10 / ui->windowSize->value()) / 10.0));
 	noteLastValidIs(nullptr);
@@ -1289,7 +1346,7 @@ bool Noted::serviceAudio()
 			try {
 				int rate = -1;														// Default device rate.
 				if (ui->playRate->currentIndex() == ui->playRate->count() - 1)		// Working rate.
-					rate = m_rate;
+					rate = this->rate();
 				else if (ui->playRate->currentIndex() < ui->playRate->count() - 2)	// Specified rate.
 					ui->playRate->currentText().section(' ', 0, 0).toInt();
 				m_playback = shared_ptr<Audio::Playback>(new Audio::Playback(ui->playDevice->itemData(ui->playDevice->currentIndex()).toInt(), 2, rate, ui->playChunkSamples->value(), (ui->playChunks->value() == 2) ? -1 : ui->playChunks->value(), ui->force16Bit->isChecked()));
@@ -1302,7 +1359,7 @@ bool Noted::serviceAudio()
 			vector<float> output(f * m_playback->channels());
 			if (m_fineCursor >= 0 && m_fineCursor < duration())
 			{
-				if (m_rate == m_playback->rate())
+				if (rate() == m_playback->rate())
 				{
 					// no resampling necessary
 					waveBlock(m_fineCursor, toBase(f, r), &output, true);
@@ -1310,7 +1367,7 @@ bool Noted::serviceAudio()
 				else
 				{
 					vector<float> source(f);
-					double factor = double(m_playback->rate()) / m_rate;
+					double factor = double(m_playback->rate()) / rate();
 					if (m_fineCursorWas != m_fineCursor || !m_resampler)
 					{
 						// restart resampling.
@@ -1328,9 +1385,9 @@ bool Noted::serviceAudio()
 					while (outPos != f)
 					{
 						// At end of current (input) buffer - refill and reset position.
-						waveBlock(m_nextResample, toBase(f, m_rate), &source, true);
+						waveBlock(m_nextResample, toBase(f, rate()), &source, true);
 						outPos += resample_process(m_resampler, factor, &(source[0]), f, 0, &used, &(output[outPos]), f - outPos);
-						m_nextResample += toBase(used, m_rate);
+						m_nextResample += toBase(used, rate());
 					}
 					for (float& f: output)
 						f = clamp(f, -1.f, 1.f);
@@ -1361,7 +1418,7 @@ bool Noted::serviceAudio()
 		if (!m_capture)
 		{
 			try {
-				m_capture = shared_ptr<Audio::Capture>(new Audio::Capture(ui->captureDevice->itemData(ui->captureDevice->currentIndex()).toInt(), 1, m_rate, hopSamples(), (ui->captureChunks->value() == 2) ? -1 : ui->captureChunks->value()));
+				m_capture = shared_ptr<Audio::Capture>(new Audio::Capture(ui->captureDevice->itemData(ui->captureDevice->currentIndex()).toInt(), 1, rate(), hopSamples(), (ui->captureChunks->value() == 2) ? -1 : ui->captureChunks->value()));
 			} catch (...) {}
 			m_fftw = shared_ptr<FFTW>(new FFTW(windowSizeSamples()));
 			m_currentWave = vector<float>(windowSizeSamples(), 0);
@@ -1620,7 +1677,7 @@ void Noted::timerEvent(QTimerEvent*)
 			setCursor(0);
 			ui->actPlay->setChecked(false);
 		}
-		ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(m_fineCursor, toBase(samples(), m_rate), 0, 0).c_str());
+		ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(m_fineCursor, toBase(samples(), rate()), 0, 0).c_str());
 		m_cursorDirty = false;
 		if (ui->actFollow->isChecked() && (m_fineCursor < earliestVisible() || m_fineCursor > earliestVisible() + visibleDuration() * 7 / 8))
 			setTimelineOffset(m_fineCursor - visibleDuration() / 8);
@@ -1675,7 +1732,7 @@ void Noted::info(QString const& _info, QString const& _c)
 
 void Noted::updateParameters()
 {
-	m_hopSamples = ui->hop->value();
+	m_incomingAudio->setHopSamples(ui->hop->value());
 	m_windowFunction = Lightbox::windowFunction(ui->windowSize->value(), WindowFunction(ui->windowFunction->currentIndex()));
 	m_zeroPhase = ui->zeroPhase->isChecked();
 	m_floatFFT = ui->floatFFT->isChecked();

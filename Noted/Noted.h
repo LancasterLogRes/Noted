@@ -296,6 +296,7 @@ class TimelineItem: public QQuickItem
 public:
 	TimelineItem(QQuickItem* _p = nullptr): QQuickItem(_p)
 	{
+		setClip(true);
 		setFlag(ItemHasContents, true);
 		connect(this, SIGNAL(offsetChanged()), SLOT(update()));
 		connect(this, SIGNAL(pitchChanged()), SLOT(update()));
@@ -414,7 +415,6 @@ class XLabelsItem: public QQuickPaintedItem
 public:
 	XLabelsItem(QQuickItem* _p = nullptr): QQuickPaintedItem(_p)
 	{
-		setFlag(ItemHasContents, true);
 		connect(this, SIGNAL(offsetChanged()), SLOT(update()));
 		connect(this, SIGNAL(pitchChanged()), SLOT(update()));
 	}
