@@ -23,11 +23,17 @@
 
 Cache::Cache() {}
 
-bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, size_t _bytes)
+void Cache::reset()
 {
 	if (m_mapping)
 		m_file.unmap(m_mapping);
 	m_file.close();
+	m_mapping = nullptr;
+}
+
+bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, size_t _bytes)
+{
+	reset();
 
 	QString p = (QDir::tempPath() + "/Noted-%1").arg(_sourceKey, 8, 16, QChar('0'));
 	QDir().mkpath(p);
@@ -59,6 +65,51 @@ bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, s
 
 	assert(isMapped());
 	return false;
+}
+
+bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey)
+{
+	reset();
+
+	QString p = (QDir::tempPath() + "/Noted-%1").arg(_sourceKey, 8, 16, QChar('0'));
+	QDir().mkpath(p);
+	QString f = (p + "/%1-%2").arg(_operationKey, 8, 16, QChar('0')).arg(_extraKey, 8, 16, QChar('0'));
+	m_file.setFileName(f);
+	m_file.open(QIODevice::ReadWrite);
+
+	if (m_file.size() > (int)(sizeof(Header)))
+	{
+		// File looks the right size - map it and check the header.
+		m_mapping = m_file.map(0, m_file.size());
+		if (header().bytes == m_file.size() - sizeof(Header) && header().operationKey == _operationKey && header().sourceKey == _sourceKey && isGood())
+			// Header agrees with parameters - trust the flags on whether it's complete.
+			return true;
+		// Header wrong or data incomplete. In any case, restart.
+	}
+
+	// Something invalid - clear and restart.
+	reset();
+	m_file.open(QIODevice::ReadWrite | QIODevice::Truncate);
+
+	// Initialize header - we'll (re)compute payload.
+	Header h;
+	h.bytes = 0;
+	h.flags = 0;
+	h.operationKey = _operationKey;
+	h.sourceKey = _sourceKey;
+	append(h);
+
+	return false;
+}
+
+void Cache::setGood()
+{
+	if (!isMapped())
+	{
+		m_mapping = m_file.map(0, m_file.size());
+		header().bytes = m_file.size() - sizeof(Header);
+	}
+	header().flags = IsGood;
 }
 
 MipmappedCache::MipmappedCache() {}

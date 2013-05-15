@@ -4,54 +4,61 @@
 using namespace std;
 using namespace Lightbox;
 
-void DataSet::initHopper(unsigned _recordLength, unsigned _strideHops, Lightbox::Time _first)
+void DataSet::init(unsigned _recordLength, Time _stride, Time _first)
 {
 	m_first = _first;
-	m_stride = toBase(_strideHops * NotedFace::audio()->hopSamples(), NotedFace::audio()->rate());
+	m_stride = _stride;
 	m_recordLength = _recordLength;
-	setup(NotedFace::get()->audio()->hops() / _strideHops);
-}
-
-void DataSet::init(unsigned _recordLength, unsigned _stride, Lightbox::Time _first)
-{
-	m_first = _first;
-	m_stride = toBase(_stride, NotedFace::audio()->rate());
-	m_recordLength = _recordLength;
-	setup(NotedFace::get()->audio()->samples() / _stride);
+	setup(_stride ? (NotedFace::audio()->duration() - _first) / _stride : 0);
 }
 
 void DataSet::setup(unsigned _itemCount)
 {
-	bool haveRaw = m_raw.init(NotedFace::get()->audio()->key(), m_operationKey, 0, _itemCount * m_recordLength * sizeof(float));
-	m_pos = haveRaw ? m_raw.bytes() : 0;
+	(void)_itemCount;
+	m_raw.init(NotedFace::get()->audio()->key(), m_operationKey, 0);
+	if (m_recordLength)
+		m_toc.reset();
+	else
+		m_toc.init(NotedFace::get()->audio()->key(), m_operationKey, 1);
+	m_recordCount = 0;
+	m_pos = 0;
 	m_digest.clear();
-	m_rawData = m_raw.data<float>();
 }
 
-void DataSet::append(float _v)
+void DataSet::appendRecord(Time _t, foreign_vector<float> const& _vs)
 {
-	assert(m_rawData);
-	assert(m_pos < m_rawData.size());
-	m_rawData[m_pos] = _v;
-	m_pos++;
-}
+	if (m_stride && m_recordLength)
+		assert(m_recordCount == (_t - m_first) / m_stride);
+	if (m_stride && !m_recordLength)
+		assert(m_recordCount == (_t - m_first) / m_stride);
 
-void DataSet::append(Lightbox::foreign_vector<float> const& _vs)
-{
-	assert(m_rawData);
-	assert(m_pos + _vs.size() <= m_rawData.size());
-	valcpy(m_rawData.data() + m_pos, _vs.data(), _vs.size());
+	if (!m_toc.isGood() && !m_recordLength)
+	{
+		if (!m_stride)
+			m_toc.append(_t);
+		m_toc.append((TocRef)m_pos);
+	}
+	if (!m_raw.isGood())
+	{
+		if (!m_stride && m_recordLength)
+			m_raw.append(_t);
+		m_raw.append(_vs);
+	}
 	m_pos += _vs.size();
+	m_recordCount++;
 }
 
 void DataSet::done()
 {
-	m_rawData.reset();
+	m_raw.setGood();
 	DataMan::get()->noteDone(m_operationKey);
 }
 
 void DataSet::digest(DigestFlag _t)
 {
+	assert(m_stride);
+	assert(m_recordLength);
+	m_raw.setGood();
 	m_availableDigests |= _t;
 	m_digest[_t] = make_shared<MipmappedCache>();
 	bool haveDigest = m_digest[_t]->init(NotedFace::get()->audio()->key(), m_operationKey, qHash(_t), digestSize(_t) * recordLength() * sizeof(float), digestRecords());
@@ -61,8 +68,9 @@ void DataSet::digest(DigestFlag _t)
 	foreign_vector<float> digestData = m_digest[_t]->data<float>(0);
 	float* d = digestData.data();
 
-	float* f = m_rawData.data();
-	float* fe = m_rawData.data() + m_rawData.size();
+	auto rawData = m_raw.data<float>();
+	float* f = rawData.data();
+	float* fe = rawData.data() + rawData.size();
 	switch (_t)
 	{
 	case MeanDigest:

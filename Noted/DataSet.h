@@ -11,7 +11,6 @@ namespace Lightbox { template <> struct is_flag<DigestFlag>: public std::true_ty
 
 inline unsigned digestSize(DigestFlag _f) { switch (_f) { case MeanDigest: return 1; case MinMaxInOutDigest: return 4; default: return 0; } }
 
-
 /** Contains dataset of a given key, a hash of the source data and any operations applied to it.
  * Data is composed of records, each at a particular point in time.
  * Each record is composed of a (possibly varying) number of floats (recordLength).
@@ -35,18 +34,15 @@ public:
 	DataSet() {}
 	explicit DataSet(DataKey _operationKey): m_operationKey(_operationKey) {}
 
-	void init(unsigned _recordLength, unsigned _stride, Lightbox::Time _first = 0);	// _recordLength is in floats. _stride is in basic audio samples and is the distance between sequential readings. 0 for variable (NB no digest will be made). will be related to hops for most things.
-	void initRandom(unsigned _recordLength);	// _recordLength is in floats. no digest will be made
-	void initHopper(unsigned _recordLength, unsigned _strideHops = 1, Lightbox::Time _first = 0);	// _recordLength is in floats. _stride is in hops and is the distance between sequential readings. will be related to hops for most things.
+	void init(unsigned _recordLength, Lightbox::Time _stride = 0, Lightbox::Time _first = 0);	// _recordLength is in floats (0 for variable). _stride is the duration between sequential readings. will be related to hops for most things. (0 for variable). Don't call digest if either are zero.
 	void init(unsigned _itemCount);
 
-	void append(float _v);
-	void append(Lightbox::foreign_vector<float> const& _vs);
+	void appendRecord(Lightbox::Time _t, Lightbox::foreign_vector<float> const& _vs);
 
 	void digest(DigestFlag _type);
 	void done();
 
-	bool haveRaw() const { return m_pos == m_raw.bytes(); }
+	bool haveRaw() const { return m_raw.isGood() && (!m_toc.isMapped() || m_toc.isGood()); }
 	bool haveDigest(DigestFlag _type) { return m_digest.contains(_type); }
 
 	unsigned recordLength() const { return m_recordLength; }
@@ -54,15 +50,20 @@ public:
 	unsigned rawRecords() const { return m_raw.bytes() / sizeof(float) / m_recordLength; }
 	unsigned digestRecords() const { return (rawRecords() + m_digestBase - 1) / m_digestBase; }
 
+	// Methods for extracting data from fixed stride & record length sets.
 	std::tuple<Lightbox::Time, unsigned, int> bestFit(Lightbox::Time _from, Lightbox::Time _duration, unsigned _idealRecords) const;
 	void populateRaw(Lightbox::Time _from, float* _out, unsigned _size) const;
 	void populateDigest(DigestFlag _digest, unsigned _level, Lightbox::Time _from, float* _out, unsigned _size) const;
 
 private:
+	typedef uint32_t TocRef;
+
 	void setup(unsigned _itemCount);
 
 	DataKey m_operationKey = 0;
+	Cache m_toc;
 	Cache m_raw;
+
 	QMap<DigestFlag, std::shared_ptr<MipmappedCache>> m_digest;
 	DigestFlags m_availableDigests;
 	unsigned m_digestBase = 8;
@@ -71,7 +72,6 @@ private:
 	unsigned m_recordLength = 0;
 	Lightbox::Time m_stride = 0;
 	Lightbox::Time m_first = 0;
-
+	unsigned m_recordCount = 0;
 	unsigned m_pos = 0;
-	Lightbox::foreign_vector<float> m_rawData;
 };

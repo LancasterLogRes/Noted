@@ -23,8 +23,27 @@
 #include <Common/Time.h>
 #include <EventCompiler/EventCompiler.h>
 #include <NotedPlugin/CausalAnalysis.h>
+#include "DataSet.h"
 
 class EventsView;
+
+class DataSetDataStore
+{
+public:
+	DataSetDataStore(std::string const& _name);
+	virtual ~DataSetDataStore();
+
+	void fini();
+
+protected:
+	// Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
+	virtual void init(unsigned _recordLength, bool _dense);
+	virtual void shiftBuffer(unsigned _index, Lightbox::foreign_vector<float> const& _record);
+
+private:
+	DataKey m_key = 0;
+	DataSet* m_s = nullptr;
+};
 
 class CompileEventsView: public CausalAnalysis
 {
@@ -40,5 +59,6 @@ public:
 private:
 	EventsView* m_ev;
 	Lightbox::EventCompiler m_ec;
+
 };
 

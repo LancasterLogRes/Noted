@@ -18,12 +18,47 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QHash>
 #include "Noted.h"
 #include "EventsView.h"
+#include "DataMan.h"
 #include "CompileEventsView.h"
-
 using namespace std;
 using namespace Lightbox;
+
+DataSetDataStore::DataSetDataStore(std::string const& _name)
+{
+	m_key = qHash(QString::fromStdString(_name));
+}
+
+DataSetDataStore::~DataSetDataStore()
+{
+}
+
+// Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
+void DataSetDataStore::init(unsigned _recordLength, bool _dense)
+{
+	m_s = DataMan::get()->dataSet(m_key);
+	if (m_s->haveRaw() && m_s->haveDigest(MeanDigest) && m_s->haveDigest(MinMaxInOutDigest))
+		m_s = nullptr;
+	else
+	{
+		m_s->init(_recordLength, _dense ? Noted::audio()->hop(): 0, 0);
+	}
+}
+
+void DataSetDataStore::shiftBuffer(unsigned _index, foreign_vector<float> const& _record)
+{
+	if (m_s)
+		m_s->appendRecord(Noted::audio()->hop() * _index, _record);
+}
+
+void DataSetDataStore::fini()
+{
+	if (m_s)
+		m_s->done();
+	m_s = nullptr;
+}
 
 CompileEventsView::CompileEventsView(EventsView* _ev):
 	CausalAnalysis(QString("Compiling %1 events").arg(_ev->niceName())),
@@ -62,6 +97,7 @@ void CompileEventsView::record()
 
 void CompileEventsView::fini(bool _didRecord)
 {
+	// TODO: fini on the datastores!
 	if (_didRecord)
 		m_ev->finalizeEvents();
 }
