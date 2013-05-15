@@ -31,11 +31,13 @@
 #include <QMainWindow>
 #include <QRect>
 #include <QMutex>
+#include <QReadWriteLock>
 #include <QLibrary>
 
 #include <Common/Common.h>
 #include <EventCompiler/EventCompiler.h>
 
+#include "DataMan.h"
 #include "QGLWidgetProxy.h"
 #include "CausalAnalysis.h"
 #include "AcausalAnalysis.h"
@@ -88,6 +90,34 @@ private:
 	unsigned m_rate = 1;
 	unsigned m_hopSamples = 2;
 	unsigned m_samples = 0;
+};
+
+class GraphMan: public QObject
+{
+	Q_OBJECT
+
+public:
+	GraphMan() {}
+
+	// TODO: add a model
+
+	// TODO: rename CompilerGraph -> GraphSpec, use this for *all* graphs (wave, spectrum, &c.).
+	void registerGraph(QString _url, Lightbox::CompilerGraph const* _g) { { QReadLocker l(&x_graphs); m_graphs.insert(_url, _g); } emit graphAdded(_url); }
+	void unregisterGraph(QString _url) { { QWriteLocker l(&x_graphs); m_graphs.remove(_url); } emit graphRemoved(_url); }
+
+	QStringList graphs() const { QReadLocker l(&x_graphs); return m_graphs.keys(); }
+	Lightbox::CompilerGraph const* lockGraph(QString const& _url) const { x_graphs.lockForRead(); if (m_graphs.contains(_url)) return m_graphs[_url]; x_graphs.unlock(); return nullptr; }
+	void unlockGraph(Lightbox::CompilerGraph const* _graph) const { if (_graph) x_graphs.unlock(); }
+
+signals:
+	void graphAdded(QString _url);
+	void graphRemoved(QString _url);
+
+private:
+	Q_PROPERTY(QStringList graphs READ graphs())
+
+	mutable QReadWriteLock x_graphs;
+	QHash<QString, Lightbox::CompilerGraph const*> m_graphs;
 };
 
 class NotedFace: public QMainWindow
@@ -173,7 +203,8 @@ public:
 
 	static NotedFace* get() { assert(s_this); return s_this; }
 	static IncomingAudio* audio() { return get()->m_incomingAudio; }
-	// TODO: static DataMan* data() const { return get()->m_dataMan; }
+	static DataMan* data() { return get()->m_dataMan; }
+	static GraphMan* graphs() { return get()->m_graphMan; }
 
 public slots:
 	virtual void setCursor(qint64 _c, bool _warp = false) = 0;
@@ -196,6 +227,8 @@ protected:
 	virtual void timelineDead(Timeline* _tl) = 0;
 
 	IncomingAudio* m_incomingAudio = new IncomingAudio;
+	DataMan* m_dataMan = new DataMan;
+	GraphMan* m_graphMan = new GraphMan;
 
 	bool m_zeroPhase;
 	bool m_floatFFT;

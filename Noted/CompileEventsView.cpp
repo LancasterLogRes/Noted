@@ -21,7 +21,6 @@
 #include <QHash>
 #include "Noted.h"
 #include "EventsView.h"
-#include "DataMan.h"
 #include "CompileEventsView.h"
 using namespace std;
 using namespace Lightbox;
@@ -53,10 +52,14 @@ void DataSetDataStore::shiftBuffer(unsigned _index, foreign_vector<float> const&
 		m_s->appendRecord(Noted::audio()->hop() * _index, _record);
 }
 
-void DataSetDataStore::fini()
+void DataSetDataStore::fini(DigestFlags _digests)
 {
 	if (m_s)
+	{
+		for (DigestFlags f = _digests; f; f &= ~f.highestSet())
+			m_s->digest(f.highestSet());
 		m_s->done();
+	}
 	m_s = nullptr;
 }
 
@@ -69,12 +72,24 @@ CompileEventsView::CompileEventsView(EventsView* _ev):
 void CompileEventsView::init(bool _willRecord)
 {
 	m_ev->clearEvents();
-	if (!m_ev->eventCompiler().isNull())
+	if (!ec().isNull())
 	{
-		auto ises = m_ev->m_eventCompiler.init(m_ev->c()->spectrumSize(), m_ev->c()->hop(), toBase(2, m_ev->c()->rate()));
+		for (auto const& i: ec().asA<EventCompilerImpl>().graphMap())
+		{
+			auto ds = new DataSetDataStore(i.first);
+			m_dataStores.insert(i.second, ds);
+			i.second->setStore(ds);
+		}
+
+		auto ises = ec().init(Noted::get()->spectrumSize(), Noted::audio()->hop(), toBase(2, Noted::audio()->rate()));
 		if (_willRecord)
 			m_ev->setInitEvents(ises);
 	}
+}
+
+Lightbox::EventCompiler CompileEventsView::ec() const
+{
+	return m_ev->m_eventCompiler;
 }
 
 void CompileEventsView::process(unsigned _i, Lightbox::Time)
@@ -82,9 +97,9 @@ void CompileEventsView::process(unsigned _i, Lightbox::Time)
 	vector<float> mag(noted()->spectrumSize());
 	vector<float> phase(noted()->spectrumSize());
 	{
-		if (auto mf = noted()->isImmediate() ? dynamic_cast<Noted*>(noted())->cursorMagSpectrum() : dynamic_cast<Noted*>(noted())->magSpectrum(_i, 1))
+		if (auto mf = noted()->isImmediate() ? Noted::get()->cursorMagSpectrum() : Noted::get()->magSpectrum(_i, 1))
 			memcpy(mag.data(), mf.data(), sizeof(float) * mag.size());
-		if (auto pf = noted()->isImmediate() ? dynamic_cast<Noted*>(noted())->cursorPhaseSpectrum() : dynamic_cast<Noted*>(noted())->phaseSpectrum(_i, 1))
+		if (auto pf = noted()->isImmediate() ? Noted::get()->cursorPhaseSpectrum() : Noted::get()->phaseSpectrum(_i, 1))
 			memcpy(phase.data(), pf.data(), sizeof(float) * phase.size());
 	}
 	m_ev->m_current = m_ev->m_eventCompiler.compile(mag, phase, vector<float>());
@@ -97,7 +112,21 @@ void CompileEventsView::record()
 
 void CompileEventsView::fini(bool _didRecord)
 {
-	// TODO: fini on the datastores!
 	if (_didRecord)
+	{
+		for (auto i = m_dataStores.begin(); i != m_dataStores.end(); ++i)
+		{
+			if (dynamic_cast<GraphChart*>(i.key()))
+				i.value()->fini(MeanDigest | MinMaxInOutDigest);
+			else if (dynamic_cast<GraphDenseDenseFixed*>(i.key()))
+				i.value()->fini(MeanDigest);
+			else
+				i.value()->fini(DigestFlags());
+			delete i.value();
+			i.key()->setStore(nullptr);
+		}
+		m_dataStores.clear();
+
 		m_ev->finalizeEvents();
+	}
 }

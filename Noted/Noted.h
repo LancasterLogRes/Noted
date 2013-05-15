@@ -92,6 +92,8 @@ public:
 	explicit Noted(QWidget* parent = nullptr);
 	~Noted();
 
+	static Noted* get() { return dynamic_cast<Noted*>(NotedFace::get()); }
+
 	virtual int activeWidth() const;
 	virtual QGLWidget* glMaster() const;
 	virtual bool isPlaying() const { return !!m_playback; }
@@ -319,6 +321,8 @@ class GraphItem: public TimelineItem
 	Q_OBJECT
 
 public:
+	GraphItem();
+
 	CompilerGraphSpec spec() const { return m_spec; }
 	QString ecName() const { return QString::fromStdString(m_spec.ec); }
 	QString graphName() const { return QString::fromStdString(m_spec.graph); }
@@ -329,6 +333,9 @@ public:
 
 signals:
 	void graphChanged();
+
+private slots:
+	void noteDataComplete(quint32);
 
 protected:
 	Q_PROPERTY(QString ec READ ecName WRITE setEcName NOTIFY graphChanged)

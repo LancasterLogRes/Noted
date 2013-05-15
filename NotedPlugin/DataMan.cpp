@@ -1,6 +1,6 @@
 #include <Common/Global.h>
+#include "NotedFace.h"
 #include "DataMan.h"
-#include "Global.h"
 using namespace std;
 using namespace Lightbox;
 
@@ -29,6 +29,14 @@ void DataMan::removeDataSet(DataKey _k)
 void DataMan::pruneDataSets(unsigned _maxMegabytes)
 {
 	Q_UNUSED(_maxMegabytes);
+}
+
+unsigned DataMan::rawRecordCount(DataKey _key) const
+{
+	QMutexLocker l(&x_data);
+	if (m_data.contains(_key))
+		return m_data[_key]->rawRecords();
+	return 0;
 }
 
 tuple<Time, unsigned, int> DataMan::bestFit(DataKey _key, Time _from, Time _duration, unsigned _idealRecords) const

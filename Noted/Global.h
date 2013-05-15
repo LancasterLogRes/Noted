@@ -1,4 +1,4 @@
 #pragma once
 
 #include <NotedPlugin/NotedFace.h>
-#include "DataMan.h"
+#include <NotedPlugin/DataMan.h>

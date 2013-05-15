@@ -1,6 +1,6 @@
 #include <Common/Global.h>
+#include "NotedFace.h"
 #include "DataSet.h"
-#include "Global.h"
 using namespace std;
 using namespace Lightbox;
 
@@ -27,6 +27,8 @@ void DataSet::setup(unsigned _itemCount)
 
 void DataSet::appendRecord(Time _t, foreign_vector<float> const& _vs)
 {
+	assert(_vs.size());
+
 	if (m_stride && m_recordLength)
 		assert(m_recordCount == (_t - m_first) / m_stride);
 	if (m_stride && !m_recordLength)
@@ -51,6 +53,8 @@ void DataSet::appendRecord(Time _t, foreign_vector<float> const& _vs)
 void DataSet::done()
 {
 	m_raw.setGood();
+	if (m_toc.isOpen())
+		m_toc.setGood();
 	DataMan::get()->noteDone(m_operationKey);
 }
 
@@ -59,9 +63,11 @@ void DataSet::digest(DigestFlag _t)
 	assert(m_stride);
 	assert(m_recordLength);
 	m_raw.setGood();
+	if (m_toc.isOpen())
+		m_toc.setGood();
 	m_availableDigests |= _t;
 	m_digest[_t] = make_shared<MipmappedCache>();
-	bool haveDigest = m_digest[_t]->init(NotedFace::get()->audio()->key(), m_operationKey, qHash(_t), digestSize(_t) * recordLength() * sizeof(float), digestRecords());
+	bool haveDigest = m_digest[_t]->init(NotedFace::get()->audio()->key(), m_operationKey, qHash(2 + _t), digestSize(_t) * recordLength() * sizeof(float), digestRecords());
 	if (haveDigest)
 		return;
 

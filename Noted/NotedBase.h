@@ -31,7 +31,7 @@
 
 #include <Common/Common.h>
 #include <NotedPlugin/NotedFace.h>
-#include "Cache.h"
+#include <NotedPlugin/Cache.h>
 
 class Timeline;
 class QEvent;

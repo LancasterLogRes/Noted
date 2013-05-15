@@ -123,6 +123,18 @@ public:
 	}
 };
 
+GraphItem::GraphItem()
+{
+	connect(Noted::data(), SIGNAL(dataComplete(quint32)), SLOT(noteDataComplete()));
+}
+
+void GraphItem::noteDataComplete(quint32 _key)
+{
+	qDebug() << "data is complete somewhere :-)" << hex << _key;
+
+	update();
+}
+
 EventCompiler GraphItem::eventCompiler() const
 {
 	return NotedFace::get()->findEventCompiler(QString::fromStdString(spec().ec));
@@ -141,14 +153,22 @@ QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 	{
 		if (!m_geo)
 		{
-			m_geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), g->data().size());
+			// TODO: This is all wrong; doesn't account for m_first
+			DataKey k = qHash(QString::fromStdString(g->name()));
+			auto z = Noted::data()->rawRecordCount(k);
+			qDebug() << QString::fromStdString(g->name()) << " key:" << hex << k << " records:" << z;
+			if (!z)
+				return base;
+			float intermed[z];
+			Noted::data()->populateRaw(k, 0, intermed, z);
+			m_geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), z);
 			m_geo->setDrawingMode(GL_LINE_STRIP);
 			m_geo->setLineWidth(1);
 			float* v = static_cast<float*>(m_geo->vertexData());
-			for (unsigned i = 0; i < g->data().size(); ++i, v += 2)
+			for (unsigned i = 0; i < z; ++i, v += 2)
 			{
 				v[0] = i;
-				v[1] = g->data()[i];
+				v[1] = intermed[i];
 			}
 		}
 

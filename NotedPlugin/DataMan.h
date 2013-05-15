@@ -31,15 +31,16 @@ public:
 	void populateDigest(DataKey _key, DigestFlag _digest, unsigned _level, Lightbox::Time _from, float* _out, unsigned _size) const;	// _size == records * digestSize(_digest) * recordLength(_key) for integer records.
 	unsigned recordLength(DataKey _key) const;
 	DigestFlags availableDigests(DataKey _key) const;
+	unsigned rawRecordCount(DataKey _key) const;
 
 signals:
-	void dataComplete(DataKey);
+	void dataComplete(quint32);
 
 private:
 	void noteDone(DataKey _k) { emit dataComplete(_k); }
 
 	mutable QMutex x_data;
-	mutable QHash<DataKey, std::shared_ptr<DataSet>> m_data;		// not really, just because QHash doesn't provide a const returner of const& items.
+	mutable QHash<DataKey, std::shared_ptr<DataSet>> m_data;		// not really mutable, just because QHash doesn't provide a const returner of const& items.
 
 	static DataMan* s_this;
 };

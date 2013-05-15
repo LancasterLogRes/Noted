@@ -23,17 +23,17 @@
 #include <Common/Time.h>
 #include <EventCompiler/EventCompiler.h>
 #include <NotedPlugin/CausalAnalysis.h>
-#include "DataSet.h"
+#include <NotedPlugin/DataSet.h>
 
 class EventsView;
 
-class DataSetDataStore
+class DataSetDataStore: public Lightbox::DataStore
 {
 public:
 	DataSetDataStore(std::string const& _name);
 	virtual ~DataSetDataStore();
 
-	void fini();
+	void fini(DigestFlags _digests);
 
 protected:
 	// Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
@@ -56,9 +56,10 @@ public:
 	virtual void record();
 	virtual void fini(bool _didRecord);
 
+	Lightbox::EventCompiler ec() const;
+
 private:
 	EventsView* m_ev;
-	Lightbox::EventCompiler m_ec;
-
+	QMap<Lightbox::CompilerGraph*, DataSetDataStore*> m_dataStores;
 };
 

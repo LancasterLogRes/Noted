@@ -56,13 +56,13 @@ public:
 
 	bool isOpen() const { return m_file.isOpen(); }
 	bool isMapped() const { return !!m_mapping; }
-	bool isGood() const { assert(isMapped()); return header().flags & IsGood; }
+	bool isGood() const { return isMapped() && header().flags & IsGood; }
 	size_t bytes() const { assert(isMapped()); return header().bytes; }
 
 	void setGood();
 
 	template <class _T> void append(_T const& _raw) { assert(isOpen()); assert(!isGood()); m_file.write((char const*)&_raw, sizeof(_T)); }
-	template <class _T> void append(Lightbox::foreign_vector<_T> const& _v) { assert(isOpen()); assert(!isGood()); m_file.write((char const*)_v.data(), _v.size()); }
+	template <class _T> void append(Lightbox::foreign_vector<_T> const& _v) { assert(isOpen()); assert(!isGood()); m_file.write((char const*)_v.data(), _v.size() * sizeof(_T)); }
 	template <class _T> Lightbox::foreign_vector<_T> data() { assert(isMapped()); return Lightbox::foreign_vector<_T>(payload<_T>(), bytes() / sizeof(_T)); }
 	template <class _T> Lightbox::foreign_vector<_T const> data() const { assert(isGood()); return Lightbox::foreign_vector<_T const>((_T const*)payload<_T>(), bytes() / sizeof(_T)); }
 

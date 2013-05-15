@@ -104,9 +104,13 @@ bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey)
 
 void Cache::setGood()
 {
+	assert(isOpen());
 	if (!isMapped())
 	{
+		m_file.flush();
+		assert(m_file.size());
 		m_mapping = m_file.map(0, m_file.size());
+		assert(m_mapping);
 		header().bytes = m_file.size() - sizeof(Header);
 	}
 	header().flags = IsGood;
