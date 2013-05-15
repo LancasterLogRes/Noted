@@ -81,9 +81,7 @@ void CompileEventsView::init(bool _willRecord)
 			i.second->setStore(ds);
 		}
 
-		auto ises = ec().init(Noted::get()->spectrumSize(), Noted::audio()->hop(), toBase(2, Noted::audio()->rate()));
-		if (_willRecord)
-			m_ev->setInitEvents(ises);
+		ec().init(Noted::get()->spectrumSize(), Noted::audio()->hop(), toBase(2, Noted::audio()->rate()));
 	}
 }
 

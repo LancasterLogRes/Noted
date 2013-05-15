@@ -113,16 +113,11 @@ public:
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d);
 
 	virtual QList<EventsStore*> eventsStores() const;
-	virtual std::vector<float> graphEvents(float _temperature) const;
-	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType _et, float _temperature, Lightbox::Time _t = Lightbox::UndefinedTime) const;
 	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name);
 	virtual Lightbox::EventCompiler findEventCompiler(QString const& _name);
 	virtual QString getEventCompilerName(Lightbox::EventCompilerImpl* _ec);
-	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType _et, float _temperature = std::numeric_limits<float>::infinity()) const;
 
 	using QWidget::event;
-
-	void updateGraphs(std::vector<std::shared_ptr<Lightbox::AuxGraphsSpec> > const& _specs);
 
 	Lightbox::foreign_vector<float const> cursorWaveWindow() const;
 	Lightbox::foreign_vector<float const> cursorMagSpectrum() const;
@@ -179,7 +174,6 @@ private slots:
 	void on_actReadSettings_triggered();
 	void on_actWriteSettings_triggered();
 
-	void onDataViewDockClosed();
 	void updateEventStuff();
 	void updateAudioDevices();
 
@@ -187,8 +181,6 @@ signals:
 	void viewSizesChanged();
 
 private:
-	void newDataView(QString const& _n);
-
 	QList<EventsView*> eventsViews() const;
 
 	void changeEvent(QEvent *e);
@@ -262,11 +254,6 @@ private:
 	QMap<QString, RealLibraryPtr> m_libraries;
 	QSet<QString> m_dirtyLibraries;
 	QFileSystemWatcher m_libraryWatcher;
-
-	// Events...
-	void clearEventsCache();	// Call when eventsStores() or any of them have changed.
-	mutable bool d_initEvents;
-	mutable Lightbox::StreamEvents m_initEvents;
 
 	// Analysis (to be working in general)...
 	QMutex x_analysis;

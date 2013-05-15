@@ -34,7 +34,6 @@ public:
 
 	virtual QString niceName() const = 0;
 	virtual Lightbox::StreamEvents events(int _i) const = 0;
-	virtual Lightbox::StreamEvents initEvents() const = 0;
 	virtual Lightbox::StreamEvents cursorEvents() const = 0;
 	virtual unsigned eventCount() const = 0;
 	inline bool isPredetermined() const { return eventCount(); }

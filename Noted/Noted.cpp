@@ -40,7 +40,6 @@
 #include <NotedPlugin/CausalAnalysis.h>
 
 #include "GraphView.h"
-#include "DataView.h"
 #include "EventsView.h"
 #include "WorkerThread.h"
 #include "ProcessEventCompiler.h"
@@ -114,7 +113,6 @@ public:
 	FinishUpAc(): AcausalAnalysis("Finishing up") {}
 	void fini()
 	{
-		dynamic_cast<Noted*>(noted())->d_initEvents = true;
 		QMutexLocker l(&dynamic_cast<Noted*>(noted())->x_timelines);
 		foreach (Timeline* t, dynamic_cast<Noted*>(noted())->m_timelines)
 			if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
@@ -681,7 +679,7 @@ void Noted::unload(RealLibraryPtr const& _dl)
 		}
 		else if (_dl->cf.size())
 		{
-			clearEventsCache();
+			// TODO: Kill off any events that may be lingering (hopefully none).
 			foreach (auto f, _dl->cf)
 			{
 				// NOTE: A bit messy, this?
@@ -691,8 +689,7 @@ void Noted::unload(RealLibraryPtr const& _dl)
 				delete ui->eventCompilersList->findItems(QString::fromStdString(f.first), 0).front();
 			}
 			_dl->cf.clear();
-			foreach (auto w, findChildren<DataView*>())
-				w->checkSpec();
+			// TODO: update whatever has changed re: event compilers being available.
 		}
 		else if (_dl->auxFace && _dl->aux.lock()) // check if we're a plugin's auxilliary
 		{
@@ -779,62 +776,6 @@ bool Noted::eventFilter(QObject*, QEvent* _e)
 	if (_e->type() == QEvent::Resize)
 		viewSizesChanged();
 	return false;
-}
-
-vector<float> Noted::graphEvents(float _temperature) const
-{
-	// OPTIMIZE: memoize.
-	foreach (EventsView* ev, eventsViews())
-	{
-		vector<float> ret = ev->graphEvents(_temperature);
-		if (ret.size())
-			return ret;
-	}
-	return vector<float>();
-}
-
-StreamEvent Noted::eventOf(EventType _et, float _temperature, Time _t) const
-{
-	if (_t == UndefinedTime)
-		_t = cursor();
-	StreamEvent ret;
-	if (_t < duration() && _et != NoEvent)
-	{
-		bool careAboutNature = isFinite(_temperature);
-		auto evs = eventsViews();
-//		foreach (EventsView* ev, evs)
-//			ev->mutex()->lock();
-		for (int i = windowIndex(_t); i >= 0; --i)
-			foreach (EventsView* ev, evs)
-				foreach (StreamEvent const& e, ev->events(i))
-					if (e.type == _et && (e.temperature == _temperature || !careAboutNature))
-					{
-						ret = e;
-						goto OK;
-					}
-//					else
-//						cdebug << "Not event" << e;
-		OK:;
-//		foreach (EventsView* ev, evs)
-//			ev->mutex()->unlock();
-	}
-	return ret;
-}
-
-StreamEvents Noted::initEventsOf(EventType _et, float _temperature) const
-{
-	if (d_initEvents)
-	{
-		d_initEvents = false;
-		foreach (EventsView* ev, eventsViews())
-			catenate(m_initEvents, ev->initEvents());
-	}
-	StreamEvents ret;
-	bool careAboutNature = isFinite(_temperature);
-	foreach (StreamEvent const& e, m_initEvents)
-		if (e.type == _et && (e.temperature == _temperature || !careAboutNature))
-			ret.push_back(e);
-	return ret;
 }
 
 EventCompiler Noted::newEventCompiler(QString const& _name)
@@ -983,9 +924,6 @@ void Noted::readSettings()
 		m_fineCursor = settings.value("cursor").toLongLong();
 	}
 
-	foreach (QString s, settings.value("dataViews").toStringList())
-		newDataView(s);
-
 	m_incomingAudio->setHopSamples(ui->hop->value());
 	if (settings.contains("eventEditors"))
 		foreach (QString n, settings.value("eventEditors").toStringList())
@@ -1015,11 +953,6 @@ void Noted::writeSettings()
 /*	foreach (auto l, m_libraries)
 		if (l->p)
 			l->p->writeSettings(settings);*/
-
-	QStringList dataViews;
-	foreach (DataView* dv, findChildren<DataView*>())
-		dataViews.push_back(dv->objectName());
-	settings.setValue("dataViews", dataViews);
 
 	writeBaseSettings(settings);
 
@@ -1141,7 +1074,6 @@ void Noted::timelineDead(Timeline* _tl)
 {
 	QMutexLocker l(&x_timelines);
 	m_timelines.remove(_tl);
-	clearEventsCache();
 }
 
 bool Noted::serviceCompute()
@@ -1565,52 +1497,8 @@ void Noted::setAudio(QString const& _filename)
 	resumeWork();
 }
 
-void Noted::newDataView(QString const& _n)
-{
-	QDockWidget* dw = new QDockWidget(_n, this);
-	dw->setObjectName(_n + "Dock");
-	DataView* dv = new DataView(dw, _n);
-	dw->setAllowedAreas(Qt::AllDockWidgetAreas);
-	QMainWindow::addDockWidget(Qt::BottomDockWidgetArea, dw, Qt::Horizontal);
-	dw->setFeatures(dw->features() | QDockWidget::DockWidgetVerticalTitleBar);
-	dw->setWidget(dv);
-	connect(dw, SIGNAL(visibilityChanged(bool)), this, SLOT(onDataViewDockClosed()));
-	dw->show();
-}
-
-void Noted::updateGraphs(vector<shared_ptr<AuxGraphsSpec> > const& _specs)
-{
-
-	foreach (DataView* dv, findChildren<DataView*>())
-		dv->setEnabled(false);
-
-	foreach (shared_ptr<AuxGraphsSpec> const& s, _specs)
-	{
-		QString n = QString::fromStdString(s->name);
-		if (DataView* dv = findChild<DataView*>(n))
-		{
-			dv->rejig();
-			dv->setEnabled(true);
-		}
-		else
-			newDataView(n);
-	}
-}
-
-void Noted::onDataViewDockClosed()
-{
-	foreach (DataView* dv, findChildren<DataView*>())
-		if (!dv->isEnabled() && dv->parentWidget()->isHidden())
-			dv->parentWidget()->deleteLater();
-}
-
 void Noted::updateEventStuff()
 {
-	vector< shared_ptr<AuxGraphsSpec> > gspecs;
-	foreach (auto e, initEventsOf(GraphSpecComment))
-		gspecs.push_back(dynamic_pointer_cast<AuxGraphsSpec>(e.aux()));
-	updateGraphs(gspecs);
-
 	QMutexLocker l(&x_timelines);
 	for (EventsView* ev: eventsViews())
 	{
@@ -1633,7 +1521,6 @@ void Noted::updateEventStuff()
 					dw->show();
 				}
 			}
-		ev->updateEventTypes();
 	}
 }
 
@@ -1718,14 +1605,6 @@ void Noted::changeEvent(QEvent *e)
 	}
 }
 
-bool eventVisible(QVariant const& _v, Lightbox::StreamEvent const& _e)
-{
-	return (QMetaType::Type(_v.type()) == QMetaType::Float && _e.temperature == _v.toFloat() && _e.type >= Lightbox::Graph)
-			|| (_v.type() == QVariant::Int && _v.toInt() == int(_e.type))
-			|| (_v.type() == QVariant::Bool && (_e.type >= Lightbox::Graph) == (_v.toBool()))
-			|| !_v.isValid();
-}
-
 void Noted::on_clearInfo_clicked()
 {
 	m_info.clear();
@@ -1756,12 +1635,6 @@ void Noted::updateParameters()
 	m_windowFunction = Lightbox::windowFunction(ui->windowSize->value(), WindowFunction(ui->windowFunction->currentIndex()));
 	m_zeroPhase = ui->zeroPhase->isChecked();
 	m_floatFFT = ui->floatFFT->isChecked();
-}
-
-void Noted::clearEventsCache()
-{
-	m_initEvents.clear();
-	d_initEvents = true;
 }
 
 void Noted::rejigAudio()

@@ -170,9 +170,6 @@ public:
 	virtual Lightbox::foreign_vector<float const> deltaPhaseSpectrum(int _i, int _n) const = 0;
 
 	virtual QList<EventsStore*> eventsStores() const = 0;
-	virtual std::vector<float> graphEvents(float _temperature) const = 0;
-	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType _et, float _temperature = std::numeric_limits<float>::infinity(), Lightbox::Time _t = Lightbox::UndefinedTime) const = 0;
-	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType _et, float _temperature = std::numeric_limits<float>::infinity()) const = 0;
 	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name) = 0;
 	virtual Lightbox::EventCompiler findEventCompiler(QString const& _name) = 0;
 	virtual QString getEventCompilerName(Lightbox::EventCompilerImpl* _ec) = 0;
@@ -269,9 +266,6 @@ public:
 	virtual Lightbox::foreign_vector<float const> deltaPhaseSpectrum(int, int) const { return Lightbox::foreign_vector<float const>(); }
 	virtual Lightbox::foreign_vector<float const> phaseSpectrum(int, int) const { return Lightbox::foreign_vector<float const>(); }
 
-	virtual std::vector<float> graphEvents(float) const { return std::vector<float>(); }
-	virtual Lightbox::StreamEvent eventOf(Lightbox::EventType, float = std::numeric_limits<float>::infinity(), Lightbox::Time = Lightbox::UndefinedTime) const { return Lightbox::StreamEvent(); }
-	virtual Lightbox::StreamEvents initEventsOf(Lightbox::EventType, float = std::numeric_limits<float>::infinity()) const { return Lightbox::StreamEvents(); }
 	virtual QList<EventsStore*> eventsStores() const { return QList<EventsStore*>(); }
 	virtual Lightbox::EventCompiler newEventCompiler(QString const&) { return Lightbox::EventCompiler(); }
 	virtual Lightbox::EventCompiler findEventCompiler(QString const&) { return Lightbox::EventCompiler(); }

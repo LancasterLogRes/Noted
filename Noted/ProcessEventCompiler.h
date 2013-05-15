@@ -31,14 +31,13 @@ public:
 	std::string arguments;
 	LIGHTBOX_PROPERTIES(arguments);
 
-	virtual Lightbox::StreamEvents init()
+	virtual void init()
 	{
 		m_p.kill();
 		m_p.waitForFinished();
 		QStringList args;
 		args << QString::number(bands()) << QString::number(hop()) << QString::number(nyquist()) << QString::fromStdString(arguments).split(" ");
 		m_p.start(m_program, args);
-		return Lightbox::StreamEvents();
 	}
 
 	virtual Lightbox::StreamEvents compile(Lightbox::Time _t, std::vector<float> const& _mag, std::vector<float> const& _phase, std::vector<float> const& _wave)

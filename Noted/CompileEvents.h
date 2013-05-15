@@ -27,11 +27,5 @@ class CompileEvents: public CausalAnalysis
 public:
 	CompileEvents(): CausalAnalysis("Compiling all events") {}
 
-	virtual void init(bool _willRecord)
-	{
-		if (_willRecord)
-		{
-			dynamic_cast<Noted*>(noted())->clearEventsCache();
-		}
-	}
+	virtual void init(bool _willRecord) {}
 };

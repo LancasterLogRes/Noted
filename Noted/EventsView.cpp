@@ -96,10 +96,6 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	m_channel->addItem("2");
 	m_channel->addItem("3");
 
-	m_selection = new QComboBox(this);
-	m_selection->setGeometry(0, m_label->height() + c_size + c_margin * 2, (c_size + c_margin) * 5 + c_size, c_size);
-	connect(m_selection, SIGNAL(currentIndexChanged(int)), SLOT(rerender()));
-
 	initTimeline(c());
 
 	c()->noteEventCompilersChanged();
@@ -124,42 +120,10 @@ void EventsView::clearEvents()
 {
 	cnote << "CLEARING EVENTS OF" << (void*)this << m_savedName;
 	QMutexLocker l(&x_events);
-	m_initEvents.clear();
 	m_events.clear();
 	m_current.clear();
-	m_graphEvents.clear();
-	m_auxEvents.clear();
 	if (m_eventsEditor)
 		m_eventsEditor->scene()->clear();
-}
-
-void EventsView::filterEvents()
-{
-	QMutexLocker l(&x_events);
-	int i = 0;
-	QList<StreamEvents> filtered;
-	filtered.reserve(m_events.size());
-	for (StreamEvents const& es: m_events)
-	{
-		filtered.push_back(StreamEvents());
-		for (StreamEvent const& e: es)
-			if (isGraph(e.type))
-			{
-				auto it = m_graphEvents.insert(make_pair(e.temperature, vector<float>()));
-				if (it.second)
-					it.first->second = vector<float>(m_events.size());
-				it.first->second[i] = e.strength;
-			}
-			else if (isComment(e.type))
-			{
-				auto it = m_auxEvents.insert(make_pair(e.temperature, map<int, shared_ptr<StreamEvent::Aux> >()));
-				it.first->second[i] = e.aux();
-			}
-			else
-				filtered.back().push_back(e);
-		++i;
-	}
-	m_events = filtered;
 }
 
 Lightbox::StreamEvents EventsView::cursorEvents() const
@@ -168,8 +132,7 @@ Lightbox::StreamEvents EventsView::cursorEvents() const
 	int ch = m_channel->currentIndex() - 1;
 	if (ch >= 0)
 		for (StreamEvent e: m_current)
-			if (!isGraph(e.type) && !isComment(e.type))
-				ret.push_back(e.assignedTo(ch));
+			ret.push_back(e.assignedTo(ch));
 	return ret;
 }
 
@@ -178,20 +141,8 @@ void EventsView::channelChanged()
 	onUseChanged();//for now...
 }
 
-shared_ptr<StreamEvent::Aux> EventsView::auxEvent(float _temperature, int _pos) const
-{
-	auto it = m_auxEvents.find(_temperature);
-	if (it == m_auxEvents.end())
-		return shared_ptr<StreamEvent::Aux>();
-	auto rit = it->second.upper_bound(_pos);
-	if (rit != it->second.begin())
-		rit = prev(rit);
-	return rit->second;
-}
-
 void EventsView::finalizeEvents()
 {
-	filterEvents();
 	QTimer::singleShot(0, this, SLOT(setNewEvents()));
 }
 
@@ -222,12 +173,6 @@ void EventsView::appendEvents(StreamEvents const& _se)
 {
 	QMutexLocker l(&x_events);
 	m_events.push_back(_se);
-}
-
-void EventsView::setInitEvents(StreamEvents const& _se)
-{
-	QMutexLocker l(&x_events);
-	m_initEvents = _se;
 }
 
 void EventsView::duplicate()
@@ -390,136 +335,4 @@ void EventsView::exportGraph()
 			for (ti = 0; ti < tiMax; ++ti, t += h)
 				inner();
 	}
-}
-
-
-void updateCombo(QComboBox* _box, set<float> const& _temperatures, set<EventType> _types)
-{
-	QString s =  _box->currentText();
-	_box->clear();
-	foreach (float n, _temperatures)
-	{
-		QPixmap pm(16, 16);
-		pm.fill(QColor::fromHsvF(n, 0.5, 0.85));
-		_box->insertItem(_box->count(), pm, QString("Graph events of temperature %1").arg(n), n);
-	}
-	_box->insertItem(_box->count(), "All Graph events", true);
-	foreach (EventType e, _types)
-		_box->insertItem(_box->count(), QString("All %1 events").arg(toString(e).c_str()), int(e));
-	_box->insertItem(_box->count(), "All non-Graph events", false);
-	_box->insertItem(_box->count(), "All events");
-	for (int i = 0; i < _box->count(); ++i)
-		if (_box->itemText(i) == s)
-		{
-			_box->setCurrentIndex(i);
-			goto OK;
-		}
-	_box->setCurrentIndex(_box->count() - 1);
-	OK:;
-}
-
-void EventsView::updateEventTypes()
-{
-	set<float> temperatures;
-	set<EventType> types;
-	QMutexLocker l(&x_events);
-	foreach (auto es, m_events)
-		foreach (auto e, es)
-			if (e.type >= Graph)
-				temperatures.insert(e.temperature);
-			else
-				types.insert(e.type);
-	updateCombo(m_selection, temperatures, types);
-}
-
-void EventsView::renderGL(QSize _s)
-{
-	PrerenderedTimeline::renderGL(_s);
-
-	if (size().isEmpty() || m_eventCompiler.isNull() || !m_eventCompiler.asA<EventCompilerImpl>().graphMap().size())
-		return;
-	QOpenGLPaintDevice glpd(size());
-	QPainter p(&glpd);
-
-	if (!p.isActive())
-		return;
-
-	int _dx = 0;
-	int _dw = width();
-	int y = 0;
-	int h = height() / (m_eventCompiler.asA<EventCompilerImpl>().graphMap().size());
-
-	auto hop = c()->hop();
-
-	for (CompilerGraph* g: m_eventCompiler.asA<EventCompilerImpl>().graphs())
-		if (GraphSpectrum* s = dynamic_cast<GraphSpectrum*>(g))
-		{
-			auto d = s->data();
-			if (d.size())
-			{
-				auto ifrom = d.lower_bound(renderingTimeOf(_dx - 3) / hop);
-				if (ifrom != d.begin())
-					--ifrom;
-				auto ito = d.upper_bound(renderingTimeOf(_dx + _dw + 3) / hop);
-				if (ito != d.end())
-					++ito;
-				auto xo = XOf::toUnity(s->yrangeReal());
-				int lx = 0;
-				auto li = d.begin();
-				for (auto i = ifrom; i != ito; ++i)
-				{
-					int x = renderingPositionOf(i->first * hop);
-					if (i != ifrom)
-						for (unsigned b = 0, bs = i->second.size(); b < bs; ++b)
-						{
-							float v = li->second[b];
-							float v0to767 = xo.apply(v) * 767;
-							p.fillRect(QRect(lx, y + b * h / bs, x - lx, (b + 1) * h / bs - b * h / bs), QBrush(QColor(clamp(v0to767, 0, 255), clamp(v0to767 - 256, 0, 255), clamp(v0to767 - 512, 0, 255))));
-						}
-					lx = x;
-					li = i;
-				}
-			}
-			y += h;
-		}
-		else if (GraphChart* s = dynamic_cast<GraphChart*>(g))
-		{
-			auto d = s->data();
-			if (d.size())
-			{
-				int ifrom = max<int>(0, c()->windowIndex(renderingTimeOf(_dx - 1)) - 1);
-				int ito = min<int>(d.size(), c()->windowIndex(renderingTimeOf(_dx + _dw + 1)) + 1);
-				auto r = range(&(d[ifrom]), &(d[ito]));
-				auto scale = (r.second != r.first) ? h / (r.second - r.first) : h;
-				p.setPen(QColor(64, 64, 64));
-				QPoint lp;
-				for (int i = ifrom; i < ito; ++i)
-				{
-					QPoint cp(renderingPositionOf(i * hop), y + h - (d[i] - r.first) * scale);
-					if (i != ifrom)
-						p.drawLine(lp, cp);
-					lp = cp;
-				}
-			}
-			y += h;
-		}
-/*
-	h = height() - y;	// don't waste any space :)
-	int ifrom = c()->windowIndex(renderingTimeOf(_dx - 3)) - 1;
-	int ito = min(c()->hops(), c()->windowIndex(renderingTimeOf(_dx + _dw + 3))) + 1;
-	for (auto g: m_graphEvents)
-		if (eventVisible(m_selection->itemData(m_selection->currentIndex()), StreamEvent(1.f, g.first)))
-		{
-			float n = toHue(g.first);
-			p.setPen(QColor::fromHsvF(n, 0.5f, 0.6f * Color::hueCorrection(n)));
-			QPoint lp;
-			for (int i = ifrom; i < ito; ++i)
-			{
-				QPoint cp(renderingPositionOf(i * hop), y + h - g.second[i] * h);
-				if (i != ifrom)
-					p.drawLine(lp, cp);
-				lp = cp;
-			}
-		}
-	*/
 }

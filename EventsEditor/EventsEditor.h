@@ -53,7 +53,6 @@ public:
 	EventsEditScene* scene() const { return &*m_scene; }
 	NotedFace* c() const;
 	virtual Lightbox::StreamEvents events(int _i) const;
-	virtual Lightbox::StreamEvents initEvents() const { return Lightbox::StreamEvents(); }
 	virtual Lightbox::StreamEvents cursorEvents() const;
 	virtual unsigned eventCount() const { return m_events.size(); }
 	void setEvents(QList<Lightbox::StreamEvents> const& _es, int _forceChannel = -1);
