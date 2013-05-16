@@ -38,9 +38,10 @@
 #include <EventCompiler/EventCompiler.h>
 
 #include "DataMan.h"
+#include "AudioManFace.h"
+#include "ComputeManFace.h"
+#include "GraphManFace.h"
 #include "QGLWidgetProxy.h"
-#include "CausalAnalysis.h"
-#include "AcausalAnalysis.h"
 
 LIGHTBOX_TEXTUAL_ENUM(AudioStage, Wave, Spectrum);
 
@@ -54,106 +55,9 @@ class NotedPlugin;
 class AuxLibraryFace;
 class Prerendered;
 class DataMan;
-
-typedef uint32_t SimpleHash;
-
-class IncomingAudio: public QObject
-{
-	Q_OBJECT
-
-public:
-	SimpleHash key() const { return m_key; }
-
-	QString const& filename() const { return m_filename; }
-	inline unsigned rate() const { return m_rate; }
-	inline unsigned hopSamples() const { return m_hopSamples; }
-	inline unsigned samples() const { return m_samples; }
-
-	void setRate(unsigned _s) { m_rate = _s; rejig(); emit changed(); }
-	void setHopSamples(unsigned _s) { m_hopSamples = _s; rejig(); emit changed(); }
-	void setSamples(unsigned _s) { m_samples = _s; rejig(); emit changed(); }
-	void setFilename(QString const& _fn) { m_filename = _fn; rejig(); emit changed(); }
-
-	inline unsigned hops() const { return samples() ? samples() / hopSamples() : 0; }
-	inline lb::Time duration() const { return lb::toBase(samples(), rate()); }
-	inline lb::Time hop() const { return lb::toBase(hopSamples(), rate()); }
-	inline unsigned index(lb::Time _t) const { return (_t < 0) ? 0 : std::min<unsigned>(_t / hop(), samples() / hopSamples()); }
-
-signals:
-	void changed();
-
-private:
-	void rejig() { m_key = qHash(m_filename) ^ qHash(m_hopSamples) ^ qHash(m_rate); }
-
-	QString m_filename;
-	SimpleHash m_key = 0;
-	unsigned m_rate = 1;
-	unsigned m_hopSamples = 2;
-	unsigned m_samples = 0;
-};
-
-class GraphMan: public QObject
-{
-	Q_OBJECT
-
-public:
-	GraphMan() {}
-
-	// TODO: add a model
-
-	// TODO: rename GraphSpec -> GraphSpec, use this for *all* graphs (wave, spectrum, &c.).
-	void registerGraph(QString _url, lb::GraphSpec const* _g) { { QReadLocker l(&x_graphs); m_graphs.insert(_url, _g); } emit graphAdded(_url); }
-	void unregisterGraph(QString _url) { { QWriteLocker l(&x_graphs); m_graphs.remove(_url); } emit graphRemoved(_url); }
-
-	QStringList graphs() const { QReadLocker l(&x_graphs); return m_graphs.keys(); }
-	lb::GraphSpec const* lockGraph(QString const& _url) const { x_graphs.lockForRead(); if (m_graphs.contains(_url)) return m_graphs[_url]; x_graphs.unlock(); return nullptr; }
-	void unlockGraph(lb::GraphSpec const* _graph) const { if (_graph) x_graphs.unlock(); }
-
-signals:
-	void graphAdded(QString _url);
-	void graphRemoved(QString _url);
-
-private:
-	Q_PROPERTY(QStringList graphs READ graphs())
-
-	mutable QReadWriteLock x_graphs;
-	QHash<QString, lb::GraphSpec const*> m_graphs;
-};
-
-/**
- * @brief Acausal/Causal audio computation manager.
- * Object exists in its own worker thread.
- * This does all the work on the timeline - resamples, calculates spectra, compiles events &c.
- * It picks up the Analysis objects from the central objects and plugins.
- * Analysis objects may have dependencies on other Analysis objects.
- */
-class ComputeManFace: public QObject
-{
-	Q_OBJECT
-
-public:
-	ComputeManFace() {}
-
-	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a = nullptr) = 0;
-	virtual AcausalAnalysisPtr spectraAcAnalysis() const = 0;
-	virtual CausalAnalysisPtr compileEventsAnalysis() const = 0;
-	virtual CausalAnalysisPtr collateEventsAnalysis() const = 0;
-	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&) = 0;
-	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&) = 0;
-
-	virtual int causalCursorIndex() const = 0;	///< -1 when !isCausal()
-
-public slots:
-	virtual void suspendWork() = 0;
-	virtual void abortWork() = 0;
-	virtual void resumeWork(bool _force = false) = 0;
-
-	inline void noteEventCompilersChanged() { noteLastValidIs(spectraAcAnalysis()); }
-	inline void notePluginDataChanged() { noteLastValidIs(collateEventsAnalysis()); }
-
-signals:
-	void finished();
-};
+class GraphManFace;
+class AudioManFace;
+class ComputeManFace;
 
 class NotedFace: public QMainWindow
 {
@@ -175,14 +79,14 @@ public:
 	inline lb::Time latestVisible() const { return earliestVisible() + visibleDuration(); }
 	inline lb::Time visibleDuration() const { return activeWidth() * pixelDuration(); }
 
-	inline unsigned hopSamples() const { return m_incomingAudio->hopSamples(); }
+	inline unsigned hopSamples() const { return m_audioMan->hopSamples(); }
 	inline unsigned windowSizeSamples() const { return m_windowFunction.size(); }
-	inline unsigned rate() const { return m_incomingAudio->rate(); }
+	inline unsigned rate() const { return m_audioMan->rate(); }
 	inline unsigned spectrumSize() const { return m_windowFunction.size() / 2 + 1; }
 	inline std::vector<float> const& windowFunction() const { return m_windowFunction; }
 	inline bool isZeroPhase() const { return m_zeroPhase; }
 	inline bool isFloatFFT() const { return m_floatFFT; }
-	inline unsigned samples() const { return m_incomingAudio->samples(); }
+	inline unsigned samples() const { return m_audioMan->samples(); }
 
 	inline lb::Time hop() const { return lb::toBase(hopSamples(), rate()); }
 	inline lb::Time windowSize() const { return lb::toBase(windowSizeSamples(), rate()); }
@@ -223,9 +127,9 @@ public:
 	inline void zoomTimeline(int _xFocus, double _factor) { auto pivot = timeOf(_xFocus); m_timelineOffset = pivot - (m_pixelDuration *= _factor) * _xFocus; emit durationChanged(); emit offsetChanged(); }
 
 	static NotedFace* get() { assert(s_this); return s_this; }
-	static IncomingAudio* audio() { return get()->m_incomingAudio; }
+	static AudioManFace* audio() { return get()->m_audioMan; }
 	static DataMan* data() { return get()->m_dataMan; }
-	static GraphMan* graphs() { return get()->m_graphMan; }
+	static GraphManFace* graphs() { return get()->m_graphMan; }
 	static ComputeManFace* compute() { return get()->m_computeMan; }
 
 public slots:
@@ -244,18 +148,18 @@ signals:
 protected:
 	virtual void timelineDead(Timeline* _tl) = 0;
 
-	IncomingAudio* m_incomingAudio = new IncomingAudio;
-	DataMan* m_dataMan = new DataMan;
-	GraphMan* m_graphMan = new GraphMan;
-	ComputeManFace* m_computeMan;
+	AudioManFace* m_audioMan = nullptr;
+	DataMan* m_dataMan = nullptr;
+	GraphManFace* m_graphMan = nullptr;
+	ComputeManFace* m_computeMan = nullptr;
 
-	bool m_zeroPhase;
-	bool m_floatFFT;
+	bool m_zeroPhase = false;
+	bool m_floatFFT = true;
 	std::vector<float> m_windowFunction;
 
-	lb::Time m_fineCursor;
-	lb::Time m_timelineOffset;
-	lb::Time m_pixelDuration;
+	lb::Time m_fineCursor = 0;
+	lb::Time m_timelineOffset = 0;
+	lb::Time m_pixelDuration = 1;
 
 	static NotedFace* s_this;
 };

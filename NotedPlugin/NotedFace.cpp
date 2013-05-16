@@ -32,12 +32,7 @@ using namespace lb;
 NotedFace* NotedFace::s_this = nullptr;
 
 NotedFace::NotedFace(QWidget* _p):
-	QMainWindow					(_p),
-	m_zeroPhase					(false),
-	m_floatFFT					(true),
-	m_fineCursor				(0),
-	m_timelineOffset			(0),
-	m_pixelDuration				(1)
+	QMainWindow					(_p)
 {
 	s_this = this;
 }

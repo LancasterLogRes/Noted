@@ -24,8 +24,12 @@
 #include <QThread>
 #include <QMutex>
 
+#include <Common/Time.h>
+
 class WorkerThread: public QThread
 {
+	Q_OBJECT
+
 public:
 	WorkerThread(): QThread(0), m_quitting(false) {}
 	void quit() { m_quitting = true; }
@@ -37,14 +41,18 @@ public:
 	static void setCurrentProgress(int _percent) { if (auto wt = dynamic_cast<WorkerThread*>(currentThread())) wt->setProgress(_percent); }
 	static void setCurrentDescription(QString const& _s) { if (auto wt = dynamic_cast<WorkerThread*>(currentThread())) wt->setDescription(_s); }
 
-	void setProgress(int _percent) { QMutexLocker l(&m_lock); m_progress = _percent; }
-	void setDescription(QString const& _s) { QMutexLocker l(&m_lock); m_description = _s; }
+	void setProgress(int _percent);
+	void setDescription(QString const& _s);
+
+signals:
+	void progressed(QString _description, int _percent);
 
 protected:
 	bool m_quitting;
 	mutable QMutex m_lock;
 	QString m_description;
 	int m_progress;
+	lb::Time m_lastProgressSignal = lb::wallTime();
 };
 
 template <class _F>

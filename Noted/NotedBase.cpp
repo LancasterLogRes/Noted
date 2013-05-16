@@ -128,7 +128,7 @@ bool NotedBase::resampleWave()
 		QMutexLocker l1(&x_waveProfile);
 		QMutexLocker l2(&x_wave);
 		unsigned outHops = (fromBase(toBase(info.frames, info.samplerate), rate()) + hopSamples() - 1) / hopSamples();
-		m_incomingAudio->setSamples(outHops * hopSamples());
+		m_audioMan->setSamples(outHops * hopSamples());
 		bool waveOk = m_wave.init(calculateWaveFingerprint(), "wave", samples() * sizeof(float));
 		bool waveProfileOk = m_waveProfile.init(calculateWaveFingerprint(), "waveProfile", 2 * sizeof(float), outHops);
 		if (!waveOk || !waveProfileOk)

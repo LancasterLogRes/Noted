@@ -26,7 +26,8 @@ SOURCES += main.cpp\
 		PropertiesEditor.cpp \
 	NotedGLWidget.cpp \
 	GraphView.cpp \
-    TimelinesItem.cpp
+    TimelinesItem.cpp \
+    ComputeMan.cpp
 
 HEADERS  += Noted.h \
 	WaveView.h \
@@ -49,7 +50,8 @@ HEADERS  += Noted.h \
 	PropertiesEditor.h \
     GraphView.h \
 	Global.h \
-    TimelinesItem.h
+    TimelinesItem.h \
+    ComputeMan.h
 
 FORMS    += Noted.ui
 

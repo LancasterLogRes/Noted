@@ -28,4 +28,7 @@ HEADERS  += Timeline.h \
 	Library.h \
 	Cache.h \
 	DataMan.h \
-	DataSet.h
+	DataSet.h \
+    ComputeManFace.h \
+    AudioManFace.h \
+    GraphManFace.h

@@ -47,302 +47,13 @@
 #include "CompileEvents.h"
 #include "CollateEvents.h"
 #include "CompileEventsView.h"
-#include "Noted.h"
 #include "NotedGLWidget.h"
 #include "TimelinesItem.h"
+#include "Noted.h"
 #include "ui_Noted.h"
 
 using namespace std;
 using namespace lb;
-
-class ResampleWaveAc: public AcausalAnalysis
-{
-public:
-	ResampleWaveAc(): AcausalAnalysis("Resampling wave") {}
-
-	virtual void init()
-	{
-	}
-	virtual unsigned prepare(unsigned _from, unsigned _count, lb::Time _hop)
-	{
-		(void)_from; (void)_count; (void)_hop;
-		return 100;
-	}
-	virtual void analyze(unsigned _from, unsigned _count, lb::Time _hop)
-	{
-		(void)_from; (void)_count; (void)_hop;
-		Noted::get()->updateParameters();
-		Noted::get()->resampleWave();
-		if (Noted::get()->m_pixelDuration == 1)
-		{
-			Noted::get()->m_fineCursor = 0;
-			Noted::get()->normalizeView();
-		}
-	}
-	virtual void fini()
-	{
-	}
-};
-
-// OPTIMIZE: allow reanalysis of spectra to be data-parallelized.
-class SpectraAc: public AcausalAnalysis
-{
-public:
-	SpectraAc(): AcausalAnalysis("Analyzing spectra") {}
-
-	virtual void init()
-	{
-	}
-	virtual unsigned prepare(unsigned _from, unsigned _count, lb::Time _hop)
-	{
-		(void)_from; (void)_count; (void)_hop;
-		return 100;
-	}
-	virtual void analyze(unsigned _from, unsigned _count, lb::Time _hop)
-	{
-		(void)_from; (void)_count; (void)_hop;
-		Noted::get()->rejigSpectra();
-	}
-	virtual void fini()
-	{
-	}
-};
-
-class FinishUpAc: public AcausalAnalysis
-{
-public:
-	FinishUpAc(): AcausalAnalysis("Finishing up") {}
-	void fini()
-	{
-		QMutexLocker l(&Noted::get()->x_timelines);
-		foreach (Timeline* t, Noted::get()->m_timelines)
-			if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
-				pt->rerender();
-		Noted::compute()->m_workFinished = true;
-	}
-};
-
-ComputeMan::ComputeMan():
-	m_resampleWaveAcAnalysis	(new ResampleWaveAc),	// TODO: register with AudioMan
-	m_spectraAcAnalysis			(new SpectraAc),				// TODO: register with Noted until it can be simple plugin.
-	m_finishUpAcAnalysis		(new FinishUpAc),			// TODO: what is this?
-	m_compileEventsAnalysis		(new CompileEvents),		// TODO: register with EventsMan
-	m_collateEventsAnalysis		(new CollateEvents),		// TODO: register with EventsMan
-	m_computeThread				(createWorkerThread([=](){return serviceCompute();}))
-{}
-
-ComputeMan::~ComputeMan()
-{
-	delete m_computeThread;
-}
-
-void ComputeMan::noteLastValidIs(AcausalAnalysisPtr const& _a)
-{
-	if (!m_toBeAnalyzed.count(_a))
-	{
-		suspendWork();
-		m_workFinished = false;
-		cnote << "WORK Last valid is now " << (_a ? _a->name().toLatin1().data() : "(None)");
-		m_toBeAnalyzed.insert(_a);
-		resumeWork();
-	}
-}
-
-class Sleeper: QThread { public: using QThread::usleep; };
-
-bool ComputeMan::serviceCompute()
-{
-	if (m_toBeAnalyzed.size())
-	{
-		QMutexLocker l(&x_analysis);
-		auto wasToBeAnalysed = m_toBeAnalyzed;
-		m_toBeAnalyzed.clear();
-		if (wasToBeAnalysed.size())
-		{
-			auto yetToBeAnalysed = wasToBeAnalysed;
-			deque<AcausalAnalysisPtr> todo;	// will become a member.
-			todo.push_back(nullptr);
-
-			// OPTIMIZE: move into worker code; allow multiple workers.
-			// OPTIMIZE: consider searching tree locally and completely, putting toBeAnalyzed things onto global todo, and skipping through otherwise.
-			// ...keeping search local until RAAs needed to be done are found.
-			m_eventsViewsDone = 0;
-			while (todo.size())
-			{
-				AcausalAnalysisPtr aa = todo.front();
-				todo.pop_front();
-				if (yetToBeAnalysed.count(aa) && aa)
-				{
-					WorkerThread::setCurrentDescription(aa->name());
-					cnote << "WORKER Working on " << aa->name().toStdString();
-					aa->go(0, Noted::audio()->hops());
-					cnote << "WORKER Finished " << aa->name().toStdString();
-					if (WorkerThread::quitting())
-					{
-						for (auto i: wasToBeAnalysed)
-							m_toBeAnalyzed.insert(i);
-						break;
-					}
-				}
-				else if (aa)
-				{
-					cnote << "WORKER Skipping job " << aa->name().toStdString();
-				}
-				AcausalAnalysisPtrs ripe = ripeAcausalAnalysis(aa);
-				if (yetToBeAnalysed.count(aa))
-				{
-					foreach (auto i, ripe)
-						yetToBeAnalysed.insert(i);
-					yetToBeAnalysed.erase(aa);
-				}
-				catenate(todo, ripe);
-			}
-			if (!WorkerThread::quitting() /*&& all other threads finished*/)
-				m_finishUpAcAnalysis->go(0, Noted::audio()->hops());
-		}
-	}
-	else
-		Sleeper::usleep(100000);
-	return true;
-}
-
-void ComputeMan::abortWork()
-{
-	cnote << "WORK Aborted... Not sure what to do here :-(";
-}
-
-void ComputeMan::suspendWork()
-{
-	cnote << "WORK Suspending..." << m_suspends;
-	if (m_computeThread && m_computeThread->isRunning())
-	{
-		m_computeThread->quit();
-		while (!m_computeThread->wait(1000))
-			cwarn << "Worker thread not responding :-(";
-		m_suspends = 0;
-		cnote << "WORK Suspended";
-	}
-	else
-	{
-		++m_suspends;
-		cnote << "WORK Additional suspended" << m_suspends;
-	}
-}
-
-void ComputeMan::resumeWork(bool _force)
-{
-	if (!_force && m_suspends)
-	{
-		m_suspends--;
-		cnote << "WORK One fewer suspend" << m_suspends;
-	}
-	else
-	{
-		if (m_computeThread && !m_computeThread->isRunning())
-		{
-			m_computeThread->start();//QThread::LowPriority);
-			cnote << "WORK Resumed" << m_suspends;
-		}
-		m_suspends = 0;
-	}
-}
-
-CausalAnalysisPtrs ComputeMan::ripeCausalAnalysis(CausalAnalysisPtr const& _finished)
-{
-	CausalAnalysisPtrs ret;
-	if (_finished == nullptr)
-		ret.push_back(m_compileEventsAnalysis);
-	else if (dynamic_cast<CompileEvents*>(&*_finished) && Noted::get()->eventsViews().size())
-		foreach (EventsView* ev, Noted::get()->eventsViews())
-			ret.push_back(CausalAnalysisPtr(new CompileEventsView(ev)));
-	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !Noted::get()->eventsViews().size()) || (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == Noted::get()->eventsViews().size()))
-		ret.push_back(m_collateEventsAnalysis);
-
-	// Go through all other things that can give CAs; at this point, it's just the plugins
-	CausalAnalysisPtrs acc;
-	foreach (RealLibraryPtr const& l, Noted::get()->libraries())
-		if (l->p && (acc = l->p->ripeCausalAnalysis(_finished)).size())
-			ret.insert(ret.end(), acc.begin(), acc.end());
-
-	return ret;
-}
-
-AcausalAnalysisPtrs ComputeMan::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finished)
-{
-	AcausalAnalysisPtrs ret;
-
-	if (_finished == nullptr)
-		ret.push_back(m_resampleWaveAcAnalysis);
-	else if (dynamic_cast<ResampleWaveAc*>(&*_finished))
-		ret.push_back(m_spectraAcAnalysis);
-	else if (dynamic_cast<SpectraAc*>(&*_finished))
-		ret.push_back(m_compileEventsAnalysis);
-	else if (dynamic_cast<CompileEvents*>(&*_finished) && Noted::get()->eventsViews().size())
-		foreach (EventsView* ev, Noted::get()->eventsViews())
-			ret.push_back(AcausalAnalysisPtr(new CompileEventsView(ev)));
-	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !Noted::get()->eventsViews().size()) ||
-			 (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == Noted::get()->eventsViews().size()))
-		ret.push_back(m_collateEventsAnalysis);
-
-	// Go through all other things that can give CAs; at this point, it's just the plugins
-	AcausalAnalysisPtrs acc;
-	foreach (RealLibraryPtr const& l, Noted::get()->libraries())
-		if (l->p && (acc = l->p->ripeAcausalAnalysis(_finished)).size())
-			ret.insert(ret.end(), acc.begin(), acc.end());
-
-	return ret;
-}
-
-void ComputeMan::initializeCausal(CausalAnalysisPtr const& _lastComplete)
-{
-	QMutexLocker l(&x_analysis);
-	deque<CausalAnalysisPtr> todo;	// will become a member.
-	todo.push_back(_lastComplete);
-	assert(m_causalQueueCache.empty());
-
-	m_eventsViewsDone = 0;
-	while (todo.size())
-	{
-		CausalAnalysisPtr ca = todo.front();
-		todo.pop_front();
-		if (ca != _lastComplete)
-		{
-			ca->initialize(false);
-
-			m_causalQueueCache.push_back(ca);
-		}
-		auto ripe = ripeCausalAnalysis(ca);
-//		cdebug << m_eventsViewsDone << ca << " leads to " << ripe;
-		catenate(todo, ripe);
-	}
-
-//	cdebug << "Causal queue: " << m_causalQueueCache;
-	m_causalSequenceIndex = 0;
-	m_causalCursorIndex = Noted::get()->isCausal() ? 0 : -1;
-}
-
-void ComputeMan::finalizeCausal()
-{
-	for (auto ca: m_causalQueueCache)
-		ca->fini(false);
-	m_causalQueueCache.clear();
-}
-
-void ComputeMan::updateCausal(int _from, int _count)
-{
-	(void)_from;
-	Time h = Noted::audio()->hop();
-	for (auto ca: m_causalQueueCache)
-		ca->noteBatch(m_causalSequenceIndex, _count);
-	for (int i = 0; i < _count; ++i, ++m_causalSequenceIndex)
-	{
-		if (Noted::get()->isCausal())
-			m_causalCursorIndex = clamp(_from + i, 0, (int)Noted::audio()->hops());
-		for (auto ca: m_causalQueueCache)
-			ca->process(m_causalSequenceIndex, h * m_causalSequenceIndex);
-	}
-}
-
 
 Noted::Noted(QWidget* _p):
 	NotedBase					(_p),
@@ -359,6 +70,12 @@ Noted::Noted(QWidget* _p):
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
 
 	m_computeMan = new ComputeMan;
+	m_audioMan = new AudioManFace;
+	m_graphMan = new GraphManFace;
+	m_dataMan = new DataMan;
+
+	connect(m_computeMan, SIGNAL(finished()), SLOT(onWorkFinished()));
+	connect(m_computeMan, SIGNAL(progressed(QString, int)), SLOT(onWorkProgressed(QString, int)));
 
 	// TODO: Move to AudioMan
 	m_audioThread = createWorkerThread([=](){return serviceAudio();});
@@ -442,8 +159,6 @@ Noted::~Noted()
 
 	qDebug() << "Disabling worker(s)...";
 	compute()->suspendWork();
-	delete m_computeMan;
-	m_computeMan = nullptr;
 	qDebug() << "Disabled permenantly.";
 
 	qDebug() << "Killing timelines...";
@@ -461,6 +176,11 @@ Noted::~Noted()
 
 	for (auto i: findChildren<Prerendered*>())
 		delete i;
+
+	delete m_computeMan;
+	delete m_graphMan;
+	delete m_audioMan;
+	delete m_dataMan;
 
 	delete ui;
 	delete m_glMaster;
@@ -964,7 +684,7 @@ void Noted::readSettings()
 		m_fineCursor = settings.value("cursor").toLongLong();
 	}
 
-	m_incomingAudio->setHopSamples(ui->hop->value());
+	m_audioMan->setHopSamples(ui->hop->value());
 	if (settings.contains("eventEditors"))
 		foreach (QString n, settings.value("eventEditors").toStringList())
 		{
@@ -1090,7 +810,7 @@ void Noted::on_actOpenEvents_triggered()
 
 void Noted::on_sampleRate_currentIndexChanged(int)
 {
-	m_incomingAudio->setRate(ui->sampleRate->currentText().left(ui->sampleRate->currentText().size() - 3).toInt());
+	m_audioMan->setRate(ui->sampleRate->currentText().left(ui->sampleRate->currentText().size() - 3).toInt());
 	ui->hopPeriod->setText(QString("%1ms %2%").arg(fromBase(toBase(ui->hop->value(), rate()), 100000) / 100.0).arg(((ui->windowSize->value() - ui->hop->value()) * 1000 / ui->windowSize->value()) / 10.0));
 	ui->windowPeriod->setText(QString("%1ms %2Hz").arg(fromBase(toBase(ui->windowSize->value(), rate()), 100000) / 100.0).arg((rate() * 10 / ui->windowSize->value()) / 10.0));
 	compute()->noteLastValidIs(nullptr);
@@ -1506,45 +1226,41 @@ void Noted::updateEventStuff()
 	}
 }
 
+void Noted::onWorkFinished()
+{
+	info("WORK All finished");
+	m_cursorDirty = true;
+	if (QProgressBar* pb = ui->statusBar->findChild<QProgressBar*>())
+		delete pb;
+	statusBar()->showMessage("Ready");
+}
+
+void Noted::onWorkProgessed(QString _desc, int _progress)
+{
+	QProgressBar* pb = ui->statusBar->findChild<QProgressBar*>();
+	if (_progress < 100)
+	{
+		if (!pb)
+		{
+			pb = new QProgressBar;
+			pb->setMaximum(100);
+			pb->setObjectName("progress");
+			pb->setMaximumWidth(128);
+			pb->setMaximumHeight(17);
+			ui->statusBar->addPermanentWidget(pb);
+		}
+		pb->setValue(_progress);
+		statusBar()->showMessage(_desc);
+	}
+	else if (pb)
+		delete pb;
+}
+
 void Noted::timerEvent(QTimerEvent*)
 {
 	static int i = 0;
 	if (++i % 10 == 0)
 	{
-
-		// TODO! APIs for next two.
-		// TODO: all this should be done with signals/slots. ComputeMan/worker-thread emits it, Noted/main-thread picks it up.
-/*
-		QProgressBar* pb = ui->statusBar->findChild<QProgressBar*>();
-		if (m_computeThread->progress() < 100)
-		{
-			if (!pb)
-			{
-				pb = new QProgressBar;
-				pb->setMaximum(100);
-				pb->setObjectName("progress");
-				pb->setMaximumWidth(128);
-				pb->setMaximumHeight(17);
-				ui->statusBar->addPermanentWidget(pb);
-			}
-			pb->setValue(m_computeThread->progress());
-			statusBar()->showMessage(m_computeThread->description());
-		}
-		else if (pb)
-			delete pb;
-*/
-		if (compute()->workFinished())
-		{
-			compute()->ackWorkFinished();
-			emit compute()->finished();
-			info("WORK All finished");
-			m_cursorDirty = true;
-/*			if (pb)
-				delete pb;
-			m_computeThread->setProgress(100);*/
-			statusBar()->showMessage("Ready");
-		}
-
 		if (m_playback)
 			ui->statusBar->findChild<QLabel*>("alsa")->setText(QString("%1 %2# @ %3Hz, %4x%5 frames").arg(m_playback->deviceName().c_str()).arg(m_playback->channels()).arg(m_playback->rate()).arg(m_playback->periods()).arg(m_playback->frames()));
 		else
@@ -1617,7 +1333,7 @@ void Noted::info(QString const& _info, QString const& _c)
 
 void Noted::updateParameters()
 {
-	m_incomingAudio->setHopSamples(ui->hop->value());
+	m_audioMan->setHopSamples(ui->hop->value());
 	m_windowFunction = lb::windowFunction(ui->windowSize->value(), WindowFunction(ui->windowFunction->currentIndex()));
 	m_zeroPhase = ui->zeroPhase->isChecked();
 	m_floatFFT = ui->floatFFT->isChecked();

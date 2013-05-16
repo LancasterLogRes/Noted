@@ -20,6 +20,29 @@
 
 #include <map>
 #include "WorkerThread.h"
-
 using namespace std;
 
+void WorkerThread::setProgress(int _percent)
+{
+	if (m_progress != _percent)
+	{
+		QMutexLocker l(&m_lock);
+		m_progress = _percent;
+		if (m_lastProgressSignal - lb::wallTime() > lb::FromMsecs<100>::value)
+		{
+			emit progressed(m_description, _percent);
+			m_lastProgressSignal = lb::wallTime();
+		}
+	}
+}
+
+void WorkerThread::setDescription(QString const& _s)
+{
+	QMutexLocker l(&m_lock);
+	if (m_description != _s)
+	{
+		m_description = _s;
+		emit progressed(_s, m_progress);
+		m_lastProgressSignal = lb::wallTime();
+	}
+}
