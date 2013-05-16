@@ -82,7 +82,7 @@ Noted::Noted(QWidget* _p):
 	m_audioThread = createWorkerThread([=](){return serviceAudio();});
 
 	ui->setupUi(this);
-	ui->loadedLibraries->clear();
+	ui->librariesView->setModel(m_libraryMan);
 	setWindowIcon(QIcon(":/Noted.png"));
 
 	qmlRegisterType<ChartItem>("com.llr", 1, 0, "Chart");
@@ -282,13 +282,14 @@ void Noted::on_addLibrary_clicked()
 	QString filter = "*.dll";
 #endif
 	QString fn = QFileDialog::getOpenFileName(this, "Add extension library", QDir::currentPath(), QString("Dynamic library (%1);;").arg(filter));
-	libs()->addLibrary(fn);
+	if (fn.size())
+		libs()->addLibrary(fn);
 }
 
 void Noted::on_killLibrary_clicked()
 {
-	if (ui->loadedLibraries->currentItem())
-		libs()->killLibrary(ui->loadedLibraries->currentItem());
+	if (ui->librariesView->currentIndex().isValid())
+		libs()->removeLibrary(ui->librariesView->currentIndex());
 }
 
 void Noted::on_actReadSettings_triggered()
@@ -325,12 +326,7 @@ void Noted::readSettings()
 {
 	QSettings settings("LancasterLogicResponse", "Noted");
 	restoreGeometry(settings.value("geometry").toByteArray());
-	if (settings.contains("libraryCount"))
-		for (int i = 0; i < settings.value("libraryCount").toInt(); ++i)
-			libs()->addLibrary(settings.value(QString("library%1").arg(i)).toString(), settings.value(QString("library%1.enabled").arg(i)).toBool());
-	else if (settings.contains("libraries"))
-		foreach (QString n, settings.value("libraries").toStringList())
-			libs()->addLibrary(n);
+
 #define DO(X, V, C) ui->X->V(settings.value(#X).C())
 	if (settings.contains("sampleRate"))
 	{
@@ -379,11 +375,9 @@ void Noted::readSettings()
 			ev->load(settings);
 		}
 
-	readBaseSettings(settings);
+	libs()->readSettings(settings);
 
-	foreach (auto l, libs()->libraries())
-		if (l->plugin)
-			l->plugin->readSettings(settings);
+	readBaseSettings(settings);
 }
 
 void Noted::closeEvent(QCloseEvent* _event)
@@ -396,11 +390,9 @@ void Noted::writeSettings()
 {
 	QSettings settings("LancasterLogicResponse", "Noted");
 
-	foreach (auto l, libs()->libraries())
-		if (l->plugin)
-			l->plugin->writeSettings(settings);
-
 	writeBaseSettings(settings);
+
+	libs()->writeSettings(settings);
 
 	int evc = 0;
 	for (EventsView* ev: eventsViews())
@@ -419,15 +411,6 @@ void Noted::writeSettings()
 			ed->save(settings);
 		}
 	settings.setValue("eventEditors", eds);
-
-	int lc = 0;
-	for (auto l: libs()->libraries())
-	{
-		settings.setValue(QString("library%1").arg(lc), l->filename);
-		settings.setValue(QString("library%1.enabled").arg(lc), l->isEnabled());
-		++lc;
-	}
-	settings.setValue("libraryCount", lc);
 
 #define DO(X, V) settings.setValue(#X, ui->X->V())
 	DO(sampleRate, currentIndex);
@@ -889,27 +872,26 @@ void Noted::updateEventStuff()
 {
 	QMutexLocker l(&x_timelines);
 	for (EventsView* ev: eventsViews())
-	{
-		for (auto g: ev->eventCompiler().asA<EventCompilerImpl>().graphMap())
-			if (dynamic_cast<GraphSparseDense*>(g.second))
-			{
-				QString n = ev->name() + "/" + QString::fromStdString(g.second->name());
-				if (!findChild<GraphView*>(n))
+		if (!ev->eventCompiler().isNull())
+			for (auto g: ev->eventCompiler().asA<EventCompilerImpl>().graphMap())
+				if (dynamic_cast<GraphSparseDense*>(g.second))
 				{
-					cnote << "Creating" << n.toStdString();
-					QDockWidget* dw = new QDockWidget(n, this);
-					dw->setObjectName(n + "-Dock");
-					GraphView* dv = new GraphView(dw, n);
-					dv->addGraph(g.second);
-					dw->setAllowedAreas(Qt::AllDockWidgetAreas);
-					QMainWindow::addDockWidget(Qt::BottomDockWidgetArea, dw, Qt::Horizontal);
-					dw->setFeatures(dw->features() | QDockWidget::DockWidgetVerticalTitleBar);
-					dw->setWidget(dv);
-					connect(dw, SIGNAL(visibilityChanged(bool)), this, SLOT(onDataViewDockClosed()));
-					dw->show();
+					QString n = ev->name() + "/" + QString::fromStdString(g.second->name());
+					if (!findChild<GraphView*>(n))
+					{
+						cnote << "Creating" << n.toStdString();
+						QDockWidget* dw = new QDockWidget(n, this);
+						dw->setObjectName(n + "-Dock");
+						GraphView* dv = new GraphView(dw, n);
+						dv->addGraph(g.second);
+						dw->setAllowedAreas(Qt::AllDockWidgetAreas);
+						QMainWindow::addDockWidget(Qt::BottomDockWidgetArea, dw, Qt::Horizontal);
+						dw->setFeatures(dw->features() | QDockWidget::DockWidgetVerticalTitleBar);
+						dw->setWidget(dv);
+						connect(dw, SIGNAL(visibilityChanged(bool)), this, SLOT(onDataViewDockClosed()));
+						dw->show();
+					}
 				}
-			}
-	}
 }
 
 void Noted::onWorkFinished()

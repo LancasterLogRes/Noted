@@ -1,11 +1,11 @@
 #pragma once
 
 #include <memory>
-#include <QObject>
+#include <QAbstractItemModel>
 
 class NotedPlugin;
 
-class LibraryManFace: public QObject
+class LibraryManFace: public QAbstractItemModel
 {
 	Q_OBJECT
 

@@ -30,6 +30,64 @@ LibraryMan::~LibraryMan()
 	cnote << "Unloaded all libraries.";
 }
 
+void LibraryMan::readSettings(QSettings& _settings)
+{
+	if (_settings.contains("libraryCount"))
+		for (int i = 0; i < _settings.value("libraryCount").toInt(); ++i)
+			addLibrary(_settings.value(QString("library%1").arg(i)).toString(), _settings.value(QString("library%1.enabled").arg(i)).toBool());
+	else if (_settings.contains("libraries"))
+		for (QString n: _settings.value("libraries").toStringList())
+			addLibrary(n);
+
+	for (auto l: libraries())
+		if (l->plugin)
+			l->plugin->readSettings(_settings);
+}
+
+void LibraryMan::writeSettings(QSettings& _settings)
+{
+	foreach (auto l, libraries())
+		if (l->plugin)
+			l->plugin->writeSettings(_settings);
+
+	int lc = 0;
+	for (auto l: libraries())
+	{
+		_settings.setValue(QString("library%1").arg(lc), l->filename);
+		_settings.setValue(QString("library%1.enabled").arg(lc), l->enabled);
+		++lc;
+	}
+	_settings.setValue("libraryCount", lc);
+}
+
+int LibraryMan::rowCount(QModelIndex const& _parent) const
+{
+	cnote << "rowCount(" << _parent.isValid() << ") : " << m_libraries.size();
+	return _parent.isValid() ? 0 : m_libraries.size();
+}
+
+int LibraryMan::columnCount(QModelIndex const&) const
+{
+	return 3;
+}
+
+QModelIndex LibraryMan::index(int _row, int _column, QModelIndex const& _parent) const
+{
+	cnote << "index(" << _row << _column << _parent.isValid() << ")";
+	int r = 0;
+	if (!_parent.isValid())
+		for (auto p: m_libraries)
+			if (r++ == _row)
+				return createIndex(_row, _column, &*p);
+	cnote << ":-(";
+	return QModelIndex();
+}
+
+QModelIndex LibraryMan::parent(QModelIndex const&) const
+{
+	return QModelIndex();
+}
+
 QString defaultNick(QString const& _filename)
 {
 	QString ret = _filename.section('/', -1);
@@ -37,6 +95,43 @@ QString defaultNick(QString const& _filename)
 	if (re.exactMatch(ret))
 		ret = re.cap(2);
 	return ret;
+}
+
+QVariant LibraryMan::data(QModelIndex const& _index, int _role) const
+{
+	cnote << "data(" << _index.row() << _index.column() << _role << ")";
+	auto l = (RealLibrary*)_index.internalPointer();
+	if (_role == Qt::CheckStateRole && _index.column() == 0)
+		return l->enabled ? Qt::Checked : Qt::Unchecked;
+	if (_role == Qt::DisplayRole)
+		switch (_index.column())
+		{
+			case 0: return l->nick.isEmpty() ? defaultNick(l->filename) : l->nick;
+			case 1: return l->auxFace ? "Aux: " + l->parent : l->plugin ? "Plugin" : l->eventCompilerFactory.size() ? "Factory" : l->required.size() ? "Plugin requires: " + l->required.join(" ") : l->error.size() ? "Load error: " + l->error : "Aux: ???";
+			case 2: return l->filename;
+		}
+	return QVariant();
+}
+
+bool LibraryMan::setData(QModelIndex const& _index, QVariant const& _value, int _role)
+{
+	auto l = (RealLibrary*)_index.internalPointer();
+	if (_role == Qt::CheckStateRole && _index.column() == 0)
+	{
+		setEnabled(m_libraries[l->filename], _value.toInt() == Qt::Checked);
+		return true;
+	}
+	return false;
+}
+
+Qt::ItemFlags LibraryMan::flags(QModelIndex const& _index) const
+{
+	return (_index.column() == 0 ? Qt::ItemIsUserCheckable : Qt::ItemIsEnabled) | Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+}
+
+QVariant LibraryMan::headerData(int _section, Qt::Orientation, int _role) const
+{
+	return _role == Qt::DisplayRole ? _section == 0 ? "Name" : _section == 1 ? "Type" : "Filename" : QVariant();
 }
 
 void LibraryMan::addLibrary(QString const& _name, bool _isEnabled)
@@ -47,25 +142,90 @@ void LibraryMan::addLibrary(QString const& _name, bool _isEnabled)
 	else
 	{
 		cnote << "Not a duplicate - loading...";
-		auto lp = make_shared<RealLibrary>(_name);
+		Noted::compute()->suspendWork();
+		beginResetModel();
+
+		RealLibraryPtr lp = make_shared<RealLibrary>(_name, _isEnabled);
 		m_libraries.insert(_name, lp);
-		lp->item = new QTreeWidgetItem(Noted::get()->ui->loadedLibraries, QStringList() << defaultNick(_name) << "Unknown" << _name);
-		lp->item->setFlags(lp->item->flags() | Qt::ItemIsUserCheckable);
-		lp->item->setCheckState(0, _isEnabled ? Qt::Checked : Qt::Unchecked);
 		if (_isEnabled)
-		{
-			m_dirtyLibraries.insert(_name);
-			reloadDirties();
-		}
+			load(lp);
+
+		endResetModel();
+		Noted::compute()->noteEventCompilersChanged();
+		Noted::compute()->resumeWork();
 	}
 }
 
-void LibraryMan::killLibrary(QTreeWidgetItem* _it)
+void LibraryMan::removeLibrary(QModelIndex _index)
 {
-	QString s = _it->text(2);
-	delete _it;
-	m_dirtyLibraries.insert(s);
-	reloadDirties();
+	auto l = (RealLibrary*)_index.internalPointer();
+	if (l)
+		removeLibrary(l->filename);
+	else
+		cwarn << "Can't remove library: Bad model index.";
+}
+
+void LibraryMan::removeLibrary(QString const& _name)
+{
+	if (m_libraries.contains(_name))
+	{
+		Noted::compute()->suspendWork();
+		beginResetModel();
+
+		auto l = m_libraries[_name];
+		unload(l);
+		m_libraries.remove(_name);
+
+		endResetModel();
+		Noted::compute()->noteEventCompilersChanged();
+		Noted::compute()->resumeWork();
+	}
+	else
+		cwarn << "Ignoring removal of non-existant library" << _name.toStdString() << ".";
+}
+
+void LibraryMan::reloadLibrary(QString const& _name)
+{
+	if (m_libraries.contains(_name))
+	{
+		auto l = m_libraries[_name];
+		if (l->enabled)
+		{
+			Noted::compute()->suspendWork();
+			beginResetModel();
+
+			auto l = m_libraries[_name];
+			unload(l);
+			load(l);
+
+			endResetModel();
+			Noted::compute()->noteEventCompilersChanged();
+			Noted::compute()->resumeWork();
+		}
+		else
+			cwarn << "Ignoring reload of disabled library" << _name.toStdString() << ".";
+	}
+	else
+		cwarn << "Ignoring reload of non-existant library" << _name.toStdString() << ".";
+}
+
+void LibraryMan::setEnabled(RealLibraryPtr const& _l, bool _enabled)
+{
+	if (_l->enabled == _enabled)
+		return;
+	_l->enabled = _enabled;
+
+	Noted::compute()->suspendWork();
+	beginResetModel();
+
+	if (_l->enabled)
+		load(_l);
+	else
+		unload(_l);
+
+	endResetModel();
+	Noted::compute()->noteEventCompilersChanged();
+	Noted::compute()->resumeWork();
 }
 
 shared_ptr<NotedPlugin> LibraryMan::getPlugin(QString const& _mangledName)
@@ -74,6 +234,16 @@ shared_ptr<NotedPlugin> LibraryMan::getPlugin(QString const& _mangledName)
 		if (l->plugin && typeid(*l->plugin).name() == _mangledName)
 			return l->plugin;
 	return nullptr;
+}
+
+void LibraryMan::onLibraryChange(QString const& _name)
+{
+	reloadLibrary(_name);
+}
+
+bool LibraryMan::providesEventCompiler(QString const& _library, QString const& _ec)
+{
+	return m_libraries.contains(_library) && m_libraries[_library]->eventCompilerFactory.count(_ec.toStdString());
 }
 
 void LibraryMan::load(RealLibraryPtr const& _dl)
@@ -94,21 +264,22 @@ void LibraryMan::load(RealLibraryPtr const& _dl)
 			typedef char const*(*pnf_t)();
 			if (cf_t cf = (cf_t)_dl->library.resolve("eventCompilerFactories"))
 			{
-				_dl->item->setText(1, "Event Compilers");
 				cnote << "LOAD" << _dl->nick << " [ECF]";
 				_dl->eventCompilerFactory = cf();
 				foreach (auto f, _dl->eventCompilerFactory)
 				{
+					// TODO: emit signal rather than alter directly.
 					auto li = new QListWidgetItem(QString::fromStdString(f.first));
 					li->setData(0, QString::fromStdString(f.first));
 					Noted::get()->ui->eventCompilersList->addItem(li);
+
+					// TODO: check whether this is really necessary - should only need one call to it for most of the file.
 					Noted::compute()->noteEventCompilersChanged();
 				}
 				cnote << _dl->eventCompilerFactory.size() << " event compiler factories";
 			}
 			else if (pf_t np = (pf_t)_dl->library.resolve("newPlugin"))
 			{
-				_dl->item->setText(1, "Plugin");
 				cnote << "LOAD" << _dl->nick << " [PLUGIN]";
 
 				_dl->plugin = shared_ptr<NotedPlugin>(np());
@@ -116,7 +287,7 @@ void LibraryMan::load(RealLibraryPtr const& _dl)
 				if (_dl->plugin->m_required.empty())
 				{
 					for (auto lib: m_libraries)
-						if (!lib->library.isLoaded() && lib->isEnabled())
+						if (!lib->library.isLoaded() && lib->enabled)
 							load(lib);
 
 					QSettings s("LancasterLogicResponse", "Noted");
@@ -144,14 +315,14 @@ void LibraryMan::load(RealLibraryPtr const& _dl)
 				}
 				else
 				{
-					_dl->item->setText(1, "Plugin: Requires " + _dl->plugin->m_required.join(" "));
+					_dl->required = _dl->plugin->m_required;
 					_dl->plugin.reset();
 					_dl->unload();
 				}
 			}
 			else
 			{
-				foreach (auto lib, m_libraries)
+				for (auto lib: m_libraries)
 					if (lib->plugin)
 						if (auto f = shared_ptr<AuxLibraryFace>(lib->plugin->newAuxLibrary()))
 						{
@@ -162,7 +333,7 @@ void LibraryMan::load(RealLibraryPtr const& _dl)
 								_dl->auxFace = f;
 								_dl->auxPlugin = lib->plugin;
 								cnote << "LOAD" << _dl->nick << " [AUX:" << lib->nick << "]";
-								_dl->item->setText(1, "Aux: " + lib->nick);
+								_dl->parent = lib->nick;
 								goto LOADED;
 							}
 							else
@@ -173,31 +344,28 @@ void LibraryMan::load(RealLibraryPtr const& _dl)
 						}
 				cnote << "Useless library - unloading" << _dl->nick;
 				_dl->unload();
-				_dl->item->setText(1, "Aux: ?");
 				LOADED:;
 			}
 		}
 		else
 		{
 			cwarn << "ERROR on load: " << _dl->library.errorString();
+			_dl->error = _dl->library.errorString();
 		}
-		_dl->item->setText(0, _dl->nick);
 		if (_dl->library.isLoaded())
 			emit doneLibraryLoad(_dl->filename);
 	}
 	else if (QFile::exists(_dl->filename))
 	{
 		_dl->eventCompilerFactory[_dl->filename.toStdString()] = [=](){ return new ProcessEventCompiler(_dl->filename); };
+
+		// TODO: emit signal rather than alter directly.
 		auto li = new QListWidgetItem(_dl->filename);
 		li->setData(0, _dl->filename);
 		Noted::get()->ui->eventCompilersList->addItem(li);
+
 		emit doneLibraryLoad(_dl->filename);
 	}
-}
-
-bool RealLibrary::isEnabled() const
-{
-	return item->checkState(0) == Qt::Checked;
 }
 
 void RealLibrary::unload()
@@ -261,7 +429,6 @@ void LibraryMan::unload(RealLibraryPtr const& _dl)
 		else if (_dl->auxFace && _dl->auxPlugin.lock()) // check if we're a plugin's auxilliary
 		{
 			// remove ourselves from the plugin we're dependent on.
-			_dl->item->setText(1, "Aux: ?");
 			_dl->auxFace->unload(_dl);
 			_dl->auxFace.reset();
 			_dl->auxPlugin.lock()->removeDeadAuxes();
@@ -272,70 +439,4 @@ void LibraryMan::unload(RealLibraryPtr const& _dl)
 		_dl->unload();
 	}
 	m_libraryWatcher.removePath(_dl->filename);
-}
-
-void LibraryMan::onLibraryChange(QString const& _name)
-{
-	m_dirtyLibraries.insert(_name);
-	reloadDirties();
-}
-
-void LibraryMan::reloadLibrary(QTreeWidgetItem* _it)
-{
-	for (auto l: m_libraries)
-		if (l->item == _it)
-		{
-			m_dirtyLibraries.insert(l->filename);
-			break;
-		}
-	reloadDirties();
-}
-
-bool LibraryMan::providesEventCompiler(QString const& _library, QString const& _ec)
-{
-	return m_libraries.contains(_library) && m_libraries[_library]->eventCompilerFactory.count(_ec.toStdString());
-}
-
-void LibraryMan::reloadDirties()
-{
-	if (!m_dirtyLibraries.empty())
-	{
-		Noted::compute()->suspendWork();
-
-		QStringList reloaded;
-		for (QString const& name: m_dirtyLibraries)
-		{
-			bool doLoad = false;
-			bool doKill = true;
-			for (auto i: Noted::get()->ui->loadedLibraries->findItems(name, Qt::MatchExactly, 2))
-			{
-				doKill = false;
-				doLoad = (i->checkState(0) == Qt::Checked);
-				break;
-			}
-
-			RealLibraryPtr dl = m_libraries[name];
-			if (doLoad)
-			{
-				assert(dl);
-				assert(dl->filename == name);
-				unload(dl);
-				load(dl);
-				reloaded.append(name);
-			}
-			else
-			{
-				unload(dl);
-				if (doKill)
-					m_libraries.remove(name);
-			}
-		}
-
-		m_dirtyLibraries.clear();
-
-		// OPTIMIZE: Something finer grained?
-		Noted::compute()->noteEventCompilersChanged();
-
-		Noted::compute()->resumeWork();
-	}
 }

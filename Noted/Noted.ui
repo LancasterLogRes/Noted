@@ -959,7 +959,7 @@ p, li { white-space: pre-wrap; }
    <property name="minimumSize">
     <size>
      <width>208</width>
-     <height>80</height>
+     <height>183</height>
     </size>
    </property>
    <property name="features">
@@ -988,6 +988,19 @@ p, li { white-space: pre-wrap; }
      <property name="spacing">
       <number>2</number>
      </property>
+     <item row="3" column="1">
+      <widget class="QPushButton" name="addLibrary">
+       <property name="maximumSize">
+        <size>
+         <width>23</width>
+         <height>23</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>+</string>
+       </property>
+      </widget>
+     </item>
      <item row="2" column="1">
       <widget class="QPushButton" name="killLibrary">
        <property name="maximumSize">
@@ -1001,20 +1014,14 @@ p, li { white-space: pre-wrap; }
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
-      <widget class="QPushButton" name="addLibrary">
-       <property name="maximumSize">
-        <size>
-         <width>23</width>
-         <height>23</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>+</string>
+     <item row="1" column="0" rowspan="3">
+      <widget class="QTreeView" name="librariesView">
+       <property name="rootIsDecorated">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
+     <item row="1" column="1">
       <spacer name="verticalSpacer">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
@@ -1026,47 +1033,6 @@ p, li { white-space: pre-wrap; }
         </size>
        </property>
       </spacer>
-     </item>
-     <item row="0" column="0" rowspan="3">
-      <widget class="QTreeWidget" name="loadedLibraries">
-       <property name="frameShape">
-        <enum>QFrame::NoFrame</enum>
-       </property>
-       <property name="rootIsDecorated">
-        <bool>false</bool>
-       </property>
-       <property name="allColumnsShowFocus">
-        <bool>true</bool>
-       </property>
-       <attribute name="headerStretchLastSection">
-        <bool>false</bool>
-       </attribute>
-       <column>
-        <property name="text">
-         <string>Name</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Type</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>File</string>
-        </property>
-       </column>
-       <item>
-        <property name="text">
-         <string>New Item</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>New Item</string>
-        </property>
-       </item>
-      </widget>
      </item>
     </layout>
    </widget>
@@ -1593,7 +1559,7 @@ p, li { white-space: pre-wrap; }
    <header>Noted/MetaSpectrumView.h</header>
    <container>1</container>
   </customwidget>
-   </customwidgets>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
