@@ -79,7 +79,7 @@ public slots:
 	void setNewEvents();
 
 private slots:
-	void onFactoryAvailable(QString _lib);
+	void onFactoryAvailable(QString _lib, unsigned _version);
 	void onFactoryUnavailable(QString _lib);
 
 private:

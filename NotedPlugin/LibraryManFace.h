@@ -18,6 +18,6 @@ public:
 signals:
 	void prepareLibraryUnload(QString _library);
 	void doneLibraryLoad(QString _library);
-	void eventCompilerFactoryAvailable(QString _name);
+	void eventCompilerFactoryAvailable(QString _name, unsigned _version);
 	void eventCompilerFactoryUnavailable(QString _name);
 };

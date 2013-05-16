@@ -97,7 +97,7 @@ QVariant LibraryMan::data(QModelIndex const& _index, int _role) const
 		switch (_index.column())
 		{
 			case 0: return l->nick.isEmpty() ? defaultNick(l->filename) : l->nick;
-			case 1: return l->auxFace ? "Aux: " + l->parent : l->plugin ? "Plugin" : l->eventCompilerFactory.size() ? "Factory" : l->required.size() ? "Plugin requires: " + l->required.join(" ") : l->error.size() ? "Load error: " + l->error : "Aux: ???";
+			case 1: return l->auxFace ? "Aux: " + l->parent : l->plugin ? "Plugin" : l->eventCompilerFactories.size() ? "EventCompilers" : l->required.size() ? "Plugin requires: " + l->required.join(" ") : l->error.size() ? "Load error: " + l->error : "Aux: ???";
 			case 2: return l->filename;
 		}
 	return QVariant();
@@ -233,7 +233,7 @@ void LibraryMan::onLibraryChange(QString const& _name)
 
 bool LibraryMan::providesEventCompiler(QString const& _library, QString const& _ec)
 {
-	return m_libraries.contains(_library) && m_libraries[_library]->eventCompilerFactory.count(_ec.toStdString());
+	return m_libraries.contains(_library) && m_libraries[_library]->eventCompilerFactories.count(_ec.toStdString());
 }
 
 void LibraryMan::load(RealLibraryPtr const& _dl)
@@ -255,10 +255,10 @@ void LibraryMan::load(RealLibraryPtr const& _dl)
 			if (cf_t cf = (cf_t)_dl->library.resolve("eventCompilerFactories"))
 			{
 				cnote << "LOAD" << _dl->nick << " [ECF]";
-				_dl->eventCompilerFactory = cf();
-				for (auto f: _dl->eventCompilerFactory)
-					emit eventCompilerFactoryAvailable(QString::fromStdString(f.first));
-				cnote << _dl->eventCompilerFactory.size() << " event compiler factories";
+				_dl->eventCompilerFactories = cf();
+				for (auto f: _dl->eventCompilerFactories)
+					emit eventCompilerFactoryAvailable(QString::fromStdString(f.first), f.second.version);
+				cnote << _dl->eventCompilerFactories.size() << " event compiler factories";
 			}
 			else if (pf_t np = (pf_t)_dl->library.resolve("newPlugin"))
 			{
@@ -339,8 +339,8 @@ void LibraryMan::load(RealLibraryPtr const& _dl)
 	}
 	else if (QFile::exists(_dl->filename))
 	{
-		_dl->eventCompilerFactory[_dl->filename.toStdString()] = [=](){ return new ProcessEventCompiler(_dl->filename); };
-		emit eventCompilerFactoryAvailable(_dl->filename);
+		_dl->eventCompilerFactories[_dl->filename.toStdString()] = {[=](){ return new ProcessEventCompiler(_dl->filename); }, 0};
+		emit eventCompilerFactoryAvailable(_dl->filename, 0);
 		emit doneLibraryLoad(_dl->filename);
 	}
 }
@@ -395,12 +395,12 @@ void LibraryMan::unload(RealLibraryPtr const& _dl)
 			// kill plugin.
 			_dl->plugin.reset();
 		}
-		else if (_dl->eventCompilerFactory.size())
+		else if (_dl->eventCompilerFactories.size())
 		{
-			for (auto f: _dl->eventCompilerFactory)
+			for (auto f: _dl->eventCompilerFactories)
 				emit eventCompilerFactoryUnavailable(QString::fromStdString(f.first));
 
-			_dl->eventCompilerFactory.clear();
+			_dl->eventCompilerFactories.clear();
 		}
 		else if (_dl->auxFace && _dl->auxPlugin.lock()) // check if we're a plugin's auxilliary
 		{

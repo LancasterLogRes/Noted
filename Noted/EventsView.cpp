@@ -42,7 +42,7 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	m_eventCompiler		(_ec),
 	m_use				(nullptr)
 {
-	connect(NotedFace::libs(), SIGNAL(eventCompilerFactoryAvailable(QString)), SLOT(onFactoryAvailable(QString)));
+	connect(NotedFace::libs(), SIGNAL(eventCompilerFactoryAvailable(QString, unsigned)), SLOT(onFactoryAvailable(QString, unsigned)));
 	connect(NotedFace::libs(), SIGNAL(eventCompilerFactoryUnavailable(QString)), SLOT(onFactoryUnavailable(QString)));
 
 	m_verticalSplitter = dynamic_cast<QSplitter*>(parentWidget());
@@ -115,7 +115,7 @@ EventsView::~EventsView()
 	delete w;
 }
 
-void EventsView::onFactoryAvailable(QString _factory)
+void EventsView::onFactoryAvailable(QString _factory, unsigned)
 {
 	if (isArchived() && _factory == m_savedName)
 		restore();

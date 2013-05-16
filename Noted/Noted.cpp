@@ -78,7 +78,7 @@ Noted::Noted(QWidget* _p):
 	connect(m_computeMan, SIGNAL(finished()), SLOT(onWorkFinished()));
 	connect(m_computeMan, SIGNAL(progressed(QString, int)), SLOT(onWorkProgressed(QString, int)));
 
-	connect(m_libraryMan, SIGNAL(eventCompilerFactoryAvailable(QString)), SLOT(onEventCompilerFactoryAvailable(QString)));
+	connect(m_libraryMan, SIGNAL(eventCompilerFactoryAvailable(QString, unsigned)), SLOT(onEventCompilerFactoryAvailable(QString, unsigned)));
 	connect(m_libraryMan, SIGNAL(eventCompilerFactoryUnavailable(QString)), SLOT(onEventCompilerFactoryUnavailable(QString)));
 
 	// TODO: Move to AudioMan
@@ -183,16 +183,15 @@ Noted::~Noted()
 	delete m_glMaster;
 }
 
-void Noted::onEventCompilerFactoryAvailable(QString _name)
+void Noted::onEventCompilerFactoryAvailable(QString _name, unsigned _version)
 {
-	auto li = new QListWidgetItem(_name);
-	li->setData(0, _name);
+	auto li = new QListWidgetItem(_name + ":" + QString::number(_version));
 	ui->eventCompilersList->addItem(li);
 }
 
 void Noted::onEventCompilerFactoryUnavailable(QString _name)
 {
-	delete ui->eventCompilersList->findItems(_name, 0).front();
+	delete ui->eventCompilersList->findItems(_name + ":", Qt::MatchStartsWith).front();
 }
 
 QGLWidget* Noted::glMaster() const
@@ -247,8 +246,8 @@ bool Noted::eventFilter(QObject*, QEvent* _e)
 EventCompiler Noted::newEventCompiler(QString const& _name)
 {
 	foreach (auto dl, libs()->libraries())
-		if (dl->eventCompilerFactory.find(_name.toStdString()) != dl->eventCompilerFactory.end())
-			return EventCompiler::create(dl->eventCompilerFactory[_name.toStdString()]());
+		if (dl->eventCompilerFactories.find(_name.toStdString()) != dl->eventCompilerFactories.end())
+			return EventCompiler::create(dl->eventCompilerFactories[_name.toStdString()].factory());
 	return EventCompiler();
 }
 
@@ -454,7 +453,7 @@ void Noted::writeSettings()
 void Noted::on_addEventsView_clicked()
 {
 	if (ui->eventCompilersList->currentItem())
-		addTimeline(new EventsView(ui->dataDisplay, newEventCompiler(ui->eventCompilersList->currentItem()->data(0).toString())));
+		addTimeline(new EventsView(ui->dataDisplay, newEventCompiler(ui->eventCompilersList->currentItem()->text().section(':', 0, 0))));
 }
 
 void Noted::on_actNewEvents_triggered()

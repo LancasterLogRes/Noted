@@ -36,9 +36,9 @@ struct Library
 	QString nick;
 	QLibrary library;
 
-	// One of (plugin, eventCompilerFactory, auxFace) is valid.
+	// One of (plugin, eventCompilerFactories, auxFace) is valid.
 	std::shared_ptr<NotedPlugin> plugin;
-	lb::EventCompilerFactories eventCompilerFactory;
+	lb::EventCompilerFactories eventCompilerFactories;
 	std::shared_ptr<AuxLibraryFace> auxFace;
 	std::weak_ptr<NotedPlugin> auxPlugin;
 };
