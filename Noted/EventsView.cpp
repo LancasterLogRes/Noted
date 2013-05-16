@@ -25,6 +25,7 @@
 #include <QtWidgets>
 #include <QGLFramebufferObject>
 #include <EventCompiler/StreamEvent.h>
+#include <EventCompiler/GraphSpec.h>
 #include <EventsEditor/EventsEditor.h>
 #include <EventsEditor/EventsEditScene.h>
 
@@ -290,7 +291,7 @@ void EventsView::exportGraph()
 		unsigned tiMax = 0;
 
 		vector<vector<float> const*> charts;
-		for (CompilerGraph* g: m_eventCompiler.asA<EventCompilerImpl>().graphs())
+		for (GraphSpec* g: m_eventCompiler.asA<EventCompilerImpl>().graphs())
 			if (GraphChart* s = dynamic_cast<GraphChart*>(g))
 			{
 				charts.push_back(&s->data());
@@ -299,7 +300,7 @@ void EventsView::exportGraph()
 			}
 
 		vector<map<int, vector<float>> const*> spectra;
-		for (CompilerGraph* g: m_eventCompiler.asA<EventCompilerImpl>().graphs())
+		for (GraphSpec* g: m_eventCompiler.asA<EventCompilerImpl>().graphs())
 			if (GraphSpectrum* s = dynamic_cast<GraphSpectrum*>(g))
 			{
 				if (s->data().size())

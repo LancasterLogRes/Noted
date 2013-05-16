@@ -101,13 +101,13 @@ public:
 
 	// TODO: add a model
 
-	// TODO: rename CompilerGraph -> GraphSpec, use this for *all* graphs (wave, spectrum, &c.).
-	void registerGraph(QString _url, Lightbox::CompilerGraph const* _g) { { QReadLocker l(&x_graphs); m_graphs.insert(_url, _g); } emit graphAdded(_url); }
+	// TODO: rename GraphSpec -> GraphSpec, use this for *all* graphs (wave, spectrum, &c.).
+	void registerGraph(QString _url, Lightbox::GraphSpec const* _g) { { QReadLocker l(&x_graphs); m_graphs.insert(_url, _g); } emit graphAdded(_url); }
 	void unregisterGraph(QString _url) { { QWriteLocker l(&x_graphs); m_graphs.remove(_url); } emit graphRemoved(_url); }
 
 	QStringList graphs() const { QReadLocker l(&x_graphs); return m_graphs.keys(); }
-	Lightbox::CompilerGraph const* lockGraph(QString const& _url) const { x_graphs.lockForRead(); if (m_graphs.contains(_url)) return m_graphs[_url]; x_graphs.unlock(); return nullptr; }
-	void unlockGraph(Lightbox::CompilerGraph const* _graph) const { if (_graph) x_graphs.unlock(); }
+	Lightbox::GraphSpec const* lockGraph(QString const& _url) const { x_graphs.lockForRead(); if (m_graphs.contains(_url)) return m_graphs[_url]; x_graphs.unlock(); return nullptr; }
+	void unlockGraph(Lightbox::GraphSpec const* _graph) const { if (_graph) x_graphs.unlock(); }
 
 signals:
 	void graphAdded(QString _url);
@@ -117,7 +117,7 @@ private:
 	Q_PROPERTY(QStringList graphs READ graphs())
 
 	mutable QReadWriteLock x_graphs;
-	QHash<QString, Lightbox::CompilerGraph const*> m_graphs;
+	QHash<QString, Lightbox::GraphSpec const*> m_graphs;
 };
 
 class NotedFace: public QMainWindow

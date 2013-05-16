@@ -27,5 +27,5 @@ class CompileEvents: public CausalAnalysis
 public:
 	CompileEvents(): CausalAnalysis("Compiling all events") {}
 
-	virtual void init(bool _willRecord) {}
+	virtual void init(bool) {}
 };

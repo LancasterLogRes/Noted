@@ -24,6 +24,7 @@
 #include <EventCompiler/EventCompiler.h>
 #include <NotedPlugin/CausalAnalysis.h>
 #include <NotedPlugin/DataSet.h>
+#include <EventCompiler/GraphSpec.h>
 
 class EventsView;
 
@@ -60,6 +61,6 @@ public:
 
 private:
 	EventsView* m_ev;
-	QMap<Lightbox::CompilerGraph*, DataSetDataStore*> m_dataStores;
+	QMap<Lightbox::GraphSpec*, DataSetDataStore*> m_dataStores;
 };
 

@@ -71,6 +71,7 @@ CompileEventsView::CompileEventsView(EventsView* _ev):
 
 void CompileEventsView::init(bool _willRecord)
 {
+	(void)_willRecord;
 	m_ev->clearEvents();
 	if (!ec().isNull())
 	{

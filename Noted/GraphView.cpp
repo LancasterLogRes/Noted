@@ -1,6 +1,7 @@
 #include <Common/Global.h>
 #include <Grapher/Grapher.h>
 #include <NotedPlugin/NotedFace.h>
+#include <EventCompiler/GraphSpec.h>
 #include "GraphView.h"
 using namespace std;
 using namespace Lightbox;
@@ -15,7 +16,7 @@ GraphView::~GraphView()
 	quit();
 }
 
-void GraphView::addGraph(CompilerGraph* _g)
+void GraphView::addGraph(GraphSpec* _g)
 {
 	m_graphs.push_back({c()->getEventCompilerName(_g->ec()).toStdString(), _g->name(), NullColor});
 }
@@ -38,11 +39,11 @@ void GraphView::renderGL(QSize _s)
 	int i = 0;
 	unsigned s = m_graphs.size();
 
-	for (CompilerGraphSpec const& gr: m_graphs)
+	for (GraphViewPlot const& gr: m_graphs)
 	{
 		EventCompiler ec = c()->findEventCompiler(QString::fromStdString(gr.ec));
 		if (!ec.isNull())
-			if (CompilerGraph* cg = ec.asA<EventCompilerImpl>().graph(gr.graph))
+			if (GraphSpec* cg = ec.asA<EventCompilerImpl>().graph(gr.graph))
 				if (GraphSparseDense* g = dynamic_cast<GraphSparseDense*>(cg))
 				{
 					if (!i)
