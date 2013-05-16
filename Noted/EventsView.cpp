@@ -42,8 +42,8 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	m_eventCompiler		(_ec),
 	m_use				(nullptr)
 {
-	connect(NotedFace::libs(), SIGNAL(prepareLibraryUnload(QString)), SLOT(onLibraryUnload(QString)));
-	connect(NotedFace::libs(), SIGNAL(doneLibraryLoad(QString)), SLOT(onLibraryLoad(QString)));
+	connect(NotedFace::libs(), SIGNAL(eventCompilerFactoryAvailable(QString)), SLOT(onFactoryAvailable(QString)));
+	connect(NotedFace::libs(), SIGNAL(eventCompilerFactoryUnavailable(QString)), SLOT(onFactoryUnavailable(QString)));
 
 	m_verticalSplitter = dynamic_cast<QSplitter*>(parentWidget());
 	m_actualWidget = dynamic_cast<QSplitter*>(m_verticalSplitter->parentWidget());
@@ -110,21 +110,20 @@ EventsView::~EventsView()
 {
 	finiTimeline();
 	quit();
-	clearEvents();
 	QWidget* w = parentWidget()->parentWidget();
 	setParent(0);
 	delete w;
 }
 
-void EventsView::onLibraryLoad(QString _lib)
+void EventsView::onFactoryAvailable(QString _factory)
 {
-	if (isArchived() && NotedFace::libs()->providesEventCompiler(_lib, m_savedName))
+	if (isArchived() && _factory == m_savedName)
 		restore();
 }
 
-void EventsView::onLibraryUnload(QString _lib)
+void EventsView::onFactoryUnavailable(QString _factory)
 {
-	if (!isArchived() && NotedFace::libs()->providesEventCompiler(_lib, name()))
+	if (!isArchived() && _factory == name())
 		save();
 }
 
@@ -135,7 +134,6 @@ void EventsView::onUseChanged()
 
 void EventsView::clearEvents()
 {
-	cnote << "CLEARING EVENTS OF" << (void*)this << m_savedName;
 	QMutexLocker l(&x_events);
 	m_events.clear();
 	m_current.clear();
@@ -208,19 +206,18 @@ QString EventsView::name() const
 
 void EventsView::save()
 {
+	cnote << "Saving EventsView...";
 	if (!m_eventCompiler.isNull())
 	{
 		m_savedName = name();
 		m_savedProperties = m_eventCompiler.properties().serialized();
 	}
 	m_eventCompiler = EventCompiler();
-
-	// Have to clear at the moment, since auxilliary StreamEvent data can have hooks into the shared library that will be unloaded.
-	clearEvents();
 }
 
 void EventsView::restore()
 {
+	cnote << "Restoring EventsView...";
 	m_eventCompiler = c()->newEventCompiler(m_savedName);
 	m_eventCompiler.properties().deserialize(m_savedProperties);
 	m_propertiesEditor->setProperties(m_eventCompiler.properties());

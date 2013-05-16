@@ -33,19 +33,19 @@ void LibraryMan::readSettings(QSettings& _settings)
 		for (QString n: _settings.value("libraries").toStringList())
 			addLibrary(n);
 
-	for (auto l: libraries())
+	for (auto l: m_libraries)
 		if (l->plugin)
 			l->plugin->readSettings(_settings);
 }
 
 void LibraryMan::writeSettings(QSettings& _settings)
 {
-	foreach (auto l, libraries())
+	for (auto l: m_libraries)
 		if (l->plugin)
 			l->plugin->writeSettings(_settings);
 
 	int lc = 0;
-	for (auto l: libraries())
+	for (auto l: m_libraries)
 	{
 		_settings.setValue(QString("library%1").arg(lc), l->filename);
 		_settings.setValue(QString("library%1.enabled").arg(lc), l->enabled);
@@ -256,13 +256,8 @@ void LibraryMan::load(RealLibraryPtr const& _dl)
 			{
 				cnote << "LOAD" << _dl->nick << " [ECF]";
 				_dl->eventCompilerFactory = cf();
-				foreach (auto f, _dl->eventCompilerFactory)
-				{
+				for (auto f: _dl->eventCompilerFactory)
 					emit eventCompilerFactoryAvailable(QString::fromStdString(f.first));
-
-					// TODO: check whether this is really necessary - should only need one call to it for most of the file.
-					Noted::compute()->noteEventCompilersChanged();
-				}
 				cnote << _dl->eventCompilerFactory.size() << " event compiler factories";
 			}
 			else if (pf_t np = (pf_t)_dl->library.resolve("newPlugin"))
@@ -402,12 +397,10 @@ void LibraryMan::unload(RealLibraryPtr const& _dl)
 		}
 		else if (_dl->eventCompilerFactory.size())
 		{
-			// TODO: Kill off any events that may be lingering (hopefully none).
 			for (auto f: _dl->eventCompilerFactory)
 				emit eventCompilerFactoryUnavailable(QString::fromStdString(f.first));
 
 			_dl->eventCompilerFactory.clear();
-			// TODO: update whatever has changed re: event compilers being available.
 		}
 		else if (_dl->auxFace && _dl->auxPlugin.lock()) // check if we're a plugin's auxilliary
 		{

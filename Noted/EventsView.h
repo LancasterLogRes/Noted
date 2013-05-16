@@ -79,8 +79,8 @@ public slots:
 	void setNewEvents();
 
 private slots:
-	void onLibraryUnload(QString _lib);
-	void onLibraryLoad(QString _lib);
+	void onFactoryAvailable(QString _lib);
+	void onFactoryUnavailable(QString _lib);
 
 private:
 	lb::EventCompiler m_eventCompiler;
