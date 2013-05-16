@@ -148,6 +148,9 @@ private slots:
 	void on_actReadSettings_triggered();
 	void on_actWriteSettings_triggered();
 
+	void onEventCompilerFactoryAvailable(QString _name);
+	void onEventCompilerFactoryUnavailable(QString _name);
+
 	void onWorkProgessed(QString _desc, int _percent);
 	void onWorkFinished();
 

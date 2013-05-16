@@ -54,6 +54,10 @@ public slots:
 private slots:
 	void onLibraryChange(QString const& _name);
 
+signals:
+	void eventCompilerFactoryAvailable(QString _name);
+	void eventCompilerFactoryUnavailable(QString _name);
+
 protected:
 	virtual int rowCount(QModelIndex const& _parent) const;
 	virtual int columnCount(QModelIndex const& _parent) const;

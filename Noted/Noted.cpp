@@ -78,6 +78,9 @@ Noted::Noted(QWidget* _p):
 	connect(m_computeMan, SIGNAL(finished()), SLOT(onWorkFinished()));
 	connect(m_computeMan, SIGNAL(progressed(QString, int)), SLOT(onWorkProgressed(QString, int)));
 
+	connect(m_libraryMan, SIGNAL(eventCompilerFactoryAvailable(QString)), SLOT(onEventCompilerFactoryAvailable(QString)));
+	connect(m_libraryMan, SIGNAL(eventCompilerFactoryUnavailable(QString)), SLOT(onEventCompilerFactoryUnavailable(QString)));
+
 	// TODO: Move to AudioMan
 	m_audioThread = createWorkerThread([=](){return serviceAudio();});
 
@@ -178,6 +181,18 @@ Noted::~Noted()
 
 	delete ui;
 	delete m_glMaster;
+}
+
+void Noted::onEventCompilerFactoryAvailable(QString _name)
+{
+	auto li = new QListWidgetItem(_name);
+	li->setData(0, _name);
+	ui->eventCompilersList->addItem(li);
+}
+
+void Noted::onEventCompilerFactoryUnavailable(QString _name)
+{
+	delete ui->eventCompilersList->findItems(_name, 0).front();
 }
 
 QGLWidget* Noted::glMaster() const

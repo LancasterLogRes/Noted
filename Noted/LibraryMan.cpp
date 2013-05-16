@@ -5,12 +5,6 @@
 #include "Noted.h"
 #include "PropertiesEditor.h"
 #include "LibraryMan.h"
-
-
-
-#include "ui_Noted.h"		// TODO: Remove
-
-
 using namespace std;
 using namespace lb;
 
@@ -62,7 +56,6 @@ void LibraryMan::writeSettings(QSettings& _settings)
 
 int LibraryMan::rowCount(QModelIndex const& _parent) const
 {
-	cnote << "rowCount(" << _parent.isValid() << ") : " << m_libraries.size();
 	return _parent.isValid() ? 0 : m_libraries.size();
 }
 
@@ -73,13 +66,11 @@ int LibraryMan::columnCount(QModelIndex const&) const
 
 QModelIndex LibraryMan::index(int _row, int _column, QModelIndex const& _parent) const
 {
-	cnote << "index(" << _row << _column << _parent.isValid() << ")";
 	int r = 0;
 	if (!_parent.isValid())
 		for (auto p: m_libraries)
 			if (r++ == _row)
 				return createIndex(_row, _column, &*p);
-	cnote << ":-(";
 	return QModelIndex();
 }
 
@@ -99,7 +90,6 @@ QString defaultNick(QString const& _filename)
 
 QVariant LibraryMan::data(QModelIndex const& _index, int _role) const
 {
-	cnote << "data(" << _index.row() << _index.column() << _role << ")";
 	auto l = (RealLibrary*)_index.internalPointer();
 	if (_role == Qt::CheckStateRole && _index.column() == 0)
 		return l->enabled ? Qt::Checked : Qt::Unchecked;
@@ -268,10 +258,7 @@ void LibraryMan::load(RealLibraryPtr const& _dl)
 				_dl->eventCompilerFactory = cf();
 				foreach (auto f, _dl->eventCompilerFactory)
 				{
-					// TODO: emit signal rather than alter directly.
-					auto li = new QListWidgetItem(QString::fromStdString(f.first));
-					li->setData(0, QString::fromStdString(f.first));
-					Noted::get()->ui->eventCompilersList->addItem(li);
+					emit eventCompilerFactoryAvailable(QString::fromStdString(f.first));
 
 					// TODO: check whether this is really necessary - should only need one call to it for most of the file.
 					Noted::compute()->noteEventCompilersChanged();
@@ -358,12 +345,7 @@ void LibraryMan::load(RealLibraryPtr const& _dl)
 	else if (QFile::exists(_dl->filename))
 	{
 		_dl->eventCompilerFactory[_dl->filename.toStdString()] = [=](){ return new ProcessEventCompiler(_dl->filename); };
-
-		// TODO: emit signal rather than alter directly.
-		auto li = new QListWidgetItem(_dl->filename);
-		li->setData(0, _dl->filename);
-		Noted::get()->ui->eventCompilersList->addItem(li);
-
+		emit eventCompilerFactoryAvailable(_dl->filename);
 		emit doneLibraryLoad(_dl->filename);
 	}
 }
@@ -422,7 +404,8 @@ void LibraryMan::unload(RealLibraryPtr const& _dl)
 		{
 			// TODO: Kill off any events that may be lingering (hopefully none).
 			for (auto f: _dl->eventCompilerFactory)
-				delete Noted::get()->ui->eventCompilersList->findItems(QString::fromStdString(f.first), 0).front();
+				emit eventCompilerFactoryUnavailable(QString::fromStdString(f.first));
+
 			_dl->eventCompilerFactory.clear();
 			// TODO: update whatever has changed re: event compilers being available.
 		}
