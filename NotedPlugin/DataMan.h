@@ -26,9 +26,9 @@ public:
 
 	// Will give most convenient data extraction that covers range [_from, _from+_duration) (i.e. first record will represent data no later than _from).
 	// @Returns tuple of start time, (guaranteed > _from), number of records and digest level or -1 if raw.
-	std::tuple<Lightbox::Time, unsigned, int> bestFit(DataKey _key, Lightbox::Time _from, Lightbox::Time _duration, unsigned _idealRecords) const;
-	void populateRaw(DataKey _key, Lightbox::Time _from, float* _out, unsigned _size) const; // never a digest
-	void populateDigest(DataKey _key, DigestFlag _digest, unsigned _level, Lightbox::Time _from, float* _out, unsigned _size) const;	// _size == records * digestSize(_digest) * recordLength(_key) for integer records.
+	std::tuple<lb::Time, unsigned, int> bestFit(DataKey _key, lb::Time _from, lb::Time _duration, unsigned _idealRecords) const;
+	void populateRaw(DataKey _key, lb::Time _from, float* _out, unsigned _size) const; // never a digest
+	void populateDigest(DataKey _key, DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size) const;	// _size == records * digestSize(_digest) * recordLength(_key) for integer records.
 	unsigned recordLength(DataKey _key) const;
 	DigestFlags availableDigests(DataKey _key) const;
 	unsigned rawRecordCount(DataKey _key) const;

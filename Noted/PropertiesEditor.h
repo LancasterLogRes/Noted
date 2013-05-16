@@ -31,7 +31,7 @@ public:
 	explicit PropertiesEditor(QWidget* _p = nullptr);
 	~PropertiesEditor();
 	
-	void setProperties(Lightbox::VoidMembers const& _properties);
+	void setProperties(lb::VoidMembers const& _properties);
 
 signals:
 	void changed();
@@ -43,6 +43,6 @@ private slots:
 	void onChanged();
 
 private:
-	Lightbox::VoidMembers m_properties;
+	lb::VoidMembers m_properties;
 	void* m_object;
 };

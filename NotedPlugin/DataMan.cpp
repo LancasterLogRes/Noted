@@ -2,7 +2,7 @@
 #include "NotedFace.h"
 #include "DataMan.h"
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 DataMan* DataMan::s_this = nullptr;
 
@@ -47,14 +47,14 @@ tuple<Time, unsigned, int> DataMan::bestFit(DataKey _key, Time _from, Time _dura
 	return tuple<Time, unsigned, int>(0, 0, 0);
 }
 
-void DataMan::populateRaw(DataKey _key, Lightbox::Time _from, float* _out, unsigned _size) const
+void DataMan::populateRaw(DataKey _key, lb::Time _from, float* _out, unsigned _size) const
 {
 	QMutexLocker l(&x_data);
 	if (m_data.contains(_key))
 		m_data[_key]->populateRaw(_from, _out, _size);
 }
 
-void DataMan::populateDigest(DataKey _key, DigestFlag _digest, unsigned _level, Lightbox::Time _from, float* _out, unsigned _size) const
+void DataMan::populateDigest(DataKey _key, DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size) const
 {
 	QMutexLocker l(&x_data);
 	if (m_data.contains(_key))

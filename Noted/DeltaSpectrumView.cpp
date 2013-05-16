@@ -29,7 +29,7 @@
 #include <NotedPlugin/NotedFace.h>
 #include "DeltaSpectrumView.h"
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 void DeltaSpectrumView::renderGL(QSize _s)
 {
@@ -106,8 +106,8 @@ void DeltaSpectrumView::renderGL(QSize _s)
 		float pdRms = 0.f;
 		for (int i = 0; i < (int)s; ++i)
 		{
-			float dp = Lightbox::withReflection(fabs(phase[i] - lPhase[i]));		// delta-phase
-			float ddp = Lightbox::withReflection(fabs(phase[i] + llPhase[i] - 2 * lPhase[i]));		// delta-delta-phase
+			float dp = lb::withReflection(fabs(phase[i] - lPhase[i]));		// delta-phase
+			float ddp = lb::withReflection(fabs(phase[i] + llPhase[i] - 2 * lPhase[i]));		// delta-delta-phase
 
 			int x = 24 + i * w / s;
 			int y = h - h * dp / sc;

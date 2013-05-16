@@ -23,5 +23,5 @@
 
 int main(int, char**)
 {
-	return Lightbox::UnitTesting<100>::go() ? 0 : 1;
+	return lb::UnitTesting<100>::go() ? 0 : 1;
 }

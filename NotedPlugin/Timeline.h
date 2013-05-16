@@ -33,8 +33,8 @@ public:
 	virtual ~EventsStore() {}
 
 	virtual QString niceName() const = 0;
-	virtual Lightbox::StreamEvents events(int _i) const = 0;
-	virtual Lightbox::StreamEvents cursorEvents() const = 0;
+	virtual lb::StreamEvents events(int _i) const = 0;
+	virtual lb::StreamEvents cursorEvents() const = 0;
 	virtual unsigned eventCount() const = 0;
 	inline bool isPredetermined() const { return eventCount(); }
 };
@@ -49,11 +49,11 @@ public:
 
 	virtual QWidget* widget() = 0;
 	virtual QColor cursorColor() { return Qt::black; }
-	virtual Lightbox::Time highlightDuration() const;
-	virtual Lightbox::Time highlightFrom() const;
+	virtual lb::Time highlightDuration() const;
+	virtual lb::Time highlightFrom() const;
 
-	Lightbox::Time earliestVisible() const;
-	Lightbox::Time pixelDuration() const;
+	lb::Time earliestVisible() const;
+	lb::Time pixelDuration() const;
 
 protected:
 	NotedFace* m_nf;

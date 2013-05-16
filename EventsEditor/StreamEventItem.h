@@ -39,16 +39,16 @@ inline QBrush qLinearGradient(QPointF _a, QPointF _b, QColor _ac, QColor _bc)
 class StreamEventItem: public QGraphicsItem
 {
 public:
-	StreamEventItem(Lightbox::StreamEvent const& _se);
+	StreamEventItem(lb::StreamEvent const& _se);
 
-	QColor cDark() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 128) : QColor::fromHsvF(Lightbox::toHue(m_se.temperature), 0.5f, 0.6f * Lightbox::Color::hueCorrection(Lightbox::toHue(m_se.temperature))); }
-	QColor color() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 160) : QColor::fromHsvF(Lightbox::toHue(m_se.temperature), 1.f, 1.f * Lightbox::Color::hueCorrection(Lightbox::toHue(m_se.temperature))); }
-	QColor cLight() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 192) : QColor::fromHsvF(Lightbox::toHue(m_se.temperature), 0.5f, 1.0f * Lightbox::Color::hueCorrection(Lightbox::toHue(m_se.temperature))); }
-	QColor cPastel() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 224) : QColor::fromHsvF(Lightbox::toHue(m_se.temperature), 0.25f, 1.0f * Lightbox::Color::hueCorrection(Lightbox::toHue(m_se.temperature))); }
+	QColor cDark() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 128) : QColor::fromHsvF(lb::toHue(m_se.temperature), 0.5f, 0.6f * lb::Color::hueCorrection(lb::toHue(m_se.temperature))); }
+	QColor color() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 160) : QColor::fromHsvF(lb::toHue(m_se.temperature), 1.f, 1.f * lb::Color::hueCorrection(lb::toHue(m_se.temperature))); }
+	QColor cLight() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 192) : QColor::fromHsvF(lb::toHue(m_se.temperature), 0.5f, 1.0f * lb::Color::hueCorrection(lb::toHue(m_se.temperature))); }
+	QColor cPastel() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 224) : QColor::fromHsvF(lb::toHue(m_se.temperature), 0.25f, 1.0f * lb::Color::hueCorrection(lb::toHue(m_se.temperature))); }
 
 	EventsEditor* view() const;
 	QPointF distanceFrom(StreamEventItem* _i, QPointF const& _onThem = QPointF(0, 0), QPointF const& _onUs = QPointF(0, 0)) const;
-	Lightbox::StreamEvent const& streamEvent() const { return m_se; }
+	lb::StreamEvent const& streamEvent() const { return m_se; }
 	virtual QPointF evenUp(QPointF const& _n);
 	virtual void setTime(int _hopIndex);
 	virtual void setChannel(int _ch) { m_se.assign(_ch); }
@@ -60,7 +60,7 @@ public:
 	bool isMagnified() const { return magFactor() < 15; }
 	float magFactor() const;
 
-	static StreamEventItem* newItem(Lightbox::StreamEvent const& _se);
+	static StreamEventItem* newItem(lb::StreamEvent const& _se);
 	EventsEditScene* scene() const;
 
 protected:
@@ -70,6 +70,6 @@ protected:
 	virtual bool sceneEvent(QEvent* _e);
 	virtual QVariant itemChange(GraphicsItemChange _change, QVariant const& _v);
 
-	Lightbox::StreamEvent m_se;
+	lb::StreamEvent m_se;
 };
 

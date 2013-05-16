@@ -23,7 +23,7 @@
 #include "EventsView.h"
 #include "CompileEventsView.h"
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 DataSetDataStore::DataSetDataStore(std::string const& _name)
 {
@@ -86,12 +86,12 @@ void CompileEventsView::init(bool _willRecord)
 	}
 }
 
-Lightbox::EventCompiler CompileEventsView::ec() const
+lb::EventCompiler CompileEventsView::ec() const
 {
 	return m_ev->m_eventCompiler;
 }
 
-void CompileEventsView::process(unsigned _i, Lightbox::Time)
+void CompileEventsView::process(unsigned _i, lb::Time)
 {
 	vector<float> mag(noted()->spectrumSize());
 	vector<float> phase(noted()->spectrumSize());

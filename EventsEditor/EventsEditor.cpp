@@ -28,7 +28,7 @@
 #include "EventsEditor.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 	QGraphicsView		(_parent),
@@ -121,7 +121,7 @@ bool EventsEditor::isIndependent() const
 	return parentWidget()->objectName() == "dataDisplay";
 }
 
-void EventsEditor::setEvents(QList<Lightbox::StreamEvents> const& _es, int _forceChannel)
+void EventsEditor::setEvents(QList<lb::StreamEvents> const& _es, int _forceChannel)
 {
 	m_scene->setEvents(_es, _forceChannel);
 }
@@ -144,7 +144,7 @@ void EventsEditor::mousePressEvent(QMouseEvent* _e)
 	if ((itemAt(_e->pos()) || !(_e->buttons() & Qt::MiddleButton)))// && isMutable())
 	{
 		QGraphicsView::mousePressEvent(_e);
-		m_draggingTime = Lightbox::UndefinedTime;
+		m_draggingTime = lb::UndefinedTime;
 	}
 	else
 	{
@@ -161,7 +161,7 @@ void EventsEditor::mouseReleaseEvent(QMouseEvent* _e)
 
 void EventsEditor::mouseMoveEvent(QMouseEvent* _e)
 {
-	if (m_draggingTime != Lightbox::UndefinedTime && _e->buttons() & Qt::MiddleButton)
+	if (m_draggingTime != lb::UndefinedTime && _e->buttons() & Qt::MiddleButton)
 		c()->setTimelineOffset(m_draggingTime - _e->x() * c()->pixelDuration());
 	else if (_e->buttons() & Qt::MiddleButton)
 	{

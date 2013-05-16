@@ -30,8 +30,8 @@ public:
 	explicit WaveView(QWidget* _parent = 0): PrerenderedTimeline(_parent) { initTimeline(c()); }
 	~WaveView() { finiTimeline(); quit(); }
 
-	virtual Lightbox::Time highlightDuration() const;
-	virtual Lightbox::Time highlightFrom() const;
+	virtual lb::Time highlightDuration() const;
+	virtual lb::Time highlightFrom() const;
 
 signals:
 	void resized();

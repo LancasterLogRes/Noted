@@ -34,7 +34,7 @@
 #include "Prerendered.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 #define USE_RENDER_THREAD 1
 

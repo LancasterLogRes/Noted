@@ -38,7 +38,7 @@ struct Library
 
 	// One of (p, cf, auxFace) is valid.
 	std::shared_ptr<NotedPlugin> p;
-	Lightbox::EventCompilerFactories cf;
+	lb::EventCompilerFactories cf;
 	std::shared_ptr<AuxLibraryFace> auxFace;
 	std::weak_ptr<NotedPlugin> aux;
 };

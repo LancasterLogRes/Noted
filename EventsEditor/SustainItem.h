@@ -25,7 +25,7 @@
 class SustainBarItem: public QGraphicsItem
 {
 public:
-	SustainBarItem(QPointF const& _begin, QPointF const& _end, Lightbox::StreamEvent const& _bEv, Lightbox::StreamEvent const& _eEv);
+	SustainBarItem(QPointF const& _begin, QPointF const& _end, lb::StreamEvent const& _bEv, lb::StreamEvent const& _eEv);
 
 	virtual QPainterPath shape() const { QPainterPath ret; ret.addRect(boundingRect()); return ret; }
 
@@ -38,20 +38,20 @@ public:
 private:
 	QPointF m_begin;
 	QPointF m_end;
-	Lightbox::StreamEvent m_beginEvent;
-	Lightbox::StreamEvent m_endEvent;
+	lb::StreamEvent m_beginEvent;
+	lb::StreamEvent m_endEvent;
 };
 
 class SustainSuperItem: public StreamEventItem
 {
 public:
-	SustainSuperItem(Lightbox::StreamEvent const& _se): StreamEventItem(_se) {}
+	SustainSuperItem(lb::StreamEvent const& _se): StreamEventItem(_se) {}
 };
 
 class AttackItem: public SustainSuperItem
 {
 public:
-	AttackItem(Lightbox::StreamEvent const& _se): SustainSuperItem(_se) {}
+	AttackItem(lb::StreamEvent const& _se): SustainSuperItem(_se) {}
 	virtual QRectF core() const;
 	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 };
@@ -59,7 +59,7 @@ public:
 class SustainItem: public SustainSuperItem
 {
 public:
-	SustainItem(Lightbox::StreamEvent const& _se): SustainSuperItem(_se) {}
+	SustainItem(lb::StreamEvent const& _se): SustainSuperItem(_se) {}
 	virtual QRectF core() const;
 	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 };
@@ -67,7 +67,7 @@ public:
 class DecayItem: public SustainSuperItem
 {
 public:
-	DecayItem(Lightbox::StreamEvent const& _se): SustainSuperItem(_se) {}
+	DecayItem(lb::StreamEvent const& _se): SustainSuperItem(_se) {}
 	virtual QRectF core() const;
 	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 };
@@ -75,7 +75,7 @@ public:
 class ReleaseItem: public SustainSuperItem
 {
 public:
-	ReleaseItem(Lightbox::StreamEvent const& _se): SustainSuperItem(_se) {}
+	ReleaseItem(lb::StreamEvent const& _se): SustainSuperItem(_se) {}
 	virtual QRectF core() const;
 	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 };

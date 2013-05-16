@@ -61,7 +61,7 @@ class EventsEditor;
 class CompileEvents;
 class CollateEvents;
 
-bool eventVisible(QVariant const& _v, Lightbox::StreamEvent const& _e);
+bool eventVisible(QVariant const& _v, lb::StreamEvent const& _e);
 
 struct RealLibrary: public Library
 {
@@ -111,15 +111,15 @@ public:
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d);
 
 	virtual QList<EventsStore*> eventsStores() const;
-	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name);
-	virtual Lightbox::EventCompiler findEventCompiler(QString const& _name);
-	virtual QString getEventCompilerName(Lightbox::EventCompilerImpl* _ec);
+	virtual lb::EventCompiler newEventCompiler(QString const& _name);
+	virtual lb::EventCompiler findEventCompiler(QString const& _name);
+	virtual QString getEventCompilerName(lb::EventCompilerImpl* _ec);
 
 	using QWidget::event;
 
-	Lightbox::foreign_vector<float const> cursorWaveWindow() const;
-	Lightbox::foreign_vector<float const> cursorMagSpectrum() const;
-	Lightbox::foreign_vector<float const> cursorPhaseSpectrum() const;
+	lb::foreign_vector<float const> cursorWaveWindow() const;
+	lb::foreign_vector<float const> cursorMagSpectrum() const;
+	lb::foreign_vector<float const> cursorPhaseSpectrum() const;
 
 public slots:
 	void suspendWork();
@@ -226,8 +226,8 @@ private:
 	std::shared_ptr<Audio::Capture> m_capture;
 
 	// Playback...
-	Lightbox::Time m_fineCursorWas;
-	Lightbox::Time m_nextResample;
+	lb::Time m_fineCursorWas;
+	lb::Time m_nextResample;
 	void* m_resampler;
 	bool m_isCausal;
 	bool m_isPassing;
@@ -236,7 +236,7 @@ private:
 	int m_causalCursorIndex;
 
 	// Passthrough...
-	std::shared_ptr<Lightbox::FFTW> m_fftw;
+	std::shared_ptr<lb::FFTW> m_fftw;
 	std::vector<float> m_currentWave;
 	std::vector<float> m_currentMagSpectrum;
 	std::vector<float> m_currentPhaseSpectrum;

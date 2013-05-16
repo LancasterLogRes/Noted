@@ -25,7 +25,7 @@
 class SyncPointItem: public StreamEventItem
 {
 public:
-	SyncPointItem(Lightbox::StreamEvent const& _se): StreamEventItem(_se) {}
+	SyncPointItem(lb::StreamEvent const& _se): StreamEventItem(_se) {}
 
 	virtual QRectF core() const;
 	virtual QPointF evenUp(QPointF const& _n);

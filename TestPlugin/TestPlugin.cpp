@@ -31,7 +31,7 @@
 #include "TestPlugin.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 NOTED_PLUGIN(TestPlugin);
 

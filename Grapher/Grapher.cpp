@@ -25,7 +25,7 @@
 #include "Grapher.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 Grapher::Grapher(): p(0)
 {

@@ -44,7 +44,7 @@ public:
 	void setEcName(QString const& _s) { m_spec.ec = _s.toStdString(); graphChanged(); update(); }
 	void setGraphName(QString const& _s) { m_spec.graph = _s.toStdString(); graphChanged(); update(); }
 
-	Lightbox::EventCompiler eventCompiler() const;
+	lb::EventCompiler eventCompiler() const;
 
 signals:
 	void graphChanged();
@@ -167,10 +167,10 @@ public:
 		connect(this, SIGNAL(pitchChanged()), SLOT(update()));
 	}
 
-	double offset() const { return Lightbox::toSeconds(Noted::get()->earliestVisible()); }
-	double pitch() const { return Lightbox::toSeconds(Noted::get()->pixelDuration()); }
-	void setOffset(double _s) const { Noted::get()->setTimelineOffset(Lightbox::fromSeconds(_s)); }
-	void setPitch(double _s) const { Noted::get()->setPixelDuration(Lightbox::fromSeconds(_s)); }
+	double offset() const { return lb::toSeconds(Noted::get()->earliestVisible()); }
+	double pitch() const { return lb::toSeconds(Noted::get()->pixelDuration()); }
+	void setOffset(double _s) const { Noted::get()->setTimelineOffset(lb::fromSeconds(_s)); }
+	void setPitch(double _s) const { Noted::get()->setPixelDuration(lb::fromSeconds(_s)); }
 
 signals:
 	void offsetChanged();

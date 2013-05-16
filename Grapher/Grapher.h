@@ -32,7 +32,7 @@
 
 class QPainter;
 
-namespace Lightbox
+namespace lb
 {
 
 template <int _SF>

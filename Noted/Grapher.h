@@ -31,7 +31,7 @@
 
 class QPainter;
 
-namespace Lightbox
+namespace lb
 {
 
 class Grapher

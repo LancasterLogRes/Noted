@@ -34,7 +34,7 @@
 #include "EventsView.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	PrerenderedTimeline	(new QSplitter(Qt::Vertical, new QSplitter(Qt::Horizontal, _parent))),
@@ -127,7 +127,7 @@ void EventsView::clearEvents()
 		m_eventsEditor->scene()->clear();
 }
 
-Lightbox::StreamEvents EventsView::cursorEvents() const
+lb::StreamEvents EventsView::cursorEvents() const
 {
 	StreamEvents ret;
 	int ch = m_channel->currentIndex() - 1;
@@ -152,7 +152,7 @@ void EventsView::setNewEvents()
 	m_eventsEditor->setEvents(m_events, 0);
 }
 
-Lightbox::StreamEvents EventsView::events(int _i) const
+lb::StreamEvents EventsView::events(int _i) const
 {
 	if (m_use && m_use->isChecked())
 	{

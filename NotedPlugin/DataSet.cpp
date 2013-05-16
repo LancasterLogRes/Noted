@@ -2,7 +2,7 @@
 #include "NotedFace.h"
 #include "DataSet.h"
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 void DataSet::init(unsigned _recordLength, Time _stride, Time _first)
 {
@@ -96,7 +96,7 @@ void DataSet::digest(DigestFlag _t)
 				d++;
 			}
 		}
-		m_digest[_t]->generate([](Lightbox::foreign_vector<float> a, Lightbox::foreign_vector<float> b, Lightbox::foreign_vector<float> ret)
+		m_digest[_t]->generate([](lb::foreign_vector<float> a, lb::foreign_vector<float> b, lb::foreign_vector<float> ret)
 		{
 			unsigned i = 0;
 			for (; i + 3 < a.size(); i += 4)
@@ -131,7 +131,7 @@ void DataSet::digest(DigestFlag _t)
 			}
 		}
 		// assumes a & b are sequential.
-		m_digest[_t]->generate([](Lightbox::foreign_vector<float> a, Lightbox::foreign_vector<float> b, Lightbox::foreign_vector<float> ret)
+		m_digest[_t]->generate([](lb::foreign_vector<float> a, lb::foreign_vector<float> b, lb::foreign_vector<float> ret)
 		{
 			for (unsigned i = 0; i < a.size(); i += 4)
 			{
@@ -173,7 +173,7 @@ tuple<Time, unsigned, int> DataSet::bestFit(Time _from, Time _duration, unsigned
 	}
 }
 
-void DataSet::populateRaw(Lightbox::Time _from, float* _out, unsigned _size) const
+void DataSet::populateRaw(lb::Time _from, float* _out, unsigned _size) const
 {
 	int recordBegin = (_from - m_first) / m_stride;
 	int rLen = recordLength();
@@ -196,7 +196,7 @@ void DataSet::populateRaw(Lightbox::Time _from, float* _out, unsigned _size) con
 	valcpy(_out + beforeStart * rLen, d.data() + (recordBegin + beforeStart) * rLen, rLen * valid);
 }
 
-void DataSet::populateDigest(DigestFlag _digest, unsigned _level, Lightbox::Time _from, float* _out, unsigned _size) const
+void DataSet::populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size) const
 {
 	assert(m_availableDigests & _digest);
 	assert(m_digest.contains(_digest));

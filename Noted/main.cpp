@@ -29,7 +29,7 @@ void XInitThreads();
 
 int main(int argc, char *argv[])
 {
-	if (!Lightbox::UnitTesting<100>::go())
+	if (!lb::UnitTesting<100>::go())
 		return -1;
 //	QApplication::setAttribute(Qt::AA_X11InitThreads);
 #ifdef Q_WS_X11

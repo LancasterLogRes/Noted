@@ -50,8 +50,8 @@ public:
 
 protected:
 	/// These two are frozen at the zoom configuration as it was prior to rendering; this is necessary as the real offset/visible duration may change during rendering (which is happening asynchronously).
-	int renderingPositionOf(Lightbox::Time _t) const;
-	Lightbox::Time renderingTimeOf(int _x) const;
+	int renderingPositionOf(lb::Time _t) const;
+	lb::Time renderingTimeOf(int _x) const;
 
 	virtual bool needsRepaint() const;
 	virtual bool needsRerender() const;
@@ -64,9 +64,9 @@ protected:
 	virtual void mouseMoveEvent(QMouseEvent* _e);
 	virtual void wheelEvent(QWheelEvent* _e);
 
-	Lightbox::Time m_draggingTime;
+	lb::Time m_draggingTime;
 
-	Lightbox::Time m_renderedOffset;
-	Lightbox::Time m_renderedPixelDuration;
+	lb::Time m_renderedOffset;
+	lb::Time m_renderedPixelDuration;
 	unsigned m_paintedCursorIndex;
 };

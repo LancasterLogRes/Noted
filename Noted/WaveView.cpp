@@ -29,14 +29,14 @@
 #include "WaveView.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
-Lightbox::Time WaveView::highlightFrom() const
+lb::Time WaveView::highlightFrom() const
 {
 	return m_nf->cursor() - m_nf->windowSize() + m_nf->hop();
 }
 
-Lightbox::Time WaveView::highlightDuration() const
+lb::Time WaveView::highlightDuration() const
 {
 	return m_nf->windowSize();
 }

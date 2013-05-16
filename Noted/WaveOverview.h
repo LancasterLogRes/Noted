@@ -34,8 +34,8 @@ public:
 	~WaveOverview() { quit(); }
 
 	virtual bool needsRepaint() const;
-	int positionOf(Lightbox::Time _t);
-	Lightbox::Time timeOf(int _x);
+	int positionOf(lb::Time _t);
+	lb::Time timeOf(int _x);
 
 private slots:
 	void timelineChanged() { m_timelineChanged = true; }

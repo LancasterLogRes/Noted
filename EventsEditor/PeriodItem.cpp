@@ -30,7 +30,7 @@
 #include "PeriodItem.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 static const float s_yPeriod = 0.f;
 

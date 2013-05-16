@@ -21,7 +21,7 @@
 #include "NotedFace.h"
 #include "Timeline.h"
 
-using namespace Lightbox;
+using namespace lb;
 using namespace std;
 
 Timeline::~Timeline()
@@ -38,22 +38,22 @@ void Timeline::finiTimeline()
 	m_nf->timelineDead(this);
 }
 
-Lightbox::Time Timeline::earliestVisible() const
+lb::Time Timeline::earliestVisible() const
 {
 	return m_nf->earliestVisible();
 }
 
-Lightbox::Time Timeline::pixelDuration() const
+lb::Time Timeline::pixelDuration() const
 {
 	return m_nf->pixelDuration();
 }
 
-Lightbox::Time Timeline::highlightFrom() const
+lb::Time Timeline::highlightFrom() const
 {
 	return m_nf->cursor();
 }
 
-Lightbox::Time Timeline::highlightDuration() const
+lb::Time Timeline::highlightDuration() const
 {
 	return m_nf->hop();
 }

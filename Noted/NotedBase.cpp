@@ -29,7 +29,7 @@
 #include "WorkerThread.h"
 #include "NotedBase.h"
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 NotedBase::NotedBase(QWidget* _p):
 	NotedFace					(_p),
@@ -62,7 +62,7 @@ uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const
 }
 
 // returns true if it's pairs of max/rms, false if it's samples.
-bool NotedBase::waveBlock(Time _from, Time _duration, Lightbox::foreign_vector<float> o_toFill, bool _forceSamples) const
+bool NotedBase::waveBlock(Time _from, Time _duration, lb::foreign_vector<float> o_toFill, bool _forceSamples) const
 {
 	int samples = fromBase(_duration, rate());
 	int items = _forceSamples ? o_toFill.size() : (o_toFill.size() / 2);
@@ -95,7 +95,7 @@ bool NotedBase::waveBlock(Time _from, Time _duration, Lightbox::foreign_vector<f
 	}
 }
 
-Lightbox::foreign_vector<float const> NotedBase::waveWindow(int _window) const
+lb::foreign_vector<float const> NotedBase::waveWindow(int _window) const
 {
 	QMutexLocker l(&x_wave);
 
@@ -304,11 +304,11 @@ void NotedBase::rejigSpectra()
 					WorkerThread::setCurrentProgress(index * 99 / hops());
 				}
 			}
-			m_spectra.generate([&](Lightbox::foreign_vector<float> a, Lightbox::foreign_vector<float> b, Lightbox::foreign_vector<float> ret)
+			m_spectra.generate([&](lb::foreign_vector<float> a, lb::foreign_vector<float> b, lb::foreign_vector<float> ret)
 			{
-				Lightbox::valcpy(ret.data(), a.data(), a.size());
+				lb::valcpy(ret.data(), a.data(), a.size());
 				v4sf half = {.5f, .5f, .5f, .5f};
-				Lightbox::packTransform(ret.data(), b.data(), ss, [=](v4sf& rv, v4sf bv)
+				lb::packTransform(ret.data(), b.data(), ss, [=](v4sf& rv, v4sf bv)
 				{
 					rv = (rv + bv) * half;
 				});// only do the mean combine with b for the mag spectrum.

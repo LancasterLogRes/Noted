@@ -31,7 +31,7 @@
 #include "SpectraView.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 using namespace cwc;
 
 SpectraView::SpectraView(QWidget* _parent):
@@ -49,7 +49,7 @@ SpectraView::~SpectraView()
 	quit();
 }
 
-Lightbox::Time SpectraView::period() const
+lb::Time SpectraView::period() const
 {
 	return c()->windowSize();
 }

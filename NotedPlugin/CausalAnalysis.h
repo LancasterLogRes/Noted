@@ -38,8 +38,8 @@ public:
 	// inherited
 	virtual void init() { init(true); }
 	virtual void fini() { fini(true); }
-	virtual unsigned prepare(unsigned _from, unsigned _count, Lightbox::Time) { noteBatch(_from, _count); return _count; }
-	virtual void analyze(unsigned _from, unsigned _count, Lightbox::Time _hop);
+	virtual unsigned prepare(unsigned _from, unsigned _count, lb::Time) { noteBatch(_from, _count); return _count; }
+	virtual void analyze(unsigned _from, unsigned _count, lb::Time _hop);
 
 	// new
 protected:
@@ -47,7 +47,7 @@ protected:
 public:// TODO: move to protected & introduce non-virtual public API.
 	virtual void fini(bool _didRecord) { (void)_didRecord; }
 	virtual void noteBatch(unsigned, unsigned) {}
-	virtual void process(unsigned, Lightbox::Time) {}
+	virtual void process(unsigned, lb::Time) {}
 	virtual void record() {}
 };
 

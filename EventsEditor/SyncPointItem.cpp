@@ -30,7 +30,7 @@
 #include "SyncPointItem.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 void SyncPointItem::paint(QPainter* _p, const QStyleOptionGraphicsItem*, QWidget*)
 {

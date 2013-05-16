@@ -1,9 +1,10 @@
 #include <QtQuick>
 #include <Common/Global.h>
+#include <EventCompiler/GraphSpec.h>
 #include "Global.h"
 #include "TimelinesItem.h"
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 GraphItem::GraphItem()
 {

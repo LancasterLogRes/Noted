@@ -30,9 +30,9 @@
 #include "SustainItem.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
-SustainBarItem::SustainBarItem(QPointF const& _begin, QPointF const& _end, Lightbox::StreamEvent const& _bEv, Lightbox::StreamEvent const& _eEv):
+SustainBarItem::SustainBarItem(QPointF const& _begin, QPointF const& _end, lb::StreamEvent const& _bEv, lb::StreamEvent const& _eEv):
 	m_begin(_begin), m_end(_end), m_beginEvent(_bEv), m_endEvent(_eEv)
 {
 	setPos(m_begin);
@@ -47,13 +47,13 @@ void SustainBarItem::paint(QPainter* _p, QStyleOptionGraphicsItem const*, QWidge
 {
 	if (m_beginEvent.type == Attack)
 	{
-		_p->setBrush(QColor::fromHsvF(toHue(m_endEvent.temperature), .0625f, 1.f * Lightbox::Color::hueCorrection(toHue(m_endEvent.temperature))));
+		_p->setBrush(QColor::fromHsvF(toHue(m_endEvent.temperature), .0625f, 1.f * lb::Color::hueCorrection(toHue(m_endEvent.temperature))));
 		_p->setPen(Qt::NoPen);
 		_p->drawPolygon(QPolygonF() << QPointF(0, 7 - 15 - 7 * m_beginEvent.strength) << QPointF(0, -6 + 7 * m_beginEvent.strength) << QPointF(m_end.x() - m_begin.x(), -6 + 7 * m_endEvent.strength) << QPointF(m_end.x() - m_begin.x(), 7 - 15 - 7 * m_endEvent.strength));
 	}
 	else
 	{
-		_p->fillRect(QRectF(0, 7 - 15 - 7 * m_beginEvent.strength, m_end.x() - m_begin.x(), 2 + 14 * m_beginEvent.strength), QColor::fromHsvF(toHue(m_beginEvent.temperature), .25f, 1.f * Lightbox::Color::hueCorrection(toHue(m_beginEvent.temperature))));
+		_p->fillRect(QRectF(0, 7 - 15 - 7 * m_beginEvent.strength, m_end.x() - m_begin.x(), 2 + 14 * m_beginEvent.strength), QColor::fromHsvF(toHue(m_beginEvent.temperature), .25f, 1.f * lb::Color::hueCorrection(toHue(m_beginEvent.temperature))));
 	}
 }
 

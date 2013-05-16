@@ -24,7 +24,7 @@
 #include "PropertiesEditor.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 PropertiesEditor::PropertiesEditor(QWidget* _p):
 	QTableWidget(_p)
@@ -40,7 +40,7 @@ PropertiesEditor::~PropertiesEditor()
 {
 }
 
-void PropertiesEditor::setProperties(Lightbox::VoidMembers const& _properties)
+void PropertiesEditor::setProperties(lb::VoidMembers const& _properties)
 {
 	m_properties = _properties;
 	updateWidgets();

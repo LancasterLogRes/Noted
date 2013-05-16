@@ -45,14 +45,14 @@ private:
 class PeriodItem: public StreamEventItem
 {
 public:
-	PeriodItem(Lightbox::StreamEvent const& _se): StreamEventItem(_se) {}
+	PeriodItem(lb::StreamEvent const& _se): StreamEventItem(_se) {}
 	virtual QPointF evenUp(QPointF const& _n);
 };
 
 class PeriodSetTweakItem: public PeriodItem
 {
 public:
-	PeriodSetTweakItem(Lightbox::StreamEvent const& _se): PeriodItem(_se) {}
+	PeriodSetTweakItem(lb::StreamEvent const& _se): PeriodItem(_se) {}
 	virtual QRectF core() const;
 	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 	virtual void mousePressEvent(QGraphicsSceneMouseEvent* _e);
@@ -62,19 +62,19 @@ public:
 class PeriodSetItem: public PeriodSetTweakItem
 {
 public:
-	PeriodSetItem(Lightbox::StreamEvent const& _se): PeriodSetTweakItem(_se) {}
+	PeriodSetItem(lb::StreamEvent const& _se): PeriodSetTweakItem(_se) {}
 };
 
 class PeriodTweakItem: public PeriodSetTweakItem
 {
 public:
-	PeriodTweakItem(Lightbox::StreamEvent const& _se): PeriodSetTweakItem(_se) {}
+	PeriodTweakItem(lb::StreamEvent const& _se): PeriodSetTweakItem(_se) {}
 };
 
 class PeriodResetItem: public PeriodItem
 {
 public:
-	PeriodResetItem(Lightbox::StreamEvent const& _se): PeriodItem(_se) {}
+	PeriodResetItem(lb::StreamEvent const& _se): PeriodItem(_se) {}
 	virtual QRectF core() const { return QRectF(0, 0, 12, 12); }
 	virtual void paint(QPainter* _p, const QStyleOptionGraphicsItem* _o, QWidget* _w);
 };

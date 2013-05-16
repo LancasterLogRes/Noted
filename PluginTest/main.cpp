@@ -28,7 +28,7 @@
 #include <NotedPlugin/NotedFace.h>
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 class NotedGLWidget: public QGLWidget
 {

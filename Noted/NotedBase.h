@@ -52,12 +52,12 @@ public:
 	explicit NotedBase(QWidget* _p);
 	~NotedBase();
 
-	virtual Lightbox::foreign_vector<float const> waveWindow(int _window) const;
-	virtual bool waveBlock(Lightbox::Time _from, Lightbox::Time _duration, Lightbox::foreign_vector<float> o_toFill, bool _forceSamples = false) const;
-	virtual Lightbox::foreign_vector<float const> multiSpectrum(int _i, int _n) const;
-	virtual Lightbox::foreign_vector<float const> magSpectrum(int _i, int _n) const;
-	virtual Lightbox::foreign_vector<float const> phaseSpectrum(int _i, int _n) const;
-	virtual Lightbox::foreign_vector<float const> deltaPhaseSpectrum(int _i, int _n) const;
+	virtual lb::foreign_vector<float const> waveWindow(int _window) const;
+	virtual bool waveBlock(lb::Time _from, lb::Time _duration, lb::foreign_vector<float> o_toFill, bool _forceSamples = false) const;
+	virtual lb::foreign_vector<float const> multiSpectrum(int _i, int _n) const;
+	virtual lb::foreign_vector<float const> magSpectrum(int _i, int _n) const;
+	virtual lb::foreign_vector<float const> phaseSpectrum(int _i, int _n) const;
+	virtual lb::foreign_vector<float const> deltaPhaseSpectrum(int _i, int _n) const;
 
 protected:
 	bool resampleWave();

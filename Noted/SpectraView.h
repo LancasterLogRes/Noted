@@ -33,7 +33,7 @@ public:
 	explicit SpectraView(QWidget* _parent = 0);
 	virtual ~SpectraView();
 
-	Lightbox::Time period() const;
+	lb::Time period() const;
 
 private:
 	virtual void renderGL(QSize);

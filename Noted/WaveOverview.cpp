@@ -26,7 +26,7 @@
 #include "WaveOverview.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 WaveOverview::WaveOverview(QWidget* _parent): CurrentView(_parent)
 {
@@ -34,7 +34,7 @@ WaveOverview::WaveOverview(QWidget* _parent): CurrentView(_parent)
 	connect(c(), SIGNAL(offsetChanged()), SLOT(timelineChanged()));
 }
 
-int WaveOverview::positionOf(Lightbox::Time _t)
+int WaveOverview::positionOf(lb::Time _t)
 {
 	return ((double(_t) / c()->duration()) * .95 + .025) * width();
 }
@@ -124,7 +124,7 @@ void WaveOverview::renderGL(QSize _s)
 		if (nor.isMajor(t))
 		{
 			p.setPen(QColor(160, 160, 160));
-			p.drawText(QRect(x - 40, 0, 80, 12), Qt::AlignHCenter | Qt::AlignBottom, ::Lightbox::textualTime(t, nor.delta, nor.major).c_str());
+			p.drawText(QRect(x - 40, 0, 80, 12), Qt::AlignHCenter | Qt::AlignBottom, ::lb::textualTime(t, nor.delta, nor.major).c_str());
 			p.setPen(QColor(192, 192, 192));
 			p.drawLine(x, 14, x, height());
 		}

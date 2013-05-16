@@ -40,8 +40,8 @@ public:
 protected:
 	virtual void init() {}
 	virtual void fini() {}
-	virtual unsigned prepare(unsigned, unsigned, Lightbox::Time) { return 0; }
-	virtual void analyze(unsigned, unsigned, Lightbox::Time) {}
+	virtual unsigned prepare(unsigned, unsigned, lb::Time) { return 0; }
+	virtual void analyze(unsigned, unsigned, lb::Time) {}
 
 	bool done(unsigned _i);
 	NotedFace* noted() const { return m_noted; }

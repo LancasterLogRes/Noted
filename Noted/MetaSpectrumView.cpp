@@ -31,7 +31,7 @@
 #include "MetaSpectrumView.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 void MetaSpectrumView::renderGL(QSize _s)
 {
@@ -61,7 +61,7 @@ void MetaSpectrumView::renderGL(QSize _s)
 
 		p.fillRect(rect(), qRgb(255, 255, 255));
 
-		float sc = qMax(1.f, Lightbox::range(mag).second);
+		float sc = qMax(1.f, lb::range(mag).second);
 
 		GraphParameters<float> minorParams(make_pair(0.f, sc), h / 18, ForceMinor);
 		p.setPen(QColor(236, 236, 236));

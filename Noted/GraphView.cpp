@@ -4,7 +4,7 @@
 #include <EventCompiler/GraphSpec.h>
 #include "GraphView.h"
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 GraphView::GraphView(QWidget* _p, QString const& _name): CurrentView(_p)
 {

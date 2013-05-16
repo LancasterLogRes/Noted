@@ -20,7 +20,7 @@
 
 #include "CausalAnalysis.h"
 
-void CausalAnalysis::analyze(unsigned _from, unsigned _count, Lightbox::Time _hop)
+void CausalAnalysis::analyze(unsigned _from, unsigned _count, lb::Time _hop)
 {
 	for (unsigned i = 0; i < _count && done(i); ++i)
 	{

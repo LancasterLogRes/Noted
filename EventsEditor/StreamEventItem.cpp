@@ -35,7 +35,7 @@
 #include "StreamEventItem.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 static const qreal pw = 1;
 static const qreal hpw = pw / 2;
@@ -174,7 +174,7 @@ void StreamEventItem::handleSelected(QPainter* _p)
 	_p->setBrush(cPastel());
 }
 
-StreamEventItem* StreamEventItem::newItem(Lightbox::StreamEvent const& _se)
+StreamEventItem* StreamEventItem::newItem(lb::StreamEvent const& _se)
 {
 	StreamEventItem* it = nullptr;
 #define DO(X) \

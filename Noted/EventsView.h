@@ -47,7 +47,7 @@ class EventsView: public PrerenderedTimeline, public EventsStore
 	friend class CompileEventsView;
 
 public:
-	EventsView(QWidget* _parent = 0, Lightbox::EventCompiler const& _c = Lightbox::EventCompiler());
+	EventsView(QWidget* _parent = 0, lb::EventCompiler const& _c = lb::EventCompiler());
 	~EventsView();
 
 	virtual QWidget* widget() { return m_actualWidget; }
@@ -60,14 +60,14 @@ public:
 	QString name() const;
 	virtual QString niceName() const { return name(); }
 
-	Lightbox::EventCompiler const& eventCompiler() const { return m_eventCompiler; }
+	lb::EventCompiler const& eventCompiler() const { return m_eventCompiler; }
 
 	QMutex* mutex() const { return &x_events; }
 	void clearEvents();
-	void appendEvents(Lightbox::StreamEvents const& _se);
+	void appendEvents(lb::StreamEvents const& _se);
 	void finalizeEvents();
-	virtual Lightbox::StreamEvents events(int _i) const;
-	virtual Lightbox::StreamEvents cursorEvents() const;
+	virtual lb::StreamEvents events(int _i) const;
+	virtual lb::StreamEvents cursorEvents() const;
 	virtual unsigned eventCount() const { return 0; }
 
 public slots:
@@ -78,7 +78,7 @@ public slots:
 	void setNewEvents();
 
 private:
-	Lightbox::EventCompiler m_eventCompiler;
+	lb::EventCompiler m_eventCompiler;
 
 	QSplitter* m_actualWidget;
 	QSplitter* m_verticalSplitter;
@@ -88,10 +88,10 @@ private:
 	QPushButton* m_use;
 	QLabel* m_label;
 
-	QList<Lightbox::StreamEvents> m_events;
+	QList<lb::StreamEvents> m_events;
 	mutable QMutex x_events;
 
-	Lightbox::StreamEvents m_current;
+	lb::StreamEvents m_current;
 
 	QString m_savedName;
 	std::string m_savedProperties;

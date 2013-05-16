@@ -35,7 +35,7 @@ public:
 	class IncorrectNumberOfFrames: public std::exception {};
 
 	Capture(int _device = -1, unsigned _channels = 1, int _rate = -1, unsigned long _frames = 1024, int _periods = -1, bool _force16Bit = false);
-	void read(Lightbox::foreign_vector<float> o_destination);
+	void read(lb::foreign_vector<float> o_destination);
 
 	static std::map<int, std::string> devices() { return Common::devices(false); }
 };

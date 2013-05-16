@@ -31,10 +31,10 @@ struct GraphViewPlot
 {
 	std::string ec;
 	std::string graph;
-	Lightbox::Color c;
+	lb::Color c;
 };
 
-namespace Lightbox {
+namespace lb {
 class GraphSpec;
 }
 
@@ -46,7 +46,7 @@ public:
 	GraphView(QWidget* _parent, QString const& _name);
 	virtual ~GraphView();
 
-	void addGraph(Lightbox::GraphSpec* _g);
+	void addGraph(lb::GraphSpec* _g);
 
 public slots:
 	void rejig();

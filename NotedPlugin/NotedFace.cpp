@@ -27,7 +27,7 @@
 #include "NotedFace.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 NotedFace* NotedFace::s_this = nullptr;
 

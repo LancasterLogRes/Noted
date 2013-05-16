@@ -28,7 +28,7 @@
 
 class EventsView;
 
-class DataSetDataStore: public Lightbox::DataStore
+class DataSetDataStore: public lb::DataStore
 {
 public:
 	DataSetDataStore(std::string const& _name);
@@ -39,7 +39,7 @@ public:
 protected:
 	// Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
 	virtual void init(unsigned _recordLength, bool _dense);
-	virtual void shiftBuffer(unsigned _index, Lightbox::foreign_vector<float> const& _record);
+	virtual void shiftBuffer(unsigned _index, lb::foreign_vector<float> const& _record);
 
 private:
 	DataKey m_key = 0;
@@ -53,14 +53,14 @@ public:
 	virtual ~CompileEventsView() {}
 
 	virtual void init(bool _willRecord);
-	virtual void process(unsigned _i, Lightbox::Time);
+	virtual void process(unsigned _i, lb::Time);
 	virtual void record();
 	virtual void fini(bool _didRecord);
 
-	Lightbox::EventCompiler ec() const;
+	lb::EventCompiler ec() const;
 
 private:
 	EventsView* m_ev;
-	QMap<Lightbox::GraphSpec*, DataSetDataStore*> m_dataStores;
+	QMap<lb::GraphSpec*, DataSetDataStore*> m_dataStores;
 };
 

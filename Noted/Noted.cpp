@@ -53,7 +53,7 @@
 #include "ui_Noted.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 class ResampleWaveAc: public AcausalAnalysis
 {
@@ -63,12 +63,12 @@ public:
 	virtual void init()
 	{
 	}
-	virtual unsigned prepare(unsigned _from, unsigned _count, Lightbox::Time _hop)
+	virtual unsigned prepare(unsigned _from, unsigned _count, lb::Time _hop)
 	{
 		(void)_from; (void)_count; (void)_hop;
 		return 100;
 	}
-	virtual void analyze(unsigned _from, unsigned _count, Lightbox::Time _hop)
+	virtual void analyze(unsigned _from, unsigned _count, lb::Time _hop)
 	{
 		(void)_from; (void)_count; (void)_hop;
 		dynamic_cast<Noted*>(noted())->updateParameters();
@@ -93,12 +93,12 @@ public:
 	virtual void init()
 	{
 	}
-	virtual unsigned prepare(unsigned _from, unsigned _count, Lightbox::Time _hop)
+	virtual unsigned prepare(unsigned _from, unsigned _count, lb::Time _hop)
 	{
 		(void)_from; (void)_count; (void)_hop;
 		return 100;
 	}
-	virtual void analyze(unsigned _from, unsigned _count, Lightbox::Time _hop)
+	virtual void analyze(unsigned _from, unsigned _count, lb::Time _hop)
 	{
 		(void)_from; (void)_count; (void)_hop;
 		dynamic_cast<Noted*>(noted())->rejigSpectra();
@@ -1456,7 +1456,7 @@ void Noted::info(QString const& _info, QString const& _c)
 void Noted::updateParameters()
 {
 	m_incomingAudio->setHopSamples(ui->hop->value());
-	m_windowFunction = Lightbox::windowFunction(ui->windowSize->value(), WindowFunction(ui->windowFunction->currentIndex()));
+	m_windowFunction = lb::windowFunction(ui->windowSize->value(), WindowFunction(ui->windowFunction->currentIndex()));
 	m_zeroPhase = ui->zeroPhase->isChecked();
 	m_floatFFT = ui->floatFFT->isChecked();
 }

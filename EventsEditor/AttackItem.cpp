@@ -30,7 +30,7 @@
 #include "AttackItem.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 QRectF Chained::boundingRect() const
 {

@@ -25,7 +25,7 @@
 #include "Grapher.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 void Grapher::init(QPainter* _p, std::pair<float, float> _xRange, std::pair<float, float> _yRange, std::function<std::string(float)> _xLabel, std::function<std::string(float)> _yLabel, std::function<std::string(float, float)> _pLabel, int _leftGutter, int _bottomGutter)
 {

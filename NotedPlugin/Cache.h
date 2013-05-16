@@ -62,9 +62,9 @@ public:
 	void setGood();
 
 	template <class _T> void append(_T const& _raw) { assert(isOpen()); assert(!isGood()); m_file.write((char const*)&_raw, sizeof(_T)); }
-	template <class _T> void append(Lightbox::foreign_vector<_T> const& _v) { assert(isOpen()); assert(!isGood()); m_file.write((char const*)_v.data(), _v.size() * sizeof(_T)); }
-	template <class _T> Lightbox::foreign_vector<_T> data() { assert(isMapped()); return Lightbox::foreign_vector<_T>(payload<_T>(), bytes() / sizeof(_T)); }
-	template <class _T> Lightbox::foreign_vector<_T const> data() const { assert(isGood()); return Lightbox::foreign_vector<_T const>((_T const*)payload<_T>(), bytes() / sizeof(_T)); }
+	template <class _T> void append(lb::foreign_vector<_T> const& _v) { assert(isOpen()); assert(!isGood()); m_file.write((char const*)_v.data(), _v.size() * sizeof(_T)); }
+	template <class _T> lb::foreign_vector<_T> data() { assert(isMapped()); return lb::foreign_vector<_T>(payload<_T>(), bytes() / sizeof(_T)); }
+	template <class _T> lb::foreign_vector<_T const> data() const { assert(isGood()); return lb::foreign_vector<_T const>((_T const*)payload<_T>(), bytes() / sizeof(_T)); }
 
 protected:
 	template <class _T> _T* payload() const { return (_T*)(m_mapping + sizeof(Header)); }
@@ -85,35 +85,35 @@ public:
 
 	unsigned levels() const { return m_itemsAtDepth.size(); }
 
-	template <class _T> Lightbox::foreign_vector<_T> item(unsigned _depth, unsigned _i)
+	template <class _T> lb::foreign_vector<_T> item(unsigned _depth, unsigned _i)
 	{
-		return Lightbox::foreign_vector<_T>((_T*)(m_mappingAtDepth[_depth] + std::min<unsigned>(_i, m_itemsAtDepth[_depth] - 1) * m_sizeofItem), m_sizeofItem / sizeof(_T));
+		return lb::foreign_vector<_T>((_T*)(m_mappingAtDepth[_depth] + std::min<unsigned>(_i, m_itemsAtDepth[_depth] - 1) * m_sizeofItem), m_sizeofItem / sizeof(_T));
 	}
 
-	template <class _T> Lightbox::foreign_vector<_T> data(unsigned _depth = 0)
+	template <class _T> lb::foreign_vector<_T> data(unsigned _depth = 0)
 	{
-		return Lightbox::foreign_vector<_T>((_T*)m_mappingAtDepth[_depth], m_itemsAtDepth[_depth]);
+		return lb::foreign_vector<_T>((_T*)m_mappingAtDepth[_depth], m_itemsAtDepth[_depth]);
 	}
 
-	template <class _T> Lightbox::foreign_vector<_T const> item(unsigned _depth, unsigned _i) const
+	template <class _T> lb::foreign_vector<_T const> item(unsigned _depth, unsigned _i) const
 	{
 		if (isGood() && (int)_depth < m_itemsAtDepth.size() && m_itemsAtDepth[_depth] > 0)
-			return Lightbox::foreign_vector<_T const>((_T*)(m_mappingAtDepth[_depth] + std::min<unsigned>(_i, m_itemsAtDepth[_depth] - 1) * m_sizeofItem), m_sizeofItem / sizeof(_T));
-		return Lightbox::foreign_vector<_T const>();
+			return lb::foreign_vector<_T const>((_T*)(m_mappingAtDepth[_depth] + std::min<unsigned>(_i, m_itemsAtDepth[_depth] - 1) * m_sizeofItem), m_sizeofItem / sizeof(_T));
+		return lb::foreign_vector<_T const>();
 	}
 
-	template <class _T> Lightbox::foreign_vector<_T const> items(unsigned _i, unsigned _c) const
+	template <class _T> lb::foreign_vector<_T const> items(unsigned _i, unsigned _c) const
 	{
-		int depth = std::min(Lightbox::log2(_c), levels());
+		int depth = std::min(lb::log2(_c), levels());
 		int index = _i >> depth;
 		return item<_T>(depth, index);
 	}
 
-	template <class _T> Lightbox::foreign_vector<_T const> data(unsigned _depth = 0) const
+	template <class _T> lb::foreign_vector<_T const> data(unsigned _depth = 0) const
 	{
 		if (isGood() && (int)_depth < m_itemsAtDepth.size() && m_itemsAtDepth[_depth] > 0)
-			return Lightbox::foreign_vector<_T const>((_T*)m_mappingAtDepth[_depth], m_itemsAtDepth[_depth]);
-		return Lightbox::foreign_vector<_T const>();
+			return lb::foreign_vector<_T const>((_T*)m_mappingAtDepth[_depth], m_itemsAtDepth[_depth]);
+		return lb::foreign_vector<_T const>();
 	}
 
 	// _Mean must operate on three foreign_vector<_T>, of size (_sizeofItem / sizeof(_T)), such that mean(arg1, arg2) = arg3; arg1 and arg2 are guaranteed sequential.
@@ -129,13 +129,13 @@ public:
 	template <class _T> void generate()
 	{
 		/*
-		generate([](Lightbox::foreign_vector<_T> a, Lightbox::foreign_vector<_T> b, Lightbox::foreign_vector<_T> ret)
+		generate([](lb::foreign_vector<_T> a, lb::foreign_vector<_T> b, lb::foreign_vector<_T> ret)
 		{
-			Lightbox::valcpy(ret.data(), a.data(), a.size());
-			Lightbox::packTransform(ret.data(), b.data(), ret.size(), [](v4sf& rv, v4sf bv){ rv = (rv + bv) * v4sf({.5f, .5f, .5f, .5f}); });
+			lb::valcpy(ret.data(), a.data(), a.size());
+			lb::packTransform(ret.data(), b.data(), ret.size(), [](v4sf& rv, v4sf bv){ rv = (rv + bv) * v4sf({.5f, .5f, .5f, .5f}); });
 		});
 		*/
-		generate([](Lightbox::foreign_vector<_T> a, Lightbox::foreign_vector<_T> b, Lightbox::foreign_vector<_T> ret)
+		generate([](lb::foreign_vector<_T> a, lb::foreign_vector<_T> b, lb::foreign_vector<_T> ret)
 		{
 			unsigned i = 0;
 			for (; i + 3 < a.size(); i += 4)

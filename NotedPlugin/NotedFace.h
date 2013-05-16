@@ -75,9 +75,9 @@ public:
 	void setFilename(QString const& _fn) { m_filename = _fn; rejig(); emit changed(); }
 
 	inline unsigned hops() const { return samples() ? samples() / hopSamples() : 0; }
-	inline Lightbox::Time duration() const { return Lightbox::toBase(samples(), rate()); }
-	inline Lightbox::Time hop() const { return Lightbox::toBase(hopSamples(), rate()); }
-	inline unsigned index(Lightbox::Time _t) const { return (_t < 0) ? 0 : std::min<unsigned>(_t / hop(), samples() / hopSamples()); }
+	inline lb::Time duration() const { return lb::toBase(samples(), rate()); }
+	inline lb::Time hop() const { return lb::toBase(hopSamples(), rate()); }
+	inline unsigned index(lb::Time _t) const { return (_t < 0) ? 0 : std::min<unsigned>(_t / hop(), samples() / hopSamples()); }
 
 signals:
 	void changed();
@@ -102,12 +102,12 @@ public:
 	// TODO: add a model
 
 	// TODO: rename GraphSpec -> GraphSpec, use this for *all* graphs (wave, spectrum, &c.).
-	void registerGraph(QString _url, Lightbox::GraphSpec const* _g) { { QReadLocker l(&x_graphs); m_graphs.insert(_url, _g); } emit graphAdded(_url); }
+	void registerGraph(QString _url, lb::GraphSpec const* _g) { { QReadLocker l(&x_graphs); m_graphs.insert(_url, _g); } emit graphAdded(_url); }
 	void unregisterGraph(QString _url) { { QWriteLocker l(&x_graphs); m_graphs.remove(_url); } emit graphRemoved(_url); }
 
 	QStringList graphs() const { QReadLocker l(&x_graphs); return m_graphs.keys(); }
-	Lightbox::GraphSpec const* lockGraph(QString const& _url) const { x_graphs.lockForRead(); if (m_graphs.contains(_url)) return m_graphs[_url]; x_graphs.unlock(); return nullptr; }
-	void unlockGraph(Lightbox::GraphSpec const* _graph) const { if (_graph) x_graphs.unlock(); }
+	lb::GraphSpec const* lockGraph(QString const& _url) const { x_graphs.lockForRead(); if (m_graphs.contains(_url)) return m_graphs[_url]; x_graphs.unlock(); return nullptr; }
+	void unlockGraph(lb::GraphSpec const* _graph) const { if (_graph) x_graphs.unlock(); }
 
 signals:
 	void graphAdded(QString _url);
@@ -117,7 +117,7 @@ private:
 	Q_PROPERTY(QStringList graphs READ graphs())
 
 	mutable QReadWriteLock x_graphs;
-	QHash<QString, Lightbox::GraphSpec const*> m_graphs;
+	QHash<QString, lb::GraphSpec const*> m_graphs;
 };
 
 class NotedFace: public QMainWindow
@@ -135,11 +135,11 @@ public:
 	virtual QGLWidget* glMaster() const = 0;
 	virtual int causalCursorIndex() const = 0;	///< -1 when !isCausal()
 
-	inline Lightbox::Time earliestVisible() const { return m_timelineOffset; }
-	inline Lightbox::Time pixelDuration() const { return m_pixelDuration; }
-	inline Lightbox::Time cursor() const { return m_fineCursor / hop() * hop(); }
-	inline Lightbox::Time latestVisible() const { return earliestVisible() + visibleDuration(); }
-	inline Lightbox::Time visibleDuration() const { return activeWidth() * pixelDuration(); }
+	inline lb::Time earliestVisible() const { return m_timelineOffset; }
+	inline lb::Time pixelDuration() const { return m_pixelDuration; }
+	inline lb::Time cursor() const { return m_fineCursor / hop() * hop(); }
+	inline lb::Time latestVisible() const { return earliestVisible() + visibleDuration(); }
+	inline lb::Time visibleDuration() const { return activeWidth() * pixelDuration(); }
 
 	inline unsigned hopSamples() const { return m_incomingAudio->hopSamples(); }
 	inline unsigned windowSizeSamples() const { return m_windowFunction.size(); }
@@ -150,29 +150,29 @@ public:
 	inline bool isFloatFFT() const { return m_floatFFT; }
 	inline unsigned samples() const { return m_incomingAudio->samples(); }
 
-	inline Lightbox::Time hop() const { return Lightbox::toBase(hopSamples(), rate()); }
-	inline Lightbox::Time windowSize() const { return Lightbox::toBase(windowSizeSamples(), rate()); }
-	inline int widthOf(Lightbox::Time _t) const { return samples() ? (_t + pixelDuration() / 2) / pixelDuration() : 0; }
-	inline Lightbox::Time durationOf(int _screenWidth) const { return _screenWidth * pixelDuration(); }
-	inline int positionOf(Lightbox::Time _t) const { return widthOf(_t - earliestVisible()); }
-	inline Lightbox::Time timeOf(int _x) const { return durationOf(_x) + earliestVisible(); }
+	inline lb::Time hop() const { return lb::toBase(hopSamples(), rate()); }
+	inline lb::Time windowSize() const { return lb::toBase(windowSizeSamples(), rate()); }
+	inline int widthOf(lb::Time _t) const { return samples() ? (_t + pixelDuration() / 2) / pixelDuration() : 0; }
+	inline lb::Time durationOf(int _screenWidth) const { return _screenWidth * pixelDuration(); }
+	inline int positionOf(lb::Time _t) const { return widthOf(_t - earliestVisible()); }
+	inline lb::Time timeOf(int _x) const { return durationOf(_x) + earliestVisible(); }
 	inline unsigned cursorIndex() const { return windowIndex(cursor()); }
-	inline unsigned windowIndex(Lightbox::Time _t) const { return (_t < 0) ? 0 : std::min<unsigned>(_t / hop(), (samples() - windowSizeSamples()) / hopSamples()); }
+	inline unsigned windowIndex(lb::Time _t) const { return (_t < 0) ? 0 : std::min<unsigned>(_t / hop(), (samples() - windowSizeSamples()) / hopSamples()); }
 	inline unsigned hops() const { return samples() ? samples() / hopSamples() : 0; }
-	inline Lightbox::Time duration() const { return Lightbox::toBase(samples(), rate()); }
+	inline lb::Time duration() const { return lb::toBase(samples(), rate()); }
 
-	virtual Lightbox::foreign_vector<float const> waveWindow(int _window) const = 0;
+	virtual lb::foreign_vector<float const> waveWindow(int _window) const = 0;
 	// TODO: extra argument/double-size vector for min/max range of each sample in o_toFill.
-	virtual bool waveBlock(Lightbox::Time _from, Lightbox::Time _duration, Lightbox::foreign_vector<float> o_toFill, bool _forceSamples = false) const = 0;
-	virtual Lightbox::foreign_vector<float const> multiSpectrum(int _i, int _n) const = 0;
-	virtual Lightbox::foreign_vector<float const> magSpectrum(int _i, int _n) const = 0;
-	virtual Lightbox::foreign_vector<float const> phaseSpectrum(int _i, int _n) const = 0;
-	virtual Lightbox::foreign_vector<float const> deltaPhaseSpectrum(int _i, int _n) const = 0;
+	virtual bool waveBlock(lb::Time _from, lb::Time _duration, lb::foreign_vector<float> o_toFill, bool _forceSamples = false) const = 0;
+	virtual lb::foreign_vector<float const> multiSpectrum(int _i, int _n) const = 0;
+	virtual lb::foreign_vector<float const> magSpectrum(int _i, int _n) const = 0;
+	virtual lb::foreign_vector<float const> phaseSpectrum(int _i, int _n) const = 0;
+	virtual lb::foreign_vector<float const> deltaPhaseSpectrum(int _i, int _n) const = 0;
 
 	virtual QList<EventsStore*> eventsStores() const = 0;
-	virtual Lightbox::EventCompiler newEventCompiler(QString const& _name) = 0;
-	virtual Lightbox::EventCompiler findEventCompiler(QString const& _name) = 0;
-	virtual QString getEventCompilerName(Lightbox::EventCompilerImpl* _ec) = 0;
+	virtual lb::EventCompiler newEventCompiler(QString const& _name) = 0;
+	virtual lb::EventCompiler findEventCompiler(QString const& _name) = 0;
+	virtual QString getEventCompilerName(lb::EventCompilerImpl* _ec) = 0;
 
 	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a = nullptr) = 0;
 	virtual AcausalAnalysisPtr spectraAcAnalysis() const = 0;
@@ -231,9 +231,9 @@ protected:
 	bool m_floatFFT;
 	std::vector<float> m_windowFunction;
 
-	Lightbox::Time m_fineCursor;
-	Lightbox::Time m_timelineOffset;
-	Lightbox::Time m_pixelDuration;
+	lb::Time m_fineCursor;
+	lb::Time m_timelineOffset;
+	lb::Time m_pixelDuration;
 
 	static NotedFace* s_this;
 };
@@ -251,25 +251,25 @@ public:
 
 	virtual int activeWidth() const { return 0; }
 	virtual QGLWidget* glMaster() const { return nullptr; }
-	virtual Lightbox::Time earliestVisible() const { return 0; }
-	virtual Lightbox::Time pixelDuration() const { return 1; }
-	virtual Lightbox::Time cursor() const { return 0; }
+	virtual lb::Time earliestVisible() const { return 0; }
+	virtual lb::Time pixelDuration() const { return 1; }
+	virtual lb::Time cursor() const { return 0; }
 	virtual int causalCursorIndex() const { return -1; }
 
 	virtual void info(QString const&, QString const& = "gray") {}
 
-	virtual Lightbox::foreign_vector<float const> waveWindow(int) const { return Lightbox::foreign_vector<float const>(); }
-	virtual bool waveBlock(Lightbox::Time, Lightbox::Time, Lightbox::foreign_vector<float>, bool) const { return false; }
+	virtual lb::foreign_vector<float const> waveWindow(int) const { return lb::foreign_vector<float const>(); }
+	virtual bool waveBlock(lb::Time, lb::Time, lb::foreign_vector<float>, bool) const { return false; }
 
-	virtual Lightbox::foreign_vector<float const> multiSpectrum(int, int) const { return Lightbox::foreign_vector<float const>(); }
-	virtual Lightbox::foreign_vector<float const> magSpectrum(int, int) const { return Lightbox::foreign_vector<float const>(); }
-	virtual Lightbox::foreign_vector<float const> deltaPhaseSpectrum(int, int) const { return Lightbox::foreign_vector<float const>(); }
-	virtual Lightbox::foreign_vector<float const> phaseSpectrum(int, int) const { return Lightbox::foreign_vector<float const>(); }
+	virtual lb::foreign_vector<float const> multiSpectrum(int, int) const { return lb::foreign_vector<float const>(); }
+	virtual lb::foreign_vector<float const> magSpectrum(int, int) const { return lb::foreign_vector<float const>(); }
+	virtual lb::foreign_vector<float const> deltaPhaseSpectrum(int, int) const { return lb::foreign_vector<float const>(); }
+	virtual lb::foreign_vector<float const> phaseSpectrum(int, int) const { return lb::foreign_vector<float const>(); }
 
 	virtual QList<EventsStore*> eventsStores() const { return QList<EventsStore*>(); }
-	virtual Lightbox::EventCompiler newEventCompiler(QString const&) { return Lightbox::EventCompiler(); }
-	virtual Lightbox::EventCompiler findEventCompiler(QString const&) { return Lightbox::EventCompiler(); }
-	virtual QString getEventCompilerName(Lightbox::EventCompilerImpl*) { return ""; }
+	virtual lb::EventCompiler newEventCompiler(QString const&) { return lb::EventCompiler(); }
+	virtual lb::EventCompiler findEventCompiler(QString const&) { return lb::EventCompiler(); }
+	virtual QString getEventCompilerName(lb::EventCompilerImpl*) { return ""; }
 
 	virtual void noteLastValidIs(AcausalAnalysisPtr const& = nullptr) {}
 	virtual AcausalAnalysisPtr spectraAcAnalysis() const { return nullptr; }

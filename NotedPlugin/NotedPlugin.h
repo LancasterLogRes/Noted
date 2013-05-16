@@ -51,7 +51,7 @@ public:
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&) { return AcausalAnalysisPtrs(); }
 	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&) { return CausalAnalysisPtrs(); }
 	virtual QString titleAmendment(QString const& _title) const { return _title; }
-	virtual Lightbox::MemberMap propertyMap() const { return Lightbox::NullMemberMap; }
+	virtual lb::MemberMap propertyMap() const { return lb::NullMemberMap; }
 	virtual void onPropertiesChanged() {}
 
 	NotedFace* noted() const { return m_noted; }
@@ -61,9 +61,9 @@ protected:
 
 	unsigned rate() const { return m_noted->rate(); }
 	unsigned hopSamples() const { return m_noted->hopSamples(); }
-	Lightbox::Time hop() const { return m_noted->hop(); }
+	lb::Time hop() const { return m_noted->hop(); }
 	unsigned hops() const { return m_noted->hops(); }
-	unsigned windowIndex(Lightbox::Time _t) const { return m_noted->windowIndex(_t); }
+	unsigned windowIndex(lb::Time _t) const { return m_noted->windowIndex(_t); }
 	void updateWindowTitle() { m_noted->updateWindowTitle(); }
 	void notePluginDataChanged() { m_noted->notePluginDataChanged(); }
 	template <class _Plugin> std::shared_ptr<_Plugin> requires() { return std::dynamic_pointer_cast<_Plugin>(requires(typeid(_Plugin).name())); }

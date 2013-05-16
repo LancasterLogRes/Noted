@@ -29,7 +29,7 @@
 #include "WaveWindowView.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 void WaveWindowView::renderGL(QSize _s)
 {

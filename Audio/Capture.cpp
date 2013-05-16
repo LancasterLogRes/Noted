@@ -64,7 +64,7 @@ Capture::Capture(int _device, unsigned _channels, int _rate, unsigned long _fram
 		throw Exception(err);
 }
 
-void Capture::read(Lightbox::foreign_vector<float> o_destination)
+void Capture::read(lb::foreign_vector<float> o_destination)
 {
 	if (o_destination.size() != m_frames * m_channels)
 		throw IncorrectNumberOfFrames();

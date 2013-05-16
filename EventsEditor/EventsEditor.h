@@ -52,10 +52,10 @@ public:
 	QString queryFilename();
 	EventsEditScene* scene() const { return &*m_scene; }
 	NotedFace* c() const;
-	virtual Lightbox::StreamEvents events(int _i) const;
-	virtual Lightbox::StreamEvents cursorEvents() const;
+	virtual lb::StreamEvents events(int _i) const;
+	virtual lb::StreamEvents cursorEvents() const;
 	virtual unsigned eventCount() const { return m_events.size(); }
-	void setEvents(QList<Lightbox::StreamEvents> const& _es, int _forceChannel = -1);
+	void setEvents(QList<lb::StreamEvents> const& _es, int _forceChannel = -1);
 
 	void save(QSettings& _c) const;
 	void load(QSettings const& _c);
@@ -99,13 +99,13 @@ private:
 
 	QString m_filename;
 
-	Lightbox::Time m_draggingTime;
+	lb::Time m_draggingTime;
 	QPointF m_lastScenePosition;
-	QVector<QPair<int, Lightbox::StreamEvent> > m_clipboard;
+	QVector<QPair<int, lb::StreamEvent> > m_clipboard;
 	QPushButton* m_enabled;
 	bool m_lastTimerDirty;
 	bool m_eventsDirty;
 
-	QList<Lightbox::StreamEvents> m_events;
+	QList<lb::StreamEvents> m_events;
 	mutable QMutex x_events;
 };

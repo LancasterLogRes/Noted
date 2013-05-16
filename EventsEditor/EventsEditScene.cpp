@@ -33,7 +33,7 @@
 #include "EventsEditScene.h"
 
 using namespace std;
-using namespace Lightbox;
+using namespace lb;
 
 EventsEditScene::EventsEditScene(QObject* _parent):
 	QGraphicsScene	(_parent),
@@ -71,7 +71,7 @@ void EventsEditScene::copyFrom(EventsStore* _ev)
 	emit newScale();
 }
 
-void EventsEditScene::setEvents(QList<Lightbox::StreamEvents> const& _es, int _forceChannel)
+void EventsEditScene::setEvents(QList<lb::StreamEvents> const& _es, int _forceChannel)
 {
 	int s = c()->hops();
 	double hs = toSeconds(c()->hop()) * 1000;
@@ -151,7 +151,7 @@ void EventsEditScene::wheelEvent(QGraphicsSceneWheelEvent* _wheelEvent)
 	if (!_wheelEvent->isAccepted())
 	{
 		int x = view()->mapFromScene(_wheelEvent->scenePos()).x();
-		Lightbox::Time t = c()->timeOf(x);
+		lb::Time t = c()->timeOf(x);
 		c()->setPixelDuration(c()->pixelDuration() * exp(-_wheelEvent->delta() / 240.0));
 		c()->setTimelineOffset(t - x * c()->pixelDuration());
 	}

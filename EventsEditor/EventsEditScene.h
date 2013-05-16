@@ -40,7 +40,7 @@ public:
 	explicit EventsEditScene(QObject *parent = 0);
 	
 	void copyFrom(EventsStore* _ev);
-	void setEvents(QList<Lightbox::StreamEvents> const& _es, int _forceChannel = -1);
+	void setEvents(QList<lb::StreamEvents> const& _es, int _forceChannel = -1);
 
 	NotedFace* c() const;
 	EventsEditor* view() const;
@@ -50,7 +50,7 @@ public:
 	void setDirty(bool _requiresRecompile);
 	void loadFrom(QString _filename);
 	void saveTo(QString _filename) const;
-	QList<Lightbox::StreamEvents> events(Lightbox::Time _hop) const;
+	QList<lb::StreamEvents> events(lb::Time _hop) const;
 
 	virtual void wheelEvent(QGraphicsSceneWheelEvent* _wheelEvent);
 

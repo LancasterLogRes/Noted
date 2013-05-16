@@ -6,8 +6,8 @@
 #include "Cache.h"
 
 enum DigestFlag { MeanDigest = 0x01, MinMaxInOutDigest = 0x02, UnitCyclicMeanDigest = 0x04, PiCyclicMeanDigest = 0x08, TwoPiCyclicMeanDigest = 0x10};
-typedef Lightbox::Flags<DigestFlag> DigestFlags;
-namespace Lightbox { template <> struct is_flag<DigestFlag>: public std::true_type { typedef DigestFlags FlagsType; }; }
+typedef lb::Flags<DigestFlag> DigestFlags;
+namespace lb { template <> struct is_flag<DigestFlag>: public std::true_type { typedef DigestFlags FlagsType; }; }
 
 inline unsigned digestSize(DigestFlag _f) { switch (_f) { case MeanDigest: return 1; case MinMaxInOutDigest: return 4; default: return 0; } }
 
@@ -34,10 +34,10 @@ public:
 	DataSet() {}
 	explicit DataSet(DataKey _operationKey): m_operationKey(_operationKey) {}
 
-	void init(unsigned _recordLength, Lightbox::Time _stride = 0, Lightbox::Time _first = 0);	// _recordLength is in floats (0 for variable). _stride is the duration between sequential readings. will be related to hops for most things. (0 for variable). Don't call digest if either are zero.
+	void init(unsigned _recordLength, lb::Time _stride = 0, lb::Time _first = 0);	// _recordLength is in floats (0 for variable). _stride is the duration between sequential readings. will be related to hops for most things. (0 for variable). Don't call digest if either are zero.
 	void init(unsigned _itemCount);
 
-	void appendRecord(Lightbox::Time _t, Lightbox::foreign_vector<float> const& _vs);
+	void appendRecord(lb::Time _t, lb::foreign_vector<float> const& _vs);
 
 	void digest(DigestFlag _type);
 	void done();
@@ -51,9 +51,9 @@ public:
 	unsigned digestRecords() const { return (rawRecords() + m_digestBase - 1) / m_digestBase; }
 
 	// Methods for extracting data from fixed stride & record length sets.
-	std::tuple<Lightbox::Time, unsigned, int> bestFit(Lightbox::Time _from, Lightbox::Time _duration, unsigned _idealRecords) const;
-	void populateRaw(Lightbox::Time _from, float* _out, unsigned _size) const;
-	void populateDigest(DigestFlag _digest, unsigned _level, Lightbox::Time _from, float* _out, unsigned _size) const;
+	std::tuple<lb::Time, unsigned, int> bestFit(lb::Time _from, lb::Time _duration, unsigned _idealRecords) const;
+	void populateRaw(lb::Time _from, float* _out, unsigned _size) const;
+	void populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size) const;
 
 private:
 	typedef uint32_t TocRef;
@@ -70,8 +70,8 @@ private:
 
 	bool m_isReady = false;
 	unsigned m_recordLength = 0;
-	Lightbox::Time m_stride = 0;
-	Lightbox::Time m_first = 0;
+	lb::Time m_stride = 0;
+	lb::Time m_first = 0;
 	unsigned m_recordCount = 0;
 	unsigned m_pos = 0;
 };

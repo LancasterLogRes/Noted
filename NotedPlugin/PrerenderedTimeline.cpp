@@ -27,10 +27,10 @@
 #include "NotedFace.h"
 #include "PrerenderedTimeline.h"
 
-using namespace Lightbox;
+using namespace lb;
 using namespace std;
 
-PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool /*_cursorSizeIsHop*/): Prerendered(_p), m_draggingTime(Lightbox::UndefinedTime), m_renderedOffset(0), m_renderedPixelDuration(0)
+PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool /*_cursorSizeIsHop*/): Prerendered(_p), m_draggingTime(lb::UndefinedTime), m_renderedOffset(0), m_renderedPixelDuration(0)
 {
 	connect(c(), SIGNAL(analysisFinished()), SLOT(rerender()));
 }
@@ -50,12 +50,12 @@ void PrerenderedTimeline::mousePressEvent(QMouseEvent* _e)
 void PrerenderedTimeline::mouseReleaseEvent(QMouseEvent* _e)
 {
 	if (_e->button() == Qt::MiddleButton)
-		m_draggingTime = Lightbox::UndefinedTime;
+		m_draggingTime = lb::UndefinedTime;
 }
 
 void PrerenderedTimeline::mouseMoveEvent(QMouseEvent* _e)
 {
-	if (m_draggingTime != Lightbox::UndefinedTime && _e->buttons() & Qt::MiddleButton)
+	if (m_draggingTime != lb::UndefinedTime && _e->buttons() & Qt::MiddleButton)
 		c()->setTimelineOffset(m_draggingTime - _e->x() * c()->pixelDuration());
 	else if (_e->buttons() & Qt::LeftButton)
 		c()->setCursor(c()->timeOf(_e->x()), true);
@@ -66,12 +66,12 @@ void PrerenderedTimeline::wheelEvent(QWheelEvent* _e)
 	c()->zoomTimeline(_e->x(), exp(-_e->delta() / (QApplication::keyboardModifiers() & Qt::ControlModifier ? 2400.0 : QApplication::keyboardModifiers() & Qt::ShiftModifier ? 24 : 240.0)));
 }
 
-int PrerenderedTimeline::renderingPositionOf(Lightbox::Time _t) const
+int PrerenderedTimeline::renderingPositionOf(lb::Time _t) const
 {
 	return (_t - m_renderedOffset + m_renderedPixelDuration / 2) / m_renderedPixelDuration;
 }
 
-Lightbox::Time PrerenderedTimeline::renderingTimeOf(int _x) const
+lb::Time PrerenderedTimeline::renderingTimeOf(int _x) const
 {
 	return int64_t(_x) * m_renderedPixelDuration + m_renderedOffset;
 }
