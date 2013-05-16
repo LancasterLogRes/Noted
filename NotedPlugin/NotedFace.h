@@ -59,6 +59,14 @@ class GraphManFace;
 class AudioManFace;
 class ComputeManFace;
 
+class LibraryManFace: public QObject
+{
+	Q_OBJECT
+
+public:
+	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const& _mangledName) = 0;
+};
+
 class NotedFace: public QMainWindow
 {
 	Q_OBJECT
@@ -122,7 +130,6 @@ public:
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d) = 0;
 	virtual void info(QString const& _info, QString const& _color = "gray") = 0;
-	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const& _mangledName) = 0;
 
 	inline void zoomTimeline(int _xFocus, double _factor) { auto pivot = timeOf(_xFocus); m_timelineOffset = pivot - (m_pixelDuration *= _factor) * _xFocus; emit durationChanged(); emit offsetChanged(); }
 
@@ -131,6 +138,7 @@ public:
 	static DataMan* data() { return get()->m_dataMan; }
 	static GraphManFace* graphs() { return get()->m_graphMan; }
 	static ComputeManFace* compute() { return get()->m_computeMan; }
+	static LibraryManFace* libs() { return get()->m_libraryMan; }
 
 public slots:
 	virtual void setCursor(qint64 _c, bool _warp = false) = 0;
@@ -152,6 +160,7 @@ protected:
 	DataMan* m_dataMan = nullptr;
 	GraphManFace* m_graphMan = nullptr;
 	ComputeManFace* m_computeMan = nullptr;
+	LibraryManFace* m_libraryMan = nullptr;
 
 	bool m_zeroPhase = false;
 	bool m_floatFFT = true;

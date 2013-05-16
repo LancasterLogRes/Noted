@@ -71,7 +71,7 @@ public:
 	}
 };
 
-TestPlugin::TestPlugin(NotedFace* _c): NotedPlugin(_c)
+TestPlugin::TestPlugin(): NotedPlugin()
 {
 	glw = NotedFace::get()->addGLWidget(new TestGLView);
 	glw->show();

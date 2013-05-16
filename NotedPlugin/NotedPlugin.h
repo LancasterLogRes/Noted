@@ -37,12 +37,12 @@ class AuxLibraryFace;
 
 class NotedPlugin: public QObject
 {
-	friend class Noted;
+	friend class LibraryMan;
 
 public:
 	typedef NotedPlugin LIGHTBOX_PROPERTIES_BaseClass;
 
-	NotedPlugin(NotedFace*);
+	NotedPlugin();
 	virtual ~NotedPlugin();
 
 	virtual AuxLibraryFace* newAuxLibrary() { return nullptr; }
@@ -54,20 +54,18 @@ public:
 	virtual lb::MemberMap propertyMap() const { return lb::NullMemberMap; }
 	virtual void onPropertiesChanged() {}
 
-	NotedFace* noted() const { return m_noted; }
-
 protected:
 	QList<std::weak_ptr<AuxLibraryFace> > auxLibraries() { return m_auxLibraries; }
 
-	unsigned rate() const { return m_noted->rate(); }
-	unsigned hopSamples() const { return m_noted->hopSamples(); }
-	lb::Time hop() const { return m_noted->hop(); }
-	unsigned hops() const { return m_noted->hops(); }
-	unsigned windowIndex(lb::Time _t) const { return m_noted->windowIndex(_t); }
-	void updateWindowTitle() { m_noted->updateWindowTitle(); }
+	unsigned rate() const { return NotedFace::audio()->rate(); }
+	unsigned hopSamples() const { return NotedFace::audio()->hopSamples(); }
+	lb::Time hop() const { return NotedFace::audio()->hop(); }
+	unsigned hops() const { return NotedFace::audio()->hops(); }
+	unsigned windowIndex(lb::Time _t) const { return NotedFace::audio()->index(_t); }
+	void updateWindowTitle() { NotedFace::get()->updateWindowTitle(); }
 	void notePluginDataChanged() { NotedFace::compute()->notePluginDataChanged(); }
 	template <class _Plugin> std::shared_ptr<_Plugin> requires() { return std::dynamic_pointer_cast<_Plugin>(requires(typeid(_Plugin).name())); }
-	std::shared_ptr<NotedPlugin> requires(QString const& _s) { if (auto ret = NotedFace::get()->getPlugin(_s)) return ret; m_required.append(_s); return nullptr; }
+	std::shared_ptr<NotedPlugin> requires(QString const& _s) { if (auto ret = NotedFace::libs()->getPlugin(_s)) return ret; m_required.append(_s); return nullptr; }
 
 private:
 	void removeDeadAuxes();
@@ -79,6 +77,6 @@ private:
 
 #define NOTED_PLUGIN(O) \
 	LIGHTBOX_FINALIZING_LIBRARY \
-	extern "C" __attribute__ ((visibility ("default"))) NotedPlugin* newPlugin(NotedFace* n) { return new O(n); } \
+	extern "C" __attribute__ ((visibility ("default"))) NotedPlugin* newPlugin() { return new O(); } \
 	extern "C" __attribute__ ((visibility ("default"))) char const* libraryName() { return #O; }
 

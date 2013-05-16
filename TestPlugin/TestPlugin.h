@@ -27,6 +27,6 @@ class TestPlugin: public NotedPlugin
 	Q_OBJECT
 
 public:
-	TestPlugin(NotedFace* _c);
+	TestPlugin();
 	~TestPlugin();
 };

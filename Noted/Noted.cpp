@@ -73,6 +73,7 @@ Noted::Noted(QWidget* _p):
 	m_audioMan = new AudioManFace;
 	m_graphMan = new GraphManFace;
 	m_dataMan = new DataMan;
+	m_libraryMan = new LibraryMan;
 
 	connect(m_computeMan, SIGNAL(finished()), SLOT(onWorkFinished()));
 	connect(m_computeMan, SIGNAL(progressed(QString, int)), SLOT(onWorkProgressed(QString, int)));
@@ -128,7 +129,6 @@ Noted::Noted(QWidget* _p):
 		ui->statusBar->addPermanentWidget(l);
 	}
 
-	connect(&m_libraryWatcher, SIGNAL(fileChanged(QString)), this, SLOT(onLibraryChange(QString)));
 	connect(compute(), SIGNAL(finished()), SLOT(updateEventStuff()));
 
 	on_sampleRate_currentIndexChanged(0);
@@ -166,13 +166,7 @@ Noted::~Noted()
 		delete *m_timelines.begin();
 	qDebug() << "Killed.";
 
-	qDebug() << "Unloading libraries...";
-	while (m_libraries.size())
-	{
-		unload(*m_libraries.begin());
-		m_libraries.erase(m_libraries.begin());
-	}
-	qDebug() << "Unloaded all libraries.";
+	delete m_libraryMan;
 
 	for (auto i: findChildren<Prerendered*>())
 		delete i;
@@ -220,7 +214,7 @@ QString defaultNick(QString const& _filename)
 	return ret;
 }
 
-void Noted::addLibrary(QString const& _name, bool _isEnabled)
+void LibraryMan::addLibrary(QString const& _name, bool _isEnabled)
 {
 	cnote << "Adding library" << _name.toLocal8Bit().data() << ".";
 	if (m_libraries.contains(_name))
@@ -230,7 +224,7 @@ void Noted::addLibrary(QString const& _name, bool _isEnabled)
 		cnote << "Not a duplicate - loading...";
 		auto lp = make_shared<RealLibrary>(_name);
 		m_libraries.insert(_name, lp);
-		lp->item = new QTreeWidgetItem(ui->loadedLibraries, QStringList() << defaultNick(_name) << "Unknown" << _name);
+		lp->item = new QTreeWidgetItem(Noted::get()->ui->loadedLibraries, QStringList() << defaultNick(_name) << "Unknown" << _name);
 		lp->item->setFlags(lp->item->flags() | Qt::ItemIsUserCheckable);
 		lp->item->setCheckState(0, _isEnabled ? Qt::Checked : Qt::Unchecked);
 		if (_isEnabled)
@@ -243,13 +237,7 @@ void Noted::addLibrary(QString const& _name, bool _isEnabled)
 
 void Noted::on_loadedLibraries_itemClicked(QTreeWidgetItem* _it, int)
 {
-	for (auto l: m_libraries)
-		if (l->item == _it)
-		{
-			m_dirtyLibraries.insert(l->filename);
-			break;
-		}
-	reloadDirties();
+	libs()->reloadLibrary(_it);
 }
 
 void Noted::addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d)
@@ -259,7 +247,7 @@ void Noted::addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d)
 	QMainWindow::addDockWidget(_a, _d);
 }
 
-shared_ptr<NotedPlugin> Noted::getPlugin(QString const& _mangledName)
+shared_ptr<NotedPlugin> LibraryMan::getPlugin(QString const& _mangledName)
 {
 	for (auto l: m_libraries)
 		if (l->p && typeid(*l->p).name() == _mangledName)
@@ -267,7 +255,7 @@ shared_ptr<NotedPlugin> Noted::getPlugin(QString const& _mangledName)
 	return nullptr;
 }
 
-void Noted::load(RealLibraryPtr const& _dl)
+void LibraryMan::load(RealLibraryPtr const& _dl)
 {
 	cnote << "Loading:" << _dl->filename;
 	m_libraryWatcher.addPath(_dl->filename);
@@ -281,7 +269,7 @@ void Noted::load(RealLibraryPtr const& _dl)
 		if (_dl->l.load())
 		{
 			typedef EventCompilerFactories&(*cf_t)();
-			typedef NotedPlugin*(*pf_t)(NotedFace*);
+			typedef NotedPlugin*(*pf_t)();
 			typedef char const*(*pnf_t)();
 			if (cf_t cf = (cf_t)_dl->l.resolve("eventCompilerFactories"))
 			{
@@ -292,7 +280,7 @@ void Noted::load(RealLibraryPtr const& _dl)
 				{
 					auto li = new QListWidgetItem(QString::fromStdString(f.first));
 					li->setData(0, QString::fromStdString(f.first));
-					ui->eventCompilersList->addItem(li);
+					Noted::get()->ui->eventCompilersList->addItem(li);
 					Noted::compute()->noteEventCompilersChanged();
 				}
 				cnote << _dl->cf.size() << " event compiler factories";
@@ -302,7 +290,7 @@ void Noted::load(RealLibraryPtr const& _dl)
 				_dl->item->setText(1, "Plugin");
 				cnote << "LOAD" << _dl->nick << " [PLUGIN]";
 
-				_dl->p = shared_ptr<NotedPlugin>(np(this));
+				_dl->p = shared_ptr<NotedPlugin>(np());
 
 				if (_dl->p->m_required.empty())
 				{
@@ -316,18 +304,18 @@ void Noted::load(RealLibraryPtr const& _dl)
 					PropertiesEditor* pe = nullptr;
 					if (props.size())
 					{
-						QDockWidget* propsDock = new QDockWidget(QString("%1 Properties").arg(_dl->nick), this);
+						QDockWidget* propsDock = new QDockWidget(QString("%1 Properties").arg(_dl->nick), NotedFace::get());
 						propsDock->setObjectName(_dl->nick + "/properties");
 						pe = new PropertiesEditor(propsDock);
 						propsDock->setWidget(pe);
 						propsDock->setFeatures(propsDock->features()|QDockWidget::DockWidgetVerticalTitleBar);
-						addDockWidget(Qt::RightDockWidgetArea, propsDock);
+						NotedFace::get()->addDockWidget(Qt::RightDockWidgetArea, propsDock);
 						if (s.contains(_dl->nick + "/propertiesGeometry"))
 							propsDock->restoreGeometry(s.value(_dl->nick + "/propertiesGeometry").toByteArray());
 					}
-					if (m_constructed)
+					if (Noted::get()->m_constructed)
 					{
-						readBaseSettings(s);
+						Noted::get()->readBaseSettings(s);
 						_dl->p->readSettings(s);
 					}
 					if (pe)
@@ -379,7 +367,7 @@ void Noted::load(RealLibraryPtr const& _dl)
 		_dl->cf[_dl->filename.toStdString()] = [=](){ return new ProcessEventCompiler(_dl->filename); };
 		auto li = new QListWidgetItem(_dl->filename);
 		li->setData(0, _dl->filename);
-		ui->eventCompilersList->addItem(li);
+		Noted::get()->ui->eventCompilersList->addItem(li);
 	}
 }
 
@@ -405,7 +393,7 @@ void RealLibrary::unload()
 	QFile::remove(l.fileName());
 }
 
-void Noted::unload(RealLibraryPtr const& _dl)
+void LibraryMan::unload(RealLibraryPtr const& _dl)
 {
 	if (_dl->l.isLoaded())
 	{
@@ -414,7 +402,7 @@ void Noted::unload(RealLibraryPtr const& _dl)
 			// save state.
 			{
 				QSettings s("LancasterLogicResponse", "Noted");
-				writeBaseSettings(s);
+				Noted::get()->writeBaseSettings(s);
 				_dl->p->writeSettings(s);
 
 				Members<NotedPlugin> props(_dl->p->propertyMap(), _dl->p);
@@ -443,10 +431,10 @@ void Noted::unload(RealLibraryPtr const& _dl)
 			foreach (auto f, _dl->cf)
 			{
 				// NOTE: A bit messy, this?
-				for (EventsView* ev: eventsViews())
+				for (EventsView* ev: Noted::get()->eventsViews())
 					if (ev->name() == QString::fromStdString(f.first))
 						ev->save();
-				delete ui->eventCompilersList->findItems(QString::fromStdString(f.first), 0).front();
+				delete Noted::get()->ui->eventCompilersList->findItems(QString::fromStdString(f.first), 0).front();
 			}
 			_dl->cf.clear();
 			// TODO: update whatever has changed re: event compilers being available.
@@ -467,54 +455,61 @@ void Noted::unload(RealLibraryPtr const& _dl)
 	m_libraryWatcher.removePath(_dl->filename);
 }
 
-void Noted::reloadLibrary(QString const& _name)
-{
-	RealLibraryPtr dl = m_libraries[_name];
-	assert(dl);
-	assert(dl->filename == _name);
-
-	unload(dl);
-	load(dl);
-}
-
-void Noted::onLibraryChange(QString const& _name)
+void LibraryMan::onLibraryChange(QString const& _name)
 {
 	m_dirtyLibraries.insert(_name);
 	reloadDirties();
 }
 
-void Noted::reloadDirties()
+void LibraryMan::reloadLibrary(QTreeWidgetItem* _it)
+{
+	for (auto l: m_libraries)
+		if (l->item == _it)
+		{
+			m_dirtyLibraries.insert(l->filename);
+			break;
+		}
+	reloadDirties();
+}
+
+void LibraryMan::reloadDirties()
 {
 	if (!m_dirtyLibraries.empty())
 	{
 		Noted::compute()->suspendWork();
 
 		// OPTIMIZE: only bother saving for EVs whose EC is given by a dirty library.
-		for (EventsView* ev: eventsViews())
+		for (EventsView* ev: Noted::get()->eventsViews())
 			ev->save();
 
 		foreach (QString const& name, m_dirtyLibraries)
 		{
-			bool load = false;
-			bool kill = true;
-			for (auto i: ui->loadedLibraries->findItems(name, Qt::MatchExactly, 2))
+			bool doLoad = false;
+			bool doKill = true;
+			for (auto i: Noted::get()->ui->loadedLibraries->findItems(name, Qt::MatchExactly, 2))
 			{
-				kill = false;
-				load = (i->checkState(0) == Qt::Checked);
+				doKill = false;
+				doLoad = (i->checkState(0) == Qt::Checked);
 				break;
 			}
 
-			if (load)
-				reloadLibrary(name);
+			if (doLoad)
+			{
+				RealLibraryPtr dl = m_libraries[name];
+				assert(dl);
+				assert(dl->filename == name);
+				unload(dl);
+				load(dl);
+			}
 			else
 			{
 				unload(m_libraries[name]);
-				if (kill)
+				if (doKill)
 					m_libraries.remove(name);
 			}
 		}
 
-		foreach (EventsView* ev, eventsViews())
+		foreach (EventsView* ev, Noted::get()->eventsViews())
 			ev->restore();
 
 		m_dirtyLibraries.clear();
@@ -540,7 +535,7 @@ bool Noted::eventFilter(QObject*, QEvent* _e)
 
 EventCompiler Noted::newEventCompiler(QString const& _name)
 {
-	foreach (auto dl, m_libraries)
+	foreach (auto dl, libs()->libraries())
 		if (dl->cf.find(_name.toStdString()) != dl->cf.end())
 			return EventCompiler::create(dl->cf[_name.toStdString()]());
 	return EventCompiler();
@@ -575,7 +570,7 @@ void Noted::addTimeline(Timeline* _tl)
 void Noted::updateWindowTitle()
 {
 	QString t = m_sourceFileName.isEmpty() ? QString("New Recording") : m_sourceFileName;
-	foreach (auto l, m_libraries)
+	foreach (auto l, libs()->libraries())
 		if (l->p)
 			t = l->p->titleAmendment(t);
 	setWindowTitle(t + " - Noted!");
@@ -591,18 +586,21 @@ void Noted::on_addLibrary_clicked()
 	QString filter = "*.dll";
 #endif
 	QString fn = QFileDialog::getOpenFileName(this, "Add extension library", QDir::currentPath(), QString("Dynamic library (%1);;").arg(filter));
-	addLibrary(fn);
+	libs()->addLibrary(fn);
 }
 
 void Noted::on_killLibrary_clicked()
 {
 	if (ui->loadedLibraries->currentItem())
-	{
-		QString s = ui->loadedLibraries->currentItem()->text(2);
-		delete ui->loadedLibraries->currentItem();
-		m_dirtyLibraries.insert(s);
-		reloadDirties();
-	}
+		libs()->killLibrary(ui->loadedLibraries->currentItem());
+}
+
+void LibraryMan::killLibrary(QTreeWidgetItem* _it)
+{
+	QString s = _it->text(2);
+	delete _it;
+	m_dirtyLibraries.insert(s);
+	reloadDirties();
 }
 
 void Noted::on_actReadSettings_triggered()
@@ -641,10 +639,10 @@ void Noted::readSettings()
 	restoreGeometry(settings.value("geometry").toByteArray());
 	if (settings.contains("libraryCount"))
 		for (int i = 0; i < settings.value("libraryCount").toInt(); ++i)
-			addLibrary(settings.value(QString("library%1").arg(i)).toString(), settings.value(QString("library%1.enabled").arg(i)).toBool());
+			libs()->addLibrary(settings.value(QString("library%1").arg(i)).toString(), settings.value(QString("library%1.enabled").arg(i)).toBool());
 	else if (settings.contains("libraries"))
 		foreach (QString n, settings.value("libraries").toStringList())
-			addLibrary(n);
+			libs()->addLibrary(n);
 #define DO(X, V, C) ui->X->V(settings.value(#X).C())
 	if (settings.contains("sampleRate"))
 	{
@@ -695,7 +693,7 @@ void Noted::readSettings()
 
 	readBaseSettings(settings);
 
-	foreach (auto l, m_libraries)
+	foreach (auto l, libs()->libraries())
 		if (l->p)
 			l->p->readSettings(settings);
 }
@@ -710,9 +708,9 @@ void Noted::writeSettings()
 {
 	QSettings settings("LancasterLogicResponse", "Noted");
 
-/*	foreach (auto l, m_libraries)
+	foreach (auto l, libs()->libraries())
 		if (l->p)
-			l->p->writeSettings(settings);*/
+			l->p->writeSettings(settings);
 
 	writeBaseSettings(settings);
 
@@ -735,7 +733,7 @@ void Noted::writeSettings()
 	settings.setValue("eventEditors", eds);
 
 	int lc = 0;
-	for (auto l: m_libraries)
+	for (auto l: libs()->libraries())
 	{
 		settings.setValue(QString("library%1").arg(lc), l->filename);
 		settings.setValue(QString("library%1.enabled").arg(lc), l->isEnabled());
@@ -1233,6 +1231,11 @@ void Noted::onWorkFinished()
 	if (QProgressBar* pb = ui->statusBar->findChild<QProgressBar*>())
 		delete pb;
 	statusBar()->showMessage("Ready");
+
+	QMutexLocker l(&x_timelines);
+	foreach (Timeline* t, m_timelines)
+		if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
+			pt->rerender();
 }
 
 void Noted::onWorkProgessed(QString _desc, int _progress)

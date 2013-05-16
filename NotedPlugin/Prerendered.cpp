@@ -38,6 +38,21 @@ using namespace lb;
 
 #define USE_RENDER_THREAD 1
 
+#if USE_RENDER_THREAD
+class RenderThread: public QThread
+{
+public:
+	RenderThread(Prerendered* _p): QThread(0), m_quitting(false), m_p(_p) {}
+	void quit() { m_quitting = true; }
+	void start(Priority _p = InheritPriority) { m_quitting = false; QThread::start(_p); }
+	virtual void run() { m_p->context()->makeCurrent(); m_p->initializeGL(); while (!m_quitting) m_p->serviceRender(); m_p->context()->doneCurrent(); }
+
+protected:
+	bool m_quitting;
+	Prerendered* m_p;
+};
+#endif
+
 Prerendered::Prerendered(QWidget* _p): QGLWidget(_p), m_renderThread(nullptr), m_c(nullptr)
 {
 }
@@ -57,7 +72,7 @@ void Prerendered::paintEvent(QPaintEvent* _e)
 	if (!m_renderThread)
 	{
 		setAutoBufferSwap(false);
-		m_renderThread = createWorkerThread([=](){serviceRender(); return true;}, [=](){context()->makeCurrent(); initializeGL();}, [=](){context()->doneCurrent(); });
+		m_renderThread = new RenderThread(this);
 		context()->moveToThread(m_renderThread);
 	}
 	if (!m_renderThread->isRunning())

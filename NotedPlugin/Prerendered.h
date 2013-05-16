@@ -30,7 +30,7 @@
 #include <QDebug>
 #include <QMouseEvent>
 #include <QWidget>
-#include <Noted/WorkerThread.h>
+#include <QThread>
 
 class NotedFace;
 class Prerendered;
@@ -61,11 +61,13 @@ void drawPeaks(QPainter& _p, std::map<float, float> const& _ps, int _yoffset, _F
 			break;
 }
 
+class RenderThread;
+
 class Prerendered: public QGLWidget
 {
 	Q_OBJECT
 
-	friend class DisplayThread;
+	friend class RenderThread;
 
 public:
 	Prerendered(QWidget* _p);
@@ -100,7 +102,7 @@ protected:
 private:
 	bool serviceRender();
 
-	WorkerThread* m_renderThread;
+	RenderThread* m_renderThread;
 
 	mutable NotedFace* m_c;
 

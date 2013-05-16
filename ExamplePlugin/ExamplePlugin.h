@@ -32,7 +32,7 @@ class ExamplePlugin: public NotedPlugin
 	Q_OBJECT
 
 public:
-	ExamplePlugin(NotedFace* _c);
+	ExamplePlugin();
 	~ExamplePlugin();
 
 	float scale;

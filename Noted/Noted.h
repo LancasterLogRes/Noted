@@ -72,25 +72,68 @@ struct RealLibrary: public Library
 
 typedef std::shared_ptr<RealLibrary> RealLibraryPtr;
 
+class LibraryMan: public LibraryManFace
+{
+	Q_OBJECT
+
+public:
+	LibraryMan()
+	{
+		connect(&m_libraryWatcher, SIGNAL(fileChanged(QString)), this, SLOT(onLibraryChange(QString)));
+	}
+	~LibraryMan()
+	{
+		qDebug() << "Unloading libraries...";
+		while (m_libraries.size())
+		{
+			unload(*m_libraries.begin());
+			m_libraries.erase(m_libraries.begin());
+		}
+		qDebug() << "Unloaded all libraries.";
+	}
+
+	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const& _mangledName);
+
+	QMap<QString, RealLibraryPtr> const& libraries() const { return m_libraries; }
+
+public slots:
+	void addLibrary(QString const& _name, bool _isEnabled = true);
+	void reloadLibrary(QTreeWidgetItem* _it);
+	void killLibrary(QTreeWidgetItem* _it);
+
+private slots:
+	void onLibraryChange(QString const& _name);
+
+private:
+	// Extensions...
+	void load(RealLibraryPtr const& _dl);
+	void unload(RealLibraryPtr const& _dl);
+
+	void reloadDirties();
+
+	QMap<QString, RealLibraryPtr> m_libraries;
+	QSet<QString> m_dirtyLibraries;
+	QFileSystemWatcher m_libraryWatcher;
+};
+
 class TimelinesItem;
 
 class Noted: public NotedBase
 {
 	Q_OBJECT
 
-	friend class CompileEvents;
-	friend class CollateEvents;
-	friend class ResampleWaveAc;
-	friend class SpectraAc;
-	friend class FinishUpAc;
+	friend class LibraryMan;	 // TODO! Remove when I've prised apart the GUI and loader.
+	friend class ResampleWaveAc; // TODO! Remove when it's all in AudioMan.
+
 	friend class Cursor;
 
 public:
 	explicit Noted(QWidget* parent = nullptr);
-	~Noted();
+	virtual ~Noted();
 
 	static Noted* get() { return static_cast<Noted*>(NotedFace::get()); }
 	static ComputeMan* compute() { return static_cast<ComputeMan*>(get()->m_computeMan); }
+	static LibraryMan* libs() { return static_cast<LibraryMan*>(get()->m_libraryMan); }
 
 	virtual int activeWidth() const;
 	virtual QGLWidget* glMaster() const;
@@ -113,19 +156,12 @@ public:
 	lb::foreign_vector<float const> cursorMagSpectrum() const;
 	lb::foreign_vector<float const> cursorPhaseSpectrum() const;
 
-	QMap<QString, RealLibraryPtr> const& libraries() const { return m_libraries; }
-	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const& _mangledName);
-
 	QList<EventsView*> eventsViews() const;
 
 public slots:
 	virtual void info(QString const& _info, QString const& _color = "gray");
 	void info(QString const& _info, int _id);
 	virtual void updateWindowTitle();
-
-	virtual void addLibrary(QString const& _name, bool _isEnabled = true);
-	virtual void reloadLibrary(QString const& _name);
-	virtual void onLibraryChange(QString const& _name);
 
 	virtual void setCursor(qint64 _c, bool _warp = false);
 
@@ -184,8 +220,6 @@ private:
 	void writeBaseSettings(QSettings&);
 	virtual bool eventFilter(QObject*, QEvent*);
 
-	void reloadDirties();
-
 	virtual bool carryOn(int _progress);
 	void updateParameters();
 	bool serviceAudio();
@@ -224,13 +258,6 @@ private:
 
 	// Causal & passthrough...
 	int m_lastIndex;
-
-	// Extensions...
-	void load(RealLibraryPtr const& _dl);
-	void unload(RealLibraryPtr const& _dl);
-	QMap<QString, RealLibraryPtr> m_libraries;
-	QSet<QString> m_dirtyLibraries;
-	QFileSystemWatcher m_libraryWatcher;
 
 	// Information output...
 	QMutex x_infos;

@@ -48,6 +48,9 @@ class NotedBase: public NotedFace
 {
 	Q_OBJECT
 
+	friend class ResampleWaveAc;
+	friend class SpectraAc;
+
 public:
 	explicit NotedBase(QWidget* _p);
 	~NotedBase();

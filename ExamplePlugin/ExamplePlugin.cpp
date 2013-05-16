@@ -43,7 +43,7 @@ class GLView: public QGLWidgetProxy
 	friend class ExamplePlugin;
 
 public:
-	GLView(ExamplePlugin* _p): m_p(_p), m_c(_p->noted()) {}
+	GLView(ExamplePlugin* _p): m_p(_p) {}
 
 	virtual void initializeGL()
 	{
@@ -71,9 +71,9 @@ public:
 
 	virtual bool needsRepaint() const
 	{
-		if (m_lastCursor == m_c->cursorIndex() && !m_propertiesChanged)
+		if (m_lastCursor == NotedFace::get()->cursorIndex() && !m_propertiesChanged)
 			return false;
-		m_lastCursor = m_c->cursorIndex();
+		m_lastCursor = NotedFace::get()->cursorIndex();
 		m_propertiesChanged = false;
 		return true;
 	}
@@ -83,7 +83,7 @@ public:
 //		cbug(42) << __PRETTY_FUNCTION__;
 		glLoadIdentity();
 		{
-			auto w = m_c->waveWindow(m_c->cursorIndex());
+			auto w = NotedFace::get()->waveWindow(NotedFace::get()->cursorIndex());
 			glBindTexture(GL_TEXTURE_1D, m_texture[0]);
 			float scale = m_p->scale;
 			float bias = m_p->bias;
@@ -96,9 +96,9 @@ public:
 			glTexImage1D(GL_TEXTURE_1D, 0, 1, w.size(), 0, GL_LUMINANCE, GL_FLOAT, w.data());
 		}
 
-		if (auto p = m_c->deltaPhaseSpectrum(m_c->cursorIndex(), 1))
+		if (auto p = NotedFace::get()->deltaPhaseSpectrum(NotedFace::get()->cursorIndex(), 1))
 		{
-			auto s = m_c->magSpectrum(m_c->cursorIndex(), 1);
+			auto s = NotedFace::get()->magSpectrum(NotedFace::get()->cursorIndex(), 1);
 			unsigned i = maxInRange(s.begin(), s.end()) - s.begin();
 			glColor3ubv(Color(p[i], 1, 1).toRGBA8().data());
 		}
@@ -120,16 +120,15 @@ private:
 	mutable unsigned m_lastCursor;
 	mutable bool m_propertiesChanged;
 	ExamplePlugin* m_p;
-	NotedFace* m_c;
 };
 
-ExamplePlugin::ExamplePlugin(NotedFace* _c): NotedPlugin(_c), scale(2.f), bias(0.5f)
+ExamplePlugin::ExamplePlugin(): NotedPlugin(), scale(2.f), bias(0.5f)
 {
 	m_glView = new GLView(this);
-	m_vizDock = new QDockWidget("Viz", _c);
-	m_vizDock->setWidget(_c->addGLWidget(m_glView, m_vizDock));
+	m_vizDock = new QDockWidget("Viz", NotedFace::get());
+	m_vizDock->setWidget(NotedFace::get()->addGLWidget(m_glView, m_vizDock));
 	m_vizDock->setFeatures(m_vizDock->features()|QDockWidget::DockWidgetVerticalTitleBar);
-	_c->addDockWidget(Qt::RightDockWidgetArea, m_vizDock);
+	NotedFace::get()->addDockWidget(Qt::RightDockWidgetArea, m_vizDock);
 }
 
 ExamplePlugin::~ExamplePlugin()

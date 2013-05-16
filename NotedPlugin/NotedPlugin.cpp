@@ -20,7 +20,7 @@
 
 #include "NotedPlugin.h"
 
-NotedPlugin::NotedPlugin(NotedFace* _n): m_noted(_n)
+NotedPlugin::NotedPlugin()
 {
 }
 
