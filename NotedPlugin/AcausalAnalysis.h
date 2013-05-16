@@ -33,9 +33,10 @@ public:
 	explicit AcausalAnalysis(QString const& _processName): m_name(_processName) {}
 	virtual ~AcausalAnalysis() {}
 
+	void initialize() { init(); }
+
 	QString const& name() const { return m_name; }
-	void init(NotedFace* _noted) { m_noted = _noted; init(); }
-	void go(NotedFace* _noted, unsigned _from, unsigned _count);
+	void go(unsigned _from, unsigned _count);
 
 protected:
 	virtual void init() {}
@@ -44,10 +45,6 @@ protected:
 	virtual void analyze(unsigned, unsigned, lb::Time) {}
 
 	bool done(unsigned _i);
-	NotedFace* noted() const { return m_noted; }
-
-protected:
-	NotedFace* m_noted;
 
 private:
 	QString m_name;

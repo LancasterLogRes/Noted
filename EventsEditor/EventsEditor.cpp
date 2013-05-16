@@ -113,7 +113,7 @@ EventsEditor::~EventsEditor()
 {
 	QMutexLocker l(&x_events);
 	m_events.clear();
-	c()->noteEventCompilersChanged();
+	NotedFace::compute()->noteEventCompilersChanged();
 }
 
 bool EventsEditor::isIndependent() const
@@ -175,7 +175,7 @@ void EventsEditor::mouseMoveEvent(QMouseEvent* _e)
 
 StreamEvents EventsEditor::cursorEvents() const
 {
-	return events(m_c->isCausal() ? m_c->causalCursorIndex() : -1);
+	return events(NotedFace::get()->isCausal() ? NotedFace::compute()->causalCursorIndex() : -1);
 }
 
 StreamEvents EventsEditor::events(int _i) const
@@ -191,7 +191,7 @@ StreamEvents EventsEditor::events(int _i) const
 
 void EventsEditor::onEnableChanged(bool)
 {
-	c()->noteEventCompilersChanged();
+	NotedFace::compute()->noteEventCompilersChanged();
 }
 
 void EventsEditor::onChanged(bool _requiresRecompile)
@@ -212,7 +212,7 @@ void EventsEditor::timerEvent(QTimerEvent*)
 				QMutexLocker l(&x_events);
 				m_events = scene()->events(c()->hop());
 			}
-			c()->noteEventCompilersChanged();
+			NotedFace::compute()->noteEventCompilersChanged();
 		}
 		else if (m_eventsDirty)
 			m_lastTimerDirty = true;

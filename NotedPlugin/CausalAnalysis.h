@@ -33,7 +33,7 @@ public:
 	virtual ~CausalAnalysis() {}
 
 	// public API (new)
-	void init(NotedFace* _noted, bool _willRecord) { m_noted = _noted; init(_willRecord); }
+	void initialize(bool _willRecord) { init(_willRecord); }
 
 	// inherited
 	virtual void init() { init(true); }

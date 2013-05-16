@@ -32,7 +32,7 @@ using namespace std;
 
 PrerenderedTimeline::PrerenderedTimeline(QWidget* _p, bool /*_cursorSizeIsHop*/): Prerendered(_p), m_draggingTime(lb::UndefinedTime), m_renderedOffset(0), m_renderedPixelDuration(0)
 {
-	connect(c(), SIGNAL(analysisFinished()), SLOT(rerender()));
+	connect(NotedFace::compute(), SIGNAL(finished()), SLOT(rerender()));
 }
 
 PrerenderedTimeline::~PrerenderedTimeline()

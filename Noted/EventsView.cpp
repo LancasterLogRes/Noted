@@ -99,7 +99,7 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 
 	initTimeline(c());
 
-	c()->noteEventCompilersChanged();
+	Noted::compute()->noteEventCompilersChanged();
 }
 
 EventsView::~EventsView()
@@ -114,7 +114,7 @@ EventsView::~EventsView()
 
 void EventsView::onUseChanged()
 {
-	c()->noteEventCompilersChanged();
+	Noted::compute()->noteEventCompilersChanged();
 }
 
 void EventsView::clearEvents()

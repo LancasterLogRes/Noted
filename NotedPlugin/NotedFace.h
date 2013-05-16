@@ -120,6 +120,41 @@ private:
 	QHash<QString, lb::GraphSpec const*> m_graphs;
 };
 
+/**
+ * @brief Acausal/Causal audio computation manager.
+ * Object exists in its own worker thread.
+ * This does all the work on the timeline - resamples, calculates spectra, compiles events &c.
+ * It picks up the Analysis objects from the central objects and plugins.
+ * Analysis objects may have dependencies on other Analysis objects.
+ */
+class ComputeManFace: public QObject
+{
+	Q_OBJECT
+
+public:
+	ComputeManFace() {}
+
+	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a = nullptr) = 0;
+	virtual AcausalAnalysisPtr spectraAcAnalysis() const = 0;
+	virtual CausalAnalysisPtr compileEventsAnalysis() const = 0;
+	virtual CausalAnalysisPtr collateEventsAnalysis() const = 0;
+	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&) = 0;
+	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&) = 0;
+
+	virtual int causalCursorIndex() const = 0;	///< -1 when !isCausal()
+
+public slots:
+	virtual void suspendWork() = 0;
+	virtual void abortWork() = 0;
+	virtual void resumeWork(bool _force = false) = 0;
+
+	inline void noteEventCompilersChanged() { noteLastValidIs(spectraAcAnalysis()); }
+	inline void notePluginDataChanged() { noteLastValidIs(collateEventsAnalysis()); }
+
+signals:
+	void finished();
+};
+
 class NotedFace: public QMainWindow
 {
 	Q_OBJECT
@@ -133,7 +168,6 @@ public:
 	virtual bool carryOn(int _progress) = 0;
 	virtual int activeWidth() const = 0;
 	virtual QGLWidget* glMaster() const = 0;
-	virtual int causalCursorIndex() const = 0;	///< -1 when !isCausal()
 
 	inline lb::Time earliestVisible() const { return m_timelineOffset; }
 	inline lb::Time pixelDuration() const { return m_pixelDuration; }
@@ -174,22 +208,12 @@ public:
 	virtual lb::EventCompiler findEventCompiler(QString const& _name) = 0;
 	virtual QString getEventCompilerName(lb::EventCompilerImpl* _ec) = 0;
 
-	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a = nullptr) = 0;
-	virtual AcausalAnalysisPtr spectraAcAnalysis() const = 0;
-	virtual CausalAnalysisPtr compileEventsAnalysis() const = 0;
-	virtual CausalAnalysisPtr collateEventsAnalysis() const = 0;
-	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&) = 0;
-	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&) = 0;
-
 	virtual bool isPlaying() const = 0;
 	virtual bool isCausal() const = 0;
 	virtual bool isPassing() const = 0;
 	inline bool isImmediate() const { return isCausal() || isPassing(); }
 	inline bool isQuiet() const { return !isPlaying() && !isCausal() && !isPassing(); }
 
-	virtual void setupPrerendered(Prerendered*) {}
-	virtual void ensureRegistered(Prerendered*) {}
-	virtual void ensureUnregistered(Prerendered*) {}
 	virtual void addTimeline(Timeline* _p) = 0;
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d) = 0;
@@ -202,6 +226,7 @@ public:
 	static IncomingAudio* audio() { return get()->m_incomingAudio; }
 	static DataMan* data() { return get()->m_dataMan; }
 	static GraphMan* graphs() { return get()->m_graphMan; }
+	static ComputeManFace* compute() { return get()->m_computeMan; }
 
 public slots:
 	virtual void setCursor(qint64 _c, bool _warp = false) = 0;
@@ -210,13 +235,9 @@ public slots:
 
 	virtual void updateWindowTitle() = 0;
 
-	inline void noteEventCompilersChanged() { noteLastValidIs(spectraAcAnalysis()); }
-	inline void notePluginDataChanged() { noteLastValidIs(collateEventsAnalysis()); }
-
 signals:
 	void offsetChanged();
 	void durationChanged();
-	void analysisFinished();
 	void eventsChanged();
 	void cursorChanged();
 
@@ -226,6 +247,7 @@ protected:
 	IncomingAudio* m_incomingAudio = new IncomingAudio;
 	DataMan* m_dataMan = new DataMan;
 	GraphMan* m_graphMan = new GraphMan;
+	ComputeManFace* m_computeMan;
 
 	bool m_zeroPhase;
 	bool m_floatFFT;
@@ -270,13 +292,6 @@ public:
 	virtual lb::EventCompiler newEventCompiler(QString const&) { return lb::EventCompiler(); }
 	virtual lb::EventCompiler findEventCompiler(QString const&) { return lb::EventCompiler(); }
 	virtual QString getEventCompilerName(lb::EventCompilerImpl*) { return ""; }
-
-	virtual void noteLastValidIs(AcausalAnalysisPtr const& = nullptr) {}
-	virtual AcausalAnalysisPtr spectraAcAnalysis() const { return nullptr; }
-	virtual CausalAnalysisPtr compileEventsAnalysis() const { return nullptr; }
-	virtual CausalAnalysisPtr collateEventsAnalysis() const { return nullptr; }
-	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&) { return AcausalAnalysisPtrs(); }
-	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&) { return CausalAnalysisPtrs(); }
 
 	virtual bool isPlaying() const { return false; }
 	virtual bool isPassing() const { return false; }

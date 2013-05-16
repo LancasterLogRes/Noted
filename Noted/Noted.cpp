@@ -71,12 +71,12 @@ public:
 	virtual void analyze(unsigned _from, unsigned _count, lb::Time _hop)
 	{
 		(void)_from; (void)_count; (void)_hop;
-		dynamic_cast<Noted*>(noted())->updateParameters();
-		dynamic_cast<Noted*>(noted())->resampleWave();
-		if (dynamic_cast<Noted*>(noted())->m_pixelDuration == 1)
+		Noted::get()->updateParameters();
+		Noted::get()->resampleWave();
+		if (Noted::get()->m_pixelDuration == 1)
 		{
-			dynamic_cast<Noted*>(noted())->m_fineCursor = 0;
-			dynamic_cast<Noted*>(noted())->normalizeView();
+			Noted::get()->m_fineCursor = 0;
+			Noted::get()->normalizeView();
 		}
 	}
 	virtual void fini()
@@ -101,7 +101,7 @@ public:
 	virtual void analyze(unsigned _from, unsigned _count, lb::Time _hop)
 	{
 		(void)_from; (void)_count; (void)_hop;
-		dynamic_cast<Noted*>(noted())->rejigSpectra();
+		Noted::get()->rejigSpectra();
 	}
 	virtual void fini()
 	{
@@ -114,37 +114,253 @@ public:
 	FinishUpAc(): AcausalAnalysis("Finishing up") {}
 	void fini()
 	{
-		QMutexLocker l(&dynamic_cast<Noted*>(noted())->x_timelines);
-		foreach (Timeline* t, dynamic_cast<Noted*>(noted())->m_timelines)
+		QMutexLocker l(&Noted::get()->x_timelines);
+		foreach (Timeline* t, Noted::get()->m_timelines)
 			if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
 				pt->rerender();
-		dynamic_cast<Noted*>(noted())->m_workFinished = true;
+		Noted::compute()->m_workFinished = true;
 	}
 };
+
+ComputeMan::ComputeMan():
+	m_resampleWaveAcAnalysis	(new ResampleWaveAc),	// TODO: register with AudioMan
+	m_spectraAcAnalysis			(new SpectraAc),				// TODO: register with Noted until it can be simple plugin.
+	m_finishUpAcAnalysis		(new FinishUpAc),			// TODO: what is this?
+	m_compileEventsAnalysis		(new CompileEvents),		// TODO: register with EventsMan
+	m_collateEventsAnalysis		(new CollateEvents),		// TODO: register with EventsMan
+	m_computeThread				(createWorkerThread([=](){return serviceCompute();}))
+{}
+
+ComputeMan::~ComputeMan()
+{
+	delete m_computeThread;
+}
+
+void ComputeMan::noteLastValidIs(AcausalAnalysisPtr const& _a)
+{
+	if (!m_toBeAnalyzed.count(_a))
+	{
+		suspendWork();
+		m_workFinished = false;
+		cnote << "WORK Last valid is now " << (_a ? _a->name().toLatin1().data() : "(None)");
+		m_toBeAnalyzed.insert(_a);
+		resumeWork();
+	}
+}
+
+class Sleeper: QThread { public: using QThread::usleep; };
+
+bool ComputeMan::serviceCompute()
+{
+	if (m_toBeAnalyzed.size())
+	{
+		QMutexLocker l(&x_analysis);
+		auto wasToBeAnalysed = m_toBeAnalyzed;
+		m_toBeAnalyzed.clear();
+		if (wasToBeAnalysed.size())
+		{
+			auto yetToBeAnalysed = wasToBeAnalysed;
+			deque<AcausalAnalysisPtr> todo;	// will become a member.
+			todo.push_back(nullptr);
+
+			// OPTIMIZE: move into worker code; allow multiple workers.
+			// OPTIMIZE: consider searching tree locally and completely, putting toBeAnalyzed things onto global todo, and skipping through otherwise.
+			// ...keeping search local until RAAs needed to be done are found.
+			m_eventsViewsDone = 0;
+			while (todo.size())
+			{
+				AcausalAnalysisPtr aa = todo.front();
+				todo.pop_front();
+				if (yetToBeAnalysed.count(aa) && aa)
+				{
+					WorkerThread::setCurrentDescription(aa->name());
+					cnote << "WORKER Working on " << aa->name().toStdString();
+					aa->go(0, Noted::audio()->hops());
+					cnote << "WORKER Finished " << aa->name().toStdString();
+					if (WorkerThread::quitting())
+					{
+						for (auto i: wasToBeAnalysed)
+							m_toBeAnalyzed.insert(i);
+						break;
+					}
+				}
+				else if (aa)
+				{
+					cnote << "WORKER Skipping job " << aa->name().toStdString();
+				}
+				AcausalAnalysisPtrs ripe = ripeAcausalAnalysis(aa);
+				if (yetToBeAnalysed.count(aa))
+				{
+					foreach (auto i, ripe)
+						yetToBeAnalysed.insert(i);
+					yetToBeAnalysed.erase(aa);
+				}
+				catenate(todo, ripe);
+			}
+			if (!WorkerThread::quitting() /*&& all other threads finished*/)
+				m_finishUpAcAnalysis->go(0, Noted::audio()->hops());
+		}
+	}
+	else
+		Sleeper::usleep(100000);
+	return true;
+}
+
+void ComputeMan::abortWork()
+{
+	cnote << "WORK Aborted... Not sure what to do here :-(";
+}
+
+void ComputeMan::suspendWork()
+{
+	cnote << "WORK Suspending..." << m_suspends;
+	if (m_computeThread && m_computeThread->isRunning())
+	{
+		m_computeThread->quit();
+		while (!m_computeThread->wait(1000))
+			cwarn << "Worker thread not responding :-(";
+		m_suspends = 0;
+		cnote << "WORK Suspended";
+	}
+	else
+	{
+		++m_suspends;
+		cnote << "WORK Additional suspended" << m_suspends;
+	}
+}
+
+void ComputeMan::resumeWork(bool _force)
+{
+	if (!_force && m_suspends)
+	{
+		m_suspends--;
+		cnote << "WORK One fewer suspend" << m_suspends;
+	}
+	else
+	{
+		if (m_computeThread && !m_computeThread->isRunning())
+		{
+			m_computeThread->start();//QThread::LowPriority);
+			cnote << "WORK Resumed" << m_suspends;
+		}
+		m_suspends = 0;
+	}
+}
+
+CausalAnalysisPtrs ComputeMan::ripeCausalAnalysis(CausalAnalysisPtr const& _finished)
+{
+	CausalAnalysisPtrs ret;
+	if (_finished == nullptr)
+		ret.push_back(m_compileEventsAnalysis);
+	else if (dynamic_cast<CompileEvents*>(&*_finished) && Noted::get()->eventsViews().size())
+		foreach (EventsView* ev, Noted::get()->eventsViews())
+			ret.push_back(CausalAnalysisPtr(new CompileEventsView(ev)));
+	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !Noted::get()->eventsViews().size()) || (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == Noted::get()->eventsViews().size()))
+		ret.push_back(m_collateEventsAnalysis);
+
+	// Go through all other things that can give CAs; at this point, it's just the plugins
+	CausalAnalysisPtrs acc;
+	foreach (RealLibraryPtr const& l, Noted::get()->libraries())
+		if (l->p && (acc = l->p->ripeCausalAnalysis(_finished)).size())
+			ret.insert(ret.end(), acc.begin(), acc.end());
+
+	return ret;
+}
+
+AcausalAnalysisPtrs ComputeMan::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finished)
+{
+	AcausalAnalysisPtrs ret;
+
+	if (_finished == nullptr)
+		ret.push_back(m_resampleWaveAcAnalysis);
+	else if (dynamic_cast<ResampleWaveAc*>(&*_finished))
+		ret.push_back(m_spectraAcAnalysis);
+	else if (dynamic_cast<SpectraAc*>(&*_finished))
+		ret.push_back(m_compileEventsAnalysis);
+	else if (dynamic_cast<CompileEvents*>(&*_finished) && Noted::get()->eventsViews().size())
+		foreach (EventsView* ev, Noted::get()->eventsViews())
+			ret.push_back(AcausalAnalysisPtr(new CompileEventsView(ev)));
+	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !Noted::get()->eventsViews().size()) ||
+			 (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == Noted::get()->eventsViews().size()))
+		ret.push_back(m_collateEventsAnalysis);
+
+	// Go through all other things that can give CAs; at this point, it's just the plugins
+	AcausalAnalysisPtrs acc;
+	foreach (RealLibraryPtr const& l, Noted::get()->libraries())
+		if (l->p && (acc = l->p->ripeAcausalAnalysis(_finished)).size())
+			ret.insert(ret.end(), acc.begin(), acc.end());
+
+	return ret;
+}
+
+void ComputeMan::initializeCausal(CausalAnalysisPtr const& _lastComplete)
+{
+	QMutexLocker l(&x_analysis);
+	deque<CausalAnalysisPtr> todo;	// will become a member.
+	todo.push_back(_lastComplete);
+	assert(m_causalQueueCache.empty());
+
+	m_eventsViewsDone = 0;
+	while (todo.size())
+	{
+		CausalAnalysisPtr ca = todo.front();
+		todo.pop_front();
+		if (ca != _lastComplete)
+		{
+			ca->initialize(false);
+
+			m_causalQueueCache.push_back(ca);
+		}
+		auto ripe = ripeCausalAnalysis(ca);
+//		cdebug << m_eventsViewsDone << ca << " leads to " << ripe;
+		catenate(todo, ripe);
+	}
+
+//	cdebug << "Causal queue: " << m_causalQueueCache;
+	m_causalSequenceIndex = 0;
+	m_causalCursorIndex = Noted::get()->isCausal() ? 0 : -1;
+}
+
+void ComputeMan::finalizeCausal()
+{
+	for (auto ca: m_causalQueueCache)
+		ca->fini(false);
+	m_causalQueueCache.clear();
+}
+
+void ComputeMan::updateCausal(int _from, int _count)
+{
+	(void)_from;
+	Time h = Noted::audio()->hop();
+	for (auto ca: m_causalQueueCache)
+		ca->noteBatch(m_causalSequenceIndex, _count);
+	for (int i = 0; i < _count; ++i, ++m_causalSequenceIndex)
+	{
+		if (Noted::get()->isCausal())
+			m_causalCursorIndex = clamp(_from + i, 0, (int)Noted::audio()->hops());
+		for (auto ca: m_causalQueueCache)
+			ca->process(m_causalSequenceIndex, h * m_causalSequenceIndex);
+	}
+}
+
 
 Noted::Noted(QWidget* _p):
 	NotedBase					(_p),
 	ui							(new Ui::Noted),
 	x_timelines					(QMutex::Recursive),
-	m_computeThread				(nullptr),
-	m_suspends					(0),
 	m_fineCursorWas				(UndefinedTime),
 	m_nextResample				(UndefinedTime),
 	m_resampler					(nullptr),
 	m_isCausal					(false),
 	m_isPassing					(false),
-	m_workFinished				(false),
-	m_resampleWaveAcAnalysis	(new ResampleWaveAc),
-	m_spectraAcAnalysis			(new SpectraAc),
-	m_finishUpAcAnalysis		(new FinishUpAc),
-	m_compileEventsAnalysis		(new CompileEvents),
-	m_collateEventsAnalysis		(new CollateEvents),
 	m_glMaster					(new QGLWidget),
 	m_constructed				(false)
 {
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
 
-	m_computeThread = createWorkerThread([=](){return serviceCompute();});
+	m_computeMan = new ComputeMan;
+
+	// TODO: Move to AudioMan
 	m_audioThread = createWorkerThread([=](){return serviceAudio();});
 
 	ui->setupUi(this);
@@ -196,12 +412,12 @@ Noted::Noted(QWidget* _p):
 	}
 
 	connect(&m_libraryWatcher, SIGNAL(fileChanged(QString)), this, SLOT(onLibraryChange(QString)));
-	connect(this, SIGNAL(analysisFinished()), SLOT(updateEventStuff()));
+	connect(compute(), SIGNAL(finished()), SLOT(updateEventStuff()));
 
 	on_sampleRate_currentIndexChanged(0);
 
 	startTimer(5);
-	resumeWork();
+	compute()->resumeWork();
 
 	readSettings();
 
@@ -225,9 +441,9 @@ Noted::~Noted()
 	g_debugPost = simpleDebugOut;
 
 	qDebug() << "Disabling worker(s)...";
-	suspendWork();
-	delete m_computeThread;
-	m_computeThread = nullptr;
+	compute()->suspendWork();
+	delete m_computeMan;
+	m_computeMan = nullptr;
 	qDebug() << "Disabled permenantly.";
 
 	qDebug() << "Killing timelines...";
@@ -357,7 +573,7 @@ void Noted::load(RealLibraryPtr const& _dl)
 					auto li = new QListWidgetItem(QString::fromStdString(f.first));
 					li->setData(0, QString::fromStdString(f.first));
 					ui->eventCompilersList->addItem(li);
-					noteEventCompilersChanged();
+					Noted::compute()->noteEventCompilersChanged();
 				}
 				cnote << _dl->cf.size() << " event compiler factories";
 			}
@@ -551,7 +767,7 @@ void Noted::reloadDirties()
 {
 	if (!m_dirtyLibraries.empty())
 	{
-		suspendWork();
+		Noted::compute()->suspendWork();
 
 		// OPTIMIZE: only bother saving for EVs whose EC is given by a dirty library.
 		for (EventsView* ev: eventsViews())
@@ -584,9 +800,9 @@ void Noted::reloadDirties()
 		m_dirtyLibraries.clear();
 
 		// OPTIMIZE: Something finer grained?
-		noteEventCompilersChanged();
+		Noted::compute()->noteEventCompilersChanged();
 
-		resumeWork();
+		Noted::compute()->resumeWork();
 	}
 }
 
@@ -877,7 +1093,7 @@ void Noted::on_sampleRate_currentIndexChanged(int)
 	m_incomingAudio->setRate(ui->sampleRate->currentText().left(ui->sampleRate->currentText().size() - 3).toInt());
 	ui->hopPeriod->setText(QString("%1ms %2%").arg(fromBase(toBase(ui->hop->value(), rate()), 100000) / 100.0).arg(((ui->windowSize->value() - ui->hop->value()) * 1000 / ui->windowSize->value()) / 10.0));
 	ui->windowPeriod->setText(QString("%1ms %2Hz").arg(fromBase(toBase(ui->windowSize->value(), rate()), 100000) / 100.0).arg((rate() * 10 / ui->windowSize->value()) / 10.0));
-	noteLastValidIs(nullptr);
+	compute()->noteLastValidIs(nullptr);
 }
 
 void Noted::on_windowSizeSlider_valueChanged(int)
@@ -892,57 +1108,10 @@ void Noted::on_hopSlider_valueChanged(int)
 	on_sampleRate_currentIndexChanged(0);
 }
 
-class Sleeper: QThread { public: using QThread::usleep; };
-
 void Noted::timelineDead(Timeline* _tl)
 {
 	QMutexLocker l(&x_timelines);
 	m_timelines.remove(_tl);
-}
-
-bool Noted::serviceCompute()
-{
-	if (m_toBeAnalyzed.size())
-		rejigAudio();
-	else
-		Sleeper::usleep(100000);
-	return true;
-}
-
-void Noted::suspendWork()
-{
-	cnote << "WORK Suspending..." << m_suspends;
-	if (m_computeThread && m_computeThread->isRunning())
-	{
-		m_computeThread->quit();
-		while (!m_computeThread->wait(1000))
-			cwarn << "Worker thread not responding :-(";
-		m_suspends = 0;
-		cnote << "WORK Suspended";
-	}
-	else
-	{
-		++m_suspends;
-		cnote << "WORK Additional suspended" << m_suspends;
-	}
-}
-
-void Noted::resumeWork(bool _force)
-{
-	if (!_force && m_suspends)
-	{
-		m_suspends--;
-		cnote << "WORK One fewer suspend" << m_suspends;
-	}
-	else
-	{
-		if (m_computeThread && !m_computeThread->isRunning())
-		{
-			m_computeThread->start();//QThread::LowPriority);
-			cnote << "WORK Resumed" << m_suspends;
-		}
-		m_suspends = 0;
-	}
 }
 
 QList<EventsStore*> Noted::eventsStores() const
@@ -953,18 +1122,6 @@ QList<EventsStore*> Noted::eventsStores() const
 		if (EventsStore* es = dynamic_cast<EventsStore*>(i))
 			ret.push_back(es);
 	return ret;
-}
-
-void Noted::noteLastValidIs(AcausalAnalysisPtr const& _a)
-{
-	if (!m_toBeAnalyzed.count(_a))
-	{
-		suspendWork();
-		m_workFinished = false;
-		cnote << "WORK Last valid is now " << (_a ? _a->name().toLatin1().data() : "(None)");
-		m_toBeAnalyzed.insert(_a);
-		resumeWork();
-	}
 }
 
 void Noted::on_actFollow_changed()
@@ -1016,10 +1173,9 @@ void Noted::on_actPlayCausal_changed()
 {
 	if (ui->actPlayCausal->isChecked())
 	{
-		suspendWork();
+		compute()->suspendWork();
 		m_isCausal = true;
-		m_causalCursorIndex = 0;
-		initializeCausal(nullptr);
+		compute()->initializeCausal(nullptr);
 		ui->dockPlay->setEnabled(false);
 		ui->actPlay->setEnabled(false);
 		ui->actPassthrough->setEnabled(false);
@@ -1032,13 +1188,13 @@ void Noted::on_actPlayCausal_changed()
 	{
 		while (m_audioThread->isRunning())
 			usleep(100000);
-		finalizeCausal();
+		compute()->finalizeCausal();
 		m_isCausal = false;
 		ui->dockPlay->setEnabled(true);
 		ui->actPassthrough->setEnabled(true);
 		ui->actPlay->setEnabled(true);
 		ui->actOpen->setEnabled(true);
-		resumeWork();
+		compute()->resumeWork();
 	}
 }
 
@@ -1046,10 +1202,9 @@ void Noted::on_actPassthrough_changed()
 {
 	if (ui->actPassthrough->isChecked())
 	{
-		suspendWork();
+		compute()->suspendWork();
 		m_isPassing = true;
-		m_causalCursorIndex = -1;
-		initializeCausal(nullptr);
+		compute()->initializeCausal(nullptr);
 		ui->dockPlay->setEnabled(false);
 		ui->actPlay->setEnabled(false);
 		ui->actPlayCausal->setEnabled(false);
@@ -1061,14 +1216,14 @@ void Noted::on_actPassthrough_changed()
 	}
 	else if (ui->actPassthrough->isEnabled())
 	{
-		finalizeCausal();
+		compute()->finalizeCausal();
 		m_isPassing = false;
 		ui->dockPlay->setEnabled(true);
 		ui->actPlay->setEnabled(true);
 		ui->actPlayCausal->setEnabled(true);
 		ui->actOpen->setEnabled(true);
 		ui->dataDisplay->setEnabled(true);
-		resumeWork();
+		compute()->resumeWork();
 	}
 }
 
@@ -1230,7 +1385,7 @@ bool Noted::serviceAudio()
 			*/
 
 			// update
-			updateCausal(m_lastIndex++, 1);
+			compute()->updateCausal(m_lastIndex++, 1);
 		}
 		doneWork = true;
 	}
@@ -1249,7 +1404,7 @@ bool Noted::serviceAudio()
 	{
 		// do events until cursor.
 		if (!((int)cursorIndex() < m_lastIndex || (int)cursorIndex() - m_lastIndex > 100))	// probably skipped.
-			updateCausal(m_lastIndex + 1, cursorIndex() - m_lastIndex);
+			compute()->updateCausal(m_lastIndex + 1, cursorIndex() - m_lastIndex);
 		m_lastIndex = cursorIndex();
 		doneWork = true;
 	}
@@ -1304,21 +1459,24 @@ void Noted::setAudio(QString const& _filename)
 {
 	if (ui->actPlay->isChecked())
 		ui->actPlay->setChecked(false);
-	suspendWork();
+	compute()->suspendWork();
 
 	m_fineCursor = 0;
 	m_timelineOffset = 0;
 	m_pixelDuration = 1;
 
-	emit analysisFinished();
+	// TODO! Need solution for this... ComputeMan::aborted() signal?
+	// analysisFinished shouldn't be called, anyway!: It's not. But then AudioMan shouldn't be signalling anything to do with analysis.
+	// TODO: emit AudioMan::changed(); ComputeMan connected abortWork to that; for now call it directly.
+	compute()->abortWork();
 
 	m_sourceFileName = _filename;
 	if (!QFile(m_sourceFileName).open(QFile::ReadOnly))
 		m_sourceFileName.clear();
 
-	noteLastValidIs(nullptr);
+	compute()->noteLastValidIs(nullptr);
 	updateWindowTitle();
-	resumeWork();
+	compute()->resumeWork();
 }
 
 void Noted::updateEventStuff()
@@ -1353,6 +1511,10 @@ void Noted::timerEvent(QTimerEvent*)
 	static int i = 0;
 	if (++i % 10 == 0)
 	{
+
+		// TODO! APIs for next two.
+		// TODO: all this should be done with signals/slots. ComputeMan/worker-thread emits it, Noted/main-thread picks it up.
+/*
 		QProgressBar* pb = ui->statusBar->findChild<QProgressBar*>();
 		if (m_computeThread->progress() < 100)
 		{
@@ -1370,16 +1532,16 @@ void Noted::timerEvent(QTimerEvent*)
 		}
 		else if (pb)
 			delete pb;
-
-		if (m_workFinished)
+*/
+		if (compute()->workFinished())
 		{
-			m_workFinished = false;
-			emit analysisFinished();
+			compute()->ackWorkFinished();
+			emit compute()->finished();
 			info("WORK All finished");
 			m_cursorDirty = true;
-			if (pb)
+/*			if (pb)
 				delete pb;
-			m_computeThread->setProgress(100);
+			m_computeThread->setProgress(100);*/
 			statusBar()->showMessage("Ready");
 		}
 
@@ -1461,155 +1623,10 @@ void Noted::updateParameters()
 	m_floatFFT = ui->floatFFT->isChecked();
 }
 
-void Noted::rejigAudio()
-{
-	QMutexLocker l(&x_analysis);
-	auto wasToBeAnalysed = m_toBeAnalyzed;
-	m_toBeAnalyzed.clear();
-	if (wasToBeAnalysed.size())
-	{
-		auto yetToBeAnalysed = wasToBeAnalysed;
-		deque<AcausalAnalysisPtr> todo;	// will become a member.
-		todo.push_back(nullptr);
-
-		// OPTIMIZE: move into worker code; allow multiple workers.
-		// OPTIMIZE: consider searching tree locally and completely, putting toBeAnalyzed things onto global todo, and skipping through otherwise.
-		// ...keeping search local until RAAs needed to be done are found.
-		m_eventsViewsDone = 0;
-		while (todo.size())
-		{
-			AcausalAnalysisPtr aa = todo.front();
-			todo.pop_front();
-			if (yetToBeAnalysed.count(aa) && aa)
-			{
-				WorkerThread::setCurrentDescription(aa->name());
-				cnote << "WORKER Working on " << aa->name().toStdString();
-				aa->go(this, 0, hops());
-				cnote << "WORKER Finished " << aa->name().toStdString();
-				if (WorkerThread::quitting())
-				{
-					for (auto i: wasToBeAnalysed)
-						m_toBeAnalyzed.insert(i);
-					break;
-				}
-			}
-			else if (aa)
-			{
-				cnote << "WORKER Skipping job " << aa->name().toStdString();
-			}
-			AcausalAnalysisPtrs ripe = ripeAcausalAnalysis(aa);
-			if (yetToBeAnalysed.count(aa))
-			{
-				foreach (auto i, ripe)
-					yetToBeAnalysed.insert(i);
-				yetToBeAnalysed.erase(aa);
-			}
-			catenate(todo, ripe);
-		}
-		if (!WorkerThread::quitting() /*&& all other threads finished*/)
-			m_finishUpAcAnalysis->go(this, 0, hops());
-	}
-}
-
-CausalAnalysisPtrs Noted::ripeCausalAnalysis(CausalAnalysisPtr const& _finished)
-{
-	CausalAnalysisPtrs ret;
-	if (_finished == nullptr)
-		ret.push_back(m_compileEventsAnalysis);
-	else if (dynamic_cast<CompileEvents*>(&*_finished) && eventsViews().size())
-		foreach (EventsView* ev, eventsViews())
-			ret.push_back(CausalAnalysisPtr(new CompileEventsView(ev)));
-	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !eventsViews().size()) || (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == eventsViews().size()))
-		ret.push_back(m_collateEventsAnalysis);
-
-	// Go through all other things that can give CAs; at this point, it's just the plugins
-	CausalAnalysisPtrs acc;
-	foreach (RealLibraryPtr const& l, m_libraries)
-		if (l->p && (acc = l->p->ripeCausalAnalysis(_finished)).size())
-			ret.insert(ret.end(), acc.begin(), acc.end());
-
-	return ret;
-}
-
-AcausalAnalysisPtrs Noted::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finished)
-{
-	AcausalAnalysisPtrs ret;
-
-	if (_finished == nullptr)
-		ret.push_back(m_resampleWaveAcAnalysis);
-	else if (dynamic_cast<ResampleWaveAc*>(&*_finished))
-		ret.push_back(m_spectraAcAnalysis);
-	else if (dynamic_cast<SpectraAc*>(&*_finished))
-		ret.push_back(m_compileEventsAnalysis);
-	else if (dynamic_cast<CompileEvents*>(&*_finished) && eventsViews().size())
-		foreach (EventsView* ev, eventsViews())
-			ret.push_back(AcausalAnalysisPtr(new CompileEventsView(ev)));
-	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !eventsViews().size()) ||
-			 (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == eventsViews().size()))
-		ret.push_back(m_collateEventsAnalysis);
-
-	// Go through all other things that can give CAs; at this point, it's just the plugins
-	AcausalAnalysisPtrs acc;
-	foreach (RealLibraryPtr const& l, m_libraries)
-		if (l->p && (acc = l->p->ripeAcausalAnalysis(_finished)).size())
-			ret.insert(ret.end(), acc.begin(), acc.end());
-
-	return ret;
-}
-
-void Noted::initializeCausal(CausalAnalysisPtr const& _lastComplete)
-{
-	QMutexLocker l(&x_analysis);
-	deque<CausalAnalysisPtr> todo;	// will become a member.
-	todo.push_back(_lastComplete);
-	assert(m_causalQueue.empty());
-
-	m_eventsViewsDone = 0;
-	while (todo.size())
-	{
-		CausalAnalysisPtr ca = todo.front();
-		todo.pop_front();
-		if (ca != _lastComplete)
-		{
-			ca->init(this, false);
-
-			m_causalQueue.push_back(ca);
-		}
-		auto ripe = ripeCausalAnalysis(ca);
-//		cdebug << m_eventsViewsDone << ca << " leads to " << ripe;
-		catenate(todo, ripe);
-	}
-
-//	cdebug << "Causal queue: " << m_causalQueue;
-	m_sequenceIndex = 0;
-}
-
-void Noted::finalizeCausal()
-{
-	for (auto ca: m_causalQueue)
-		ca->fini(false);
-	m_causalQueue.clear();
-}
-
-void Noted::updateCausal(int _from, int _count)
-{
-	(void)_from;
-	Time h = hop();
-	for (auto ca: m_causalQueue)
-		ca->noteBatch(m_sequenceIndex, _count);
-	for (int i = 0; i < _count; ++i, ++m_sequenceIndex)
-	{
-		if (m_isCausal)
-			m_causalCursorIndex = clamp(_from + i, 0, (int)hops());
-		for (auto ca: m_causalQueue)
-			ca->process(m_sequenceIndex, h * m_sequenceIndex);
-	}
-}
-
 foreign_vector<float const> Noted::cursorWaveWindow() const
 {
 	if (isCausal())
-		return waveWindow(m_causalCursorIndex);
+		return waveWindow(compute()->causalCursorIndex());
 	else if (isPassing())
 		return foreign_vector<float const>((vector<float>*)&m_currentWave);
 	else
@@ -1619,7 +1636,7 @@ foreign_vector<float const> Noted::cursorWaveWindow() const
 foreign_vector<float const> Noted::cursorMagSpectrum() const
 {
 	if (isCausal())
-		return magSpectrum(m_causalCursorIndex, 1);
+		return magSpectrum(compute()->causalCursorIndex(), 1);
 	else if (isPassing())
 		return foreign_vector<float const>((vector<float>*)&m_currentMagSpectrum);
 	else
@@ -1629,7 +1646,7 @@ foreign_vector<float const> Noted::cursorMagSpectrum() const
 foreign_vector<float const> Noted::cursorPhaseSpectrum() const
 {
 	if (isCausal())
-		return phaseSpectrum(m_causalCursorIndex, 1);			// FIXME: will return phase normalized to [0, 1] rather than [0, pi].
+		return phaseSpectrum(compute()->causalCursorIndex(), 1);			// FIXME: will return phase normalized to [0, 1] rather than [0, pi].
 	else if (isPassing())
 		return foreign_vector<float const>((vector<float>*)&m_currentPhaseSpectrum);
 	else

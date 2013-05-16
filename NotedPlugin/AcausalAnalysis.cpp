@@ -21,15 +21,15 @@
 #include "AcausalAnalysis.h"
 #include "NotedFace.h"
 
-void AcausalAnalysis::go(NotedFace* _noted, unsigned _from, unsigned _count)
+void AcausalAnalysis::go(unsigned _from, unsigned _count)
 {
-	init(_noted);
-	m_steps = prepare(_from, _count, m_noted->hop());
-	analyze(_from, _count, m_noted->hop());
+	init();
+	m_steps = prepare(_from, _count, NotedFace::audio()->hop());
+	analyze(_from, _count, NotedFace::audio()->hop());
 	fini();
 }
 
 bool AcausalAnalysis::done(unsigned _i)
 {
-	return m_noted->carryOn(_i * 100 / m_steps);
+	return NotedFace::get()->carryOn(_i * 100 / m_steps);
 }
