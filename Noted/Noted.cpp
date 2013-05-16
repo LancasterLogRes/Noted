@@ -232,8 +232,8 @@ bool Noted::eventFilter(QObject*, QEvent* _e)
 EventCompiler Noted::newEventCompiler(QString const& _name)
 {
 	foreach (auto dl, libs()->libraries())
-		if (dl->cf.find(_name.toStdString()) != dl->cf.end())
-			return EventCompiler::create(dl->cf[_name.toStdString()]());
+		if (dl->eventCompilerFactory.find(_name.toStdString()) != dl->eventCompilerFactory.end())
+			return EventCompiler::create(dl->eventCompilerFactory[_name.toStdString()]());
 	return EventCompiler();
 }
 
@@ -267,8 +267,8 @@ void Noted::updateWindowTitle()
 {
 	QString t = m_sourceFileName.isEmpty() ? QString("New Recording") : m_sourceFileName;
 	foreach (auto l, libs()->libraries())
-		if (l->p)
-			t = l->p->titleAmendment(t);
+		if (l->plugin)
+			t = l->plugin->titleAmendment(t);
 	setWindowTitle(t + " - Noted!");
 }
 
@@ -382,8 +382,8 @@ void Noted::readSettings()
 	readBaseSettings(settings);
 
 	foreach (auto l, libs()->libraries())
-		if (l->p)
-			l->p->readSettings(settings);
+		if (l->plugin)
+			l->plugin->readSettings(settings);
 }
 
 void Noted::closeEvent(QCloseEvent* _event)
@@ -397,8 +397,8 @@ void Noted::writeSettings()
 	QSettings settings("LancasterLogicResponse", "Noted");
 
 	foreach (auto l, libs()->libraries())
-		if (l->p)
-			l->p->writeSettings(settings);
+		if (l->plugin)
+			l->plugin->writeSettings(settings);
 
 	writeBaseSettings(settings);
 

@@ -34,13 +34,13 @@ struct Library
 
 	QString filename;
 	QString nick;
-	QLibrary l;
+	QLibrary library;
 
-	// One of (p, cf, auxFace) is valid.
-	std::shared_ptr<NotedPlugin> p;
-	lb::EventCompilerFactories cf;
+	// One of (plugin, eventCompilerFactory, auxFace) is valid.
+	std::shared_ptr<NotedPlugin> plugin;
+	lb::EventCompilerFactories eventCompilerFactory;
 	std::shared_ptr<AuxLibraryFace> auxFace;
-	std::weak_ptr<NotedPlugin> aux;
+	std::weak_ptr<NotedPlugin> auxPlugin;
 };
 
 typedef std::shared_ptr<Library> LibraryPtr;

@@ -55,6 +55,7 @@ public:
 	void readSettings(QSettings& _s, QString const& _id);
 	void writeSettings(QSettings& _s, QString const& _id);
 
+	bool isArchived() const { return eventCompiler().isNull(); }
 	void save();
 	void restore();
 	QString name() const;
@@ -76,6 +77,10 @@ public slots:
 	void exportGraph();
 	void channelChanged();
 	void setNewEvents();
+
+private slots:
+	void onLibraryUnload(QString _lib);
+	void onLibraryLoad(QString _lib);
 
 private:
 	lb::EventCompiler m_eventCompiler;

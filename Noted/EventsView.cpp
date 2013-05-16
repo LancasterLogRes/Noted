@@ -31,6 +31,7 @@
 
 #include "PropertiesEditor.h"
 #include "Noted.h"
+#include "LibraryMan.h"
 #include "EventsView.h"
 
 using namespace std;
@@ -41,6 +42,9 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	m_eventCompiler		(_ec),
 	m_use				(nullptr)
 {
+	connect(NotedFace::libs(), SIGNAL(prepareLibraryUnload(QString)), SLOT(onLibraryUnload(QString)));
+	connect(NotedFace::libs(), SIGNAL(doneLibraryLoad(QString)), SLOT(onLibraryLoad(QString)));
+
 	m_verticalSplitter = dynamic_cast<QSplitter*>(parentWidget());
 	m_actualWidget = dynamic_cast<QSplitter*>(m_verticalSplitter->parentWidget());
 	m_propertiesEditor = new PropertiesEditor(m_actualWidget);
@@ -110,6 +114,18 @@ EventsView::~EventsView()
 	QWidget* w = parentWidget()->parentWidget();
 	setParent(0);
 	delete w;
+}
+
+void EventsView::onLibraryLoad(QString _lib)
+{
+	if (isArchived() && NotedFace::libs()->providesEventCompiler(_lib, m_savedName))
+		restore();
+}
+
+void EventsView::onLibraryUnload(QString _lib)
+{
+	if (!isArchived() && NotedFace::libs()->providesEventCompiler(_lib, name()))
+		save();
 }
 
 void EventsView::onUseChanged()

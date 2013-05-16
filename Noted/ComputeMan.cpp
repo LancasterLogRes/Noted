@@ -223,7 +223,7 @@ CausalAnalysisPtrs ComputeMan::ripeCausalAnalysis(CausalAnalysisPtr const& _fini
 	// Go through all other things that can give CAs; at this point, it's just the plugins
 	CausalAnalysisPtrs acc;
 	foreach (RealLibraryPtr const& l, Noted::libs()->libraries())
-		if (l->p && (acc = l->p->ripeCausalAnalysis(_finished)).size())
+		if (l->plugin && (acc = l->plugin->ripeCausalAnalysis(_finished)).size())
 			ret.insert(ret.end(), acc.begin(), acc.end());
 
 	return ret;
@@ -249,7 +249,7 @@ AcausalAnalysisPtrs ComputeMan::ripeAcausalAnalysis(AcausalAnalysisPtr const& _f
 	// Go through all other things that can give CAs; at this point, it's just the plugins
 	AcausalAnalysisPtrs acc;
 	foreach (RealLibraryPtr const& l, Noted::libs()->libraries())
-		if (l->p && (acc = l->p->ripeAcausalAnalysis(_finished)).size())
+		if (l->plugin && (acc = l->plugin->ripeAcausalAnalysis(_finished)).size())
 			ret.insert(ret.end(), acc.begin(), acc.end());
 
 	return ret;

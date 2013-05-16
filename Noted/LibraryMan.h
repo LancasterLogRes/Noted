@@ -29,6 +29,8 @@ public:
 
 	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const& _mangledName);
 
+	virtual bool providesEventCompiler(QString const& _library, QString const& _ec);
+
 	QMap<QString, RealLibraryPtr> const& libraries() const { return m_libraries; }
 
 public slots:
