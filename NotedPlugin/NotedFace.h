@@ -41,6 +41,7 @@
 #include "AudioManFace.h"
 #include "ComputeManFace.h"
 #include "GraphManFace.h"
+#include "LibraryManFace.h"
 #include "QGLWidgetProxy.h"
 
 LIGHTBOX_TEXTUAL_ENUM(AudioStage, Wave, Spectrum);
@@ -58,14 +59,6 @@ class DataMan;
 class GraphManFace;
 class AudioManFace;
 class ComputeManFace;
-
-class LibraryManFace: public QObject
-{
-	Q_OBJECT
-
-public:
-	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const& _mangledName) = 0;
-};
 
 class NotedFace: public QMainWindow
 {

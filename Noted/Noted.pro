@@ -27,7 +27,8 @@ SOURCES += main.cpp\
 	NotedGLWidget.cpp \
 	GraphView.cpp \
     TimelinesItem.cpp \
-    ComputeMan.cpp
+    ComputeMan.cpp \
+    LibraryMan.cpp
 
 HEADERS  += Noted.h \
 	WaveView.h \
@@ -51,7 +52,8 @@ HEADERS  += Noted.h \
     GraphView.h \
 	Global.h \
     TimelinesItem.h \
-    ComputeMan.h
+    ComputeMan.h \
+    LibraryMan.h
 
 FORMS    += Noted.ui
 

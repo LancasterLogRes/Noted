@@ -46,6 +46,7 @@
 #include <QGraphicsScene>
 #include "GraphView.h"
 #include "ComputeMan.h"
+#include "LibraryMan.h"
 #include "NotedBase.h"
 
 namespace Ui { class Noted; }
@@ -61,60 +62,6 @@ class EventsView;
 class EventsEditor;
 class CompileEvents;
 class CollateEvents;
-
-struct RealLibrary: public Library
-{
-	RealLibrary(QString const& _f): Library(_f) {}
-	QTreeWidgetItem* item;
-	void unload();
-	bool isEnabled() const;
-};
-
-typedef std::shared_ptr<RealLibrary> RealLibraryPtr;
-
-class LibraryMan: public LibraryManFace
-{
-	Q_OBJECT
-
-public:
-	LibraryMan()
-	{
-		connect(&m_libraryWatcher, SIGNAL(fileChanged(QString)), this, SLOT(onLibraryChange(QString)));
-	}
-	~LibraryMan()
-	{
-		qDebug() << "Unloading libraries...";
-		while (m_libraries.size())
-		{
-			unload(*m_libraries.begin());
-			m_libraries.erase(m_libraries.begin());
-		}
-		qDebug() << "Unloaded all libraries.";
-	}
-
-	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const& _mangledName);
-
-	QMap<QString, RealLibraryPtr> const& libraries() const { return m_libraries; }
-
-public slots:
-	void addLibrary(QString const& _name, bool _isEnabled = true);
-	void reloadLibrary(QTreeWidgetItem* _it);
-	void killLibrary(QTreeWidgetItem* _it);
-
-private slots:
-	void onLibraryChange(QString const& _name);
-
-private:
-	// Extensions...
-	void load(RealLibraryPtr const& _dl);
-	void unload(RealLibraryPtr const& _dl);
-
-	void reloadDirties();
-
-	QMap<QString, RealLibraryPtr> m_libraries;
-	QSet<QString> m_dirtyLibraries;
-	QFileSystemWatcher m_libraryWatcher;
-};
 
 class TimelinesItem;
 
