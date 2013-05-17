@@ -132,8 +132,6 @@ Noted::Noted(QWidget* _p):
 
 	updateHopDisplay();
 
-	compute()->resumeWork();
-
 	readSettings();
 
 	setCorner(Qt::TopLeftCorner, Qt::LeftDockWidgetArea);
@@ -142,6 +140,9 @@ Noted::Noted(QWidget* _p):
 	setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
 
 	m_constructed = true;
+
+	// After readSettings to avoid computing pointless default values.
+	compute()->resumeWork();
 }
 
 Noted::~Noted()

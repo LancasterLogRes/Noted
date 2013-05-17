@@ -31,7 +31,7 @@ using namespace lb;
 
 NotedBase::NotedBase(QWidget* _p):
 	NotedFace					(_p),
-	x_spectra(QMutex::Recursive)
+	x_spectra					(QMutex::Recursive)
 {
 }
 
@@ -39,10 +39,9 @@ NotedBase::~NotedBase()
 {
 }
 
-uint32_t NotedBase::calculateSpectraFingerprint(uint32_t _base) const
+DataKey NotedBase::spectraKey() const
 {
-	uint32_t ret = _base;
-	ret ^= (uint32_t&)m_windowFunction[m_windowFunction.size() * 7 / 13];
+	DataKey ret = (DataKey&)m_windowFunction[m_windowFunction.size() * 7 / 13];
 	if (!m_zeroPhase)
 		ret *= 69;
 	if (!m_floatFFT)
@@ -91,7 +90,7 @@ void NotedBase::rejigSpectra()
 	int ss = spectrumSize();
 	if (audio()->samples())
 	{
-		if (!m_spectra.init(calculateSpectraFingerprint(audio()->key()), "spectrum", ss * 3 * sizeof(float), audio()->hops()))
+		if (!m_spectra.init(audio()->key(), spectraKey(), 0, ss * 3 * sizeof(float), audio()->hops()))
 		{
 			unsigned hops = audio()->hops();
 			if (m_floatFFT)
@@ -168,6 +167,6 @@ void NotedBase::rejigSpectra()
 	}
 	else
 	{
-		m_spectra.init(calculateSpectraFingerprint(audio()->key()), "spectrum", ss * 3, 0);
+		m_spectra.init(audio()->key(), spectraKey(), 0, ss * 3, 0);
 	}
 }

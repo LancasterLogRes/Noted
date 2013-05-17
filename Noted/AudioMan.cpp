@@ -253,8 +253,8 @@ bool AudioMan::resampleWave()
 		QMutexLocker l2(&x_wave);
 		unsigned outHops = (fromBase(toBase(info.frames, info.samplerate), rate()) + hopSamples() - 1) / hopSamples();
 		m_samples = outHops * hopSamples();
-		bool waveOk = m_wave.init(key(), "wave", samples() * sizeof(float));
-		bool waveProfileOk = m_waveProfile.init(key(), "waveProfile", 2 * sizeof(float), outHops);
+		bool waveOk = m_wave.init(rawKey(), key(), 0, samples() * sizeof(float));
+		bool waveProfileOk = m_waveProfile.init(rawKey(), key(), 1, 2 * sizeof(float), outHops);
 		if (!waveOk || !waveProfileOk)
 		{
 			sf_seek(sndfile, 0, SEEK_SET);

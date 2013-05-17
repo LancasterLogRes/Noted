@@ -62,7 +62,7 @@ public:
 protected:
 	void rejigSpectra();
 
-	uint32_t calculateSpectraFingerprint(uint32_t _base) const;
+	DataKey spectraKey() const;
 
 	mutable QMutex x_spectra;
 	MipmappedCache m_spectra;
