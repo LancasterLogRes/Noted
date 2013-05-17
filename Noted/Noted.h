@@ -72,8 +72,6 @@ class Noted: public NotedBase
 
 	friend class AudioMan; // TODO! Remove when there's no window call in AudioMan.
 
-	friend class Cursor;
-
 public:
 	explicit Noted(QWidget* parent = nullptr);
 	virtual ~Noted();
@@ -102,6 +100,7 @@ public:
 	lb::foreign_vector<float const> cursorMagSpectrum() const;
 	lb::foreign_vector<float const> cursorPhaseSpectrum() const;
 
+	// TODO: replace with signal/slot notification mechanism.
 	bool isConstructed() const { return m_constructed; }
 
 public slots:

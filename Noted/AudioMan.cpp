@@ -54,7 +54,7 @@ void AudioMan::setRate(unsigned _s)
 	m_rate = _s;
 	updateKeys();
 
-	Noted::compute()->noteLastValidIs(nullptr);
+	Noted::compute()->invalidate(resampleWaveAcAnalysis());
 	Noted::compute()->resumeWork();
 
 	emit hopChanged();
@@ -73,7 +73,7 @@ void AudioMan::setHopSamples(unsigned _s)
 	m_hopSamples = _s;
 	updateKeys();
 
-	Noted::compute()->noteLastValidIs(m_resampleWaveAcAnalysis);
+	Noted::compute()->invalidate(Noted::compute()->spectraAcAnalysis());
 	Noted::compute()->resumeWork();
 
 	emit hopChanged();
@@ -94,7 +94,7 @@ void AudioMan::setFilename(QString const& _filename)
 		m_filename.clear();
 	updateKeys();
 
-	Noted::compute()->noteLastValidIs(nullptr);
+	Noted::compute()->invalidate(resampleWaveAcAnalysis());
 	Noted::compute()->resumeWork();
 
 	emit dataChanged();

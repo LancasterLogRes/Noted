@@ -56,12 +56,12 @@ bool ComputeMan::carryOn(int _progress)
 	return !WorkerThread::quitting();
 }
 
-void ComputeMan::noteLastValidIs(AcausalAnalysisPtr const& _a)
+void ComputeMan::invalidate(AcausalAnalysisPtr const& _a)
 {
 	if (!m_toBeAnalyzed.count(_a))
 	{
 		suspendWork();
-		cnote << "WORK Last valid is now " << (_a ? _a->name().toLatin1().data() : "(None)");
+		cnote << "WORK Invalidated " << (_a ? _a->name().toLatin1().data() : "(None)");
 		m_toBeAnalyzed.insert(_a);
 		resumeWork();
 	}

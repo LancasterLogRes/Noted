@@ -25,7 +25,7 @@ public:
 	virtual CausalAnalysisPtr collateEventsAnalysis() const { return m_collateEventsAnalysis; }
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&);
 	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&);
-	virtual void noteLastValidIs(AcausalAnalysisPtr const& _a = nullptr);
+	virtual void invalidate(AcausalAnalysisPtr const& _a = nullptr);
 
 	virtual int causalCursorIndex() const { return m_causalCursorIndex; }
 

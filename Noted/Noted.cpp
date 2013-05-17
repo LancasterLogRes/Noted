@@ -574,7 +574,7 @@ void Noted::on_windowSize_valueChanged(int _i)
 	{
 		compute()->suspendWork();
 		m_windowFunction = lb::windowFunction(_i, WindowFunction(ui->windowFunction->currentIndex()));
-		compute()->noteLastValidIs(audio()->resampleWaveAcAnalysis());
+		compute()->invalidate(compute()->spectraAcAnalysis());
 		compute()->resumeWork();
 	}
 }
@@ -583,7 +583,7 @@ void Noted::on_windowFunction_currentIndexChanged(int _i)
 {
 	compute()->suspendWork();
 	m_windowFunction = lb::windowFunction(ui->windowSize->value(), WindowFunction(_i));
-	compute()->noteLastValidIs(audio()->resampleWaveAcAnalysis());
+	compute()->invalidate(compute()->spectraAcAnalysis());
 	compute()->resumeWork();
 }
 
@@ -593,7 +593,7 @@ void Noted::on_zeroPhase_toggled(bool _v)
 	{
 		compute()->suspendWork();
 		m_zeroPhase = _v;
-		compute()->noteLastValidIs(audio()->resampleWaveAcAnalysis());
+		compute()->invalidate(compute()->spectraAcAnalysis());
 		compute()->resumeWork();
 	}
 }
@@ -604,7 +604,7 @@ void Noted::on_floatFFT_toggled(bool _v)
 	{
 		compute()->suspendWork();
 		m_floatFFT = _v;
-		compute()->noteLastValidIs(audio()->resampleWaveAcAnalysis());
+		compute()->invalidate(compute()->spectraAcAnalysis());
 		compute()->resumeWork();
 	}
 }
