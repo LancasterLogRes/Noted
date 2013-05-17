@@ -89,19 +89,14 @@ public:
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d);
 
 	virtual QList<EventsStore*> eventsStores() const;
-	virtual lb::EventCompiler newEventCompiler(QString const& _name);
+	QList<EventsView*> eventsViews() const;
 	virtual lb::EventCompiler findEventCompiler(QString const& _name);
 	virtual QString getEventCompilerName(lb::EventCompilerImpl* _ec);
-
-	QList<EventsView*> eventsViews() const;
 
 	using QWidget::event;
 
 	lb::foreign_vector<float const> cursorMagSpectrum() const;
 	lb::foreign_vector<float const> cursorPhaseSpectrum() const;
-
-	// TODO: replace with signal/slot notification mechanism.
-	bool isConstructed() const { return m_constructed; }
 
 public slots:
 	virtual void info(QString const& _info, QString const& _color = "gray");

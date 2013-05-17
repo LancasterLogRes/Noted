@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <QAbstractItemModel>
+#include <EventCompiler/EventCompiler.h>
 
 class NotedPlugin;
 
@@ -14,6 +15,8 @@ public:
 
 	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const& _mangledName) = 0;
 	virtual bool providesEventCompiler(QString const& _library, QString const& _ec) = 0;
+
+	virtual lb::EventCompiler newEventCompiler(QString const& _name) = 0;
 
 signals:
 	void prepareLibraryUnload(QString _library);

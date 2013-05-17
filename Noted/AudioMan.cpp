@@ -187,6 +187,8 @@ void AudioMan::processCursorChange()
 // returns true if it's pairs of max/rms, false if it's samples.
 bool AudioMan::waveBlock(Time _from, Time _duration, lb::foreign_vector<float> o_toFill, bool _forceSamples) const
 {
+	if (!_duration)
+		return true;
 	int samples = fromBase(_duration, rate());
 	int items = _forceSamples ? o_toFill.size() : (o_toFill.size() / 2);
 	int samplesPerItem = samples / items;

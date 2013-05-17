@@ -139,9 +139,9 @@ Noted::Noted(QWidget* _p):
 	setCorner(Qt::TopRightCorner, Qt::RightDockWidgetArea);
 	setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
 
-	m_constructed = true;
+	emit constructed();
 
-	// After readSettings to avoid computing pointless default values.
+	// After Noted's readSettings to avoid computing pointless default values.
 	compute()->resumeWork();
 }
 
@@ -288,14 +288,6 @@ void Noted::addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d)
 QWidget* Noted::addGLWidget(QGLWidgetProxy* _v, QWidget* _p)
 {
 	return new NotedGLWidget(_v, _p);
-}
-
-EventCompiler Noted::newEventCompiler(QString const& _name)
-{
-	foreach (auto dl, libs()->libraries())
-		if (dl->eventCompilerFactories.find(_name.toStdString()) != dl->eventCompilerFactories.end())
-			return EventCompiler::create(dl->eventCompilerFactories[_name.toStdString()].factory());
-	return EventCompiler();
 }
 
 EventCompiler Noted::findEventCompiler(QString const& _name)
@@ -501,7 +493,7 @@ void Noted::writeSettings()
 void Noted::on_addEventsView_clicked()
 {
 	if (ui->eventCompilersList->currentItem())
-		addTimeline(new EventsView(ui->dataDisplay, newEventCompiler(ui->eventCompilersList->currentItem()->text().section(':', 0, 0))));
+		addTimeline(new EventsView(ui->dataDisplay, libs()->newEventCompiler(ui->eventCompilersList->currentItem()->text().section(':', 0, 0))));
 }
 
 void Noted::on_actNewEvents_triggered()

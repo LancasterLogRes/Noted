@@ -218,7 +218,7 @@ void EventsView::save()
 void EventsView::restore()
 {
 	cnote << "Restoring EventsView...";
-	m_eventCompiler = NotedFace::get()->newEventCompiler(m_savedName);
+	m_eventCompiler = NotedFace::libs()->newEventCompiler(m_savedName);
 	m_eventCompiler.properties().deserialize(m_savedProperties);
 	m_propertiesEditor->setProperties(m_eventCompiler.properties());
 	m_label->setText(name());

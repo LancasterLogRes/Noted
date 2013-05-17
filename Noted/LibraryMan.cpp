@@ -11,6 +11,7 @@ using namespace lb;
 LibraryMan::LibraryMan()
 {
 	connect(&m_libraryWatcher, SIGNAL(fileChanged(QString)), this, SLOT(onLibraryChange(QString)));
+	connect(Noted::get(), &Noted::constructed, [=](){ m_notedIsConstructed = true; });
 }
 
 LibraryMan::~LibraryMan()
@@ -236,6 +237,14 @@ bool LibraryMan::providesEventCompiler(QString const& _library, QString const& _
 	return m_libraries.contains(_library) && m_libraries[_library]->eventCompilerFactories.count(_ec.toStdString());
 }
 
+EventCompiler LibraryMan::newEventCompiler(QString const& _name)
+{
+	for (auto dl: libraries())
+		if (dl->eventCompilerFactories.find(_name.toStdString()) != dl->eventCompilerFactories.end())
+			return EventCompiler::create(dl->eventCompilerFactories[_name.toStdString()].factory());
+	return EventCompiler();
+}
+
 void LibraryMan::load(RealLibraryPtr const& _dl)
 {
 	cnote << "Loading:" << _dl->filename;
@@ -287,8 +296,7 @@ void LibraryMan::load(RealLibraryPtr const& _dl)
 						if (s.contains(_dl->nick + "/propertiesGeometry"))
 							propsDock->restoreGeometry(s.value(_dl->nick + "/propertiesGeometry").toByteArray());
 					}
-					// TODO: Is this necessary? Is there a cleaner way? signal from Noted on constructed, set flag here.
-					if (Noted::get()->isConstructed())
+					if (m_notedIsConstructed)
 					{
 						Noted::get()->readBaseSettings(s);
 						_dl->plugin->readSettings(s);

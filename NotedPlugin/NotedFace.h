@@ -96,7 +96,6 @@ public:
 	virtual lb::foreign_vector<float const> deltaPhaseSpectrum(int _i, int _n) const = 0;
 
 	virtual QList<EventsStore*> eventsStores() const = 0;
-	virtual lb::EventCompiler newEventCompiler(QString const& _name) = 0;
 	virtual lb::EventCompiler findEventCompiler(QString const& _name) = 0;
 	virtual QString getEventCompilerName(lb::EventCompilerImpl* _ec) = 0;
 
@@ -120,6 +119,8 @@ public slots:
 	virtual void updateWindowTitle() = 0;
 
 signals:
+	void constructed();
+
 	void offsetChanged();
 	void durationChanged();
 	void eventsChanged();
@@ -156,7 +157,6 @@ public:
 	virtual QGLWidget* glMaster() const { return nullptr; }
 	virtual lb::Time earliestVisible() const { return 0; }
 	virtual lb::Time pixelDuration() const { return 1; }
-	virtual lb::Time cursor() const { return 0; }
 	virtual int causalCursorIndex() const { return -1; }
 
 	virtual void info(QString const&, QString const& = "gray") {}
@@ -167,7 +167,6 @@ public:
 	virtual lb::foreign_vector<float const> phaseSpectrum(int, int) const { return lb::foreign_vector<float const>(); }
 
 	virtual QList<EventsStore*> eventsStores() const { return QList<EventsStore*>(); }
-	virtual lb::EventCompiler newEventCompiler(QString const&) { return lb::EventCompiler(); }
 	virtual lb::EventCompiler findEventCompiler(QString const&) { return lb::EventCompiler(); }
 	virtual QString getEventCompilerName(lb::EventCompilerImpl*) { return ""; }
 
@@ -176,7 +175,6 @@ public:
 	virtual QWidget* addGLWidget(QGLWidgetProxy*) { return nullptr; }
 	virtual void addDockWidget(Qt::DockWidgetArea, QDockWidget*) {}
 
-	virtual void setCursor(qint64, bool) {}
 	virtual void setTimelineOffset(qint64) {}
 	virtual void setPixelDuration(qint64) {}
 

@@ -36,6 +36,7 @@ public:
 	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const& _mangledName);
 
 	virtual bool providesEventCompiler(QString const& _library, QString const& _ec);
+	virtual lb::EventCompiler newEventCompiler(QString const& _name);
 
 	QMap<QString, RealLibraryPtr> const& libraries() const { return m_libraries; }
 
@@ -73,4 +74,5 @@ private:
 	QMap<QString, RealLibraryPtr> m_libraries;
 	QSet<QString> m_dirtyLibraries;
 	QFileSystemWatcher m_libraryWatcher;
+	bool m_notedIsConstructed = false;
 };
