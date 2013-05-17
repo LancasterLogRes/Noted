@@ -71,9 +71,9 @@ public:
 
 	virtual bool needsRepaint() const
 	{
-		if (m_lastCursor == NotedFace::get()->cursorIndex() && !m_propertiesChanged)
+		if (m_lastCursor == NotedFace::audio()->cursorIndex() && !m_propertiesChanged)
 			return false;
-		m_lastCursor = NotedFace::get()->cursorIndex();
+		m_lastCursor = NotedFace::audio()->cursorIndex();
 		m_propertiesChanged = false;
 		return true;
 	}
@@ -83,7 +83,7 @@ public:
 //		cbug(42) << __PRETTY_FUNCTION__;
 		glLoadIdentity();
 		{
-			auto w = NotedFace::get()->waveWindow(NotedFace::get()->cursorIndex());
+			auto w = NotedFace::audio()->cursorWaveWindow();
 			glBindTexture(GL_TEXTURE_1D, m_texture[0]);
 			float scale = m_p->scale;
 			float bias = m_p->bias;
@@ -96,9 +96,9 @@ public:
 			glTexImage1D(GL_TEXTURE_1D, 0, 1, w.size(), 0, GL_LUMINANCE, GL_FLOAT, w.data());
 		}
 
-		if (auto p = NotedFace::get()->deltaPhaseSpectrum(NotedFace::get()->cursorIndex(), 1))
+		if (auto p = NotedFace::get()->deltaPhaseSpectrum(NotedFace::audio()->cursorIndex(), 1))
 		{
-			auto s = NotedFace::get()->magSpectrum(NotedFace::get()->cursorIndex(), 1);
+			auto s = NotedFace::get()->magSpectrum(NotedFace::audio()->cursorIndex(), 1);
 			unsigned i = maxInRange(s.begin(), s.end()) - s.begin();
 			glColor3ubv(Color(p[i], 1, 1).toRGBA8().data());
 		}

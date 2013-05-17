@@ -70,39 +70,26 @@ public:
 	NotedFace(QWidget* _p);
 	virtual ~NotedFace();
 
-	virtual bool carryOn(int _progress) = 0;
 	virtual int activeWidth() const = 0;
 	virtual QGLWidget* glMaster() const = 0;
 
 	inline lb::Time earliestVisible() const { return m_timelineOffset; }
 	inline lb::Time pixelDuration() const { return m_pixelDuration; }
-	inline lb::Time cursor() const { return m_fineCursor / hop() * hop(); }
 	inline lb::Time latestVisible() const { return earliestVisible() + visibleDuration(); }
 	inline lb::Time visibleDuration() const { return activeWidth() * pixelDuration(); }
 
-	inline unsigned hopSamples() const { return m_audioMan->hopSamples(); }
 	inline unsigned windowSizeSamples() const { return m_windowFunction.size(); }
-	inline unsigned rate() const { return m_audioMan->rate(); }
 	inline unsigned spectrumSize() const { return m_windowFunction.size() / 2 + 1; }
 	inline std::vector<float> const& windowFunction() const { return m_windowFunction; }
 	inline bool isZeroPhase() const { return m_zeroPhase; }
 	inline bool isFloatFFT() const { return m_floatFFT; }
-	inline unsigned samples() const { return m_audioMan->samples(); }
 
-	inline lb::Time hop() const { return lb::toBase(hopSamples(), rate()); }
-	inline lb::Time windowSize() const { return lb::toBase(windowSizeSamples(), rate()); }
-	inline int widthOf(lb::Time _t) const { return samples() ? (_t + pixelDuration() / 2) / pixelDuration() : 0; }
+	inline lb::Time windowSize() const { return lb::toBase(windowSizeSamples(), audio()->rate()); }
+	inline int widthOf(lb::Time _t) const { return audio()->samples() ? (_t + pixelDuration() / 2) / pixelDuration() : 0; }
 	inline lb::Time durationOf(int _screenWidth) const { return _screenWidth * pixelDuration(); }
 	inline int positionOf(lb::Time _t) const { return widthOf(_t - earliestVisible()); }
 	inline lb::Time timeOf(int _x) const { return durationOf(_x) + earliestVisible(); }
-	inline unsigned cursorIndex() const { return windowIndex(cursor()); }
-	inline unsigned windowIndex(lb::Time _t) const { return (_t < 0) ? 0 : std::min<unsigned>(_t / hop(), (samples() - windowSizeSamples()) / hopSamples()); }
-	inline unsigned hops() const { return samples() ? samples() / hopSamples() : 0; }
-	inline lb::Time duration() const { return lb::toBase(samples(), rate()); }
 
-	virtual lb::foreign_vector<float const> waveWindow(int _window) const = 0;
-	// TODO: extra argument/double-size vector for min/max range of each sample in o_toFill.
-	virtual bool waveBlock(lb::Time _from, lb::Time _duration, lb::foreign_vector<float> o_toFill, bool _forceSamples = false) const = 0;
 	virtual lb::foreign_vector<float const> multiSpectrum(int _i, int _n) const = 0;
 	virtual lb::foreign_vector<float const> magSpectrum(int _i, int _n) const = 0;
 	virtual lb::foreign_vector<float const> phaseSpectrum(int _i, int _n) const = 0;
@@ -112,12 +99,6 @@ public:
 	virtual lb::EventCompiler newEventCompiler(QString const& _name) = 0;
 	virtual lb::EventCompiler findEventCompiler(QString const& _name) = 0;
 	virtual QString getEventCompilerName(lb::EventCompilerImpl* _ec) = 0;
-
-	virtual bool isPlaying() const = 0;
-	virtual bool isCausal() const = 0;
-	virtual bool isPassing() const = 0;
-	inline bool isImmediate() const { return isCausal() || isPassing(); }
-	inline bool isQuiet() const { return !isPlaying() && !isCausal() && !isPassing(); }
 
 	virtual void addTimeline(Timeline* _p) = 0;
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;
@@ -134,17 +115,14 @@ public:
 	static LibraryManFace* libs() { return get()->m_libraryMan; }
 
 public slots:
-	virtual void setCursor(qint64 _c, bool _warp = false) = 0;
 	inline void setTimelineOffset(qint64 _o) { if (m_timelineOffset != _o) { m_timelineOffset = _o; emit offsetChanged(); } }
 	inline void setPixelDuration(qint64 _d) { if (m_pixelDuration != _d) { m_pixelDuration = _d; emit durationChanged(); } }
-
 	virtual void updateWindowTitle() = 0;
 
 signals:
 	void offsetChanged();
 	void durationChanged();
 	void eventsChanged();
-	void cursorChanged();
 
 protected:
 	virtual void timelineDead(Timeline* _tl) = 0;
@@ -159,7 +137,6 @@ protected:
 	bool m_floatFFT = true;
 	std::vector<float> m_windowFunction;
 
-	lb::Time m_fineCursor = 0;
 	lb::Time m_timelineOffset = 0;
 	lb::Time m_pixelDuration = 1;
 
@@ -175,8 +152,6 @@ public:
 	DummyNoted(QWidget* _p = nullptr): NotedFace(_p) {}
 	virtual ~DummyNoted() {}
 
-	virtual bool carryOn(int) { return false; }
-
 	virtual int activeWidth() const { return 0; }
 	virtual QGLWidget* glMaster() const { return nullptr; }
 	virtual lb::Time earliestVisible() const { return 0; }
@@ -185,9 +160,6 @@ public:
 	virtual int causalCursorIndex() const { return -1; }
 
 	virtual void info(QString const&, QString const& = "gray") {}
-
-	virtual lb::foreign_vector<float const> waveWindow(int) const { return lb::foreign_vector<float const>(); }
-	virtual bool waveBlock(lb::Time, lb::Time, lb::foreign_vector<float>, bool) const { return false; }
 
 	virtual lb::foreign_vector<float const> multiSpectrum(int, int) const { return lb::foreign_vector<float const>(); }
 	virtual lb::foreign_vector<float const> magSpectrum(int, int) const { return lb::foreign_vector<float const>(); }
@@ -199,11 +171,6 @@ public:
 	virtual lb::EventCompiler findEventCompiler(QString const&) { return lb::EventCompiler(); }
 	virtual QString getEventCompilerName(lb::EventCompilerImpl*) { return ""; }
 
-	virtual bool isPlaying() const { return false; }
-	virtual bool isPassing() const { return false; }
-	virtual bool isCausal() const { return false; }
-
-	virtual std::shared_ptr<NotedPlugin> getPlugin(QString const&) { return nullptr; }
 	virtual void timelineDead(Timeline*) {}
 	virtual void addTimeline(Timeline*) {}
 	virtual QWidget* addGLWidget(QGLWidgetProxy*) { return nullptr; }

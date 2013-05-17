@@ -36,16 +36,13 @@ using namespace std;
 using namespace lb;
 
 EventsEditScene::EventsEditScene(QObject* _parent):
-	QGraphicsScene	(_parent),
-	m_isDirty		(false),
-	m_c				(nullptr)
-{
-}
+	QGraphicsScene	(_parent)
+{}
 
 void EventsEditScene::copyFrom(EventsStore* _ev)
 {
-	int s = c()->hops();
-	double hs = toSeconds(c()->hop()) * 1000;
+	int s = NotedFace::audio()->hops();
+	double hs = toSeconds(NotedFace::audio()->hop()) * 1000;
 	for (int i = 0; i < s; ++i)
 	{
 		foreach (StreamEvent const& se, _ev->events(i))
@@ -73,8 +70,8 @@ void EventsEditScene::copyFrom(EventsStore* _ev)
 
 void EventsEditScene::setEvents(QList<lb::StreamEvents> const& _es, int _forceChannel)
 {
-	int s = c()->hops();
-	double hs = toSeconds(c()->hop()) * 1000;
+	int s = NotedFace::audio()->hops();
+	double hs = toSeconds(NotedFace::audio()->hop()) * 1000;
 	clear();
 	for (int i = 0; i < min(_es.size(), s); ++i)
 		foreach (StreamEvent se, _es[i])
@@ -151,9 +148,9 @@ void EventsEditScene::wheelEvent(QGraphicsSceneWheelEvent* _wheelEvent)
 	if (!_wheelEvent->isAccepted())
 	{
 		int x = view()->mapFromScene(_wheelEvent->scenePos()).x();
-		lb::Time t = c()->timeOf(x);
-		c()->setPixelDuration(c()->pixelDuration() * exp(-_wheelEvent->delta() / 240.0));
-		c()->setTimelineOffset(t - x * c()->pixelDuration());
+		lb::Time t = NotedFace::get()->timeOf(x);
+		NotedFace::get()->setPixelDuration(NotedFace::get()->pixelDuration() * exp(-_wheelEvent->delta() / 240.0));
+		NotedFace::get()->setTimelineOffset(t - x * NotedFace::get()->pixelDuration());
 	}
 	_wheelEvent->accept();
 }
@@ -171,11 +168,6 @@ void EventsEditScene::itemChanged(StreamEventItem* _it)
 EventsEditor* EventsEditScene::view() const
 {
 	return dynamic_cast<EventsEditor*>(views().first());
-}
-
-NotedFace* EventsEditScene::c() const
-{
-	return m_c ? m_c : (m_c = view()->c());
 }
 
 QList<StreamEvents> EventsEditScene::events(Time _hop) const

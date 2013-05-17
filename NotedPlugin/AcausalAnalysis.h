@@ -22,6 +22,7 @@
 
 #include <memory>
 #include <vector>
+#include <QMetaType>
 #include <QString>
 #include <Common/Time.h>
 
@@ -36,12 +37,12 @@ public:
 	void initialize() { init(); }
 
 	QString const& name() const { return m_name; }
-	void go(unsigned _from, unsigned _count);
+	void go(unsigned _from, unsigned _count = (unsigned)-1);
 
 protected:
 	virtual void init() {}
 	virtual void fini() {}
-	virtual unsigned prepare(unsigned, unsigned, lb::Time) { return 0; }
+	virtual unsigned prepare(unsigned, unsigned, lb::Time) { return 100; }
 	virtual void analyze(unsigned, unsigned, lb::Time) {}
 
 	bool done(unsigned _i);
@@ -53,6 +54,8 @@ private:
 
 typedef std::shared_ptr<AcausalAnalysis> AcausalAnalysisPtr;
 typedef std::vector<AcausalAnalysisPtr> AcausalAnalysisPtrs;
+
+Q_DECLARE_METATYPE(AcausalAnalysis*);
 
 template <class _S> _S& operator<<(_S& _out, AcausalAnalysis const& _ca) { return _out << "AcA(" << _ca.name() << ")"; }
 

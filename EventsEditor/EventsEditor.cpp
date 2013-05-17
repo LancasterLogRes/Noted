@@ -32,7 +32,6 @@ using namespace lb;
 
 EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 	QGraphicsView		(_parent),
-	m_c					(nullptr),
 	m_filename			(_filename),
 	m_lastTimerDirty	(true),
 	m_eventsDirty		(true)
@@ -41,7 +40,7 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 
 	if (isIndependent())
 	{
-		connect(c(), SIGNAL(eventsChanged()), this, SLOT(rerender()));
+		connect(NotedFace::get(), SIGNAL(eventsChanged()), this, SLOT(rerender()));
 		auto oe = []() -> QGraphicsEffect* { auto ret = new QGraphicsOpacityEffect; ret->setOpacity(0.7); return ret; };
 
 		QPushButton* b = new QPushButton(this);
@@ -63,8 +62,8 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 	m_scene = make_shared<EventsEditScene>();
 	setScene(&*m_scene);
 	connect(&*m_scene, SIGNAL(newScale()), SLOT(onViewParamsChanged()));
-	connect(c(), SIGNAL(offsetChanged()), SLOT(onViewParamsChanged()));
-	connect(c(), SIGNAL(durationChanged()), SLOT(onViewParamsChanged()));
+	connect(NotedFace::get(), SIGNAL(offsetChanged()), SLOT(onViewParamsChanged()));
+	connect(NotedFace::get(), SIGNAL(durationChanged()), SLOT(onViewParamsChanged()));
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setMinimumHeight(16);
@@ -106,7 +105,7 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 
 	startTimer(500);
 
-	initTimeline(c());
+	initTimeline();
 }
 
 EventsEditor::~EventsEditor()
@@ -148,7 +147,7 @@ void EventsEditor::mousePressEvent(QMouseEvent* _e)
 	}
 	else
 	{
-		m_draggingTime = c()->timeOf(_e->x());
+		m_draggingTime = NotedFace::get()->timeOf(_e->x());
 	}
 }
 
@@ -156,13 +155,13 @@ void EventsEditor::mouseReleaseEvent(QMouseEvent* _e)
 {
 	QGraphicsView::mouseReleaseEvent(_e);
 	if (scene()->selectedItems().isEmpty() && _e->button() == Qt::LeftButton)
-		c()->setCursor(fromSeconds(mapToScene(_e->pos()).x() / 1000), true);
+		NotedFace::audio()->setCursor(fromSeconds(mapToScene(_e->pos()).x() / 1000), true);
 }
 
 void EventsEditor::mouseMoveEvent(QMouseEvent* _e)
 {
 	if (m_draggingTime != lb::UndefinedTime && _e->buttons() & Qt::MiddleButton)
-		c()->setTimelineOffset(m_draggingTime - _e->x() * c()->pixelDuration());
+		NotedFace::get()->setTimelineOffset(m_draggingTime - _e->x() * NotedFace::get()->pixelDuration());
 	else if (_e->buttons() & Qt::MiddleButton)
 	{
 		setDragMode(QGraphicsView::NoDrag);
@@ -175,7 +174,7 @@ void EventsEditor::mouseMoveEvent(QMouseEvent* _e)
 
 StreamEvents EventsEditor::cursorEvents() const
 {
-	return events(NotedFace::get()->isCausal() ? NotedFace::compute()->causalCursorIndex() : -1);
+	return events(NotedFace::audio()->isCausal() ? NotedFace::compute()->causalCursorIndex() : -1);
 }
 
 StreamEvents EventsEditor::events(int _i) const
@@ -210,7 +209,7 @@ void EventsEditor::timerEvent(QTimerEvent*)
 			m_lastTimerDirty = m_eventsDirty = false;
 			{
 				QMutexLocker l(&x_events);
-				m_events = scene()->events(c()->hop());
+				m_events = scene()->events(NotedFace::audio()->hop());
 			}
 			NotedFace::compute()->noteEventCompilersChanged();
 		}
@@ -297,22 +296,13 @@ QString EventsEditor::queryFilename()
 	return m_filename;
 }
 
-NotedFace* EventsEditor::c() const
-{
-	if (!m_c)
-		m_c = dynamic_cast<NotedFace*>(window());
-	if (!m_c)
-		m_c = dynamic_cast<NotedFace*>(window()->parentWidget()->window());
-	return m_c;
-}
-
 void EventsEditor::onViewParamsChanged()
 {
 	resetTransform();
-	double hopsInWidth = toSeconds(c()->visibleDuration()) * 1000;
-	double hopsFromBeginning = toSeconds(c()->earliestVisible()) * 1000;
+	double hopsInWidth = toSeconds(NotedFace::get()->visibleDuration()) * 1000;
+	double hopsFromBeginning = toSeconds(NotedFace::get()->earliestVisible()) * 1000;
 	setSceneRect(hopsFromBeginning, 0, hopsInWidth, height());
-	scale(c()->activeWidth() / hopsInWidth, 1);
+	scale(NotedFace::get()->activeWidth() / hopsInWidth, 1);
 }
 
 void EventsEditor::onSave()

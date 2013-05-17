@@ -35,9 +35,9 @@ using namespace lb;
 
 void SpectrumView::renderGL(QSize _s)
 {
-	auto mag = dynamic_cast<Noted*>(c())->cursorMagSpectrum();
-	auto phase = dynamic_cast<Noted*>(c())->cursorPhaseSpectrum();
-	unsigned s = c()->spectrumSize();
+	auto mag = dynamic_cast<Noted*>(NotedFace::get())->cursorMagSpectrum();
+	auto phase = dynamic_cast<Noted*>(NotedFace::get())->cursorPhaseSpectrum();
+	unsigned s = NotedFace::get()->spectrumSize();
 
 	if (mag && phase)
 	{
@@ -72,7 +72,7 @@ void SpectrumView::renderGL(QSize _s)
 
 		w -= 24;
 
-		float nyquist = c()->rate() / 2;
+		float nyquist = NotedFace::audio()->rate() / 2;
 		GraphParameters<float> freqMinor(make_pair(0.f, nyquist), w / 48, ForceMinor);
 		p.setPen(QColor(236, 236, 236));
 		for (float f = freqMinor.from; f < freqMinor.to; f += freqMinor.incr)
@@ -112,7 +112,7 @@ void SpectrumView::renderGL(QSize _s)
 		p.setBrush(Qt::NoBrush);
 		p.drawLines(pps);
 
-		if (c()->isQuiet())
+		if (NotedFace::audio()->isQuiet())
 			drawPeaks(p, parabolicPeaks(mag.data(), s), ho, [&](float _x){ return 24 + _x * w / s; }, [&](float _y) { return h - h * _y / sc + ho; }, [&](float _x) { return QString::number(round(_x * nyquist / s)) + "Hz"; } );
 	}
 }

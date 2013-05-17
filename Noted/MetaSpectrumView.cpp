@@ -35,15 +35,15 @@ using namespace lb;
 
 void MetaSpectrumView::renderGL(QSize _s)
 {
-	if (c()->spectrumSize() > 4)
+	if (NotedFace::get()->spectrumSize() > 4)
 	{
-		FFTW fftw(c()->spectrumSize() - 1);
+		FFTW fftw(NotedFace::get()->spectrumSize() - 1);
 		vector<float> wF = windowFunction(fftw.arity(), HannWindow);
 
 		unsigned arity = fftw.arity();
 		unsigned aoff = 0;//arity / 2;
 		{
-			auto imag = dynamic_cast<Noted*>(c())->cursorMagSpectrum();
+			auto imag = dynamic_cast<Noted*>(NotedFace::get())->cursorMagSpectrum();
 			if (imag.size())
 				for (unsigned i = 0; i < arity; ++i)
 					fftw.in()[i] = imag[(i + aoff) % arity];// * wF[(i + aoff) % arity];
@@ -83,17 +83,17 @@ void MetaSpectrumView::renderGL(QSize _s)
 
 		w -= 24;
 
-		float nyquist = c()->rate() / 2;
-		float rate = c()->rate();
-		GraphParameters<float> freqMinor(make_pair(0.f, c()->spectrumSize()), w / 32, ForceMinor);
+		float nyquist = NotedFace::audio()->rate() / 2;
+		float rate = NotedFace::audio()->rate();
+		GraphParameters<float> freqMinor(make_pair(0.f, NotedFace::get()->spectrumSize()), w / 32, ForceMinor);
 		p.setPen(QColor(236, 236, 236));
 		for (float f = freqMinor.from; f < freqMinor.to; f += freqMinor.incr)
-			p.drawLine(24 + f / c()->spectrumSize() * w, 0, 24 + f / c()->spectrumSize() * w, h + 4 + ho);
+			p.drawLine(24 + f / NotedFace::get()->spectrumSize() * w, 0, 24 + f / NotedFace::get()->spectrumSize() * w, h + 4 + ho);
 
-		GraphParameters<float> freqMajor(make_pair(0.f, c()->spectrumSize()), w / 32);
+		GraphParameters<float> freqMajor(make_pair(0.f, NotedFace::get()->spectrumSize()), w / 32);
 		for (float f = freqMajor.from; f < freqMajor.to; f += freqMajor.incr)
 		{
-			int x = 24 + f / c()->spectrumSize() * w;
+			int x = 24 + f / NotedFace::get()->spectrumSize() * w;
 			p.setPen(QColor(208, 208, 208));
 			p.drawLine(x, 0, x, h + 4 + ho);
 			p.setPen(QColor(144, 144, 144));
@@ -125,7 +125,7 @@ void MetaSpectrumView::renderGL(QSize _s)
 		p.setBrush(Qt::NoBrush);
 		p.drawLines(pps);
 
-		if (c()->isQuiet())
+		if (NotedFace::audio()->isQuiet())
 			drawPeaks(p, parabolicPeaks(mag), ho, [&](float _x){ return 24 + _x * w / s; }, [&](float _y){ return h - h * _y / sc + ho; }, [&](float _x){ return QString::number(round(nyquist / (_x + 1))) + "Hz"; });
 	}
 }

@@ -18,7 +18,7 @@ GraphView::~GraphView()
 
 void GraphView::addGraph(GraphSpec* _g)
 {
-	m_graphs.push_back({c()->getEventCompilerName(_g->ec()).toStdString(), _g->name(), NullColor});
+	m_graphs.push_back({NotedFace::get()->getEventCompilerName(_g->ec()).toStdString(), _g->name(), NullColor});
 }
 
 QColor toQColor(Color _c)
@@ -41,7 +41,7 @@ void GraphView::renderGL(QSize _s)
 
 	for (GraphViewPlot const& gr: m_graphs)
 	{
-		EventCompiler ec = c()->findEventCompiler(QString::fromStdString(gr.ec));
+		EventCompiler ec = NotedFace::get()->findEventCompiler(QString::fromStdString(gr.ec));
 		if (!ec.isNull())
 			if (GraphSpec* cg = ec.asA<EventCompilerImpl>().graph(gr.graph))
 				if (GraphSparseDense* g = dynamic_cast<GraphSparseDense*>(cg))
@@ -50,7 +50,7 @@ void GraphView::renderGL(QSize _s)
 						grapher.init(&p, g->xrangeReal(), g->yrangeReal(), id, id, idL, 30, 16);
 					grapher.drawAxes();
 					grapher.setDataTransform(g->xtx().scale(), g->xtx().offset());
-					grapher.drawLineGraph(g->dataPoint(c()->cursorIndex()), toQColor(defaultTo(gr.c, Color(float(i) / s, 0.7, 0.5), NullColor)), Qt::NoBrush, 0.f);
+					grapher.drawLineGraph(g->dataPoint(NotedFace::audio()->cursorIndex()), toQColor(defaultTo(gr.c, Color(float(i) / s, 0.7, 0.5), NullColor)), Qt::NoBrush, 0.f);
 					++i;
 				}
 	}

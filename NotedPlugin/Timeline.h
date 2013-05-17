@@ -44,7 +44,7 @@ class Timeline
 public:
 	virtual ~Timeline();
 
-	void initTimeline(NotedFace* _nf);
+	void initTimeline();
 	void finiTimeline();
 
 	virtual QWidget* widget() = 0;
@@ -54,7 +54,4 @@ public:
 
 	lb::Time earliestVisible() const;
 	lb::Time pixelDuration() const;
-
-protected:
-	NotedFace* m_nf;
 };

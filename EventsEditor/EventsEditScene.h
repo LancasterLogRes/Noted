@@ -42,7 +42,6 @@ public:
 	void copyFrom(EventsStore* _ev);
 	void setEvents(QList<lb::StreamEvents> const& _es, int _forceChannel = -1);
 
-	NotedFace* c() const;
 	EventsEditor* view() const;
 	void itemChanged(StreamEventItem* _it);
 
@@ -61,7 +60,6 @@ signals:
 	void newScale();
 
 private:
-	mutable bool m_isDirty;
-	bool m_willRejig;
-	mutable NotedFace* m_c;
+	mutable bool m_isDirty = false;
+	bool m_willRejig = true;
 };

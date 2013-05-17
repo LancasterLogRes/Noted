@@ -33,13 +33,13 @@ using namespace lb;
 
 void WaveWindowView::renderGL(QSize _s)
 {
-	foreign_vector<float const> d = dynamic_cast<Noted*>(c())->cursorWaveWindow();
+	foreign_vector<float const> d = Noted::audio()->cursorWaveWindow();
 	float const* data = d.data();
 
 	int mean = 0;
 	float rms = 0.f;
 
-	vector<float> const& wf = c()->windowFunction();
+	vector<float> const& wf = NotedFace::get()->windowFunction();
 	unsigned windowSize = d.count();
 	if (windowSize && wf.size())
 	{
@@ -67,7 +67,7 @@ void WaveWindowView::renderGL(QSize _s)
 		p.setPen(QColor(224, 224, 224));
 		p.drawLine(0, h / 2, w, h / 2);
 
-		unsigned off = c()->isZeroPhase() ? windowSize / 2 : 0;
+		unsigned off = NotedFace::get()->isZeroPhase() ? windowSize / 2 : 0;
 		for (unsigned i = 0; i < windowSize; ++i)
 		{
 			p.fillRect(i * w / windowSize, h / 2, max<int>(1, (i + 1) * w / windowSize - i * w / windowSize), h * data[(i + off) % windowSize] * wf[(i + off) % windowSize] / -2, QColor(224, 224, 255));

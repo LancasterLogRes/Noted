@@ -25,7 +25,6 @@
 #include <QtGui>
 #include <Common/Common.h>
 #include "NotedFace.h"
-
 using namespace std;
 using namespace lb;
 
@@ -35,6 +34,9 @@ NotedFace::NotedFace(QWidget* _p):
 	QMainWindow					(_p)
 {
 	s_this = this;
+	qRegisterMetaType<lb::Time>();
+	qRegisterMetaType<AcausalAnalysis*>();
+	qRegisterMetaType<CausalAnalysis*>();
 }
 
 NotedFace::~NotedFace()

@@ -28,32 +28,31 @@ Timeline::~Timeline()
 {
 }
 
-void Timeline::initTimeline(NotedFace* _nf)
+void Timeline::initTimeline()
 {
-	m_nf = _nf;
 }
 
 void Timeline::finiTimeline()
 {
-	m_nf->timelineDead(this);
+	NotedFace::get()->timelineDead(this);
 }
 
 lb::Time Timeline::earliestVisible() const
 {
-	return m_nf->earliestVisible();
+	return NotedFace::get()->earliestVisible();
 }
 
 lb::Time Timeline::pixelDuration() const
 {
-	return m_nf->pixelDuration();
+	return NotedFace::get()->pixelDuration();
 }
 
 lb::Time Timeline::highlightFrom() const
 {
-	return m_nf->cursor();
+	return NotedFace::audio()->cursor();
 }
 
 lb::Time Timeline::highlightDuration() const
 {
-	return m_nf->hop();
+	return NotedFace::audio()->hop();
 }

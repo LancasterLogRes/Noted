@@ -1,15 +1,28 @@
+#include <QThread>
 #include <Common/Global.h>
 #include "NotedFace.h"
 #include "DataSet.h"
 using namespace std;
 using namespace lb;
 
+DataSet::DataSet(DataKey _operationKey):
+	m_operationKey(_operationKey)
+{
+	cnote << (void*)this << (QThread::currentThreadId()) << "DataSet::DataSet(" << _operationKey << ")";
+}
+
 void DataSet::init(unsigned _recordLength, Time _stride, Time _first)
 {
+	cnote << (void*)this << (QThread::currentThreadId()) << "DataSet::init()";
 	m_first = _first;
 	m_stride = _stride;
 	m_recordLength = _recordLength;
 	setup(_stride ? (NotedFace::audio()->duration() - _first) / _stride : 0);
+}
+
+unsigned DataSet::rawRecords() const
+{
+	return m_raw.bytes() / sizeof(float) / m_recordLength;
 }
 
 void DataSet::setup(unsigned _itemCount)
@@ -67,7 +80,7 @@ void DataSet::digest(DigestFlag _t)
 		m_toc.setGood();
 	m_availableDigests |= _t;
 	m_digest[_t] = make_shared<MipmappedCache>();
-	bool haveDigest = m_digest[_t]->init(NotedFace::get()->audio()->key(), m_operationKey, qHash(2 + _t), digestSize(_t) * recordLength() * sizeof(float), digestRecords());
+	bool haveDigest = m_digest[_t]->init(NotedFace::audio()->key(), m_operationKey, qHash(2 + _t), digestSize(_t) * recordLength() * sizeof(float), digestRecords());
 	if (haveDigest)
 		return;
 

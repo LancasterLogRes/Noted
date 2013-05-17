@@ -53,9 +53,9 @@ protected:
 };
 #endif
 
-Prerendered::Prerendered(QWidget* _p): QGLWidget(_p), m_renderThread(nullptr), m_c(nullptr)
-{
-}
+Prerendered::Prerendered(QWidget* _p):
+	QGLWidget		(_p)
+{}
 
 Prerendered::~Prerendered()
 {
@@ -124,15 +124,6 @@ void Prerendered::resizeEvent(QResizeEvent* _e)
 #else
 	QGLWidget::resizeEvent(_e);
 #endif
-}
-
-NotedFace* Prerendered::c() const
-{
-	if (!m_c)
-		m_c = dynamic_cast<NotedFace*>(window());
-	if (!m_c)
-		m_c = dynamic_cast<NotedFace*>(window()->parentWidget()->window());
-	return m_c;
 }
 
 bool Prerendered::serviceRender()

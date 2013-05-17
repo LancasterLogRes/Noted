@@ -59,34 +59,32 @@ Noted::Noted(QWidget* _p):
 	NotedBase					(_p),
 	ui							(new Ui::Noted),
 	x_timelines					(QMutex::Recursive),
-	m_fineCursorWas				(UndefinedTime),
-	m_nextResample				(UndefinedTime),
-	m_resampler					(nullptr),
-	m_isCausal					(false),
-	m_isPassing					(false),
-	m_glMaster					(new QGLWidget),
-	m_constructed				(false)
+	m_glMaster					(new QGLWidget)
 {
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
 
-	m_computeMan = new ComputeMan;
-	m_audioMan = new AudioManFace;
-	m_graphMan = new GraphManFace;
-	m_dataMan = new DataMan;
 	m_libraryMan = new LibraryMan;
+	m_computeMan = new ComputeMan;
+	m_dataMan = new DataMan;
+	m_audioMan = new AudioMan;
+	m_graphMan = new GraphManFace;
+
+	connect(m_audioMan, SIGNAL(prepareForDataChange()), SLOT(onDataChanging()));
+	connect(m_audioMan, SIGNAL(dataLoaded()), SLOT(onDataLoaded()));
+	connect(m_audioMan, SIGNAL(stateChanged(bool,bool,bool)), SLOT(onPlaybackStatusChanged()));
+	connect(m_audioMan, SIGNAL(cursorChanged(lb::Time)), SLOT(onCursorChanged(lb::Time)));
 
 	connect(m_computeMan, SIGNAL(finished()), SLOT(onWorkFinished()));
 	connect(m_computeMan, SIGNAL(progressed(QString, int)), SLOT(onWorkProgressed(QString, int)));
+	connect(m_computeMan, SIGNAL(finished()), SLOT(updateEventStuff()));
 
 	connect(m_libraryMan, SIGNAL(eventCompilerFactoryAvailable(QString, unsigned)), SLOT(onEventCompilerFactoryAvailable(QString, unsigned)));
 	connect(m_libraryMan, SIGNAL(eventCompilerFactoryUnavailable(QString)), SLOT(onEventCompilerFactoryUnavailable(QString)));
 
-	// TODO: Move to AudioMan
-	m_audioThread = createWorkerThread([=](){return serviceAudio();});
-
 	ui->setupUi(this);
 	ui->librariesView->setModel(m_libraryMan);
 	setWindowIcon(QIcon(":/Noted.png"));
+	show();
 
 	qmlRegisterType<ChartItem>("com.llr", 1, 0, "Chart");
 	qmlRegisterType<TimelinesItem>("com.llr", 1, 0, "Timelines");
@@ -132,11 +130,8 @@ Noted::Noted(QWidget* _p):
 		ui->statusBar->addPermanentWidget(l);
 	}
 
-	connect(compute(), SIGNAL(finished()), SLOT(updateEventStuff()));
+	updateHopDisplay();
 
-	on_sampleRate_currentIndexChanged(0);
-
-	startTimer(5);
 	compute()->resumeWork();
 
 	readSettings();
@@ -151,12 +146,7 @@ Noted::Noted(QWidget* _p):
 
 Noted::~Noted()
 {
-	qDebug() << "Disabling playback...";
-	ui->actPlay->setChecked(false);
-	for (m_audioThread->quit(); !m_audioThread->wait(1000); m_audioThread->terminate()) {}
-	delete m_audioThread;
-	m_audioThread = nullptr;
-	qDebug() << "Disabled permenantly.";
+	audio()->stop();
 
 	g_debugPost = simpleDebugOut;
 
@@ -183,6 +173,46 @@ Noted::~Noted()
 	delete m_glMaster;
 }
 
+void Noted::on_playDevice_currentIndexChanged(int _i)
+{
+	audio()->setPlayDevice(ui->playDevice->itemData(_i).toInt());
+}
+
+void Noted::on_force16Bit_toggled(bool _v)
+{
+	audio()->setPlayForce16Bit(_v);
+}
+
+void Noted::on_playRate_currentIndexChanged(int _i)
+{
+	int rate = -1;														// Default device rate.
+	if (_i == ui->playRate->count() - 1)		// Working rate.
+		rate = 0;
+	else if (_i < ui->playRate->count() - 2)	// Specified rate.
+		rate = ui->playRate->currentText().section(' ', 0, 0).toInt();
+	audio()->setPlayRate(rate);
+}
+
+void Noted::on_playChunkSamples_valueChanged(int _i)
+{
+	audio()->setPlayChunkSamples(_i);
+}
+
+void Noted::on_playChunks_valueChanged(int _i)
+{
+	audio()->setPlayChunks((_i == 2) ? -1 : _i);
+}
+
+void Noted::on_captureDevice_currentIndexChanged(int _i)
+{
+	audio()->setCaptureDevice(ui->captureDevice->itemData(_i).toInt());
+}
+
+void Noted::on_captureChunks_valueChanged(int _i)
+{
+	audio()->setCaptureChunks((_i == 2) ? -1 : _i);
+}
+
 void Noted::onEventCompilerFactoryAvailable(QString _name, unsigned _version)
 {
 	auto li = new QListWidgetItem(_name + ":" + QString::number(_version));
@@ -194,6 +224,20 @@ void Noted::onEventCompilerFactoryUnavailable(QString _name)
 	delete ui->eventCompilersList->findItems(_name + ":", Qt::MatchStartsWith).front();
 }
 
+void Noted::onDataChanging()
+{
+	if (ui->actPlay->isChecked())
+		ui->actPlay->setChecked(false);
+	m_timelineOffset = 0;
+	m_pixelDuration = 1;
+}
+
+void Noted::onDataLoaded()
+{
+	if (m_pixelDuration == 1)
+		normalizeView();
+}
+
 QGLWidget* Noted::glMaster() const
 {
 	return m_glMaster;
@@ -202,6 +246,20 @@ QGLWidget* Noted::glMaster() const
 void Noted::on_actAbout_triggered()
 {
 	QMessageBox::about(this, "About Noted!", "<h1>Noted!</h1>Copyright (c)2011, 2012 Lancaster Logic Response Limited. This code is released under version 2 of the GNU General Public Licence.");
+}
+
+void Noted::onPlaybackStatusChanged()
+{
+	if (audio()->isPlaying())
+		ui->statusBar->findChild<QLabel*>("alsa")->setText(QString("%1 %2# @ %3Hz, %4x%5 frames").arg(audio()->deviceName()).arg(audio()->deviceChannels()).arg(audio()->deviceRate()).arg(audio()->devicePeriods()).arg(audio()->deviceFrames()));
+	else
+		ui->statusBar->findChild<QLabel*>("alsa")->setText("No audio");
+	if (!audio()->isCausal() && ui->actPlayCausal->isChecked())
+		ui->actPlayCausal->setChecked(false);
+	if (!audio()->isAcausal() && ui->actPlay->isChecked())
+		ui->actPlay->setChecked(false);
+	if (!audio()->isPassing() && ui->actPassthrough->isChecked())
+		ui->actPassthrough->setChecked(false);
 }
 
 void Noted::updateAudioDevices()
@@ -219,11 +277,6 @@ void Noted::updateAudioDevices()
 	ui->captureDevice->setCurrentIndex(ui->captureDevice->findText(cd));
 }
 
-void Noted::on_loadedLibraries_itemClicked(QTreeWidgetItem* _it, int)
-{
-	libs()->reloadLibrary(_it);
-}
-
 void Noted::addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d)
 {
 	if (_d->objectName().isEmpty())
@@ -234,13 +287,6 @@ void Noted::addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d)
 QWidget* Noted::addGLWidget(QGLWidgetProxy* _v, QWidget* _p)
 {
 	return new NotedGLWidget(_v, _p);
-}
-
-bool Noted::eventFilter(QObject*, QEvent* _e)
-{
-	if (_e->type() == QEvent::Resize)
-		viewSizesChanged();
-	return false;
 }
 
 EventCompiler Noted::newEventCompiler(QString const& _name)
@@ -279,7 +325,7 @@ void Noted::addTimeline(Timeline* _tl)
 
 void Noted::updateWindowTitle()
 {
-	QString t = m_sourceFileName.isEmpty() ? QString("New Recording") : m_sourceFileName;
+	QString t = audio()->filename().isEmpty() ? QString("New Recording") : audio()->filename();
 	foreach (auto l, libs()->libraries())
 		if (l->plugin)
 			t = l->plugin->titleAmendment(t);
@@ -363,6 +409,7 @@ void Noted::readSettings()
 		DO(captureChunks, setValue, toInt);
 	}
 #undef DO
+
 	if (settings.contains("eventsViews"))
 		for (int i = 0; i < settings.value("eventsViews").toInt(); ++i)
 		{
@@ -371,13 +418,13 @@ void Noted::readSettings()
 			addTimeline(ev);
 		}
 
-	setAudio(settings.value("fileName").toString());
+	audio()->setFilename(settings.value("fileName").toString());
 
 	if (settings.contains("duration"))
 	{
 		m_pixelDuration = max<Time>(settings.value("pixelDuration").toLongLong(), 1);
 		m_timelineOffset = settings.value("timelineOffset").toLongLong();
-		m_fineCursor = settings.value("cursor").toLongLong();
+		audio()->setCursor(settings.value("cursor").toLongLong(), true);
 	}
 
 	m_audioMan->setHopSamples(ui->hop->value());
@@ -442,10 +489,10 @@ void Noted::writeSettings()
 	DO(captureDevice, currentIndex);
 #undef DO
 
-	settings.setValue("fileName", m_sourceFileName);
+	settings.setValue("fileName", audio()->filename());
 	settings.setValue("pixelDuration", (qlonglong)m_pixelDuration);
 	settings.setValue("timelineOffset", (qlonglong)m_timelineOffset);
-	settings.setValue("cursor", (qlonglong)m_fineCursor);
+	settings.setValue("cursor", (qlonglong)audio()->cursor());
 
 	settings.setValue("geometry", saveGeometry());
 }
@@ -491,24 +538,74 @@ void Noted::on_actOpenEvents_triggered()
 	}
 }
 
-void Noted::on_sampleRate_currentIndexChanged(int)
+void Noted::updateHopDisplay()
 {
-	m_audioMan->setRate(ui->sampleRate->currentText().left(ui->sampleRate->currentText().size() - 3).toInt());
-	ui->hopPeriod->setText(QString("%1ms %2%").arg(fromBase(toBase(ui->hop->value(), rate()), 100000) / 100.0).arg(((ui->windowSize->value() - ui->hop->value()) * 1000 / ui->windowSize->value()) / 10.0));
-	ui->windowPeriod->setText(QString("%1ms %2Hz").arg(fromBase(toBase(ui->windowSize->value(), rate()), 100000) / 100.0).arg((rate() * 10 / ui->windowSize->value()) / 10.0));
-	compute()->noteLastValidIs(nullptr);
+	ui->hopPeriod->setText(QString("%1ms %2%").arg(fromBase(toBase(ui->hop->value(), audio()->rate()), 100000) / 100.0).arg(((ui->windowSize->value() - ui->hop->value()) * 1000 / ui->windowSize->value()) / 10.0));
+	ui->windowPeriod->setText(QString("%1ms %2Hz").arg(fromBase(toBase(ui->windowSize->value(), audio()->rate()), 100000) / 100.0).arg((audio()->rate() * 10 / ui->windowSize->value()) / 10.0));
 }
 
-void Noted::on_windowSizeSlider_valueChanged(int)
+void Noted::on_sampleRate_currentIndexChanged(int)
 {
-	ui->windowSize->setValue(1 << ui->windowSizeSlider->value());
-	on_sampleRate_currentIndexChanged(0);
+	audio()->setRate(ui->sampleRate->currentText().left(ui->sampleRate->currentText().size() - 3).toInt());
+	updateHopDisplay();
 }
 
 void Noted::on_hopSlider_valueChanged(int)
 {
 	ui->hop->setValue(1 << ui->hopSlider->value());
-	on_sampleRate_currentIndexChanged(0);
+	updateHopDisplay();
+}
+
+void Noted::on_hop_valueChanged(int _i)
+{
+	m_audioMan->setHopSamples(_i);
+}
+
+void Noted::on_windowSizeSlider_valueChanged(int)
+{
+	ui->windowSize->setValue(1 << ui->windowSizeSlider->value());
+	updateHopDisplay();
+}
+
+void Noted::on_windowSize_valueChanged(int _i)
+{
+	if ((int)m_windowFunction.size() != _i)
+	{
+		compute()->suspendWork();
+		m_windowFunction = lb::windowFunction(_i, WindowFunction(ui->windowFunction->currentIndex()));
+		compute()->noteLastValidIs(audio()->resampleWaveAcAnalysis());
+		compute()->resumeWork();
+	}
+}
+
+void Noted::on_windowFunction_currentIndexChanged(int _i)
+{
+	compute()->suspendWork();
+	m_windowFunction = lb::windowFunction(ui->windowSize->value(), WindowFunction(_i));
+	compute()->noteLastValidIs(audio()->resampleWaveAcAnalysis());
+	compute()->resumeWork();
+}
+
+void Noted::on_zeroPhase_toggled(bool _v)
+{
+	if (m_zeroPhase != _v)
+	{
+		compute()->suspendWork();
+		m_zeroPhase = _v;
+		compute()->noteLastValidIs(audio()->resampleWaveAcAnalysis());
+		compute()->resumeWork();
+	}
+}
+
+void Noted::on_floatFFT_toggled(bool _v)
+{
+	if (m_floatFFT != _v)
+	{
+		compute()->suspendWork();
+		m_floatFFT = _v;
+		compute()->noteLastValidIs(audio()->resampleWaveAcAnalysis());
+		compute()->resumeWork();
+	}
 }
 
 void Noted::timelineDead(Timeline* _tl)
@@ -535,20 +632,7 @@ void Noted::on_actOpen_triggered()
 {
 	QString s = QFileDialog::getOpenFileName(this, "Open an audio file", QDir::homePath(), "All Audio files (*.wav *.WAV *.aiff *.AIFF *.aif *.AIF *.aifc *.AIFC *.au *.AU *.snd *.SND *.nist *.NIST *.iff *.IFF *.svx *.SVX *.paf *.PAF *.w64 *.W64 *.voc *.VOC *.sf *.SF *.caf *.CAF *.htk *.HTK *.xi *.XI *.pvf *.PVF *.mat5 *.mat4 *.MAT5 *.MAT4 *.sd2 *.SD2 *.flac *.FLAC *.ogg *.OGG );;Microsoft Wave (*.wav *.WAV);;SGI/Apple (*.AIFF *.AIFC *.aiff *.aifc);;Sun/DEC/NeXT (*.AU *.SND *.au *.snd);;Paris Audio File (*.PAF *.paf);;Commodore Amiga (*.IFF *.SVX *.iff *.svx);;Sphere Nist (*.NIST *.nist);;IRCAM (*.SF *.sf);;Creative (*.VOC *.voc);;Soundforge (*.W64 *.w64);;GNU Octave 2.0 (*.MAT4 *.mat4);;GNU Octave 2.1 (*.MAT5 *.mat5);;Portable Voice Format (*.PVF *.pvf);;Fasttracker 2 (*.XI *.xi);;HMM Tool Kit (*.HTK *.htk);;Apple CAF (*.CAF *.caf);;Sound Designer II (*.SD2 *.sd2);;Free Lossless Audio Codec (*.FLAC *.flac);;Ogg Vorbis (*.OGG *.ogg)");
 	if (!s.isNull())
-		setAudio(s);
-}
-
-void Noted::setCursor(qint64 _c, bool _warp)
-{
-	if (m_fineCursor != _c)
-	{
-		Time oc = m_fineCursor;
-		m_fineCursor = _c;
-		if (oc / hop() * hop() != m_fineCursor / hop() * hop())
-			m_cursorDirty = true;
-		if (_warp && isCausal())
-			m_lastIndex = cursorIndex();
-	}
+		audio()->setFilename(s);
 }
 
 // start playing (acausally - with the pre generated data)
@@ -560,11 +644,11 @@ void Noted::on_actPlay_changed()
 		ui->actPlayCausal->setEnabled(false);
 		ui->actPassthrough->setEnabled(false);
 		ui->actOpen->setEnabled(false);
-		if (!m_audioThread->isRunning())
-			m_audioThread->start(QThread::TimeCriticalPriority);
+		audio()->play();
 	}
 	else if (ui->actPlay->isEnabled())
 	{
+		audio()->stop();
 		ui->dockPlay->setEnabled(true);
 		ui->actPlayCausal->setEnabled(true);
 		ui->actPassthrough->setEnabled(true);
@@ -576,28 +660,19 @@ void Noted::on_actPlayCausal_changed()
 {
 	if (ui->actPlayCausal->isChecked())
 	{
-		compute()->suspendWork();
-		m_isCausal = true;
-		compute()->initializeCausal(nullptr);
 		ui->dockPlay->setEnabled(false);
 		ui->actPlay->setEnabled(false);
 		ui->actPassthrough->setEnabled(false);
 		ui->actOpen->setEnabled(false);
-		if (!m_audioThread->isRunning())
-			m_audioThread->start(QThread::TimeCriticalPriority);
-		m_lastIndex = cursorIndex();
+		audio()->play(true);
 	}
 	else if (ui->actPlayCausal->isEnabled())
 	{
-		while (m_audioThread->isRunning())
-			usleep(100000);
-		compute()->finalizeCausal();
-		m_isCausal = false;
+		audio()->stop();
 		ui->dockPlay->setEnabled(true);
 		ui->actPassthrough->setEnabled(true);
 		ui->actPlay->setEnabled(true);
 		ui->actOpen->setEnabled(true);
-		compute()->resumeWork();
 	}
 }
 
@@ -605,214 +680,22 @@ void Noted::on_actPassthrough_changed()
 {
 	if (ui->actPassthrough->isChecked())
 	{
-		compute()->suspendWork();
-		m_isPassing = true;
-		compute()->initializeCausal(nullptr);
 		ui->dockPlay->setEnabled(false);
 		ui->actPlay->setEnabled(false);
 		ui->actPlayCausal->setEnabled(false);
 		ui->dataDisplay->setEnabled(false);
 		ui->actOpen->setEnabled(false);
-		if (!m_audioThread->isRunning())
-			m_audioThread->start(QThread::TimeCriticalPriority);
-		m_lastIndex = cursorIndex();
+		audio()->passthrough();
 	}
 	else if (ui->actPassthrough->isEnabled())
 	{
-		compute()->finalizeCausal();
-		m_isPassing = false;
+		audio()->stop();
 		ui->dockPlay->setEnabled(true);
 		ui->actPlay->setEnabled(true);
 		ui->actPlayCausal->setEnabled(true);
 		ui->actOpen->setEnabled(true);
 		ui->dataDisplay->setEnabled(true);
-		compute()->resumeWork();
 	}
-}
-
-// _dest[0] = _dest[1] = _source[0];
-// _dest[2] = _dest[3] = _source[1];
-// ...
-// _dest[2*(n-1)] = _dest[2*(n-1)+1] = _source[n-1];
-template <class _T>
-void valfan2(_T* _dest, _T const* _source, unsigned _n)
-{
-	unsigned nLess4 = _n - 4;
-	if (_dest + 2 * _n < _source || _source + _n < _dest)
-	{
-		// separate
-		unsigned i = 0;
-		for (; i < nLess4; i += 4)
-		{
-			_dest[2 * i] = _dest[2 * (i + 0) + 1] = _source[i];
-			_dest[2 * (i + 1)] = _dest[2 * (i + 1) + 1] = _source[i + 1];
-			_dest[2 * (i + 2)] = _dest[2 * (i + 2) + 1] = _source[i + 2];
-			_dest[2 * (i + 3)] = _dest[2 * (i + 3) + 1] = _source[i + 3];
-		}
-		for (; i < _n; ++i)
-			_dest[2 * i] = _dest[2 * i + 1] = _source[i];
-	}
-	else
-	{
-		// overlapping; assert we're the same - we can't handle any other situation.
-		assert(_dest == _source);
-		// do it backwards.
-		int i = _n - 4;
-		for (; i >= 0; i -= 4)
-		{
-			_dest[2 * (i + 3)] = _dest[2 * (i + 3) + 1] = _source[i + 3];
-			_dest[2 * (i + 2)] = _dest[2 * (i + 2) + 1] = _source[i + 2];
-			_dest[2 * (i + 1)] = _dest[2 * (i + 1) + 1] = _source[i + 1];
-			_dest[2 * i] = _dest[2 * (i + 0) + 1] = _source[i];
-		}
-		for (; i >= 0; --i)
-			_dest[2 * i] = _dest[2 * i + 1] = _source[i];
-	}
-}
-
-bool Noted::serviceAudio()
-{
-	bool doneWork = false;
-	if (ui->actPlay->isChecked() || ui->actPlayCausal->isChecked())
-	{
-		if (!m_playback)
-		{
-			try {
-				int rate = -1;														// Default device rate.
-				if (ui->playRate->currentIndex() == ui->playRate->count() - 1)		// Working rate.
-					rate = this->rate();
-				else if (ui->playRate->currentIndex() < ui->playRate->count() - 2)	// Specified rate.
-					ui->playRate->currentText().section(' ', 0, 0).toInt();
-				m_playback = shared_ptr<Audio::Playback>(new Audio::Playback(ui->playDevice->itemData(ui->playDevice->currentIndex()).toInt(), 2, rate, ui->playChunkSamples->value(), (ui->playChunks->value() == 2) ? -1 : ui->playChunks->value(), ui->force16Bit->isChecked()));
-			} catch (...) {}
-		}
-		if (m_playback)
-		{
-			unsigned f = m_playback->frames();
-			unsigned r = m_playback->rate();
-			vector<float> output(f * m_playback->channels());
-			if (m_fineCursor >= 0 && m_fineCursor < duration())
-			{
-				if (rate() == m_playback->rate())
-				{
-					// no resampling necessary
-					waveBlock(m_fineCursor, toBase(f, r), &output, true);
-				}
-				else
-				{
-					vector<float> source(f);
-					double factor = double(m_playback->rate()) / rate();
-					if (m_fineCursorWas != m_fineCursor || !m_resampler)
-					{
-						// restart resampling.
-						if (m_resampler)
-							resample_close(m_resampler);
-						m_resampler = resample_open(1, factor, factor);
-						m_nextResample = m_fineCursor;
-					}
-					m_fineCursorWas = m_fineCursor + toBase(m_playback->frames(), m_playback->rate());
-
-					unsigned outPos = 0;
-					int used = 0;
-					// Try our luck without going to the expensive waveBlock call first.
-					outPos += resample_process(m_resampler, factor, nullptr, 0, 0, &used, &(output[outPos]), f - outPos);
-					while (outPos != f)
-					{
-						// At end of current (input) buffer - refill and reset position.
-						waveBlock(m_nextResample, toBase(f, rate()), &source, true);
-						outPos += resample_process(m_resampler, factor, &(source[0]), f, 0, &used, &(output[outPos]), f - outPos);
-						m_nextResample += toBase(used, rate());
-					}
-					for (float& f: output)
-						f = clamp(f, -1.f, 1.f);
-				}
-				if (m_playback->isInterleaved())
-					valfan2(&(output[0]), &(output[0]), f);
-				else
-					valcpy(&(output[f]), &(output[0]), f);
-			}
-			m_playback->write(output);
-			setCursor(m_fineCursor + toBase(f, r));	// might be different to m_fineCursorWas...
-		}
-		doneWork = true;
-	}
-	else if (m_playback)
-	{
-		if (m_playback)
-			m_playback.reset();
-		if (m_resampler)
-		{
-			resample_close(m_resampler);
-			m_resampler = nullptr;
-		}
-	}
-
-	if (ui->actPassthrough->isChecked())
-	{
-		if (!m_capture)
-		{
-			try {
-				m_capture = shared_ptr<Audio::Capture>(new Audio::Capture(ui->captureDevice->itemData(ui->captureDevice->currentIndex()).toInt(), 1, rate(), hopSamples(), (ui->captureChunks->value() == 2) ? -1 : ui->captureChunks->value()));
-			} catch (...) {}
-			m_fftw = shared_ptr<FFTW>(new FFTW(windowSizeSamples()));
-			m_currentWave = vector<float>(windowSizeSamples(), 0);
-			m_currentMagSpectrum = vector<float>(spectrumSize(), 0);
-			m_currentPhaseSpectrum = vector<float>(spectrumSize(), 0);
-		}
-		if (m_capture)
-		{
-			// pull out another chunk, rotate m_currentWave hopSamples
-			memmove(m_currentWave.data(), m_currentWave.data() + hopSamples(), (windowSizeSamples() - hopSamples()) * sizeof(float));
-			m_capture->read(foreign_vector<float>(m_currentWave.data() + windowSizeSamples() - hopSamples(), hopSamples()));
-
-			float* b = m_fftw->in();
-			foreign_vector<float> win(&m_currentWave);
-			assert(win.data());
-			float* d = win.data();
-			float* w = m_windowFunction.data();
-			unsigned off = m_zeroPhase ? m_windowFunction.size() / 2 : 0;
-			for (unsigned j = 0; j < m_windowFunction.size(); ++d, ++j, ++w)
-				b[(j + off) % m_windowFunction.size()] = *d * *w;
-			m_fftw->process();
-
-			m_currentMagSpectrum = m_fftw->mag();
-			m_currentPhaseSpectrum = m_fftw->phase();
-			/*
-			float const* phase = fftw.phase().data();
-			float intpart;
-			for (int i = 0; i < ss; ++i)
-			{
-				sd[i + ss] = phase[i] / twoPi<float>();
-				sd[i + ss2] = modf((phase[i] - lp[i]) / twoPi<float>() + 1.f, &intpart);
-			}
-			*/
-
-			// update
-			compute()->updateCausal(m_lastIndex++, 1);
-		}
-		doneWork = true;
-	}
-	else if (m_capture)
-	{
-		if (m_capture)
-			m_capture.reset();
-		if (m_resampler)
-		{
-			resample_close(m_resampler);
-			m_resampler = nullptr;
-		}
-	}
-
-	if (ui->actPlayCausal->isChecked() && m_lastIndex != (int)cursorIndex())
-	{
-		// do events until cursor.
-		if (!((int)cursorIndex() < m_lastIndex || (int)cursorIndex() - m_lastIndex > 100))	// probably skipped.
-			compute()->updateCausal(m_lastIndex + 1, cursorIndex() - m_lastIndex);
-		m_lastIndex = cursorIndex();
-		doneWork = true;
-	}
-
-	return doneWork;
 }
 
 QList<EventsView*> Noted::eventsViews() const
@@ -827,12 +710,12 @@ QList<EventsView*> Noted::eventsViews() const
 
 void Noted::on_actZoomOut_triggered()
 {
-	zoomTimeline((cursor() > earliestVisible() && cursor() < latestVisible()) ? positionOf(cursor()) : (activeWidth() / 2), 1.2);
+	zoomTimeline((audio()->cursor() > earliestVisible() && audio()->cursor() < latestVisible()) ? positionOf(audio()->cursor()) : (activeWidth() / 2), 1.2);
 }
 
 void Noted::on_actZoomIn_triggered()
 {
-	zoomTimeline((cursor() > earliestVisible() && cursor() < latestVisible()) ? positionOf(cursor()) : (activeWidth() / 2), 1 / 1.2);
+	zoomTimeline((audio()->cursor() > earliestVisible() && audio()->cursor() < latestVisible()) ? positionOf(audio()->cursor()) : (activeWidth() / 2), 1 / 1.2);
 }
 
 void Noted::on_actPanBack_triggered()
@@ -850,36 +733,6 @@ void Noted::on_actPanic_triggered()
 	ui->actPlay->setChecked(false);
 	ui->actPlayCausal->setChecked(false);
 	ui->actPassthrough->setChecked(false);
-}
-
-bool Noted::carryOn(int _progress)
-{
-	WorkerThread::setCurrentProgress(_progress);
-	return !WorkerThread::quitting();
-}
-
-void Noted::setAudio(QString const& _filename)
-{
-	if (ui->actPlay->isChecked())
-		ui->actPlay->setChecked(false);
-	compute()->suspendWork();
-
-	m_fineCursor = 0;
-	m_timelineOffset = 0;
-	m_pixelDuration = 1;
-
-	// TODO! Need solution for this... ComputeMan::aborted() signal?
-	// analysisFinished shouldn't be called, anyway!: It's not. But then AudioMan shouldn't be signalling anything to do with analysis.
-	// TODO: emit AudioMan::changed(); ComputeMan connected abortWork to that; for now call it directly.
-	compute()->abortWork();
-
-	m_sourceFileName = _filename;
-	if (!QFile(m_sourceFileName).open(QFile::ReadOnly))
-		m_sourceFileName.clear();
-
-	compute()->noteLastValidIs(nullptr);
-	updateWindowTitle();
-	compute()->resumeWork();
 }
 
 void Noted::updateEventStuff()
@@ -902,7 +755,6 @@ void Noted::updateEventStuff()
 						QMainWindow::addDockWidget(Qt::BottomDockWidgetArea, dw, Qt::Horizontal);
 						dw->setFeatures(dw->features() | QDockWidget::DockWidgetVerticalTitleBar);
 						dw->setWidget(dv);
-						connect(dw, SIGNAL(visibilityChanged(bool)), this, SLOT(onDataViewDockClosed()));
 						dw->show();
 					}
 				}
@@ -922,7 +774,7 @@ void Noted::onWorkFinished()
 			pt->rerender();
 }
 
-void Noted::onWorkProgessed(QString _desc, int _progress)
+void Noted::onWorkProgressed(QString _desc, int _progress)
 {
 	QProgressBar* pb = ui->statusBar->findChild<QProgressBar*>();
 	if (_progress < 100)
@@ -941,45 +793,6 @@ void Noted::onWorkProgessed(QString _desc, int _progress)
 	}
 	else if (pb)
 		delete pb;
-}
-
-void Noted::timerEvent(QTimerEvent*)
-{
-	static int i = 0;
-	if (++i % 10 == 0)
-	{
-		if (m_playback)
-			ui->statusBar->findChild<QLabel*>("alsa")->setText(QString("%1 %2# @ %3Hz, %4x%5 frames").arg(m_playback->deviceName().c_str()).arg(m_playback->channels()).arg(m_playback->rate()).arg(m_playback->periods()).arg(m_playback->frames()));
-		else
-			ui->statusBar->findChild<QLabel*>("alsa")->setText("No audio");
-		{
-			QMutexLocker l(&x_infos);
-			if (m_infos.size())
-			{
-				m_info += m_infos;
-				ui->infoView->setHtml(m_info);
-				m_infos.clear();
-				if (ui->lockLog->isChecked())
-					ui->infoView->verticalScrollBar()->setValue(ui->infoView->verticalScrollBar()->maximum());
-			}
-		}
-	}
-
-	if (m_cursorDirty)
-	{
-		if (m_fineCursor >= duration())
-		{
-			// Played to end of audio
-			setCursor(0);
-			ui->actPlay->setChecked(false);
-		}
-		ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(m_fineCursor, toBase(samples(), rate()), 0, 0).c_str());
-		m_cursorDirty = false;
-		if (ui->actFollow->isChecked() && (m_fineCursor < earliestVisible() || m_fineCursor > earliestVisible() + visibleDuration() * 7 / 8))
-			setTimelineOffset(m_fineCursor - visibleDuration() / 8);
-
-		emit cursorChanged();
-	}
 }
 
 void Noted::changeEvent(QEvent *e)
@@ -1008,50 +821,58 @@ int Noted::activeWidth() const
 void Noted::info(QString const& _info, int _id)
 {
 	QString color = (_id == 255) ? "#700" : (_id == 254) ? "#007" : (_id == 253) ? "#440" : "#fff";
-	QMutexLocker l(&x_infos);
-	m_infos += "<div style=\"margin-top: 1px;\"><span style=\"background-color:" + color + ";\">&nbsp;</span> " + _info.toHtmlEscaped() + "</div>";
+	{
+		QMutexLocker l(&x_infos);
+		m_infos += "<div style=\"margin-top: 1px;\"><span style=\"background-color:" + color + ";\">&nbsp;</span> " + _info.toHtmlEscaped() + "</div>";
+	}
+	QMetaObject::invokeMethod(this, "processNewInfo");
 }
 
 void Noted::info(QString const& _info, QString const& _c)
 {
-	QMutexLocker l(&x_infos);
-	m_infos += QString("<div style=\"margin-top: 1px;\"><span style=\"background-color:%1;\">&nbsp;</span> %2</div>").arg(_c).arg(_info);
+	{
+		QMutexLocker l(&x_infos);
+		m_infos += QString("<div style=\"margin-top: 1px;\"><span style=\"background-color:%1;\">&nbsp;</span> %2</div>").arg(_c).arg(_info);
+	}
+	QMetaObject::invokeMethod(this, "processNewInfo");
 }
 
-void Noted::updateParameters()
+void Noted::onCursorChanged(lb::Time _cursor)
 {
-	m_audioMan->setHopSamples(ui->hop->value());
-	m_windowFunction = lb::windowFunction(ui->windowSize->value(), WindowFunction(ui->windowFunction->currentIndex()));
-	m_zeroPhase = ui->zeroPhase->isChecked();
-	m_floatFFT = ui->floatFFT->isChecked();
-}
-
-foreign_vector<float const> Noted::cursorWaveWindow() const
-{
-	if (isCausal())
-		return waveWindow(compute()->causalCursorIndex());
-	else if (isPassing())
-		return foreign_vector<float const>((vector<float>*)&m_currentWave);
-	else
-		return waveWindow(cursorIndex()); // NOTE: only approximate - no good for Analysers.
+	ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(_cursor, toBase(audio()->samples(), audio()->rate()), 0, 0).c_str());
+	if (ui->actFollow->isChecked() && (_cursor < earliestVisible() || _cursor > earliestVisible() + visibleDuration() * 7 / 8))
+		setTimelineOffset(_cursor - visibleDuration() / 8);
 }
 
 foreign_vector<float const> Noted::cursorMagSpectrum() const
 {
-	if (isCausal())
+	if (audio()->isCausal())
 		return magSpectrum(compute()->causalCursorIndex(), 1);
-	else if (isPassing())
+	else if (audio()->isPassing())
 		return foreign_vector<float const>((vector<float>*)&m_currentMagSpectrum);
 	else
-		return magSpectrum(cursorIndex(), 1); // NOTE: only approximate - no good for Analysers.
+		return magSpectrum(audio()->cursorIndex(), 1); // NOTE: only approximate - no good for Analysers.
 }
 
 foreign_vector<float const> Noted::cursorPhaseSpectrum() const
 {
-	if (isCausal())
+	if (audio()->isCausal())
 		return phaseSpectrum(compute()->causalCursorIndex(), 1);			// FIXME: will return phase normalized to [0, 1] rather than [0, pi].
-	else if (isPassing())
+	else if (audio()->isPassing())
 		return foreign_vector<float const>((vector<float>*)&m_currentPhaseSpectrum);
 	else
-		return phaseSpectrum(cursorIndex(), 1); // NOTE: only approximate - no good for Analysers.
+		return phaseSpectrum(audio()->cursorIndex(), 1); // NOTE: only approximate - no good for Analysers.
+}
+
+void Noted::processNewInfo()
+{
+	QMutexLocker l(&x_infos);
+	if (m_infos.size())
+	{
+		m_info += m_infos;
+		ui->infoView->setHtml(m_info);
+		m_infos.clear();
+		if (ui->lockLog->isChecked())
+			ui->infoView->verticalScrollBar()->setValue(ui->infoView->verticalScrollBar()->maximum());
+	}
 }

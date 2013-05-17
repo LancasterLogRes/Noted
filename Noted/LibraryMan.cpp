@@ -287,7 +287,8 @@ void LibraryMan::load(RealLibraryPtr const& _dl)
 						if (s.contains(_dl->nick + "/propertiesGeometry"))
 							propsDock->restoreGeometry(s.value(_dl->nick + "/propertiesGeometry").toByteArray());
 					}
-					if (Noted::get()->m_constructed)
+					// TODO: Is this necessary? Is there a cleaner way? signal from Noted on constructed, set flag here.
+					if (Noted::get()->isConstructed())
 					{
 						Noted::get()->readBaseSettings(s);
 						_dl->plugin->readSettings(s);

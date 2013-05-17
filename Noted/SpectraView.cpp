@@ -40,7 +40,7 @@ SpectraView::SpectraView(QWidget* _parent):
 	m_shader			(nullptr)
 {
 	m_texture[0] = 0;
-	initTimeline(c());
+	initTimeline();
 }
 
 SpectraView::~SpectraView()
@@ -51,7 +51,7 @@ SpectraView::~SpectraView()
 
 lb::Time SpectraView::period() const
 {
-	return c()->windowSize();
+	return NotedFace::get()->windowSize();
 }
 
 QByteArray fileDump(QString const& _name)
@@ -67,9 +67,9 @@ void SpectraView::renderGL(QSize _s)
 {
 	PrerenderedTimeline::renderGL(_s);
 
-	unsigned bc = c()->spectrumSize();
-	unsigned s = c()->hops();
-	NotedFace* br = dynamic_cast<NotedFace*>(c());
+	unsigned bc = NotedFace::get()->spectrumSize();
+	unsigned s = NotedFace::audio()->hops();
+	Time hop = NotedFace::audio()->hop();
 
 	glEnable(GL_TEXTURE_1D);
 	glPushMatrix();
@@ -99,11 +99,11 @@ void SpectraView::renderGL(QSize _s)
 	{
 		for (int x = 0; x < width(); ++x)
 		{
-			int fi = renderingTimeOf(x) > 0 ? renderingTimeOf(x) / c()->hop() : -1;
-			int ti = qMax<int>(fi + 1, renderingTimeOf(x + 1) / c()->hop());
+			int fi = renderingTimeOf(x) > 0 ? renderingTimeOf(x) / hop : -1;
+			int ti = qMax<int>(fi + 1, renderingTimeOf(x + 1) / hop);
 			if (fi >= 0 && ti < (int)s)
 			{
-				auto mus = br->multiSpectrum(fi, ti - fi);
+				auto mus = NotedFace::get()->multiSpectrum(fi, ti - fi);
 				if (!m_texture[0])
 				{
 					glGenTextures(1, m_texture);

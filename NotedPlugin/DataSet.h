@@ -31,8 +31,7 @@ void foo(DataSet* ds)
 class DataSet
 {
 public:
-	DataSet() {}
-	explicit DataSet(DataKey _operationKey): m_operationKey(_operationKey) {}
+	explicit DataSet(DataKey _operationKey);
 
 	void init(unsigned _recordLength, lb::Time _stride = 0, lb::Time _first = 0);	// _recordLength is in floats (0 for variable). _stride is the duration between sequential readings. will be related to hops for most things. (0 for variable). Don't call digest if either are zero.
 	void init(unsigned _itemCount);
@@ -47,7 +46,7 @@ public:
 
 	unsigned recordLength() const { return m_recordLength; }
 	DigestFlags availableDigests() const { return m_availableDigests; }
-	unsigned rawRecords() const { return m_raw.bytes() / sizeof(float) / m_recordLength; }
+	unsigned rawRecords() const;
 	unsigned digestRecords() const { return (rawRecords() + m_digestBase - 1) / m_digestBase; }
 
 	// Methods for extracting data from fixed stride & record length sets.

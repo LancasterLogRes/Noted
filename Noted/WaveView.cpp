@@ -33,12 +33,12 @@ using namespace lb;
 
 lb::Time WaveView::highlightFrom() const
 {
-	return m_nf->cursor() - m_nf->windowSize() + m_nf->hop();
+	return NotedFace::audio()->cursor() - NotedFace::get()->windowSize() + NotedFace::audio()->hop();
 }
 
 lb::Time WaveView::highlightDuration() const
 {
-	return m_nf->windowSize();
+	return NotedFace::get()->windowSize();
 }
 
 void WaveView::renderGL(QSize _s)
@@ -50,7 +50,7 @@ void WaveView::renderGL(QSize _s)
 
 	vector<float> wave(width() * 2);
 
-	bool isAbsolute = c()->waveBlock(c()->timeOf(0), c()->durationOf(width()), foreign_vector<float>(wave.data(), wave.size()));
+	bool isAbsolute = NotedFace::audio()->waveBlock(NotedFace::get()->timeOf(0), NotedFace::get()->durationOf(width()), foreign_vector<float>(wave.data(), wave.size()));
 
 	int h = height();
 	QOpenGLPaintDevice glpd(size());

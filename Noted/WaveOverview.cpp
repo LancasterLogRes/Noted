@@ -30,30 +30,30 @@ using namespace lb;
 
 WaveOverview::WaveOverview(QWidget* _parent): CurrentView(_parent)
 {
-	connect(c(), SIGNAL(durationChanged()), SLOT(timelineChanged()));
-	connect(c(), SIGNAL(offsetChanged()), SLOT(timelineChanged()));
+	connect(NotedFace::get(), SIGNAL(durationChanged()), SLOT(timelineChanged()));
+	connect(NotedFace::get(), SIGNAL(offsetChanged()), SLOT(timelineChanged()));
 }
 
 int WaveOverview::positionOf(lb::Time _t)
 {
-	return ((double(_t) / c()->duration()) * .95 + .025) * width();
+	return ((double(_t) / NotedFace::audio()->duration()) * .95 + .025) * width();
 }
 
 Time WaveOverview::timeOf(int _x)
 {
-	return (double(_x) / width() - .025) / .95 * c()->duration();
+	return (double(_x) / width() - .025) / .95 * NotedFace::audio()->duration();
 }
 
 void WaveOverview::mousePressEvent(QMouseEvent* _e)
 {
 	if (_e->button() == Qt::LeftButton)
-		c()->setCursor(timeOf(_e->x()), true);
+		NotedFace::audio()->setCursor(timeOf(_e->x()), true);
 }
 
 void WaveOverview::mouseMoveEvent(QMouseEvent* _e)
 {
 	if (_e->buttons() & Qt::LeftButton)
-		c()->setCursor(timeOf(_e->x()), true);
+		NotedFace::audio()->setCursor(timeOf(_e->x()), true);
 }
 
 void WaveOverview::initializeGL()
@@ -70,9 +70,9 @@ void WaveOverview::paintGL(QSize _s)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	int cursorL = positionOf(c()->earliestVisible());
-	int cursorR = positionOf(c()->latestVisible());
-	int cursorM = positionOf(c()->cursor());
+	int cursorL = positionOf(NotedFace::get()->earliestVisible());
+	int cursorR = positionOf(NotedFace::get()->latestVisible());
+	int cursorM = positionOf(NotedFace::audio()->cursor());
 
 	glColor4f(0.f, .3f, 1.f, .2f);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -111,16 +111,16 @@ void WaveOverview::renderGL(QSize _s)
 	int wx = w * .025;
 
 	vector<float> wave(ww * 2);
-	bool isAbsolute = c()->waveBlock(Time(0), c()->duration(), foreign_vector<float>(wave.data(), wave.size()));
+	bool isAbsolute = NotedFace::audio()->waveBlock(Time(0), NotedFace::audio()->duration(), foreign_vector<float>(wave.data(), wave.size()));
 
 	QOpenGLPaintDevice glpd(_s);
 	QPainter p(&glpd);
 
 	p.fillRect(rect(), Qt::white);
-	GraphParameters<Time> nor(make_pair(0, c()->duration()), width() / 80, toBase(1, 1000000));
+	GraphParameters<Time> nor(make_pair(0, NotedFace::audio()->duration()), width() / 80, toBase(1, 1000000));
 	for (Time t = nor.from; t < nor.to; t += nor.incr)
 	{
-		int x = wx + t * ww / c()->duration();
+		int x = wx + t * ww / NotedFace::audio()->duration();
 		if (nor.isMajor(t))
 		{
 			p.setPen(QColor(160, 160, 160));

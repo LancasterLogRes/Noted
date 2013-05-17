@@ -27,7 +27,7 @@ class WaveView: public PrerenderedTimeline
 	Q_OBJECT
 
 public:
-	explicit WaveView(QWidget* _parent = 0): PrerenderedTimeline(_parent) { initTimeline(c()); }
+	explicit WaveView(QWidget* _parent = 0): PrerenderedTimeline(_parent) { initTimeline(); }
 	~WaveView() { finiTimeline(); quit(); }
 
 	virtual lb::Time highlightDuration() const;

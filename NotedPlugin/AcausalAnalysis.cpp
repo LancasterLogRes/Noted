@@ -23,6 +23,8 @@
 
 void AcausalAnalysis::go(unsigned _from, unsigned _count)
 {
+	if (_count == unsigned(-1))
+		_count = NotedFace::audio()->hops();
 	init();
 	m_steps = prepare(_from, _count, NotedFace::audio()->hop());
 	analyze(_from, _count, NotedFace::audio()->hop());
@@ -31,5 +33,5 @@ void AcausalAnalysis::go(unsigned _from, unsigned _count)
 
 bool AcausalAnalysis::done(unsigned _i)
 {
-	return NotedFace::get()->carryOn(_i * 100 / m_steps);
+	return NotedFace::compute()->carryOn(_i * 100 / m_steps);
 }

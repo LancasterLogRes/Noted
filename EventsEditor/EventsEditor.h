@@ -51,7 +51,6 @@ public:
 
 	QString queryFilename();
 	EventsEditScene* scene() const { return &*m_scene; }
-	NotedFace* c() const;
 	virtual lb::StreamEvents events(int _i) const;
 	virtual lb::StreamEvents cursorEvents() const;
 	virtual unsigned eventCount() const { return m_events.size(); }
@@ -92,8 +91,6 @@ private:
 	virtual void mouseMoveEvent(QMouseEvent* _e);
 	virtual void drawBackground(QPainter* _e, QRectF const& _r);
 	virtual void timerEvent(QTimerEvent*);
-
-	mutable NotedFace* m_c;
 
 	std::shared_ptr<EventsEditScene> m_scene;
 

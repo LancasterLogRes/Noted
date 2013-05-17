@@ -83,8 +83,8 @@ QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 		gmx.translate(0, height());
 		gmx.scale(1, -height());
 		gmx.translate(0, yf);
-		gmx.scale(Noted::get()->hop() / (double)fromSeconds(m_pitch), 1.f / yd);
-		gmx.translate(fromSeconds(m_offset) / -(double)Noted::get()->hop(), 0);
+		gmx.scale(Noted::audio()->hop() / (double)fromSeconds(m_pitch), 1.f / yd);
+		gmx.translate(fromSeconds(m_offset) / -(double)Noted::audio()->hop(), 0);
 		base->setMatrix(gmx);
 	}
 

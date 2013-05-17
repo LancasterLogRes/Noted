@@ -48,33 +48,22 @@ class NotedBase: public NotedFace
 {
 	Q_OBJECT
 
-	friend class ResampleWaveAc;
 	friend class SpectraAc;
 
 public:
 	explicit NotedBase(QWidget* _p);
 	~NotedBase();
 
-	virtual lb::foreign_vector<float const> waveWindow(int _window) const;
-	virtual bool waveBlock(lb::Time _from, lb::Time _duration, lb::foreign_vector<float> o_toFill, bool _forceSamples = false) const;
 	virtual lb::foreign_vector<float const> multiSpectrum(int _i, int _n) const;
 	virtual lb::foreign_vector<float const> magSpectrum(int _i, int _n) const;
 	virtual lb::foreign_vector<float const> phaseSpectrum(int _i, int _n) const;
 	virtual lb::foreign_vector<float const> deltaPhaseSpectrum(int _i, int _n) const;
 
 protected:
-	bool resampleWave();
 	void rejigSpectra();
 
-	uint32_t calculateWaveFingerprint() const;
 	uint32_t calculateSpectraFingerprint(uint32_t _base) const;
 
-	QString m_sourceFileName;
-
-	mutable QMutex x_wave;
-	Cache m_wave;
-	mutable QMutex x_waveProfile;
-	MipmappedCache m_waveProfile;
 	mutable QMutex x_spectra;
 	MipmappedCache m_spectra;
 };

@@ -33,13 +33,13 @@ using namespace lb;
 
 void DeltaSpectrumView::renderGL(QSize _s)
 {
-	int cursorIndex = c()->cursorIndex();
+	int cursorIndex = NotedFace::audio()->cursorIndex();
 	if (cursorIndex < 0)
 		return;
-	auto phase = c()->phaseSpectrum(cursorIndex, 1);
-	auto lPhase = c()->phaseSpectrum(cursorIndex - 1, 1);
-	auto llPhase = c()->phaseSpectrum(cursorIndex - 2, 1);
-	unsigned s = c()->spectrumSize();
+	auto phase = NotedFace::get()->phaseSpectrum(cursorIndex, 1);
+	auto lPhase = NotedFace::get()->phaseSpectrum(cursorIndex - 1, 1);
+	auto llPhase = NotedFace::get()->phaseSpectrum(cursorIndex - 2, 1);
+	unsigned s = NotedFace::get()->spectrumSize();
 
 	if (phase && lPhase && llPhase)
 	{
@@ -73,7 +73,7 @@ void DeltaSpectrumView::renderGL(QSize _s)
 
 		w -= 24;
 
-		float nyquist = c()->rate() / 2;
+		float nyquist = NotedFace::audio()->rate() / 2;
 		GraphParameters<float> freqMinor(make_pair(0.f, nyquist), w / 48, ForceMinor);
 		p.setPen(QColor(236, 236, 236));
 		for (float f = freqMinor.from; f < freqMinor.to; f += freqMinor.incr)
@@ -91,8 +91,8 @@ void DeltaSpectrumView::renderGL(QSize _s)
 
 
 		p.setPen(QColor(192, 192, 192));
-		unsigned rate = c()->rate();
-		unsigned incr = rate / c()->hopSamples();
+		unsigned rate = NotedFace::audio()->rate();
+		unsigned incr = rate / NotedFace::audio()->hopSamples();
 		for (unsigned r = 0; r < rate; r += incr)
 		{
 			p.drawLine(24 + r * w / nyquist, h, 24 + (r + incr / 2) * w / nyquist, h / 2);
@@ -112,7 +112,7 @@ void DeltaSpectrumView::renderGL(QSize _s)
 			int x = 24 + i * w / s;
 			int y = h - h * dp / sc;
 
-			int phaseChangeSamples = (2 * s / c()->hopSamples());
+			int phaseChangeSamples = (2 * s / NotedFace::audio()->hopSamples());
 			float standingWavePhaseChange = float(i % phaseChangeSamples) * twoPi<float>() / phaseChangeSamples;
 			if (standingWavePhaseChange > pi<float>())
 				standingWavePhaseChange = twoPi<float>() - standingWavePhaseChange;	// cyclic reflection

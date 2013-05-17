@@ -12,8 +12,6 @@ class ComputeMan: public ComputeManFace
 {
 	Q_OBJECT
 
-	friend class FinishUpAc;
-
 public:
 	ComputeMan();
 	~ComputeMan();
@@ -31,6 +29,8 @@ public:
 
 	virtual int causalCursorIndex() const { return m_causalCursorIndex; }
 
+	virtual bool carryOn(int _progress);
+
 	void initializeCausal(CausalAnalysisPtr const& _lastComplete);
 	void finalizeCausal();
 	void updateCausal(int _from, int _count);
@@ -41,7 +41,6 @@ private:
 
 	QMutex x_analysis;
 	std::set<AcausalAnalysisPtr> m_toBeAnalyzed;						// TODO? Needs a lock?
-	AcausalAnalysisPtr m_resampleWaveAcAnalysis;	// TODO: register with AudioMan
 	AcausalAnalysisPtr m_spectraAcAnalysis;				// TODO: register with Noted until it can be simple plugin.
 	AcausalAnalysisPtr m_finishUpAcAnalysis;			// TODO: what is this?
 	CausalAnalysisPtr m_compileEventsAnalysis;		// TODO: register with EventsMan

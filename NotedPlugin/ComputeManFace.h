@@ -27,6 +27,8 @@ public:
 
 	virtual int causalCursorIndex() const = 0;	///< -1 when !isCausal()
 
+	virtual bool carryOn(int _progress) = 0;
+
 public slots:
 	virtual void suspendWork() = 0;
 	virtual void abortWork() = 0;
@@ -37,6 +39,8 @@ public slots:
 
 signals:
 	void progressed(QString, int);
+	void aboutToAnalyze(AcausalAnalysis*);
+	void analyzed(AcausalAnalysis*);
 	void finished();
 };
 

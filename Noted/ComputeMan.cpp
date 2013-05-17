@@ -10,36 +10,6 @@
 using namespace std;
 using namespace lb;
 
-// TODO: Move to AudioMan
-class ResampleWaveAc: public AcausalAnalysis
-{
-public:
-	ResampleWaveAc(): AcausalAnalysis("Resampling wave") {}
-
-	virtual void init()
-	{
-	}
-	virtual unsigned prepare(unsigned _from, unsigned _count, lb::Time _hop)
-	{
-		(void)_from; (void)_count; (void)_hop;
-		return 100;
-	}
-	virtual void analyze(unsigned _from, unsigned _count, lb::Time _hop)
-	{
-		(void)_from; (void)_count; (void)_hop;
-		Noted::get()->updateParameters();
-		Noted::get()->resampleWave();
-		if (Noted::get()->m_pixelDuration == 1)
-		{
-			Noted::get()->m_fineCursor = 0;
-			Noted::get()->normalizeView();
-		}
-	}
-	virtual void fini()
-	{
-	}
-};
-
 // TODO: Move to Noted.
 // OPTIMIZE: allow reanalysis of spectra to be data-parallelized.
 class SpectraAc: public AcausalAnalysis
@@ -65,21 +35,8 @@ public:
 	}
 };
 
-// TODO: just emit...
-class FinishUpAc: public AcausalAnalysis
-{
-public:
-	FinishUpAc(): AcausalAnalysis("Finishing up") {}
-	void fini()
-	{
-		Noted::compute()->finishUp();
-	}
-};
-
 ComputeMan::ComputeMan():
-	m_resampleWaveAcAnalysis	(new ResampleWaveAc),	// TODO: register with AudioMan
 	m_spectraAcAnalysis			(new SpectraAc),				// TODO: register with Noted until it can be simple plugin.
-	m_finishUpAcAnalysis		(new FinishUpAc),			// TODO: what is this?
 	m_compileEventsAnalysis		(new CompileEvents),		// TODO: register with EventsMan
 	m_collateEventsAnalysis		(new CollateEvents),		// TODO: register with EventsMan
 	m_computeThread				(createWorkerThread([=](){return serviceCompute();}))
@@ -93,6 +50,12 @@ ComputeMan::~ComputeMan()
 	delete m_computeThread;
 }
 
+bool ComputeMan::carryOn(int _progress)
+{
+	WorkerThread::setCurrentProgress(_progress);
+	return !WorkerThread::quitting();
+}
+
 void ComputeMan::noteLastValidIs(AcausalAnalysisPtr const& _a)
 {
 	if (!m_toBeAnalyzed.count(_a))
@@ -102,12 +65,6 @@ void ComputeMan::noteLastValidIs(AcausalAnalysisPtr const& _a)
 		m_toBeAnalyzed.insert(_a);
 		resumeWork();
 	}
-}
-
-void ComputeMan::finishUp()
-{
-	m_computeThread->setProgress(100);
-	emit finished();
 }
 
 class Sleeper: QThread { public: using QThread::usleep; };
@@ -136,8 +93,9 @@ bool ComputeMan::serviceCompute()
 				if (yetToBeAnalysed.count(aa) && aa)
 				{
 					WorkerThread::setCurrentDescription(aa->name());
+					emit aboutToAnalyze(&*aa);
 					cnote << "WORKER Working on " << aa->name().toStdString();
-					aa->go(0, Noted::audio()->hops());
+					aa->go(0);
 					cnote << "WORKER Finished " << aa->name().toStdString();
 					if (WorkerThread::quitting())
 					{
@@ -145,6 +103,8 @@ bool ComputeMan::serviceCompute()
 							m_toBeAnalyzed.insert(i);
 						break;
 					}
+					else
+						emit analyzed(&*aa);
 				}
 				else if (aa)
 				{
@@ -160,7 +120,10 @@ bool ComputeMan::serviceCompute()
 				catenate(todo, ripe);
 			}
 			if (!WorkerThread::quitting() /*&& all other threads finished*/)
-				m_finishUpAcAnalysis->go(0, Noted::audio()->hops());
+			{
+				m_computeThread->setProgress(100);
+				emit finished();
+			}
 		}
 	}
 	else
@@ -233,9 +196,10 @@ AcausalAnalysisPtrs ComputeMan::ripeAcausalAnalysis(AcausalAnalysisPtr const& _f
 {
 	AcausalAnalysisPtrs ret;
 
+	// TODO: register this rather than hardcoded here.
 	if (_finished == nullptr)
-		ret.push_back(m_resampleWaveAcAnalysis);
-	else if (dynamic_cast<ResampleWaveAc*>(&*_finished))
+		ret.push_back(Noted::audio()->resampleWaveAcAnalysis());
+	else if (_finished == Noted::audio()->resampleWaveAcAnalysis())
 		ret.push_back(m_spectraAcAnalysis);
 	else if (dynamic_cast<SpectraAc*>(&*_finished))
 		ret.push_back(m_compileEventsAnalysis);
@@ -280,7 +244,7 @@ void ComputeMan::initializeCausal(CausalAnalysisPtr const& _lastComplete)
 
 //	cdebug << "Causal queue: " << m_causalQueueCache;
 	m_causalSequenceIndex = 0;
-	m_causalCursorIndex = Noted::get()->isCausal() ? 0 : -1;
+	m_causalCursorIndex = Noted::audio()->isCausal() ? 0 : -1;
 }
 
 void ComputeMan::finalizeCausal()
@@ -292,13 +256,14 @@ void ComputeMan::finalizeCausal()
 
 void ComputeMan::updateCausal(int _from, int _count)
 {
+	// TODO: consider reorganising causal stuff to avoid needing audio() here.
 	(void)_from;
 	Time h = Noted::audio()->hop();
 	for (auto ca: m_causalQueueCache)
 		ca->noteBatch(m_causalSequenceIndex, _count);
 	for (int i = 0; i < _count; ++i, ++m_causalSequenceIndex)
 	{
-		if (Noted::get()->isCausal())
+		if (Noted::audio()->isCausal())
 			m_causalCursorIndex = clamp(_from + i, 0, (int)Noted::audio()->hops());
 		for (auto ca: m_causalQueueCache)
 			ca->process(m_causalSequenceIndex, h * m_causalSequenceIndex);

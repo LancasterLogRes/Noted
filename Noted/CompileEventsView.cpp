@@ -38,10 +38,17 @@ DataSetDataStore::~DataSetDataStore()
 void DataSetDataStore::init(unsigned _recordLength, bool _dense)
 {
 	m_s = DataMan::get()->dataSet(m_key);
-	if (m_s->haveRaw() && m_s->haveDigest(MeanDigest) && m_s->haveDigest(MinMaxInOutDigest))
+	if (!m_s)
+		cwarn << "Something else already opened the DataSet for writing?! :-(";
+
+	if (m_s->haveRaw())
+	{
+		cdebug << "Already have DataSet";
 		m_s = nullptr;
+	}
 	else
 	{
+		cdebug << "Don't have DataSet - initializing...";
 		m_s->init(_recordLength, _dense ? Noted::audio()->hop(): 0, 0);
 	}
 }
@@ -57,7 +64,8 @@ void DataSetDataStore::fini(DigestFlags _digests)
 	if (m_s)
 	{
 		for (DigestFlags f = _digests; f; f &= ~f.highestSet())
-			m_s->digest(f.highestSet());
+			if (!m_s->haveDigest(f.highestSet()))
+				m_s->digest(f.highestSet());
 		m_s->done();
 	}
 	m_s = nullptr;
@@ -79,7 +87,8 @@ void CompileEventsView::init(bool _willRecord)
 		{
 			auto ds = new DataSetDataStore(i.first);
 			m_dataStores.insert(i.second, ds);
-			i.second->setStore(ds);
+			if (ds->isActive())
+				i.second->setStore(ds);
 		}
 
 		ec().init(Noted::get()->spectrumSize(), Noted::audio()->hop(), toBase(2, Noted::audio()->rate()));
@@ -96,9 +105,9 @@ void CompileEventsView::process(unsigned _i, lb::Time)
 	vector<float> mag(Noted::get()->spectrumSize());
 	vector<float> phase(Noted::get()->spectrumSize());
 	{
-		if (auto mf = Noted::get()->isImmediate() ? Noted::get()->cursorMagSpectrum() : Noted::get()->magSpectrum(_i, 1))
+		if (auto mf = Noted::audio()->isImmediate() ? Noted::get()->cursorMagSpectrum() : Noted::get()->magSpectrum(_i, 1))
 			memcpy(mag.data(), mf.data(), sizeof(float) * mag.size());
-		if (auto pf = Noted::get()->isImmediate() ? Noted::get()->cursorPhaseSpectrum() : Noted::get()->phaseSpectrum(_i, 1))
+		if (auto pf = Noted::audio()->isImmediate() ? Noted::get()->cursorPhaseSpectrum() : Noted::get()->phaseSpectrum(_i, 1))
 			memcpy(phase.data(), pf.data(), sizeof(float) * phase.size());
 	}
 	m_ev->m_current = m_ev->m_eventCompiler.compile(mag, phase, vector<float>());

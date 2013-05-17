@@ -73,8 +73,6 @@ public:
 	Prerendered(QWidget* _p);
 	~Prerendered();
 
-	NotedFace* c() const;
-
 	bool shouldRepaint() const { return !size().isEmpty() && isVisible() && (needsRepaint() || shouldRerender()); }
 	bool shouldRerender() const { return needsRerender(); }
 
@@ -102,12 +100,10 @@ protected:
 private:
 	bool serviceRender();
 
-	RenderThread* m_renderThread;
+	RenderThread* m_renderThread = nullptr;
 
-	mutable NotedFace* m_c;
-
-	bool m_needsRepaint;
-	bool m_needsRerender;
+	bool m_needsRepaint = true;
+	bool m_needsRerender = true;
 	QSize m_resize;
 	QSize m_size;
 };

@@ -32,4 +32,5 @@ HEADERS  += Timeline.h \
     ComputeManFace.h \
     AudioManFace.h \
     GraphManFace.h \
-    LibraryManFace.h
+    LibraryManFace.h \
+    Common.h

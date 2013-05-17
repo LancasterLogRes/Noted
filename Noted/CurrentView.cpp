@@ -27,11 +27,11 @@ CurrentView::CurrentView(QWidget* _parent): Prerendered(_parent), m_paintedCurso
 
 bool CurrentView::needsRepaint() const
 {
-	return Prerendered::needsRepaint() || m_paintedCursorIndex != c()->cursorIndex() || c()->isImmediate();
+	return Prerendered::needsRepaint() || m_paintedCursorIndex != NotedFace::audio()->cursorIndex() || NotedFace::audio()->isImmediate();
 }
 
 void CurrentView::paintGL(QSize _s)
 {
-	m_paintedCursorIndex = c()->cursorIndex();
+	m_paintedCursorIndex = NotedFace::audio()->cursorIndex();
 	Prerendered::paintGL(_s);
 }

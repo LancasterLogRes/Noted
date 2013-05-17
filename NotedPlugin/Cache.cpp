@@ -45,6 +45,7 @@ bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, s
 	{
 		// File looks the right size - map it and check the header.
 		m_mapping = m_file.map(0, m_file.size());
+		assert(m_mapping);
 		if (header().bytes == _bytes && header().operationKey == _operationKey && header().sourceKey == _sourceKey)
 			// Header agrees with parameters - trust the flags on whether it's complete.
 			return isGood();
@@ -55,6 +56,7 @@ bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, s
 		// File wrong size - resize and (re)initialize.
 		m_file.resize(_bytes + sizeof(Header));
 		m_mapping = m_file.map(0, m_file.size());
+		assert(m_mapping);
 	}
 
 	// Initialize header - we'll (re)compute payload.
@@ -81,6 +83,7 @@ bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey)
 	{
 		// File looks the right size - map it and check the header.
 		m_mapping = m_file.map(0, m_file.size());
+		assert(m_mapping);
 		if (header().bytes == m_file.size() - sizeof(Header) && header().operationKey == _operationKey && header().sourceKey == _sourceKey && isGood())
 			// Header agrees with parameters - trust the flags on whether it's complete.
 			return true;

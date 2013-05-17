@@ -34,6 +34,7 @@ public:
 	DataSetDataStore(std::string const& _name);
 	virtual ~DataSetDataStore();
 
+	bool isActive() const { return !!m_s; }
 	void fini(DigestFlags _digests);
 
 protected:

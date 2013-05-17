@@ -45,6 +45,7 @@
 #include <QSlider>
 #include <QGraphicsScene>
 #include "GraphView.h"
+#include "AudioMan.h"
 #include "ComputeMan.h"
 #include "LibraryMan.h"
 #include "NotedBase.h"
@@ -69,8 +70,7 @@ class Noted: public NotedBase
 {
 	Q_OBJECT
 
-	friend class LibraryMan;	 // TODO! Remove when I've prised apart the GUI and loader.
-	friend class ResampleWaveAc; // TODO! Remove when it's all in AudioMan.
+	friend class AudioMan; // TODO! Remove when there's no window call in AudioMan.
 
 	friend class Cursor;
 
@@ -80,13 +80,11 @@ public:
 
 	static Noted* get() { return static_cast<Noted*>(NotedFace::get()); }
 	static ComputeMan* compute() { return static_cast<ComputeMan*>(get()->m_computeMan); }
+	static AudioMan* audio() { return static_cast<AudioMan*>(get()->m_audioMan); }
 	static LibraryMan* libs() { return static_cast<LibraryMan*>(get()->m_libraryMan); }
 
 	virtual int activeWidth() const;
 	virtual QGLWidget* glMaster() const;
-	virtual bool isPlaying() const { return !!m_playback; }
-	virtual bool isCausal() const { return m_isCausal; }
-	virtual bool isPassing() const { return m_isPassing; }
 
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr);
 	virtual void addTimeline(Timeline* _tl);
@@ -97,20 +95,22 @@ public:
 	virtual lb::EventCompiler findEventCompiler(QString const& _name);
 	virtual QString getEventCompilerName(lb::EventCompilerImpl* _ec);
 
+	QList<EventsView*> eventsViews() const;
+
 	using QWidget::event;
 
-	lb::foreign_vector<float const> cursorWaveWindow() const;
 	lb::foreign_vector<float const> cursorMagSpectrum() const;
 	lb::foreign_vector<float const> cursorPhaseSpectrum() const;
 
-	QList<EventsView*> eventsViews() const;
+	bool isConstructed() const { return m_constructed; }
 
 public slots:
 	virtual void info(QString const& _info, QString const& _color = "gray");
 	void info(QString const& _info, int _id);
 	virtual void updateWindowTitle();
 
-	virtual void setCursor(qint64 _c, bool _warp = false);
+	void readBaseSettings(QSettings&);
+	void writeBaseSettings(QSettings&);
 
 private slots:
 	void on_actOpen_triggered();
@@ -132,18 +132,30 @@ private slots:
 	void on_actAbout_triggered();
 	void on_clearInfo_clicked();
 
-	void on_windowSizeSlider_valueChanged(int = 0);
-	void on_hopSlider_valueChanged(int = 0);
-	void on_sampleRate_currentIndexChanged(int = 0);
-	void on_windowFunction_currentIndexChanged(int = 0) { compute()->noteLastValidIs(nullptr); }
-	void on_zeroPhase_toggled(bool = false) { compute()->noteLastValidIs(nullptr); }
-	void on_floatFFT_toggled(bool = false) { compute()->noteLastValidIs(nullptr); }
-	void on_normalize_toggled(bool = false) { compute()->noteLastValidIs(nullptr); }
+	void on_force16Bit_toggled(bool);
+	void on_playDevice_currentIndexChanged(int);
+	void on_playRate_currentIndexChanged(int);
+	void on_playChunkSamples_valueChanged(int);
+	void on_playChunks_valueChanged(int);
+
+	void on_captureDevice_currentIndexChanged(int);
+	void on_captureChunks_valueChanged(int);
+
+	void on_windowSizeSlider_valueChanged(int _i);
+	void on_hopSlider_valueChanged(int _i);
+	void on_windowSize_valueChanged(int _i);
+	void on_hop_valueChanged(int _i);
+	void on_sampleRate_currentIndexChanged(int _i);
+	void on_windowFunction_currentIndexChanged(int _i);
+	void on_zeroPhase_toggled(bool _v);
+	void on_floatFFT_toggled(bool _v);
+
 	void on_addEventsView_clicked();
+
 	void on_addLibrary_clicked();
 	void on_killLibrary_clicked();
+
 	void on_refreshAudioDevices_clicked() { updateAudioDevices(); }
-	void on_loadedLibraries_itemClicked(QTreeWidgetItem* _it, int);
 
 	void on_actReadSettings_triggered();
 	void on_actWriteSettings_triggered();
@@ -151,31 +163,34 @@ private slots:
 	void onEventCompilerFactoryAvailable(QString _name, unsigned _version);
 	void onEventCompilerFactoryUnavailable(QString _name);
 
-	void onWorkProgessed(QString _desc, int _percent);
+	void onDataChanging();
+	void onDataLoaded();
+
+	void onCursorChanged(lb::Time _cursor);
+	void onPlaybackStatusChanged();
+
+	void onWorkProgressed(QString _desc, int _percent);
 	void onWorkFinished();
 
 	void updateEventStuff();
 	void updateAudioDevices();
+
+	void processNewInfo();
+
+	void updateHopDisplay();
 
 signals:
 	void viewSizesChanged();
 
 private:
 	void changeEvent(QEvent *e);
-	void timerEvent(QTimerEvent*);
 	void closeEvent(QCloseEvent*);
 	void readSettings();
 	void writeSettings();
-	void readBaseSettings(QSettings&);
-	void writeBaseSettings(QSettings&);
-	virtual bool eventFilter(QObject*, QEvent*);
 
-	virtual bool carryOn(int _progress);
+	void normalizeView() { setTimelineOffset(audio()->duration() * -0.025); setPixelDuration(audio()->duration() / .95 / activeWidth()); }
+
 	void updateParameters();
-	bool serviceAudio();
-	void setAudio(QString const& _filename);
-
-	void normalizeView() { setTimelineOffset(duration() * -0.025); setPixelDuration(duration() / .95 / activeWidth()); }
 
 	// Just for Timeline class.
 	virtual void timelineDead(Timeline* _tl);
@@ -188,26 +203,9 @@ private:
 
 	bool m_cursorDirty;
 
-	// Audio hardware i/o
-	WorkerThread* m_audioThread;
-	std::shared_ptr<Audio::Playback> m_playback;
-	std::shared_ptr<Audio::Capture> m_capture;
-
-	// Playback...
-	lb::Time m_fineCursorWas;
-	lb::Time m_nextResample;
-	void* m_resampler;
-	bool m_isCausal;
-	bool m_isPassing;
-
-	// Passthrough...
 	std::shared_ptr<lb::FFTW> m_fftw;
-	std::vector<float> m_currentWave;
 	std::vector<float> m_currentMagSpectrum;
 	std::vector<float> m_currentPhaseSpectrum;
-
-	// Causal & passthrough...
-	int m_lastIndex;
 
 	// Information output...
 	QMutex x_infos;
@@ -217,5 +215,5 @@ private:
 	// Master GL context...
 	QGLWidget* m_glMaster;
 
-	bool m_constructed;
+	bool m_constructed = false;
 };

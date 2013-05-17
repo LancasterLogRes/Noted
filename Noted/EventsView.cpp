@@ -58,9 +58,9 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 
 	qDebug() << m_verticalSplitter->orientation() << m_actualWidget->orientation();
 
-	connect(m_propertiesEditor, SIGNAL(changed()), c(), SLOT(noteEventCompilersChanged()));
+	connect(m_propertiesEditor, SIGNAL(changed()), NotedFace::compute(), SLOT(noteEventCompilersChanged()));
 
-	connect(c(), SIGNAL(eventsChanged()), this, SLOT(rerender()));
+	connect(NotedFace::get(), SIGNAL(eventsChanged()), SLOT(rerender()));
 
 	const float c_size = 16;
 	const float c_margin = 0;
@@ -101,7 +101,7 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	m_channel->addItem("2");
 	m_channel->addItem("3");
 
-	initTimeline(c());
+	initTimeline();
 
 	Noted::compute()->noteEventCompilersChanged();
 }
@@ -218,7 +218,7 @@ void EventsView::save()
 void EventsView::restore()
 {
 	cnote << "Restoring EventsView...";
-	m_eventCompiler = c()->newEventCompiler(m_savedName);
+	m_eventCompiler = NotedFace::get()->newEventCompiler(m_savedName);
 	m_eventCompiler.properties().deserialize(m_savedProperties);
 	m_propertiesEditor->setProperties(m_eventCompiler.properties());
 	m_label->setText(name());
@@ -285,7 +285,7 @@ void EventsView::writeSettings(QSettings& _s, QString const& _id)
 				else if (fn.endsWith(".events"))
 					out << endl;
 			}
-			t += c()->hop();
+			t += NotedFace::audio()->hop();
 		}
 	}
 	if (fn.endsWith(".xml"))
@@ -300,7 +300,7 @@ void EventsView::exportGraph()
 	if (out)
 	{
 		out << "index,time";
-		Time h = c()->hop();
+		Time h = NotedFace::audio()->hop();
 		unsigned tiMax = 0;
 
 		vector<vector<float> const*> charts;

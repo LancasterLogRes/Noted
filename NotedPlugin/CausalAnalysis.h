@@ -54,4 +54,6 @@ public:// TODO: move to protected & introduce non-virtual public API.
 typedef std::shared_ptr<CausalAnalysis> CausalAnalysisPtr;
 typedef std::vector<CausalAnalysisPtr> CausalAnalysisPtrs;
 
+Q_DECLARE_METATYPE(CausalAnalysis*);
+
 template <class _S> _S& operator<<(_S& _out, CausalAnalysis const& _ca) { return _out << "CA(" << _ca.name() << ")"; }
