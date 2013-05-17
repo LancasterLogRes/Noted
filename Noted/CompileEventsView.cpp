@@ -87,11 +87,14 @@ void CompileEventsView::init(bool _willRecord)
 		{
 			auto ds = new DataSetDataStore(i.first);
 			m_dataStores.insert(i.second, ds);
-			if (ds->isActive())
-				i.second->setStore(ds);
+			i.second->setStore(ds);
 		}
 
 		ec().init(Noted::get()->spectrumSize(), Noted::audio()->hop(), toBase(2, Noted::audio()->rate()));
+
+		for (auto i = m_dataStores.begin(); i != m_dataStores.end(); ++i)
+			if (!i.value()->isActive())
+				i.key()->setStore(nullptr);
 	}
 }
 
