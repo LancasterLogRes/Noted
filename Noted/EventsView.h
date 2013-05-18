@@ -50,8 +50,6 @@ public:
 	EventsView(QWidget* _parent = 0, lb::EventCompiler const& _c = lb::EventCompiler());
 	~EventsView();
 
-	virtual QWidget* widget() { return m_actualWidget; }
-
 	void readSettings(QSettings& _s, QString const& _id);
 	void writeSettings(QSettings& _s, QString const& _id);
 

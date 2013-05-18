@@ -18,7 +18,7 @@ GraphItem::GraphItem()
 
 EventCompiler GraphItem::eventCompiler() const
 {
-	return NotedFace::get()->findEventCompiler(QString::fromStdString(spec().ec));
+	return NotedFace::events()->findEventCompiler(QString::fromStdString(spec().ec));
 }
 
 QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)

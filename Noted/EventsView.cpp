@@ -101,14 +101,11 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	m_channel->addItem("2");
 	m_channel->addItem("3");
 
-	initTimeline();
-
 	Noted::compute()->noteEventCompilersChanged();
 }
 
 EventsView::~EventsView()
 {
-	finiTimeline();
 	quit();
 	QWidget* w = parentWidget()->parentWidget();
 	setParent(0);

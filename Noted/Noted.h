@@ -45,11 +45,12 @@
 #include <QBuffer>
 #include <QSlider>
 #include <QGraphicsScene>
-#include <NotedPlugin/ViewManFace.h>
 #include "GraphView.h"
 #include "AudioMan.h"
 #include "ComputeMan.h"
 #include "LibraryMan.h"
+#include "ViewMan.h"
+#include "EventsMan.h"
 #include "NotedBase.h"
 
 namespace Ui { class Noted; }
@@ -66,17 +67,6 @@ class EventsEditor;
 class CompileEvents;
 class CollateEvents;
 class TimelinesItem;
-
-class ViewMan: public ViewManFace
-{
-	Q_OBJECT
-
-public:
-	ViewMan(QObject* _p = nullptr): ViewManFace(_p) {}
-
-public slots:
-	virtual void normalize();
-};
 
 class Noted: public NotedBase
 {
@@ -96,17 +86,9 @@ public:
 	static TimelinesItem* timelines() { return get()->m_timelinesItem; }
 
 	virtual QGLWidget* glMaster() const;
-
+	virtual void addLegacyTimeline(QWidget* _w);
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr);
-	virtual void addTimeline(Timeline* _tl);
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d);
-
-	virtual QList<EventsStore*> eventsStores() const;
-	QList<EventsView*> eventsViews() const;
-	virtual lb::EventCompiler findEventCompiler(QString const& _name);
-	virtual QString getEventCompilerName(lb::EventCompilerImpl* _ec);
-
-	using QWidget::event;
 
 	lb::foreign_vector<float const> cursorMagSpectrum() const;
 	lb::foreign_vector<float const> cursorPhaseSpectrum() const;
@@ -188,29 +170,17 @@ private slots:
 
 	void updateHopDisplay();
 
-signals:
-	void viewSizesChanged();
-
 private:
 	void changeEvent(QEvent *e);
 	void closeEvent(QCloseEvent*);
 	void showEvent(QShowEvent*);
+
 	void readSettings();
 	void writeSettings();
-
-	void updateParameters();
-
-	// Just for Timeline class.
-	virtual void timelineDead(Timeline* _tl);
 
 	Ui::Noted* ui;
 	QQuickView* m_view;
 	TimelinesItem* m_timelinesItem;
-
-	QSet<Timeline*> m_timelines;
-	mutable QMutex x_timelines;
-
-	bool m_cursorDirty;
 
 	std::shared_ptr<lb::FFTW> m_fftw;
 	std::vector<float> m_currentMagSpectrum;
@@ -223,6 +193,4 @@ private:
 
 	// Master GL context...
 	QGLWidget* m_glMaster;
-
-	bool m_constructed = false;
 };

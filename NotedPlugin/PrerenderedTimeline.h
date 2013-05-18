@@ -44,8 +44,6 @@ public:
 	PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop = true);
 	~PrerenderedTimeline();
 
-	virtual QWidget* widget() { return this; }
-
 	using Prerendered::event;
 
 protected:

@@ -18,7 +18,7 @@ GraphView::~GraphView()
 
 void GraphView::addGraph(GraphSpec* _g)
 {
-	m_graphs.push_back({NotedFace::get()->getEventCompilerName(_g->ec()).toStdString(), _g->name(), NullColor});
+	m_graphs.push_back({NotedFace::events()->getEventCompilerName(_g->ec()).toStdString(), _g->name(), NullColor});
 }
 
 QColor toQColor(Color _c)
@@ -41,7 +41,7 @@ void GraphView::renderGL(QSize _s)
 
 	for (GraphViewPlot const& gr: m_graphs)
 	{
-		EventCompiler ec = NotedFace::get()->findEventCompiler(QString::fromStdString(gr.ec));
+		EventCompiler ec = NotedFace::events()->findEventCompiler(QString::fromStdString(gr.ec));
 		if (!ec.isNull())
 			if (GraphSpec* cg = ec.asA<EventCompilerImpl>().graph(gr.graph))
 				if (GraphSparseDense* g = dynamic_cast<GraphSparseDense*>(cg))

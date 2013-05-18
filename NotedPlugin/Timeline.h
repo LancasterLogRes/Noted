@@ -42,12 +42,9 @@ public:
 class Timeline
 {
 public:
+	Timeline();
 	virtual ~Timeline();
 
-	void initTimeline();
-	void finiTimeline();
-
-	virtual QWidget* widget() = 0;
 	virtual QColor cursorColor() { return Qt::black; }
 	virtual lb::Time highlightDuration() const;
 	virtual lb::Time highlightFrom() const;

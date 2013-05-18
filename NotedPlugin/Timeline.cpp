@@ -24,17 +24,15 @@
 using namespace lb;
 using namespace std;
 
+Timeline::Timeline()
+{
+//	installEventFilter(NotedFace::get());
+	NotedFace::events()->registerTimeline(this);
+}
+
 Timeline::~Timeline()
 {
-}
-
-void Timeline::initTimeline()
-{
-}
-
-void Timeline::finiTimeline()
-{
-	NotedFace::get()->timelineDead(this);
+	NotedFace::events()->unregisterTimeline(this);
 }
 
 lb::Time Timeline::earliestVisible() const

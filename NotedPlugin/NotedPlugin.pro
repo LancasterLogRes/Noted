@@ -15,7 +15,8 @@ SOURCES += Timeline.cpp \
 	Cache.cpp \
 	DataMan.cpp \
 	DataSet.cpp \
-    ViewManFace.cpp
+    ViewManFace.cpp \
+    EventsManFace.cpp
 
 HEADERS  += Timeline.h \
 	PrerenderedTimeline.h \
@@ -35,4 +36,5 @@ HEADERS  += Timeline.h \
     GraphManFace.h \
     LibraryManFace.h \
     Common.h \
-    ViewManFace.h
+    ViewManFace.h \
+    EventsManFace.h

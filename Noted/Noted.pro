@@ -29,7 +29,9 @@ SOURCES += main.cpp\
     TimelinesItem.cpp \
     ComputeMan.cpp \
     LibraryMan.cpp \
-    AudioMan.cpp
+    AudioMan.cpp \
+    ViewMan.cpp \
+    EventsMan.cpp
 
 HEADERS  += Noted.h \
 	WaveView.h \
@@ -55,7 +57,9 @@ HEADERS  += Noted.h \
     TimelinesItem.h \
     ComputeMan.h \
     LibraryMan.h \
-    AudioMan.h
+    AudioMan.h \
+    ViewMan.h \
+    EventsMan.h
 
 FORMS    += Noted.ui
 

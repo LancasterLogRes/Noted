@@ -44,7 +44,6 @@ public:
 	~EventsEditor();
 
 	virtual QString niceName() const { return m_filename; }
-	virtual QWidget* widget() { return this; }
 
 	bool isIndependent() const;
 	bool isMutable() const { return isIndependent(); }

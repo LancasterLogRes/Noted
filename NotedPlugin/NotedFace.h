@@ -43,6 +43,7 @@
 #include "GraphManFace.h"
 #include "LibraryManFace.h"
 #include "ViewManFace.h"
+#include "EventsManFace.h"
 #include "QGLWidgetProxy.h"
 
 LIGHTBOX_TEXTUAL_ENUM(AudioStage, Wave, Spectrum);
@@ -61,6 +62,7 @@ class GraphManFace;
 class AudioManFace;
 class ComputeManFace;
 class ViewManFace;
+class EventsView;
 
 class NotedFace: public QMainWindow
 {
@@ -86,11 +88,7 @@ public:
 	virtual lb::foreign_vector<float const> phaseSpectrum(int _i, int _n) const = 0;
 	virtual lb::foreign_vector<float const> deltaPhaseSpectrum(int _i, int _n) const = 0;
 
-	virtual QList<EventsStore*> eventsStores() const = 0;
-	virtual lb::EventCompiler findEventCompiler(QString const& _name) = 0;
-	virtual QString getEventCompilerName(lb::EventCompilerImpl* _ec) = 0;
-
-	virtual void addTimeline(Timeline* _p) = 0;
+	virtual void addLegacyTimeline(QWidget* _p) = 0;
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d) = 0;
 	virtual void info(QString const& _info, QString const& _color = "gray") = 0;
@@ -102,6 +100,7 @@ public:
 	static ComputeManFace* compute() { return get()->m_computeMan; }
 	static LibraryManFace* libs() { return get()->m_libraryMan; }
 	static ViewManFace* view() { return get()->m_viewMan; }
+	static EventsManFace* events() { return get()->m_eventsMan; }
 
 public slots:
 	virtual void updateWindowTitle() = 0;
@@ -112,14 +111,13 @@ signals:
 	void eventsChanged();
 
 protected:
-	virtual void timelineDead(Timeline* _tl) = 0;
-
 	AudioManFace* m_audioMan = nullptr;
 	DataMan* m_dataMan = nullptr;
 	GraphManFace* m_graphMan = nullptr;
 	ComputeManFace* m_computeMan = nullptr;
 	LibraryManFace* m_libraryMan = nullptr;
 	ViewManFace* m_viewMan = nullptr;
+	EventsManFace* m_eventsMan = nullptr;
 
 	bool m_zeroPhase = false;
 	bool m_floatFFT = true;
@@ -146,12 +144,7 @@ public:
 	virtual lb::foreign_vector<float const> deltaPhaseSpectrum(int, int) const { return lb::foreign_vector<float const>(); }
 	virtual lb::foreign_vector<float const> phaseSpectrum(int, int) const { return lb::foreign_vector<float const>(); }
 
-	virtual QList<EventsStore*> eventsStores() const { return QList<EventsStore*>(); }
-	virtual lb::EventCompiler findEventCompiler(QString const&) { return lb::EventCompiler(); }
-	virtual QString getEventCompilerName(lb::EventCompilerImpl*) { return ""; }
-
-	virtual void timelineDead(Timeline*) {}
-	virtual void addTimeline(Timeline*) {}
+	virtual void addLegacyTimeline(QWidget*) {}
 	virtual QWidget* addGLWidget(QGLWidgetProxy*) { return nullptr; }
 	virtual void addDockWidget(Qt::DockWidgetArea, QDockWidget*) {}
 

@@ -55,14 +55,6 @@
 using namespace std;
 using namespace lb;
 
-void ViewMan::normalize()
-{
-	if (Noted::audio()->duration() && width())
-		setParameters(Noted::audio()->duration() * -0.025, Noted::audio()->duration() / .95 / width());
-	else
-		setParameters(0, FromMsecs<1>::value);
-}
-
 static QObject* getLibs(QQmlEngine*, QJSEngine*)
 {
 	return Noted::libs();
@@ -91,7 +83,6 @@ static QObject* getView(QQmlEngine*, QJSEngine*)
 Noted::Noted(QWidget* _p):
 	NotedBase					(_p),
 	ui							(new Ui::Noted),
-	x_timelines					(QMutex::Recursive),
 	m_glMaster					(new QGLWidget)
 {
 	m_libraryMan = new LibraryMan;
@@ -100,6 +91,7 @@ Noted::Noted(QWidget* _p):
 	m_audioMan = new AudioMan;
 	m_graphMan = new GraphManFace;
 	m_viewMan = new ViewMan;
+	m_eventsMan = new EventsMan;
 
 	ui->setupUi(this);
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
@@ -154,8 +146,8 @@ Noted::Noted(QWidget* _p):
 	ui->overview->installEventFilter(this);
 	ui->dataDisplay->installEventFilter(this);
 
-	m_timelines.insert(ui->waveform);
-	m_timelines.insert(ui->spectra);
+//	m_timelines.insert(ui->waveform);
+//	m_timelines.insert(ui->spectra);
 
 	{
 		QLabel* l = new QLabel("No audio");
@@ -197,11 +189,7 @@ Noted::~Noted()
 	compute()->suspendWork();
 	qDebug() << "Disabled permenantly.";
 
-	qDebug() << "Killing timelines...";
-	while (m_timelines.size())
-		delete *m_timelines.begin();
-	qDebug() << "Killed.";
-
+	delete m_eventsMan;
 	delete m_libraryMan;
 
 	for (auto i: findChildren<Prerendered*>())
@@ -337,30 +325,9 @@ QWidget* Noted::addGLWidget(QGLWidgetProxy* _v, QWidget* _p)
 	return new NotedGLWidget(_v, _p);
 }
 
-EventCompiler Noted::findEventCompiler(QString const& _name)
+void Noted::addLegacyTimeline(QWidget* _w)
 {
-	QMutexLocker l(&x_timelines);
-	for (auto ev: eventsViews())
-		if (ev->name() == _name)
-			return ev->eventCompiler();
-	return EventCompiler();
-}
-
-QString Noted::getEventCompilerName(EventCompilerImpl* _ec)
-{
-	QMutexLocker l(&x_timelines);
-	for (auto ev: eventsViews())
-		if (&ev->eventCompiler().asA<EventCompilerImpl>() == _ec)
-			return ev->name();
-	return QString();
-}
-
-void Noted::addTimeline(Timeline* _tl)
-{
-	ui->dataDisplay->addWidget(_tl->widget());
-	_tl->widget()->installEventFilter(this);
-	QMutexLocker l(&x_timelines);
-	m_timelines.insert(_tl);
+	ui->dataDisplay->addWidget(_w);
 }
 
 void Noted::updateWindowTitle()
@@ -455,7 +422,6 @@ void Noted::readSettings()
 		{
 			EventsView* ev = new EventsView(ui->dataDisplay);
 			ev->readSettings(settings, QString("eventsView%1").arg(i));
-			addTimeline(ev);
 		}
 
 	audio()->setFilename(settings.value("fileName").toString());
@@ -471,7 +437,6 @@ void Noted::readSettings()
 		foreach (QString n, settings.value("eventEditors").toStringList())
 		{
 			EventsEditor* ev = new EventsEditor(ui->dataDisplay, n);
-			addTimeline(ev);
 			ev->load(settings);
 		}
 
@@ -495,7 +460,7 @@ void Noted::writeSettings()
 	libs()->writeSettings(settings);
 
 	int evc = 0;
-	for (EventsView* ev: eventsViews())
+	for (EventsView* ev: events()->eventsViews())
 	{
 		ev->writeSettings(settings, QString("eventsView%1").arg(evc));
 		++evc;
@@ -539,25 +504,24 @@ void Noted::writeSettings()
 void Noted::on_addEventsView_clicked()
 {
 	if (ui->eventCompilersList->currentItem())
-		addTimeline(new EventsView(ui->dataDisplay, libs()->newEventCompiler(ui->eventCompilersList->currentItem()->text().section(':', 0, 0))));
+		new EventsView(ui->dataDisplay, libs()->newEventCompiler(ui->eventCompilersList->currentItem()->text().section(':', 0, 0)));
 }
 
 void Noted::on_actNewEvents_triggered()
 {
-	addTimeline(new EventsEditor(ui->dataDisplay));
+	new EventsEditor(ui->dataDisplay);
 }
 
 void Noted::on_actNewEventsFrom_triggered()
 {
 	QStringList esns;
-	auto ess = eventsStores();
+	auto ess = events()->eventsStores();
 	foreach (auto es, ess)
 		esns.push_back(es->niceName());
 	QString esn = QInputDialog::getItem(this, "Select Events View", "Select an events view to copy into the new editor.", esns, 0, false);
 	if (esn.size())
 	{
 		EventsEditor* ev = new EventsEditor(ui->dataDisplay);
-		addTimeline(ev);
 		ev->scene()->copyFrom(ess[esns.indexOf(esn)]);
 	}
 }
@@ -571,10 +535,7 @@ void Noted::on_actOpenEvents_triggered()
 {
 	QString s = QFileDialog::getOpenFileName(this, "Open a Stream Events File", QDir::homePath(), "*.xml");
 	if (!s.isNull())
-	{
-		EventsEditor* ev = new EventsEditor(ui->dataDisplay, s);
-		addTimeline(ev);
-	}
+		new EventsEditor(ui->dataDisplay, s);
 }
 
 void Noted::updateHopDisplay()
@@ -645,22 +606,6 @@ void Noted::on_floatFFT_toggled(bool _v)
 		compute()->invalidate(compute()->spectraAcAnalysis());
 		compute()->resumeWork();
 	}
-}
-
-void Noted::timelineDead(Timeline* _tl)
-{
-	QMutexLocker l(&x_timelines);
-	m_timelines.remove(_tl);
-}
-
-QList<EventsStore*> Noted::eventsStores() const
-{
-	QList<EventsStore*> ret;
-	QMutexLocker l(&x_timelines);
-	foreach (Timeline* i, m_timelines)
-		if (EventsStore* es = dynamic_cast<EventsStore*>(i))
-			ret.push_back(es);
-	return ret;
 }
 
 void Noted::on_actFollow_changed()
@@ -737,16 +682,6 @@ void Noted::on_actPassthrough_changed()
 	}
 }
 
-QList<EventsView*> Noted::eventsViews() const
-{
-	QList<EventsView*> ret;
-	QMutexLocker l(&x_timelines);
-	foreach (Timeline* i, m_timelines)
-		if (EventsView* ev = dynamic_cast<EventsView*>(i))
-			ret.push_back(ev);
-	return ret;
-}
-
 void Noted::on_actZoomOut_triggered()
 {
 	view()->zoomTimeline((audio()->cursor() > view()->earliestVisible() && audio()->cursor() < view()->latestVisible()) ? view()->positionOf(audio()->cursor()) : (view()->width() / 2), 1.2);
@@ -776,6 +711,7 @@ void Noted::on_actPanic_triggered()
 
 void Noted::updateEventStuff()
 {
+	/*
 	QMutexLocker l(&x_timelines);
 	for (EventsView* ev: eventsViews())
 		if (!ev->eventCompiler().isNull())
@@ -797,20 +733,20 @@ void Noted::updateEventStuff()
 						dw->show();
 					}
 				}
+	*/
 }
 
 void Noted::onWorkFinished()
 {
 	info("WORK All finished");
-	m_cursorDirty = true;
 	if (QProgressBar* pb = ui->statusBar->findChild<QProgressBar*>())
 		delete pb;
 	statusBar()->showMessage("Ready");
 
-	QMutexLocker l(&x_timelines);
-	foreach (Timeline* t, m_timelines)
+/*	QMutexLocker l(&x_timelines);
+	for (Timeline* t: m_timelines)
 		if (PrerenderedTimeline* pt = dynamic_cast<PrerenderedTimeline*>(t))
-			pt->rerender();
+			pt->rerender();*/
 }
 
 void Noted::onWorkProgressed(QString _desc, int _progress)

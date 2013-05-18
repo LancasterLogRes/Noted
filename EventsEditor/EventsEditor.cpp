@@ -102,8 +102,6 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 		m_scene->loadFrom(_filename);
 
 	startTimer(500);
-
-	initTimeline();
 }
 
 EventsEditor::~EventsEditor()

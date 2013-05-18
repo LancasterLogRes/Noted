@@ -177,10 +177,10 @@ CausalAnalysisPtrs ComputeMan::ripeCausalAnalysis(CausalAnalysisPtr const& _fini
 	CausalAnalysisPtrs ret;
 	if (_finished == nullptr)
 		ret.push_back(m_compileEventsAnalysis);
-	else if (dynamic_cast<CompileEvents*>(&*_finished) && Noted::get()->eventsViews().size())
-		foreach (EventsView* ev, Noted::get()->eventsViews())
+	else if (dynamic_cast<CompileEvents*>(&*_finished) && Noted::events()->eventsViews().size())
+		foreach (EventsView* ev, Noted::events()->eventsViews())
 			ret.push_back(CausalAnalysisPtr(new CompileEventsView(ev)));
-	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !Noted::get()->eventsViews().size()) || (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == Noted::get()->eventsViews().size()))
+	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !Noted::events()->eventsViews().size()) || (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == Noted::events()->eventsViews().size()))
 		ret.push_back(m_collateEventsAnalysis);
 
 	// Go through all other things that can give CAs; at this point, it's just the plugins
@@ -203,11 +203,11 @@ AcausalAnalysisPtrs ComputeMan::ripeAcausalAnalysis(AcausalAnalysisPtr const& _f
 		ret.push_back(m_spectraAcAnalysis);
 	else if (dynamic_cast<SpectraAc*>(&*_finished))
 		ret.push_back(m_compileEventsAnalysis);
-	else if (dynamic_cast<CompileEvents*>(&*_finished) && Noted::get()->eventsViews().size())
-		foreach (EventsView* ev, Noted::get()->eventsViews())
+	else if (dynamic_cast<CompileEvents*>(&*_finished) && Noted::events()->eventsViews().size())
+		foreach (EventsView* ev, Noted::events()->eventsViews())
 			ret.push_back(AcausalAnalysisPtr(new CompileEventsView(ev)));
-	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !Noted::get()->eventsViews().size()) ||
-			 (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == Noted::get()->eventsViews().size()))
+	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !Noted::events()->eventsViews().size()) ||
+			 (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == Noted::events()->eventsViews().size()))
 		ret.push_back(m_collateEventsAnalysis);
 
 	// Go through all other things that can give CAs; at this point, it's just the plugins
