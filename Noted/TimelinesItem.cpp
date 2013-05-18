@@ -6,9 +6,14 @@
 using namespace std;
 using namespace lb;
 
+lb::Time TimelineItem::localTime(lb::Time _t, lb::Time _p)
+{
+	return _t + mapToScene(QPointF(0, 0)).x() * _p;
+}
+
 GraphItem::GraphItem()
 {
-	connect(Noted::data(), &DataMan::dataComplete, [=](DataKey _key){ /*cdebug << "Data complete:" << (void*)(intptr_t)_key;*/ update(); });
+	connect(Noted::data(), &DataMan::dataComplete, [=](DataKey /*_key*/){ /*cdebug << "Data complete:" << (void*)(intptr_t)_key;*/ update(); });
 }
 
 EventCompiler GraphItem::eventCompiler() const
@@ -76,8 +81,8 @@ QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 		gmx.translate(0, height());
 		gmx.scale(1, -height());
 		gmx.translate(0, yf);
-		gmx.scale(Noted::audio()->hop() / (double)fromSeconds(m_pitch), 1.f / yd);
-		gmx.translate(fromSeconds(m_offset) / -(double)Noted::audio()->hop(), 0);
+		gmx.scale(Noted::audio()->hop() / (double)m_pitch, 1.f / yd);
+		gmx.translate(m_offset / -(double)Noted::audio()->hop(), 0);
 		base->setMatrix(gmx);
 	}
 
@@ -103,7 +108,7 @@ QSGNode* TimelinesItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 
 	unsigned majorCount = 0;
 	unsigned minorCount = 0;
-	GraphParameters<Time> nor(make_pair(Noted::view()->earliestVisible(), Noted::view()->earliestVisible() + Noted::view()->pixelDuration() * width()), width() / 80, toBase(1, 1000000));
+	GraphParameters<Time> nor(make_pair(m_offset, m_offset + m_pitch * width()), width() / 80, toBase(1, 1000000));
 	for (Time t = nor.from; t < nor.to; t += nor.incr)
 		(nor.isMajor(t) ? majorCount : minorCount)++;
 
@@ -115,7 +120,7 @@ QSGNode* TimelinesItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 	for (Time t = nor.from; t < nor.to; t += nor.incr)
 	{
 		float*& d = nor.isMajor(t) ? majorData : minorData;
-		d[0] = d[2] = t - Noted::view()->earliestVisible();
+		d[0] = d[2] = t - m_offset;
 		d[1] = 0;
 		d[3] = 1;
 		d += 4;
@@ -145,7 +150,7 @@ QSGNode* TimelinesItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 	base->appendChildNode(minorNode);
 
 	QMatrix4x4 gmx;
-	gmx.scale(1 / (double)Noted::view()->pixelDuration(), height());
+	gmx.scale(1 / (double)m_pitch, height());
 	base->setMatrix(gmx);
 
 	return base;
@@ -154,11 +159,11 @@ QSGNode* TimelinesItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 void XLabelsItem::paint(QPainter* _p)
 {
 	_p->fillRect(_p->window(), QBrush(Qt::white));
-	GraphParameters<Time> nor(make_pair(Noted::view()->earliestVisible(), Noted::view()->earliestVisible() + Noted::view()->pixelDuration() * width()), width() / 80, toBase(1, 1000000));
+	GraphParameters<Time> nor(make_pair(m_offset, m_offset + m_pitch * width()), width() / 80, toBase(1, 1000000));
 	for (Time t = nor.from; t < nor.to; t += nor.incr)
 		if (nor.isMajor(t))
 		{
-			float x = (t - Noted::view()->earliestVisible()) / (double)Noted::view()->pixelDuration();
+			float x = (t - m_offset) / (double)m_pitch;
 			QString s = QString::fromStdString(textualTime(t, nor.delta, nor.major));
 			_p->setPen(QColor(128, 128, 128));
 			QSize z = _p->fontMetrics().boundingRect(s).size();

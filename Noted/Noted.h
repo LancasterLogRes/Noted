@@ -95,7 +95,6 @@ public:
 	static ViewMan* view() { return static_cast<ViewMan*>(get()->m_viewMan); }
 	static TimelinesItem* timelines() { return get()->m_timelinesItem; }
 
-	virtual int activeWidth() const;
 	virtual QGLWidget* glMaster() const;
 
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr);

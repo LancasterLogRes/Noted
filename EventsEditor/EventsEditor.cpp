@@ -159,7 +159,7 @@ void EventsEditor::mouseReleaseEvent(QMouseEvent* _e)
 void EventsEditor::mouseMoveEvent(QMouseEvent* _e)
 {
 	if (m_draggingTime != lb::UndefinedTime && _e->buttons() & Qt::MiddleButton)
-		NotedFace::view()->setTimelineOffset(m_draggingTime - _e->x() * NotedFace::view()->pixelDuration());
+		NotedFace::view()->setOffset(m_draggingTime - _e->x() * NotedFace::view()->pitch());
 	else if (_e->buttons() & Qt::MiddleButton)
 	{
 		setDragMode(QGraphicsView::NoDrag);
@@ -300,7 +300,7 @@ void EventsEditor::onViewParamsChanged()
 	double hopsInWidth = toSeconds(NotedFace::view()->visibleDuration()) * 1000;
 	double hopsFromBeginning = toSeconds(NotedFace::view()->earliestVisible()) * 1000;
 	setSceneRect(hopsFromBeginning, 0, hopsInWidth, height());
-	scale(NotedFace::view()->activeWidth() / hopsInWidth, 1);
+	scale(NotedFace::view()->width() / hopsInWidth, 1);
 }
 
 void EventsEditor::onSave()

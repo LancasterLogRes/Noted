@@ -137,11 +137,7 @@ public:
 	DummyNoted(QWidget* _p = nullptr): NotedFace(_p) {}
 	virtual ~DummyNoted() {}
 
-	virtual int activeWidth() const { return 0; }
 	virtual QGLWidget* glMaster() const { return nullptr; }
-	virtual lb::Time earliestVisible() const { return 0; }
-	virtual lb::Time pixelDuration() const { return 1; }
-	virtual int causalCursorIndex() const { return -1; }
 
 	virtual void info(QString const&, QString const& = "gray") {}
 
@@ -158,9 +154,6 @@ public:
 	virtual void addTimeline(Timeline*) {}
 	virtual QWidget* addGLWidget(QGLWidgetProxy*) { return nullptr; }
 	virtual void addDockWidget(Qt::DockWidgetArea, QDockWidget*) {}
-
-	virtual void setTimelineOffset(qint64) {}
-	virtual void setPixelDuration(qint64) {}
 
 	virtual void updateWindowTitle() {}
 };

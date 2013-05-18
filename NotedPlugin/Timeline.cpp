@@ -42,9 +42,9 @@ lb::Time Timeline::earliestVisible() const
 	return NotedFace::view()->earliestVisible();
 }
 
-lb::Time Timeline::pixelDuration() const
+lb::Time Timeline::pitch() const
 {
-	return NotedFace::view()->pixelDuration();
+	return NotedFace::view()->pitch();
 }
 
 lb::Time Timeline::highlightFrom() const

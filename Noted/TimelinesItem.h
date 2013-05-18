@@ -19,16 +19,18 @@ public:
 		connect(this, SIGNAL(pitchChanged()), SLOT(update()));
 	}
 
+	Q_INVOKABLE lb::Time localTime(lb::Time _t, lb::Time _p);
+
 signals:
 	void offsetChanged();
 	void pitchChanged();
 
 protected:
-	Q_PROPERTY(double offset MEMBER m_offset NOTIFY offsetChanged)
-	Q_PROPERTY(double pitch MEMBER m_pitch NOTIFY pitchChanged)
+	Q_PROPERTY(lb::Time offset MEMBER m_offset NOTIFY offsetChanged)
+	Q_PROPERTY(lb::Time pitch MEMBER m_pitch NOTIFY pitchChanged)
 
-	double m_offset;
-	double m_pitch;
+	lb::Time m_offset;
+	lb::Time m_pitch;
 };
 
 class GraphItem: public TimelineItem
@@ -143,13 +145,13 @@ signals:
 	void pitchChanged();
 
 protected:
-	Q_PROPERTY(double offset MEMBER m_offset NOTIFY offsetChanged)
-	Q_PROPERTY(double pitch MEMBER m_pitch NOTIFY pitchChanged)
+	Q_PROPERTY(lb::Time offset MEMBER m_offset NOTIFY offsetChanged)
+	Q_PROPERTY(lb::Time pitch MEMBER m_pitch NOTIFY pitchChanged)
 
 	virtual void paint(QPainter* _p);
 
-	double m_offset = 0;
-	double m_pitch = 1;
+	lb::Time m_offset = 0;
+	lb::Time m_pitch = 1;
 };
 
 class TimelinesItem: public QQuickItem
@@ -165,11 +167,11 @@ signals:
 	void widthChanged(int);
 
 protected:
-	Q_PROPERTY(double offset MEMBER m_offset NOTIFY offsetChanged)
-	Q_PROPERTY(double pitch MEMBER m_pitch NOTIFY pitchChanged)
+	Q_PROPERTY(lb::Time offset MEMBER m_offset NOTIFY offsetChanged)
+	Q_PROPERTY(lb::Time pitch MEMBER m_pitch NOTIFY pitchChanged)
 
 	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
 
-	double m_offset = 0;
-	double m_pitch = 1;
+	lb::Time m_offset = 0;
+	lb::Time m_pitch = 1;
 };

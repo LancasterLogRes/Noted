@@ -68,7 +68,7 @@ Timelines {
                 Chart {
                     ec: "RhythmDetectorFloat"
                     graph: "TatumPhase"
-                    offset: timelines.offset + mapToItem(timelines, 0, 0).x * pitch
+                    offset: localTime(timelines.offset, timelines.pitch)
                     pitch: timelines.pitch
                     anchors.fill: parent
 //                    Row { spacing: 20; Text { text: parent.parent.offset;  } Text { text: parent.parent.pitch; } Text { text: timelines.offset + mapToItem(timelines, 0, 0).x * pitch; } }
@@ -76,7 +76,7 @@ Timelines {
                 Chart {
                     ec: "RhythmDetectorFloat"
                     graph: "Loudness"
-                    offset: timelines.offset + mapToItem(timelines, 0, 0).x * pitch
+                    offset: localTime(timelines.offset, timelines.pitch)
                     pitch: timelines.pitch
                     anchors.fill: parent
                 }

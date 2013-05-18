@@ -53,5 +53,5 @@ public:
 	virtual lb::Time highlightFrom() const;
 
 	lb::Time earliestVisible() const;
-	lb::Time pixelDuration() const;
+	lb::Time pitch() const;
 };

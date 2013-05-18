@@ -57,8 +57,8 @@ using namespace lb;
 
 void ViewMan::normalize()
 {
-	if (Noted::audio()->duration() && activeWidth())
-		setParameters(Noted::audio()->duration() * -0.025, Noted::audio()->duration() / .95 / activeWidth());
+	if (Noted::audio()->duration() && width())
+		setParameters(Noted::audio()->duration() * -0.025, Noted::audio()->duration() / .95 / width());
 	else
 		setParameters(0, FromMsecs<1>::value);
 }
@@ -94,8 +94,6 @@ Noted::Noted(QWidget* _p):
 	x_timelines					(QMutex::Recursive),
 	m_glMaster					(new QGLWidget)
 {
-	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
-
 	m_libraryMan = new LibraryMan;
 	m_computeMan = new ComputeMan;
 	m_dataMan = new DataMan;
@@ -104,6 +102,7 @@ Noted::Noted(QWidget* _p):
 	m_viewMan = new ViewMan;
 
 	ui->setupUi(this);
+	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
 	ui->librariesView->setModel(m_libraryMan);
 	setWindowIcon(QIcon(":/Noted.png"));
 
@@ -283,7 +282,7 @@ void Noted::onDataChanging()
 
 void Noted::onDataLoaded()
 {
-	if (view()->timelineOffset() == 0 && view()->pixelDuration() == 1)
+	if (view()->offset() == 0 && view()->pitch() == 1)
 		view()->normalize();
 }
 
@@ -461,9 +460,9 @@ void Noted::readSettings()
 
 	audio()->setFilename(settings.value("fileName").toString());
 
-	if (settings.contains("pixelDuration"))
+	if (settings.contains("pitch"))
 	{
-		view()->setParameters(settings.value("timelineOffset").toLongLong(), max<Time>(settings.value("pixelDuration").toLongLong(), 1));
+		view()->setParameters(settings.value("offset").toLongLong(), max<Time>(settings.value("pitch").toLongLong(), 1));
 		audio()->setCursor(settings.value("cursor").toLongLong(), true);
 	}
 
@@ -530,8 +529,8 @@ void Noted::writeSettings()
 #undef DO
 
 	settings.setValue("fileName", audio()->filename());
-	settings.setValue("pixelDuration", (qlonglong)view()->pixelDuration());
-	settings.setValue("timelineOffset", (qlonglong)view()->earliestVisible());
+	settings.setValue("pitch", (qlonglong)view()->pitch());
+	settings.setValue("offset", (qlonglong)view()->earliestVisible());
 	settings.setValue("cursor", (qlonglong)audio()->cursor());
 
 	settings.setValue("geometry", saveGeometry());
@@ -750,22 +749,22 @@ QList<EventsView*> Noted::eventsViews() const
 
 void Noted::on_actZoomOut_triggered()
 {
-	view()->zoomTimeline((audio()->cursor() > view()->earliestVisible() && audio()->cursor() < view()->latestVisible()) ? view()->positionOf(audio()->cursor()) : (view()->activeWidth() / 2), 1.2);
+	view()->zoomTimeline((audio()->cursor() > view()->earliestVisible() && audio()->cursor() < view()->latestVisible()) ? view()->positionOf(audio()->cursor()) : (view()->width() / 2), 1.2);
 }
 
 void Noted::on_actZoomIn_triggered()
 {
-	view()->zoomTimeline((audio()->cursor() > view()->earliestVisible() && audio()->cursor() < view()->latestVisible()) ? view()->positionOf(audio()->cursor()) : (view()->activeWidth() / 2), 1 / 1.2);
+	view()->zoomTimeline((audio()->cursor() > view()->earliestVisible() && audio()->cursor() < view()->latestVisible()) ? view()->positionOf(audio()->cursor()) : (view()->width() / 2), 1 / 1.2);
 }
 
 void Noted::on_actPanBack_triggered()
 {
-	view()->setTimelineOffset(view()->timelineOffset() - view()->visibleDuration() / 4);
+	view()->setOffset(view()->offset() - view()->visibleDuration() / 4);
 }
 
 void Noted::on_actPanForward_triggered()
 {
-	view()->setTimelineOffset(view()->timelineOffset() + view()->visibleDuration() / 4);
+	view()->setOffset(view()->offset() + view()->visibleDuration() / 4);
 }
 
 void Noted::on_actPanic_triggered()
@@ -853,11 +852,6 @@ void Noted::on_clearInfo_clicked()
 	ui->infoView->setHtml(m_info);
 }
 
-int Noted::activeWidth() const
-{
-	return max<int>(1, ui->dataDisplay->width());
-}
-
 void Noted::info(QString const& _info, int _id)
 {
 	QString color = (_id == 255) ? "#700" : (_id == 254) ? "#007" : (_id == 253) ? "#440" : "#fff";
@@ -881,7 +875,7 @@ void Noted::onCursorChanged(lb::Time _cursor)
 {
 	ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(_cursor, toBase(audio()->samples(), audio()->rate()), 0, 0).c_str());
 	if (ui->actFollow->isChecked() && (_cursor < view()->earliestVisible() || _cursor > view()->earliestVisible() + view()->visibleDuration() * 7 / 8))
-		view()->setTimelineOffset(_cursor - view()->visibleDuration() / 8);
+		view()->setOffset(_cursor - view()->visibleDuration() / 8);
 }
 
 foreign_vector<float const> Noted::cursorMagSpectrum() const
@@ -907,7 +901,7 @@ foreign_vector<float const> Noted::cursorPhaseSpectrum() const
 void Noted::processNewInfo()
 {
 	QMutexLocker l(&x_infos);
-	if (m_infos.size())
+	if (m_infos.size() && ui && ui->infoView && ui->lockLog)
 	{
 		m_info += m_infos;
 		ui->infoView->setHtml(m_info);

@@ -56,7 +56,7 @@ void PrerenderedTimeline::mouseReleaseEvent(QMouseEvent* _e)
 void PrerenderedTimeline::mouseMoveEvent(QMouseEvent* _e)
 {
 	if (m_draggingTime != lb::UndefinedTime && _e->buttons() & Qt::MiddleButton)
-		NotedFace::view()->setTimelineOffset(m_draggingTime - _e->x() * NotedFace::view()->pixelDuration());
+		NotedFace::view()->setOffset(m_draggingTime - _e->x() * NotedFace::view()->pitch());
 	else if (_e->buttons() & Qt::LeftButton)
 		NotedFace::audio()->setCursor(NotedFace::view()->timeOf(_e->x()), true);
 }
@@ -78,7 +78,7 @@ lb::Time PrerenderedTimeline::renderingTimeOf(int _x) const
 
 bool PrerenderedTimeline::needsRerender() const
 {
-	if (Prerendered::needsRerender() || m_renderedOffset != NotedFace::view()->earliestVisible() || m_renderedPixelDuration != NotedFace::view()->pixelDuration())
+	if (Prerendered::needsRerender() || m_renderedOffset != NotedFace::view()->earliestVisible() || m_renderedPixelDuration != NotedFace::view()->pitch())
 		return true;
 	return false;
 }
@@ -123,5 +123,5 @@ void PrerenderedTimeline::paintGL(QSize _s)
 void PrerenderedTimeline::renderGL(QSize)
 {
 	m_renderedOffset = NotedFace::view()->earliestVisible();
-	m_renderedPixelDuration = NotedFace::view()->pixelDuration();
+	m_renderedPixelDuration = NotedFace::view()->pitch();
 }

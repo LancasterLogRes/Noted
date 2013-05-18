@@ -149,8 +149,8 @@ void EventsEditScene::wheelEvent(QGraphicsSceneWheelEvent* _wheelEvent)
 	{
 		int x = view()->mapFromScene(_wheelEvent->scenePos()).x();
 		lb::Time t = NotedFace::view()->timeOf(x);
-		NotedFace::view()->setPixelDuration(NotedFace::view()->pixelDuration() * exp(-_wheelEvent->delta() / 240.0));
-		NotedFace::view()->setTimelineOffset(t - x * NotedFace::view()->pixelDuration());
+		NotedFace::view()->setPitch(NotedFace::view()->pitch() * exp(-_wheelEvent->delta() / 240.0));
+		NotedFace::view()->setOffset(t - x * NotedFace::view()->pitch());
 	}
 	_wheelEvent->accept();
 }
