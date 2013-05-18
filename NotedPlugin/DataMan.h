@@ -34,7 +34,7 @@ public:
 	unsigned rawRecordCount(DataKey _key) const;
 
 signals:
-	void dataComplete(quint32);
+	void dataComplete(DataKey);
 
 private:
 	void noteDone(DataKey _k) { emit dataComplete(_k); }

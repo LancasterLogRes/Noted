@@ -8,12 +8,12 @@ using namespace lb;
 DataSet::DataSet(DataKey _operationKey):
 	m_operationKey(_operationKey)
 {
-	cnote << (void*)this << (QThread::currentThreadId()) << "DataSet::DataSet(" << _operationKey << ")";
+//	cdebug << (void*)this << (QThread::currentThreadId()) << "DataSet::DataSet(" << _operationKey << ")";
 }
 
 void DataSet::init(unsigned _recordLength, Time _stride, Time _first)
 {
-	cnote << (void*)this << (QThread::currentThreadId()) << "DataSet::init()";
+//	cdebug << (void*)this << (QThread::currentThreadId()) << "DataSet::init()";
 	m_first = _first;
 	m_stride = _stride;
 	m_recordLength = _recordLength;

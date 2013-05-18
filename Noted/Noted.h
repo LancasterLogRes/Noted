@@ -34,6 +34,7 @@
 #include <NotedPlugin/AcausalAnalysis.h>
 #include <NotedPlugin/Library.h>
 
+#include <QQuickItem>
 #include <QLibrary>
 #include <QFileSystemWatcher>
 #include <QFile>
@@ -44,6 +45,7 @@
 #include <QBuffer>
 #include <QSlider>
 #include <QGraphicsScene>
+#include <NotedPlugin/ViewManFace.h>
 #include "GraphView.h"
 #include "AudioMan.h"
 #include "ComputeMan.h"
@@ -63,8 +65,18 @@ class EventsView;
 class EventsEditor;
 class CompileEvents;
 class CollateEvents;
-
 class TimelinesItem;
+
+class ViewMan: public ViewManFace
+{
+	Q_OBJECT
+
+public:
+	ViewMan(QObject* _p = nullptr): ViewManFace(_p) {}
+
+public slots:
+	virtual void normalize();
+};
 
 class Noted: public NotedBase
 {
@@ -80,6 +92,8 @@ public:
 	static ComputeMan* compute() { return static_cast<ComputeMan*>(get()->m_computeMan); }
 	static AudioMan* audio() { return static_cast<AudioMan*>(get()->m_audioMan); }
 	static LibraryMan* libs() { return static_cast<LibraryMan*>(get()->m_libraryMan); }
+	static ViewMan* view() { return static_cast<ViewMan*>(get()->m_viewMan); }
+	static TimelinesItem* timelines() { return get()->m_timelinesItem; }
 
 	virtual int activeWidth() const;
 	virtual QGLWidget* glMaster() const;
@@ -118,7 +132,7 @@ private slots:
 	void on_actZoomOut_triggered();
 	void on_actPanBack_triggered();
 	void on_actPanForward_triggered();
-	void on_actViewAll_triggered() { normalizeView(); }
+	void on_actViewAll_triggered() { view()->normalize(); }
 	void on_actRedoEvents_triggered() { compute()->noteEventCompilersChanged(); }
 	void on_actNewEvents_triggered();
 	void on_actNewEventsFrom_triggered();
@@ -167,6 +181,8 @@ private slots:
 	void onWorkFinished();
 
 	void updateEventStuff();
+
+	// TODO: Move to AudioDevices: public QAbstractItemModel.
 	void updateAudioDevices();
 
 	void processNewInfo();
@@ -179,10 +195,9 @@ signals:
 private:
 	void changeEvent(QEvent *e);
 	void closeEvent(QCloseEvent*);
+	void showEvent(QShowEvent*);
 	void readSettings();
 	void writeSettings();
-
-	void normalizeView() { setTimelineOffset(audio()->duration() * -0.025); setPixelDuration(audio()->duration() / .95 / activeWidth()); }
 
 	void updateParameters();
 
@@ -190,7 +205,8 @@ private:
 	virtual void timelineDead(Timeline* _tl);
 
 	Ui::Noted* ui;
-	QQuickView* view;
+	QQuickView* m_view;
+	TimelinesItem* m_timelinesItem;
 
 	QSet<Timeline*> m_timelines;
 	mutable QMutex x_timelines;

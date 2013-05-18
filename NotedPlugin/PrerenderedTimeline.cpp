@@ -42,9 +42,9 @@ PrerenderedTimeline::~PrerenderedTimeline()
 void PrerenderedTimeline::mousePressEvent(QMouseEvent* _e)
 {
 	if (_e->button() == Qt::LeftButton)
-		NotedFace::audio()->setCursor(NotedFace::get()->timeOf(_e->x()), true);
+		NotedFace::audio()->setCursor(NotedFace::view()->timeOf(_e->x()), true);
 	else if (_e->button() == Qt::MiddleButton)
-		m_draggingTime = NotedFace::get()->timeOf(_e->x());
+		m_draggingTime = NotedFace::view()->timeOf(_e->x());
 }
 
 void PrerenderedTimeline::mouseReleaseEvent(QMouseEvent* _e)
@@ -56,14 +56,14 @@ void PrerenderedTimeline::mouseReleaseEvent(QMouseEvent* _e)
 void PrerenderedTimeline::mouseMoveEvent(QMouseEvent* _e)
 {
 	if (m_draggingTime != lb::UndefinedTime && _e->buttons() & Qt::MiddleButton)
-		NotedFace::get()->setTimelineOffset(m_draggingTime - _e->x() * NotedFace::get()->pixelDuration());
+		NotedFace::view()->setTimelineOffset(m_draggingTime - _e->x() * NotedFace::view()->pixelDuration());
 	else if (_e->buttons() & Qt::LeftButton)
-		NotedFace::audio()->setCursor(NotedFace::get()->timeOf(_e->x()), true);
+		NotedFace::audio()->setCursor(NotedFace::view()->timeOf(_e->x()), true);
 }
 
 void PrerenderedTimeline::wheelEvent(QWheelEvent* _e)
 {
-	NotedFace::get()->zoomTimeline(_e->x(), exp(-_e->delta() / (QApplication::keyboardModifiers() & Qt::ControlModifier ? 2400.0 : QApplication::keyboardModifiers() & Qt::ShiftModifier ? 24 : 240.0)));
+	NotedFace::view()->zoomTimeline(_e->x(), exp(-_e->delta() / (QApplication::keyboardModifiers() & Qt::ControlModifier ? 2400.0 : QApplication::keyboardModifiers() & Qt::ShiftModifier ? 24 : 240.0)));
 }
 
 int PrerenderedTimeline::renderingPositionOf(lb::Time _t) const
@@ -78,7 +78,7 @@ lb::Time PrerenderedTimeline::renderingTimeOf(int _x) const
 
 bool PrerenderedTimeline::needsRerender() const
 {
-	if (Prerendered::needsRerender() || m_renderedOffset != NotedFace::get()->earliestVisible() || m_renderedPixelDuration != NotedFace::get()->pixelDuration())
+	if (Prerendered::needsRerender() || m_renderedOffset != NotedFace::view()->earliestVisible() || m_renderedPixelDuration != NotedFace::view()->pixelDuration())
 		return true;
 	return false;
 }
@@ -98,8 +98,8 @@ void PrerenderedTimeline::paintGL(QSize _s)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	m_paintedCursorIndex = NotedFace::audio()->cursorIndex();
-	int lastCursorL = NotedFace::get()->positionOf(highlightFrom()) + 1;
-	int lastCursorR = lastCursorL + NotedFace::get()->widthOf(highlightDuration());
+	int lastCursorL = NotedFace::view()->positionOf(highlightFrom()) + 1;
+	int lastCursorR = lastCursorL + NotedFace::view()->widthOf(highlightDuration());
 	glColor4f(0.f, .3f, 1.f, 0.2f);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBegin(GL_TRIANGLE_STRIP);
@@ -122,6 +122,6 @@ void PrerenderedTimeline::paintGL(QSize _s)
 
 void PrerenderedTimeline::renderGL(QSize)
 {
-	m_renderedOffset = NotedFace::get()->earliestVisible();
-	m_renderedPixelDuration = NotedFace::get()->pixelDuration();
+	m_renderedOffset = NotedFace::view()->earliestVisible();
+	m_renderedPixelDuration = NotedFace::view()->pixelDuration();
 }

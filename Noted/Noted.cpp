@@ -55,6 +55,39 @@
 using namespace std;
 using namespace lb;
 
+void ViewMan::normalize()
+{
+	if (Noted::audio()->duration() && activeWidth())
+		setParameters(Noted::audio()->duration() * -0.025, Noted::audio()->duration() / .95 / activeWidth());
+	else
+		setParameters(0, FromMsecs<1>::value);
+}
+
+static QObject* getLibs(QQmlEngine*, QJSEngine*)
+{
+	return Noted::libs();
+}
+static QObject* getCompute(QQmlEngine*, QJSEngine*)
+{
+	return Noted::compute();
+}
+static QObject* getData(QQmlEngine*, QJSEngine*)
+{
+	return Noted::data();
+}
+static QObject* getGraphs(QQmlEngine*, QJSEngine*)
+{
+	return Noted::graphs();
+}
+static QObject* getAudio(QQmlEngine*, QJSEngine*)
+{
+	return Noted::audio();
+}
+static QObject* getView(QQmlEngine*, QJSEngine*)
+{
+	return Noted::view();
+}
+
 Noted::Noted(QWidget* _p):
 	NotedBase					(_p),
 	ui							(new Ui::Noted),
@@ -68,23 +101,11 @@ Noted::Noted(QWidget* _p):
 	m_dataMan = new DataMan;
 	m_audioMan = new AudioMan;
 	m_graphMan = new GraphManFace;
-
-	connect(m_audioMan, SIGNAL(prepareForDataChange()), SLOT(onDataChanging()));
-	connect(m_audioMan, SIGNAL(dataLoaded()), SLOT(onDataLoaded()));
-	connect(m_audioMan, SIGNAL(stateChanged(bool,bool,bool)), SLOT(onPlaybackStatusChanged()));
-	connect(m_audioMan, SIGNAL(cursorChanged(lb::Time)), SLOT(onCursorChanged(lb::Time)));
-
-	connect(m_computeMan, SIGNAL(finished()), SLOT(onWorkFinished()));
-	connect(m_computeMan, SIGNAL(progressed(QString, int)), SLOT(onWorkProgressed(QString, int)));
-	connect(m_computeMan, SIGNAL(finished()), SLOT(updateEventStuff()));
-
-	connect(m_libraryMan, SIGNAL(eventCompilerFactoryAvailable(QString, unsigned)), SLOT(onEventCompilerFactoryAvailable(QString, unsigned)));
-	connect(m_libraryMan, SIGNAL(eventCompilerFactoryUnavailable(QString)), SLOT(onEventCompilerFactoryUnavailable(QString)));
+	m_viewMan = new ViewMan;
 
 	ui->setupUi(this);
 	ui->librariesView->setModel(m_libraryMan);
 	setWindowIcon(QIcon(":/Noted.png"));
-	show();
 
 	qmlRegisterType<ChartItem>("com.llr", 1, 0, "Chart");
 	qmlRegisterType<TimelinesItem>("com.llr", 1, 0, "Timelines");
@@ -92,16 +113,38 @@ Noted::Noted(QWidget* _p):
 	qmlRegisterType<YLabelsItem>("com.llr", 1, 0, "YLabels");
 	qmlRegisterType<YScaleItem>("com.llr", 1, 0, "YScale");
 
-	view = new QQuickView(QUrl("qrc:/Noted.qml"));
+	qmlRegisterSingletonType<LibraryMan>("com.llr", 1, 0, "LibraryMan", getLibs);
+	qmlRegisterSingletonType<ComputeMan>("com.llr", 1, 0, "ComputeMan", getCompute);
+	qmlRegisterSingletonType<DataMan>("com.llr", 1, 0, "DataMan", getData);
+	qmlRegisterSingletonType<GraphManFace>("com.llr", 1, 0, "GraphMan", getGraphs);
+	qmlRegisterSingletonType<AudioMan>("com.llr", 1, 0, "AudioMan", getAudio);
+	qmlRegisterSingletonType<ViewMan>("com.llr", 1, 0, "ViewMan", getView);
 
-	QWidget* w = QWidget::createWindowContainer(view);
-	view->setResizeMode(QQuickView::SizeRootObjectToView);
+	m_view = new QQuickView(QUrl("qrc:/Noted.qml"));
+	QWidget* w = QWidget::createWindowContainer(m_view);
+	m_view->setResizeMode(QQuickView::SizeRootObjectToView);
 	ui->fullDisplay->addWidget(w);
-	view->create();
+	m_view->create();
 
-	auto tls = view->rootObject();
-	connect(this, SIGNAL(offsetChanged()), tls, SIGNAL(offsetChanged()));
-	connect(this, SIGNAL(durationChanged()), tls, SIGNAL(pitchChanged()));
+	m_timelinesItem = static_cast<TimelinesItem*>(m_view->rootObject());
+
+	connect(audio(), SIGNAL(prepareForDataChange()), SLOT(onDataChanging()));
+	connect(audio(), SIGNAL(dataLoaded()), SLOT(onDataLoaded()));
+	connect(audio(), SIGNAL(stateChanged(bool,bool,bool)), SLOT(onPlaybackStatusChanged()));
+	connect(audio(), SIGNAL(cursorChanged(lb::Time)), SLOT(onCursorChanged(lb::Time)));
+
+	connect(compute(), SIGNAL(finished()), SLOT(onWorkFinished()));
+	connect(compute(), SIGNAL(progressed(QString, int)), SLOT(onWorkProgressed(QString, int)));
+	connect(compute(), SIGNAL(finished()), SLOT(updateEventStuff()));
+
+	connect(libs(), SIGNAL(eventCompilerFactoryAvailable(QString, unsigned)), SLOT(onEventCompilerFactoryAvailable(QString, unsigned)));
+	connect(libs(), SIGNAL(eventCompilerFactoryUnavailable(QString)), SLOT(onEventCompilerFactoryUnavailable(QString)));
+
+	connect(m_timelinesItem, SIGNAL(widthChanged(int)), view(), SLOT(setWidth(int)));
+/*	connect(view(), &ViewMan::parametersChanged, [=](lb::Time o, lb::Time d)
+	{
+		cnote << "View parameters changed to" << textualTime(o) << "x" << textualTime(d) << "(" << m_timelinesItem->property("offset").toDouble() << m_timelinesItem->property("pitch").toDouble() << ")";
+	});*/
 
 	for (auto i: findChildren<PrerenderedTimeline*>())
 		i->hide();
@@ -174,6 +217,12 @@ Noted::~Noted()
 	delete m_glMaster;
 }
 
+void Noted::showEvent(QShowEvent*)
+{
+	// Needs initializing
+	view()->setWidth(m_view->width());
+}
+
 void Noted::on_playDevice_currentIndexChanged(int _i)
 {
 	audio()->setPlayDevice(ui->playDevice->itemData(_i).toInt());
@@ -186,7 +235,7 @@ void Noted::on_force16Bit_toggled(bool _v)
 
 void Noted::on_playRate_currentIndexChanged(int _i)
 {
-	int rate = -1;														// Default device rate.
+	int rate = -1;								// Default device rate.
 	if (_i == ui->playRate->count() - 1)		// Working rate.
 		rate = 0;
 	else if (_i < ui->playRate->count() - 2)	// Specified rate.
@@ -229,14 +278,13 @@ void Noted::onDataChanging()
 {
 	if (ui->actPlay->isChecked())
 		ui->actPlay->setChecked(false);
-	m_timelineOffset = 0;
-	m_pixelDuration = 1;
+	view()->setParameters(0, 1);
 }
 
 void Noted::onDataLoaded()
 {
-	if (m_pixelDuration == 1)
-		normalizeView();
+	if (view()->timelineOffset() == 0 && view()->pixelDuration() == 1)
+		view()->normalize();
 }
 
 QGLWidget* Noted::glMaster() const
@@ -246,7 +294,7 @@ QGLWidget* Noted::glMaster() const
 
 void Noted::on_actAbout_triggered()
 {
-	QMessageBox::about(this, "About Noted!", "<h1>Noted!</h1>Copyright (c)2011, 2012 Lancaster Logic Response Limited. This code is released under version 2 of the GNU General Public Licence.");
+	QMessageBox::about(this, "About Noted!", "<h1>Noted!</h1>Copyright (c)2011, 2012, 2013 Lancaster Logic Response Limited. This code is released under version 2 of the GNU General Public Licence.");
 }
 
 void Noted::onPlaybackStatusChanged()
@@ -267,13 +315,13 @@ void Noted::updateAudioDevices()
 {
 	QString pd = ui->playDevice->currentText();
 	ui->playDevice->clear();
-	foreach (auto d, Audio::Playback::devices())
+	for (auto d: Audio::Playback::devices())
 		ui->playDevice->addItem(QString::fromStdString(d.second), d.first);
 	ui->playDevice->setCurrentIndex(ui->playDevice->findText(pd));
 
 	QString cd = ui->captureDevice->currentText();
 	ui->captureDevice->clear();
-	foreach (auto d, Audio::Capture::devices())
+	for (auto d: Audio::Capture::devices())
 		ui->captureDevice->addItem(QString::fromStdString(d.second), d.first);
 	ui->captureDevice->setCurrentIndex(ui->captureDevice->findText(cd));
 }
@@ -413,10 +461,9 @@ void Noted::readSettings()
 
 	audio()->setFilename(settings.value("fileName").toString());
 
-	if (settings.contains("duration"))
+	if (settings.contains("pixelDuration"))
 	{
-		m_pixelDuration = max<Time>(settings.value("pixelDuration").toLongLong(), 1);
-		m_timelineOffset = settings.value("timelineOffset").toLongLong();
+		view()->setParameters(settings.value("timelineOffset").toLongLong(), max<Time>(settings.value("pixelDuration").toLongLong(), 1));
 		audio()->setCursor(settings.value("cursor").toLongLong(), true);
 	}
 
@@ -483,8 +530,8 @@ void Noted::writeSettings()
 #undef DO
 
 	settings.setValue("fileName", audio()->filename());
-	settings.setValue("pixelDuration", (qlonglong)m_pixelDuration);
-	settings.setValue("timelineOffset", (qlonglong)m_timelineOffset);
+	settings.setValue("pixelDuration", (qlonglong)view()->pixelDuration());
+	settings.setValue("timelineOffset", (qlonglong)view()->earliestVisible());
 	settings.setValue("cursor", (qlonglong)audio()->cursor());
 
 	settings.setValue("geometry", saveGeometry());
@@ -703,22 +750,22 @@ QList<EventsView*> Noted::eventsViews() const
 
 void Noted::on_actZoomOut_triggered()
 {
-	zoomTimeline((audio()->cursor() > earliestVisible() && audio()->cursor() < latestVisible()) ? positionOf(audio()->cursor()) : (activeWidth() / 2), 1.2);
+	view()->zoomTimeline((audio()->cursor() > view()->earliestVisible() && audio()->cursor() < view()->latestVisible()) ? view()->positionOf(audio()->cursor()) : (view()->activeWidth() / 2), 1.2);
 }
 
 void Noted::on_actZoomIn_triggered()
 {
-	zoomTimeline((audio()->cursor() > earliestVisible() && audio()->cursor() < latestVisible()) ? positionOf(audio()->cursor()) : (activeWidth() / 2), 1 / 1.2);
+	view()->zoomTimeline((audio()->cursor() > view()->earliestVisible() && audio()->cursor() < view()->latestVisible()) ? view()->positionOf(audio()->cursor()) : (view()->activeWidth() / 2), 1 / 1.2);
 }
 
 void Noted::on_actPanBack_triggered()
 {
-	setTimelineOffset(m_timelineOffset - visibleDuration() / 4);
+	view()->setTimelineOffset(view()->timelineOffset() - view()->visibleDuration() / 4);
 }
 
 void Noted::on_actPanForward_triggered()
 {
-	setTimelineOffset(m_timelineOffset + visibleDuration() / 4);
+	view()->setTimelineOffset(view()->timelineOffset() + view()->visibleDuration() / 4);
 }
 
 void Noted::on_actPanic_triggered()
@@ -739,7 +786,7 @@ void Noted::updateEventStuff()
 					QString n = ev->name() + "/" + QString::fromStdString(g.second->name());
 					if (!findChild<GraphView*>(n))
 					{
-						cnote << "Creating" << n.toStdString();
+//						cdebug << "Creating" << n.toStdString();
 						QDockWidget* dw = new QDockWidget(n, this);
 						dw->setObjectName(n + "-Dock");
 						GraphView* dv = new GraphView(dw, n);
@@ -833,8 +880,8 @@ void Noted::info(QString const& _info, QString const& _c)
 void Noted::onCursorChanged(lb::Time _cursor)
 {
 	ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(_cursor, toBase(audio()->samples(), audio()->rate()), 0, 0).c_str());
-	if (ui->actFollow->isChecked() && (_cursor < earliestVisible() || _cursor > earliestVisible() + visibleDuration() * 7 / 8))
-		setTimelineOffset(_cursor - visibleDuration() / 8);
+	if (ui->actFollow->isChecked() && (_cursor < view()->earliestVisible() || _cursor > view()->earliestVisible() + view()->visibleDuration() * 7 / 8))
+		view()->setTimelineOffset(_cursor - view()->visibleDuration() / 8);
 }
 
 foreign_vector<float const> Noted::cursorMagSpectrum() const

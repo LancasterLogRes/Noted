@@ -30,8 +30,7 @@ using namespace lb;
 
 WaveOverview::WaveOverview(QWidget* _parent): CurrentView(_parent)
 {
-	connect(NotedFace::get(), SIGNAL(durationChanged()), SLOT(timelineChanged()));
-	connect(NotedFace::get(), SIGNAL(offsetChanged()), SLOT(timelineChanged()));
+	connect(NotedFace::view(), SIGNAL(parametersChanged(lb::Time, lb::Time)), SLOT(timelineChanged()));
 }
 
 int WaveOverview::positionOf(lb::Time _t)
@@ -70,8 +69,8 @@ void WaveOverview::paintGL(QSize _s)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	int cursorL = positionOf(NotedFace::get()->earliestVisible());
-	int cursorR = positionOf(NotedFace::get()->latestVisible());
+	int cursorL = positionOf(NotedFace::view()->earliestVisible());
+	int cursorR = positionOf(NotedFace::view()->latestVisible());
 	int cursorM = positionOf(NotedFace::audio()->cursor());
 
 	glColor4f(0.f, .3f, 1.f, .2f);

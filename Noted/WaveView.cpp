@@ -50,7 +50,7 @@ void WaveView::renderGL(QSize _s)
 
 	vector<float> wave(width() * 2);
 
-	bool isAbsolute = NotedFace::audio()->waveBlock(NotedFace::get()->timeOf(0), NotedFace::get()->durationOf(width()), foreign_vector<float>(wave.data(), wave.size()));
+	bool isAbsolute = NotedFace::audio()->waveBlock(NotedFace::view()->timeOf(0), NotedFace::view()->durationOf(width()), foreign_vector<float>(wave.data(), wave.size()));
 
 	int h = height();
 	QOpenGLPaintDevice glpd(size());

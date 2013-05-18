@@ -29,8 +29,7 @@
 #include <Common/Global.h>
 #include <Common/Algorithms.h>
 #include <Common/Time.h>
-
-typedef uint32_t DataKey;
+#include "Common.h"
 
 // Usage: call init(), then initialize data with call to data(), then mention it's good with setGood(). data() can then be used to read data.
 class Cache

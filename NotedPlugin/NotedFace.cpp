@@ -35,6 +35,7 @@ NotedFace::NotedFace(QWidget* _p):
 {
 	s_this = this;
 	qRegisterMetaType<lb::Time>();
+	qRegisterMetaType<DataKey>();
 	qRegisterMetaType<AcausalAnalysis*>();
 	qRegisterMetaType<CausalAnalysis*>();
 }

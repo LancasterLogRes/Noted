@@ -26,7 +26,6 @@
 #include "EventsEditScene.h"
 #include "AttackItem.h"
 #include "EventsEditor.h"
-
 using namespace std;
 using namespace lb;
 
@@ -62,8 +61,7 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 	m_scene = make_shared<EventsEditScene>();
 	setScene(&*m_scene);
 	connect(&*m_scene, SIGNAL(newScale()), SLOT(onViewParamsChanged()));
-	connect(NotedFace::get(), SIGNAL(offsetChanged()), SLOT(onViewParamsChanged()));
-	connect(NotedFace::get(), SIGNAL(durationChanged()), SLOT(onViewParamsChanged()));
+	connect(NotedFace::view(), SIGNAL(parametersChanged(lb::Time, lb::Time)), SLOT(onViewParamsChanged()));
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setMinimumHeight(16);
@@ -147,7 +145,7 @@ void EventsEditor::mousePressEvent(QMouseEvent* _e)
 	}
 	else
 	{
-		m_draggingTime = NotedFace::get()->timeOf(_e->x());
+		m_draggingTime = NotedFace::view()->timeOf(_e->x());
 	}
 }
 
@@ -161,7 +159,7 @@ void EventsEditor::mouseReleaseEvent(QMouseEvent* _e)
 void EventsEditor::mouseMoveEvent(QMouseEvent* _e)
 {
 	if (m_draggingTime != lb::UndefinedTime && _e->buttons() & Qt::MiddleButton)
-		NotedFace::get()->setTimelineOffset(m_draggingTime - _e->x() * NotedFace::get()->pixelDuration());
+		NotedFace::view()->setTimelineOffset(m_draggingTime - _e->x() * NotedFace::view()->pixelDuration());
 	else if (_e->buttons() & Qt::MiddleButton)
 	{
 		setDragMode(QGraphicsView::NoDrag);
@@ -299,10 +297,10 @@ QString EventsEditor::queryFilename()
 void EventsEditor::onViewParamsChanged()
 {
 	resetTransform();
-	double hopsInWidth = toSeconds(NotedFace::get()->visibleDuration()) * 1000;
-	double hopsFromBeginning = toSeconds(NotedFace::get()->earliestVisible()) * 1000;
+	double hopsInWidth = toSeconds(NotedFace::view()->visibleDuration()) * 1000;
+	double hopsFromBeginning = toSeconds(NotedFace::view()->earliestVisible()) * 1000;
 	setSceneRect(hopsFromBeginning, 0, hopsInWidth, height());
-	scale(NotedFace::get()->activeWidth() / hopsInWidth, 1);
+	scale(NotedFace::view()->activeWidth() / hopsInWidth, 1);
 }
 
 void EventsEditor::onSave()

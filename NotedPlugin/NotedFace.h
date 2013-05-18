@@ -42,6 +42,7 @@
 #include "ComputeManFace.h"
 #include "GraphManFace.h"
 #include "LibraryManFace.h"
+#include "ViewManFace.h"
 #include "QGLWidgetProxy.h"
 
 LIGHTBOX_TEXTUAL_ENUM(AudioStage, Wave, Spectrum);
@@ -59,6 +60,7 @@ class DataMan;
 class GraphManFace;
 class AudioManFace;
 class ComputeManFace;
+class ViewManFace;
 
 class NotedFace: public QMainWindow
 {
@@ -70,25 +72,14 @@ public:
 	NotedFace(QWidget* _p);
 	virtual ~NotedFace();
 
-	virtual int activeWidth() const = 0;
 	virtual QGLWidget* glMaster() const = 0;
-
-	inline lb::Time earliestVisible() const { return m_timelineOffset; }
-	inline lb::Time pixelDuration() const { return m_pixelDuration; }
-	inline lb::Time latestVisible() const { return earliestVisible() + visibleDuration(); }
-	inline lb::Time visibleDuration() const { return activeWidth() * pixelDuration(); }
 
 	inline unsigned windowSizeSamples() const { return m_windowFunction.size(); }
 	inline unsigned spectrumSize() const { return m_windowFunction.size() / 2 + 1; }
 	inline std::vector<float> const& windowFunction() const { return m_windowFunction; }
 	inline bool isZeroPhase() const { return m_zeroPhase; }
 	inline bool isFloatFFT() const { return m_floatFFT; }
-
 	inline lb::Time windowSize() const { return lb::toBase(windowSizeSamples(), audio()->rate()); }
-	inline int widthOf(lb::Time _t) const { return audio()->samples() ? (_t + pixelDuration() / 2) / pixelDuration() : 0; }
-	inline lb::Time durationOf(int _screenWidth) const { return _screenWidth * pixelDuration(); }
-	inline int positionOf(lb::Time _t) const { return widthOf(_t - earliestVisible()); }
-	inline lb::Time timeOf(int _x) const { return durationOf(_x) + earliestVisible(); }
 
 	virtual lb::foreign_vector<float const> multiSpectrum(int _i, int _n) const = 0;
 	virtual lb::foreign_vector<float const> magSpectrum(int _i, int _n) const = 0;
@@ -104,25 +95,20 @@ public:
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d) = 0;
 	virtual void info(QString const& _info, QString const& _color = "gray") = 0;
 
-	inline void zoomTimeline(int _xFocus, double _factor) { auto pivot = timeOf(_xFocus); m_timelineOffset = pivot - (m_pixelDuration *= _factor) * _xFocus; emit durationChanged(); emit offsetChanged(); }
-
 	static NotedFace* get() { assert(s_this); return s_this; }
 	static AudioManFace* audio() { return get()->m_audioMan; }
 	static DataMan* data() { return get()->m_dataMan; }
 	static GraphManFace* graphs() { return get()->m_graphMan; }
 	static ComputeManFace* compute() { return get()->m_computeMan; }
 	static LibraryManFace* libs() { return get()->m_libraryMan; }
+	static ViewManFace* view() { return get()->m_viewMan; }
 
 public slots:
-	inline void setTimelineOffset(qint64 _o) { if (m_timelineOffset != _o) { m_timelineOffset = _o; emit offsetChanged(); } }
-	inline void setPixelDuration(qint64 _d) { if (m_pixelDuration != _d) { m_pixelDuration = _d; emit durationChanged(); } }
 	virtual void updateWindowTitle() = 0;
 
 signals:
 	void constructed();
 
-	void offsetChanged();
-	void durationChanged();
 	void eventsChanged();
 
 protected:
@@ -133,13 +119,11 @@ protected:
 	GraphManFace* m_graphMan = nullptr;
 	ComputeManFace* m_computeMan = nullptr;
 	LibraryManFace* m_libraryMan = nullptr;
+	ViewManFace* m_viewMan = nullptr;
 
 	bool m_zeroPhase = false;
 	bool m_floatFFT = true;
 	std::vector<float> m_windowFunction;
-
-	lb::Time m_timelineOffset = 0;
-	lb::Time m_pixelDuration = 1;
 
 	static NotedFace* s_this;
 };

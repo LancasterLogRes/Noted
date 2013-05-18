@@ -39,12 +39,12 @@ void Timeline::finiTimeline()
 
 lb::Time Timeline::earliestVisible() const
 {
-	return NotedFace::get()->earliestVisible();
+	return NotedFace::view()->earliestVisible();
 }
 
 lb::Time Timeline::pixelDuration() const
 {
-	return NotedFace::get()->pixelDuration();
+	return NotedFace::view()->pixelDuration();
 }
 
 lb::Time Timeline::highlightFrom() const

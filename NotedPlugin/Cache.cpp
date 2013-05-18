@@ -43,13 +43,13 @@ bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, s
 	m_file.setFileName(f);
 	m_file.open(QIODevice::ReadWrite);
 
-	cnote << "init" << _bytes << "on" << m_file.size() << "-" <<  sizeof(Header) << ", file" << m_file.fileName().toStdString();
+//	cdebug << "init" << _bytes << "on" << m_file.size() << "-" <<  sizeof(Header) << ", file" << m_file.fileName().toStdString();
 	if (m_file.size() == (int)(_bytes + sizeof(Header)))
 	{
 		// File looks the right size - map it and check the header.
 		m_mapping = m_file.map(0, m_file.size());
 		assert(m_mapping);
-		cnote << "init" << hex << _sourceKey << "/" << _operationKey << "on" << hex << header().sourceKey << "/" << header().operationKey << ", file" << m_file.fileName().toStdString();
+//		cdebug << "init" << hex << _sourceKey << "/" << _operationKey << "on" << hex << header().sourceKey << "/" << header().operationKey << ", file" << m_file.fileName().toStdString();
 		if (header().bytes == _bytes && header().operationKey == _operationKey && header().sourceKey == _sourceKey && isGood())
 			// Header agrees with parameters - trust the flags on whether it's complete.
 			return true;
@@ -68,7 +68,7 @@ bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, s
 	header().flags = 0;
 	header().operationKey = _operationKey;
 	header().sourceKey = _sourceKey;
-	cnote << "Set header of" << m_file.fileName().toStdString() << "as" << hex << header().sourceKey << "/" << header().operationKey;
+//	cdebug << "Set header of" << m_file.fileName().toStdString() << "as" << hex << header().sourceKey << "/" << header().operationKey;
 
 	assert(isMapped());
 	return false;
@@ -89,7 +89,7 @@ bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey)
 		// File looks the right size - map it and check the header.
 		m_mapping = m_file.map(0, m_file.size());
 		assert(m_mapping);
-		cnote << "init" << hex << _sourceKey << "/" << _operationKey << "on" << hex << header().sourceKey << "/" << header().operationKey << ", file" << m_file.fileName().toStdString();
+//		cdebug << "init" << hex << _sourceKey << "/" << _operationKey << "on" << hex << header().sourceKey << "/" << header().operationKey << ", file" << m_file.fileName().toStdString();
 		if (header().bytes == m_file.size() - sizeof(Header) && header().operationKey == _operationKey && header().sourceKey == _sourceKey && isGood())
 			// Header agrees with parameters - trust the flags on whether it's complete.
 			return true;
@@ -122,7 +122,7 @@ void Cache::setGood()
 		assert(m_mapping);
 		header().bytes = m_file.size() - sizeof(Header);
 	}
-	cnote << "setGood on" << hex << header().sourceKey << "/" << header().operationKey << ", file" << m_file.fileName().toStdString();
+//	cdebug << "setGood on" << hex << header().sourceKey << "/" << header().operationKey << ", file" << m_file.fileName().toStdString();
 	header().flags = IsGood;
 }
 

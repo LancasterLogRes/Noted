@@ -43,12 +43,12 @@ void DataSetDataStore::init(unsigned _recordLength, bool _dense)
 
 	if (m_s->haveRaw())
 	{
-		cdebug << "Already have DataSet";
+//		cdebug << "Already have DataSet";
 		m_s = nullptr;
 	}
 	else
 	{
-		cdebug << "Don't have DataSet - initializing...";
+//		cdebug << "Don't have DataSet - initializing...";
 		m_s->init(_recordLength, _dense ? Noted::audio()->hop(): 0, 0);
 	}
 }

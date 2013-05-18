@@ -7,8 +7,6 @@
 #include "Common.h"
 #include "AcausalAnalysis.h"
 
-typedef uint32_t DataKey;
-
 class AudioManFace: public QObject
 {
 	Q_OBJECT

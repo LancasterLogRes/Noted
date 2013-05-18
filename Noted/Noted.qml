@@ -4,11 +4,9 @@ import com.llr 1.0
 Timelines {
     id: timelines
     objectName: 'timelines'
-    offset: 0
-    pitch: 50
+    offset: ViewMan.offset
+    pitch: ViewMan.pitch
 
-    onOffsetChanged: console.log("Offset changed" + offset)
-    onPitchChanged: console.log("Pitch changed" + pitch)
 //    Row { spacing: 20; Text { text: timelines.offset;  } Text { text: timelines.pitch; } }
     Column {
         anchors.fill: parent

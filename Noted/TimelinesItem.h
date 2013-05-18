@@ -49,9 +49,6 @@ public:
 signals:
 	void graphChanged();
 
-private slots:
-	void noteDataComplete(quint32);
-
 protected:
 	Q_PROPERTY(QString ec READ ecName WRITE setEcName NOTIFY graphChanged)
 	Q_PROPERTY(QString graph READ graphName WRITE setGraphName NOTIFY graphChanged)
@@ -160,25 +157,19 @@ class TimelinesItem: public QQuickItem
 	Q_OBJECT
 
 public:
-	TimelinesItem(QQuickItem* _p = nullptr): QQuickItem(_p)
-	{
-		setFlag(ItemHasContents, true);
-		connect(this, SIGNAL(offsetChanged()), SLOT(update()));
-		connect(this, SIGNAL(pitchChanged()), SLOT(update()));
-	}
-
-	double offset() const { return lb::toSeconds(Noted::get()->earliestVisible()); }
-	double pitch() const { return lb::toSeconds(Noted::get()->pixelDuration()); }
-	void setOffset(double _s) const { Noted::get()->setTimelineOffset(lb::fromSeconds(_s)); }
-	void setPitch(double _s) const { Noted::get()->setPixelDuration(lb::fromSeconds(_s)); }
+	TimelinesItem(QQuickItem* _p = nullptr);
 
 signals:
 	void offsetChanged();
 	void pitchChanged();
+	void widthChanged(int);
 
-private:
-	Q_PROPERTY(double offset READ offset WRITE setOffset NOTIFY offsetChanged)
-	Q_PROPERTY(double pitch READ pitch WRITE setPitch NOTIFY pitchChanged)
+protected:
+	Q_PROPERTY(double offset MEMBER m_offset NOTIFY offsetChanged)
+	Q_PROPERTY(double pitch MEMBER m_pitch NOTIFY pitchChanged)
 
 	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
+
+	double m_offset = 0;
+	double m_pitch = 1;
 };
