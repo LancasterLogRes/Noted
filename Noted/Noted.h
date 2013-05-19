@@ -90,9 +90,6 @@ public:
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr);
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d);
 
-	lb::foreign_vector<float const> cursorMagSpectrum() const;
-	lb::foreign_vector<float const> cursorPhaseSpectrum() const;
-
 public slots:
 	virtual void info(QString const& _info, QString const& _color = "gray");
 	void info(QString const& _info, int _id);
@@ -114,7 +111,7 @@ private slots:
 	void on_actPanBack_triggered();
 	void on_actPanForward_triggered();
 	void on_actViewAll_triggered() { view()->normalize(); }
-	void on_actRedoEvents_triggered() { compute()->noteEventCompilersChanged(); }
+	void on_actRedoEvents_triggered() { events()->noteEventCompilersChanged(); }
 	void on_actNewEvents_triggered();
 	void on_actNewEventsFrom_triggered();
 	void on_actOpenEvents_triggered();
@@ -181,10 +178,6 @@ private:
 	Ui::Noted* ui;
 	QQuickView* m_view;
 	TimelinesItem* m_timelinesItem;
-
-	std::shared_ptr<lb::FFTW> m_fftw;
-	std::vector<float> m_currentMagSpectrum;
-	std::vector<float> m_currentPhaseSpectrum;
 
 	// Information output...
 	QMutex x_infos;

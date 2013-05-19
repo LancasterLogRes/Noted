@@ -19,6 +19,7 @@
  */
 
 #include <utility>
+#include <QMouseEvent>
 #include <QApplication>
 #include <QPainter>
 #include <QGLFramebufferObject>

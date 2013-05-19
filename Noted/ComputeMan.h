@@ -1,12 +1,12 @@
 #pragma once
 
-#include <map>
 #include <set>
-#include <vector>
+#include <QSet>
 #include <QMutex>
 #include <NotedPlugin/ComputeManFace.h>
 
 class WorkerThread;
+class JobSource;
 
 class ComputeMan: public ComputeManFace
 {
@@ -20,9 +20,6 @@ public:
 	virtual void abortWork();
 	virtual void resumeWork(bool _force = false);
 
-	virtual AcausalAnalysisPtr spectraAcAnalysis() const { return m_spectraAcAnalysis; }
-	virtual CausalAnalysisPtr compileEventsAnalysis() const { return m_compileEventsAnalysis; }
-	virtual CausalAnalysisPtr collateEventsAnalysis() const { return m_collateEventsAnalysis; }
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&);
 	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&);
 	virtual void invalidate(AcausalAnalysisPtr const& _a = nullptr);
@@ -30,6 +27,9 @@ public:
 	virtual int causalCursorIndex() const { return m_causalCursorIndex; }
 
 	virtual bool carryOn(int _progress);
+
+	virtual void registerJobSource(JobSource* _js);
+	virtual void unregisterJobSource(JobSource* _js);
 
 	void initializeCausal(CausalAnalysisPtr const& _lastComplete);
 	void finalizeCausal();
@@ -40,13 +40,9 @@ private:
 	void finishUp();
 
 	QMutex x_analysis;
-	std::set<AcausalAnalysisPtr> m_toBeAnalyzed;						// TODO? Needs a lock?
-	AcausalAnalysisPtr m_spectraAcAnalysis;				// TODO: register with Noted until it can be simple plugin.
-	AcausalAnalysisPtr m_finishUpAcAnalysis;			// TODO: what is this?
-	CausalAnalysisPtr m_compileEventsAnalysis;		// TODO: register with EventsMan
-	CausalAnalysisPtr m_collateEventsAnalysis;		// TODO: register with EventsMan
-	int m_eventsViewsDone = 0;											// TODO: move to EventsMan
-	std::map<float, std::vector<float> > m_collatedGraphEvents;			// TODO: move to EventsMan
+	std::set<AcausalAnalysisPtr> m_toBeAnalyzed;
+
+	QSet<JobSource*> m_sources;
 
 	// Causal playback...
 	unsigned m_causalSequenceIndex;

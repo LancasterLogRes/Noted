@@ -16,7 +16,8 @@ SOURCES += Timeline.cpp \
 	DataMan.cpp \
 	DataSet.cpp \
     ViewManFace.cpp \
-    EventsManFace.cpp
+    EventsManFace.cpp \
+    EventsStore.cpp
 
 HEADERS  += Timeline.h \
 	PrerenderedTimeline.h \
@@ -37,4 +38,6 @@ HEADERS  += Timeline.h \
     LibraryManFace.h \
     Common.h \
     ViewManFace.h \
-    EventsManFace.h
+    EventsManFace.h \
+    EventsStore.h \
+    JobSource.h

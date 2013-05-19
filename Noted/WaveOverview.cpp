@@ -18,7 +18,9 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QMouseEvent>
 #include <QPainter>
+#include <QtOpenGL>
 #include <QGLFramebufferObject>
 #include <Common/Common.h>
 #include <NotedPlugin/NotedFace.h>

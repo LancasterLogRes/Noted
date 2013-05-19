@@ -1,3 +1,4 @@
+#include <QtOpenGL>
 #include <Common/Global.h>
 #include <Grapher/Grapher.h>
 #include <NotedPlugin/NotedFace.h>

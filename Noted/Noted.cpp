@@ -93,6 +93,8 @@ Noted::Noted(QWidget* _p):
 	m_viewMan = new ViewMan;
 	m_eventsMan = new EventsMan;
 
+	initBase();
+
 	ui->setupUi(this);
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
 	ui->librariesView->setModel(m_libraryMan);
@@ -189,19 +191,25 @@ Noted::~Noted()
 	compute()->suspendWork();
 	qDebug() << "Disabled permenantly.";
 
-	delete m_eventsMan;
-	delete m_libraryMan;
-
 	for (auto i: findChildren<Prerendered*>())
 		delete i;
 
-	delete m_computeMan;
+	finiBase();
+
+	delete m_view;
+//	delete m_viewMan;	// FIXME: This should be fine to uncomment, but results in a crash :-(
+
+	delete m_eventsMan;
 	delete m_graphMan;
 	delete m_audioMan;
 	delete m_dataMan;
 
-	delete ui;
+	delete m_computeMan;
+	delete m_libraryMan;
+
 	delete m_glMaster;
+
+	delete ui;
 }
 
 void Noted::showEvent(QShowEvent*)
@@ -522,7 +530,7 @@ void Noted::on_actNewEventsFrom_triggered()
 	if (esn.size())
 	{
 		EventsEditor* ev = new EventsEditor(ui->dataDisplay);
-		ev->scene()->copyFrom(ess[esns.indexOf(esn)]);
+		ev->scene()->copyFrom(ess.toList()[esns.indexOf(esn)]);
 	}
 }
 
@@ -573,7 +581,7 @@ void Noted::on_windowSize_valueChanged(int _i)
 	{
 		compute()->suspendWork();
 		m_windowFunction = lb::windowFunction(_i, WindowFunction(ui->windowFunction->currentIndex()));
-		compute()->invalidate(compute()->spectraAcAnalysis());
+		compute()->invalidate(spectraAcAnalysis());
 		compute()->resumeWork();
 	}
 }
@@ -582,7 +590,7 @@ void Noted::on_windowFunction_currentIndexChanged(int _i)
 {
 	compute()->suspendWork();
 	m_windowFunction = lb::windowFunction(ui->windowSize->value(), WindowFunction(_i));
-	compute()->invalidate(compute()->spectraAcAnalysis());
+	compute()->invalidate(spectraAcAnalysis());
 	compute()->resumeWork();
 }
 
@@ -592,7 +600,7 @@ void Noted::on_zeroPhase_toggled(bool _v)
 	{
 		compute()->suspendWork();
 		m_zeroPhase = _v;
-		compute()->invalidate(compute()->spectraAcAnalysis());
+		compute()->invalidate(spectraAcAnalysis());
 		compute()->resumeWork();
 	}
 }
@@ -603,7 +611,7 @@ void Noted::on_floatFFT_toggled(bool _v)
 	{
 		compute()->suspendWork();
 		m_floatFFT = _v;
-		compute()->invalidate(compute()->spectraAcAnalysis());
+		compute()->invalidate(spectraAcAnalysis());
 		compute()->resumeWork();
 	}
 }
@@ -812,26 +820,6 @@ void Noted::onCursorChanged(lb::Time _cursor)
 	ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(_cursor, toBase(audio()->samples(), audio()->rate()), 0, 0).c_str());
 	if (ui->actFollow->isChecked() && (_cursor < view()->earliestVisible() || _cursor > view()->earliestVisible() + view()->visibleDuration() * 7 / 8))
 		view()->setOffset(_cursor - view()->visibleDuration() / 8);
-}
-
-foreign_vector<float const> Noted::cursorMagSpectrum() const
-{
-	if (audio()->isCausal())
-		return magSpectrum(compute()->causalCursorIndex(), 1);
-	else if (audio()->isPassing())
-		return foreign_vector<float const>((vector<float>*)&m_currentMagSpectrum);
-	else
-		return magSpectrum(audio()->cursorIndex(), 1); // NOTE: only approximate - no good for Analysers.
-}
-
-foreign_vector<float const> Noted::cursorPhaseSpectrum() const
-{
-	if (audio()->isCausal())
-		return phaseSpectrum(compute()->causalCursorIndex(), 1);			// FIXME: will return phase normalized to [0, 1] rather than [0, pi].
-	else if (audio()->isPassing())
-		return foreign_vector<float const>((vector<float>*)&m_currentPhaseSpectrum);
-	else
-		return phaseSpectrum(audio()->cursorIndex(), 1); // NOTE: only approximate - no good for Analysers.
 }
 
 void Noted::processNewInfo()

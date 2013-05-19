@@ -20,24 +20,8 @@
 
 #pragma once
 
+#include <QColor>
 #include <Common/Time.h>
-#include <EventCompiler/StreamEvent.h>
-#include "Prerendered.h"
-
-class QWidget;
-class NotedFace;
-
-class EventsStore
-{
-public:
-	virtual ~EventsStore() {}
-
-	virtual QString niceName() const = 0;
-	virtual lb::StreamEvents events(int _i) const = 0;
-	virtual lb::StreamEvents cursorEvents() const = 0;
-	virtual unsigned eventCount() const = 0;
-	inline bool isPredetermined() const { return eventCount(); }
-};
 
 class Timeline
 {

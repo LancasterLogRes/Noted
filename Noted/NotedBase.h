@@ -22,16 +22,15 @@
 
 #include <memory>
 #include <functional>
-
 #include <QMultiMap>
 #include <QHash>
 #include <QFile>
 #include <QRect>
 #include <QMutex>
-
 #include <Common/Common.h>
 #include <NotedPlugin/NotedFace.h>
 #include <NotedPlugin/Cache.h>
+#include <NotedPlugin/JobSource.h>
 
 class Timeline;
 class QEvent;
@@ -44,7 +43,7 @@ class NotedBase;
 struct SNDFILE_tag;
 typedef struct SNDFILE_tag SNDFILE;
 
-class NotedBase: public NotedFace
+class NotedBase: public NotedFace, public JobSource
 {
 	Q_OBJECT
 
@@ -59,11 +58,26 @@ public:
 	virtual lb::foreign_vector<float const> phaseSpectrum(int _i, int _n) const;
 	virtual lb::foreign_vector<float const> deltaPhaseSpectrum(int _i, int _n) const;
 
-protected:
-	void rejigSpectra();
+	virtual AcausalAnalysisPtr spectraAcAnalysis() const { return m_spectraAcAnalysis; }
+	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&);
 
+	lb::foreign_vector<float const> cursorMagSpectrum() const;
+	lb::foreign_vector<float const> cursorPhaseSpectrum() const;
+
+protected:
+	void initBase();
+	void finiBase();
+
+private:
+	void rejigSpectra();
 	DataKey spectraKey() const;
 
 	mutable QMutex x_spectra;
 	MipmappedCache m_spectra;
+
+	std::shared_ptr<lb::FFTW> m_fftw;
+	std::vector<float> m_currentMagSpectrum;
+	std::vector<float> m_currentPhaseSpectrum;
+
+	AcausalAnalysisPtr m_spectraAcAnalysis;
 };

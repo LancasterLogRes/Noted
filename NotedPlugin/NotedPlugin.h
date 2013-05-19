@@ -63,7 +63,7 @@ protected:
 	unsigned hops() const { return NotedFace::audio()->hops(); }
 	unsigned windowIndex(lb::Time _t) const { return NotedFace::audio()->index(_t); }
 	void updateWindowTitle() { NotedFace::get()->updateWindowTitle(); }
-	void notePluginDataChanged() { NotedFace::compute()->notePluginDataChanged(); }
+	void notePluginDataChanged() { NotedFace::events()->notePluginDataChanged(); }
 	template <class _Plugin> std::shared_ptr<_Plugin> requires() { return std::dynamic_pointer_cast<_Plugin>(requires(typeid(_Plugin).name())); }
 	std::shared_ptr<NotedPlugin> requires(QString const& _s) { if (auto ret = NotedFace::libs()->getPlugin(_s)) return ret; m_required.append(_s); return nullptr; }
 

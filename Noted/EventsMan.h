@@ -1,20 +1,27 @@
 #pragma once
 
 #include <NotedPlugin/EventsManFace.h>
+#include <NotedPlugin/ComputeManFace.h>
 
-class EventsMan: public EventsManFace
+class EventsMan: public EventsManFace, public JobSource
 {
 public:
 	EventsMan(QObject* _p = nullptr);
 	virtual ~EventsMan();
 	
-	virtual void registerTimeline(Timeline* _tl);
-	virtual void unregisterTimeline(Timeline* _tl);
-
-	virtual QList<EventsStore*> eventsStores() const;
-	virtual QList<EventsView*> eventsViews() const;
+	virtual void registerEventsView(EventsView* _ev);
+	virtual void unregisterEventsView(EventsView* _ev);
+	virtual QSet<EventsView*> eventsViews() const { return m_eventsViews; }
 	virtual lb::EventCompiler findEventCompiler(QString const& _name) const;
 	virtual QString getEventCompilerName(lb::EventCompilerImpl* _ec) const;
 
+protected:
+	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&);
+	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&);
+
 private:
+	// DEPRECATED.
+	QSet<EventsView*> m_eventsViews;
+
+	int m_eventsViewsDone = 0;
 };

@@ -6,9 +6,10 @@
 #include <Audio/Playback.h>
 #include <NotedPlugin/AudioManFace.h>
 #include <NotedPlugin/Cache.h>
+#include <NotedPlugin/JobSource.h>
 #include "WorkerThread.h"
 
-class AudioMan: public AudioManFace
+class AudioMan: public AudioManFace, public JobSource
 {
 	Q_OBJECT
 
@@ -32,6 +33,8 @@ public:
 	virtual unsigned devicePeriods() const { return m_playback->periods(); }
 	virtual unsigned deviceRate() const { return m_playback->rate(); }
 	virtual unsigned deviceFrames() const { return m_playback->frames(); }
+
+	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&);
 
 public slots:
 	/// Data

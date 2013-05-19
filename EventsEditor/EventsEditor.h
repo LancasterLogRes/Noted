@@ -25,10 +25,9 @@
 #include <QMutex>
 #include <QString>
 #include <QGraphicsView>
-
 #include <EventCompiler/StreamEvent.h>
-
 #include <NotedPlugin/Timeline.h>
+#include <NotedPlugin/EventsStore.h>
 
 class NotedFace;
 class EventsEditScene;

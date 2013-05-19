@@ -29,14 +29,40 @@
 using namespace std;
 using namespace lb;
 
+// OPTIMIZE: allow reanalysis of spectra to be data-parallelized.
+class SpectraAc: public AcausalAnalysis
+{
+public:
+	SpectraAc(): AcausalAnalysis("Analyzing spectra") {}
+	virtual void analyze(unsigned, unsigned, lb::Time) { dynamic_cast<NotedBase*>(NotedFace::get())->rejigSpectra(); }
+};
+
 NotedBase::NotedBase(QWidget* _p):
 	NotedFace					(_p),
 	x_spectra					(QMutex::Recursive)
 {
+	m_spectraAcAnalysis = AcausalAnalysisPtr(new SpectraAc);
 }
 
 NotedBase::~NotedBase()
 {
+}
+
+void NotedBase::initBase()
+{
+	compute()->registerJobSource(this);
+}
+
+void NotedBase::finiBase()
+{
+	compute()->unregisterJobSource(this);
+}
+
+AcausalAnalysisPtrs NotedBase::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finished)
+{
+	if (_finished == NotedFace::audio()->resampleWaveAcAnalysis())
+		return { m_spectraAcAnalysis };
+	return {};
 }
 
 DataKey NotedBase::spectraKey() const
@@ -170,3 +196,24 @@ void NotedBase::rejigSpectra()
 		m_spectra.init(audio()->key(), spectraKey(), 0, ss * 3, 0);
 	}
 }
+
+foreign_vector<float const> NotedBase::cursorMagSpectrum() const
+{
+	if (audio()->isCausal())
+		return magSpectrum(compute()->causalCursorIndex(), 1);
+	else if (audio()->isPassing())
+		return foreign_vector<float const>((vector<float>*)&m_currentMagSpectrum);
+	else
+		return magSpectrum(audio()->cursorIndex(), 1); // NOTE: only approximate - no good for Analysers.
+}
+
+foreign_vector<float const> NotedBase::cursorPhaseSpectrum() const
+{
+	if (audio()->isCausal())
+		return phaseSpectrum(compute()->causalCursorIndex(), 1);			// FIXME: will return phase normalized to [0, 1] rather than [0, pi].
+	else if (audio()->isPassing())
+		return foreign_vector<float const>((vector<float>*)&m_currentPhaseSpectrum);
+	else
+		return phaseSpectrum(audio()->cursorIndex(), 1); // NOTE: only approximate - no good for Analysers.
+}
+

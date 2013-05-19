@@ -26,7 +26,9 @@
 #include <EventCompiler/EventCompiler.h>
 #include <EventCompiler/StreamEvent.h>
 #include <NotedPlugin/PrerenderedTimeline.h>
+#include <NotedPlugin/EventsStore.h>
 
+#include <QMutex>
 #include <QComboBox>
 #include <QDebug>
 #include <QFrame>
@@ -37,6 +39,7 @@
 class PropertiesEditor;
 class QPushButton;
 class QLabel;
+class QMutex;
 class QSettings;
 class CompileEventsView;
 class EventsEditor;

@@ -18,37 +18,20 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "NotedFace.h"
-#include "Timeline.h"
+#pragma once
 
-using namespace lb;
-using namespace std;
+#include <QString>
+#include <EventCompiler/StreamEvent.h>
 
-Timeline::Timeline()
+class EventsStore
 {
-//	installEventFilter(NotedFace::get());
-}
+public:
+	EventsStore();
+	virtual ~EventsStore();
 
-Timeline::~Timeline()
-{
-}
-
-lb::Time Timeline::earliestVisible() const
-{
-	return NotedFace::view()->earliestVisible();
-}
-
-lb::Time Timeline::pitch() const
-{
-	return NotedFace::view()->pitch();
-}
-
-lb::Time Timeline::highlightFrom() const
-{
-	return NotedFace::audio()->cursor();
-}
-
-lb::Time Timeline::highlightDuration() const
-{
-	return NotedFace::audio()->hop();
-}
+	virtual QString niceName() const = 0;
+	virtual lb::StreamEvents events(int _i) const = 0;
+	virtual lb::StreamEvents cursorEvents() const = 0;
+	virtual unsigned eventCount() const = 0;
+	inline bool isPredetermined() const { return eventCount(); }
+};

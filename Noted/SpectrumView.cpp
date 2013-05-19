@@ -25,6 +25,7 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include <QGLFramebufferObject>
+#include <QtOpenGL>
 #include <Common/Common.h>
 #include <NotedPlugin/NotedFace.h>
 #include "Noted.h"

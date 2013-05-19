@@ -58,7 +58,7 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 
 	qDebug() << m_verticalSplitter->orientation() << m_actualWidget->orientation();
 
-	connect(m_propertiesEditor, SIGNAL(changed()), NotedFace::compute(), SLOT(noteEventCompilersChanged()));
+	connect(m_propertiesEditor, SIGNAL(changed()), NotedFace::events(), SLOT(noteEventCompilersChanged()));
 
 	connect(NotedFace::get(), SIGNAL(eventsChanged()), SLOT(rerender()));
 
@@ -101,11 +101,12 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	m_channel->addItem("2");
 	m_channel->addItem("3");
 
-	Noted::compute()->noteEventCompilersChanged();
+	NotedFace::events()->registerEventsView(this);
 }
 
 EventsView::~EventsView()
 {
+	NotedFace::events()->unregisterEventsView(this);
 	quit();
 	QWidget* w = parentWidget()->parentWidget();
 	setParent(0);
@@ -126,7 +127,7 @@ void EventsView::onFactoryUnavailable(QString _factory)
 
 void EventsView::onUseChanged()
 {
-	Noted::compute()->noteEventCompilersChanged();
+	Noted::events()->notePluginDataChanged();
 }
 
 void EventsView::clearEvents()
@@ -210,6 +211,8 @@ void EventsView::save()
 		m_savedProperties = m_eventCompiler.properties().serialized();
 	}
 	m_eventCompiler = EventCompiler();
+
+	NotedFace::events()->notePluginDataChanged();
 }
 
 void EventsView::restore()
@@ -219,6 +222,8 @@ void EventsView::restore()
 	m_eventCompiler.properties().deserialize(m_savedProperties);
 	m_propertiesEditor->setProperties(m_eventCompiler.properties());
 	m_label->setText(name());
+
+	NotedFace::events()->noteEventCompilersChanged();
 }
 
 void EventsView::readSettings(QSettings& _s, QString const& _id)

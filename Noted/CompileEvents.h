@@ -20,12 +20,11 @@
 
 #pragma once
 
-#include "Noted.h"
+#include <NotedPlugin/CausalAnalysis.h>
+#include <NotedPlugin/NotedFace.h>
 
 class CompileEvents: public CausalAnalysis
 {
 public:
 	CompileEvents(): CausalAnalysis("Preparing all compilers") {}
-
-	virtual void init(bool) {}
 };

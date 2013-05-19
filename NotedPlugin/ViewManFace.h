@@ -10,6 +10,7 @@ class ViewManFace: public QObject
 
 public:
 	ViewManFace(QObject* _p = nullptr): QObject(_p) {}
+	virtual ~ViewManFace();
 
 	inline int width() const { return m_width; }
 	inline lb::Time offset() const { return m_offset; }

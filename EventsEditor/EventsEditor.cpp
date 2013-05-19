@@ -108,7 +108,7 @@ EventsEditor::~EventsEditor()
 {
 	QMutexLocker l(&x_events);
 	m_events.clear();
-	NotedFace::compute()->noteEventCompilersChanged();
+	NotedFace::events()->noteEventCompilersChanged();
 }
 
 bool EventsEditor::isIndependent() const
@@ -186,7 +186,7 @@ StreamEvents EventsEditor::events(int _i) const
 
 void EventsEditor::onEnableChanged(bool)
 {
-	NotedFace::compute()->noteEventCompilersChanged();
+	NotedFace::events()->noteEventCompilersChanged();
 }
 
 void EventsEditor::onChanged(bool _requiresRecompile)
@@ -207,7 +207,7 @@ void EventsEditor::timerEvent(QTimerEvent*)
 				QMutexLocker l(&x_events);
 				m_events = scene()->events(NotedFace::audio()->hop());
 			}
-			NotedFace::compute()->noteEventCompilersChanged();
+			NotedFace::events()->noteEventCompilersChanged();
 		}
 		else if (m_eventsDirty)
 			m_lastTimerDirty = true;

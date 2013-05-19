@@ -21,6 +21,7 @@ AudioMan::AudioMan():
 	m_resampleWaveAcAnalysis = AcausalAnalysisPtr(new ResampleWaveAc);
 	connect(Noted::compute(), SIGNAL(analyzed(AcausalAnalysis*)), SLOT(onAnalyzed(AcausalAnalysis*)));
 	m_audioThread = createWorkerThread([=](){return serviceAudio();});
+	NotedFace::compute()->registerJobSource(this);
 }
 
 AudioMan::~AudioMan()
@@ -31,6 +32,14 @@ AudioMan::~AudioMan()
 	delete m_audioThread;
 	m_audioThread = nullptr;
 	cnote << "Disabled permenantly.";
+	NotedFace::compute()->unregisterJobSource(this);
+}
+
+AcausalAnalysisPtrs AudioMan::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finished)
+{
+	if (_finished == nullptr)
+		return { resampleWaveAcAnalysis() };
+	return {};
 }
 
 void AudioMan::onAnalyzed(AcausalAnalysis* _analysis)
@@ -73,7 +82,7 @@ void AudioMan::setHopSamples(unsigned _s)
 	m_hopSamples = _s;
 	updateKeys();
 
-	Noted::compute()->invalidate(Noted::compute()->spectraAcAnalysis());
+	Noted::compute()->invalidate(Noted::get()->spectraAcAnalysis());
 	Noted::compute()->resumeWork();
 
 	emit hopChanged();

@@ -20,21 +20,9 @@
 
 #pragma once
 
-#include <utility>
-#include <map>
-#include <Common/Common.h>
-#include <QtOpenGL>
-#include <QPainter>
-#include <QDebug>
-#include <QMouseEvent>
-#include <QWidget>
-#include <QMutex>
-
+#include <Common/Time.h>
 #include "Timeline.h"
 #include "Prerendered.h"
-
-class QGLWidget;
-class QGLFramebufferObject;
 
 class PrerenderedTimeline: public Prerendered, public Timeline
 {
@@ -42,7 +30,7 @@ class PrerenderedTimeline: public Prerendered, public Timeline
 
 public:
 	PrerenderedTimeline(QWidget* _p, bool _cursorSizeIsHop = true);
-	~PrerenderedTimeline();
+	virtual ~PrerenderedTimeline();
 
 	using Prerendered::event;
 

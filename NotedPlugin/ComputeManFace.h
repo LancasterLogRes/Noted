@@ -1,8 +1,7 @@
 #pragma once
 
 #include <QObject>
-#include "CausalAnalysis.h"
-#include "AcausalAnalysis.h"
+#include "JobSource.h"
 
 /**
  * @brief Acausal/Causal audio computation manager.
@@ -18,9 +17,6 @@ class ComputeManFace: public QObject
 public:
 	ComputeManFace() {}
 
-	virtual AcausalAnalysisPtr spectraAcAnalysis() const = 0;
-	virtual CausalAnalysisPtr compileEventsAnalysis() const = 0;
-	virtual CausalAnalysisPtr collateEventsAnalysis() const = 0;
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&) = 0;
 	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&) = 0;
 	virtual void invalidate(AcausalAnalysisPtr const& _a = nullptr) = 0;
@@ -29,13 +25,13 @@ public:
 
 	virtual bool carryOn(int _progress) = 0;
 
+	virtual void registerJobSource(JobSource* _js) = 0;
+	virtual void unregisterJobSource(JobSource* _js) = 0;
+
 public slots:
 	virtual void suspendWork() = 0;
 	virtual void abortWork() = 0;
 	virtual void resumeWork(bool _force = false) = 0;
-
-	inline void noteEventCompilersChanged() { invalidate(compileEventsAnalysis()); }
-	inline void notePluginDataChanged() { invalidate(collateEventsAnalysis()); }
 
 signals:
 	void progressed(QString, int);

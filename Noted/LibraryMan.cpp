@@ -1,3 +1,4 @@
+#include <QDockWidget>
 #include <Common/Global.h>
 #include <NotedPlugin/AuxLibraryFace.h>
 #include "ProcessEventCompiler.h"
@@ -142,7 +143,6 @@ void LibraryMan::addLibrary(QString const& _name, bool _isEnabled)
 			load(lp);
 
 		endResetModel();
-		Noted::compute()->noteEventCompilersChanged();
 		Noted::compute()->resumeWork();
 	}
 }
@@ -168,7 +168,6 @@ void LibraryMan::removeLibrary(QString const& _name)
 		m_libraries.remove(_name);
 
 		endResetModel();
-		Noted::compute()->noteEventCompilersChanged();
 		Noted::compute()->resumeWork();
 	}
 	else
@@ -190,7 +189,6 @@ void LibraryMan::reloadLibrary(QString const& _name)
 			load(l);
 
 			endResetModel();
-			Noted::compute()->noteEventCompilersChanged();
 			Noted::compute()->resumeWork();
 		}
 		else
@@ -215,7 +213,6 @@ void LibraryMan::setEnabled(RealLibraryPtr const& _l, bool _enabled)
 		unload(_l);
 
 	endResetModel();
-	Noted::compute()->noteEventCompilersChanged();
 	Noted::compute()->resumeWork();
 }
 

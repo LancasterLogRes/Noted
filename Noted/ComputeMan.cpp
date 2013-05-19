@@ -1,44 +1,12 @@
 #include <Common/Global.h>
-#include <NotedPlugin/PrerenderedTimeline.h>	// TODO: KILL
 #include "Global.h"
 #include "WorkerThread.h"
-#include "CompileEvents.h"	// TODO: KILL
-#include "CollateEvents.h"	// TODO: KILL
-#include "CompileEventsView.h"	// TODO: KILL
 #include "Noted.h"
 #include "ComputeMan.h"
 using namespace std;
 using namespace lb;
 
-// TODO: Move to Noted.
-// OPTIMIZE: allow reanalysis of spectra to be data-parallelized.
-class SpectraAc: public AcausalAnalysis
-{
-public:
-	SpectraAc(): AcausalAnalysis("Analyzing spectra") {}
-
-	virtual void init()
-	{
-	}
-	virtual unsigned prepare(unsigned _from, unsigned _count, lb::Time _hop)
-	{
-		(void)_from; (void)_count; (void)_hop;
-		return 100;
-	}
-	virtual void analyze(unsigned _from, unsigned _count, lb::Time _hop)
-	{
-		(void)_from; (void)_count; (void)_hop;
-		Noted::get()->rejigSpectra();
-	}
-	virtual void fini()
-	{
-	}
-};
-
 ComputeMan::ComputeMan():
-	m_spectraAcAnalysis			(new SpectraAc),				// TODO: register with Noted until it can be simple plugin.
-	m_compileEventsAnalysis		(new CompileEvents),		// TODO: register with EventsMan
-	m_collateEventsAnalysis		(new CollateEvents),		// TODO: register with EventsMan
 	m_computeThread				(createWorkerThread([=](){return serviceCompute();}))
 {
 	moveToThread(m_computeThread);
@@ -54,6 +22,26 @@ bool ComputeMan::carryOn(int _progress)
 {
 	WorkerThread::setCurrentProgress(_progress);
 	return !WorkerThread::quitting();
+}
+
+void ComputeMan::registerJobSource(JobSource* _js)
+{
+	if (!m_sources.contains(_js))
+	{
+		suspendWork();
+		m_sources.insert(_js);
+		resumeWork();
+	}
+}
+
+void ComputeMan::unregisterJobSource(JobSource* _js)
+{
+	if (m_sources.contains(_js))
+	{
+		suspendWork();
+		m_sources.remove(_js);
+		resumeWork();
+	}
 }
 
 void ComputeMan::invalidate(AcausalAnalysisPtr const& _a)
@@ -85,7 +73,6 @@ bool ComputeMan::serviceCompute()
 			// OPTIMIZE: move into worker code; allow multiple workers.
 			// OPTIMIZE: consider searching tree locally and completely, putting toBeAnalyzed things onto global todo, and skipping through otherwise.
 			// ...keeping search local until RAAs needed to be done are found.
-			m_eventsViewsDone = 0;
 			while (todo.size())
 			{
 				AcausalAnalysisPtr aa = todo.front();
@@ -175,18 +162,14 @@ void ComputeMan::resumeWork(bool _force)
 CausalAnalysisPtrs ComputeMan::ripeCausalAnalysis(CausalAnalysisPtr const& _finished)
 {
 	CausalAnalysisPtrs ret;
-	if (_finished == nullptr)
-		ret.push_back(m_compileEventsAnalysis);
-	else if (dynamic_cast<CompileEvents*>(&*_finished) && Noted::events()->eventsViews().size())
-		foreach (EventsView* ev, Noted::events()->eventsViews())
-			ret.push_back(CausalAnalysisPtr(new CompileEventsView(ev)));
-	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !Noted::events()->eventsViews().size()) || (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == Noted::events()->eventsViews().size()))
-		ret.push_back(m_collateEventsAnalysis);
 
 	// Go through all other things that can give CAs; at this point, it's just the plugins
 	CausalAnalysisPtrs acc;
-	foreach (RealLibraryPtr const& l, Noted::libs()->libraries())
+	for (RealLibraryPtr const& l: Noted::libs()->libraries())
 		if (l->plugin && (acc = l->plugin->ripeCausalAnalysis(_finished)).size())
+			ret.insert(ret.end(), acc.begin(), acc.end());
+	for (JobSource* s: m_sources)
+		if ((acc = s->ripeCausalAnalysis(_finished)).size())
 			ret.insert(ret.end(), acc.begin(), acc.end());
 
 	return ret;
@@ -196,24 +179,14 @@ AcausalAnalysisPtrs ComputeMan::ripeAcausalAnalysis(AcausalAnalysisPtr const& _f
 {
 	AcausalAnalysisPtrs ret;
 
-	// TODO: register this rather than hardcoded here.
-	if (_finished == nullptr)
-		ret.push_back(Noted::audio()->resampleWaveAcAnalysis());
-	else if (_finished == Noted::audio()->resampleWaveAcAnalysis())
-		ret.push_back(m_spectraAcAnalysis);
-	else if (dynamic_cast<SpectraAc*>(&*_finished))
-		ret.push_back(m_compileEventsAnalysis);
-	else if (dynamic_cast<CompileEvents*>(&*_finished) && Noted::events()->eventsViews().size())
-		foreach (EventsView* ev, Noted::events()->eventsViews())
-			ret.push_back(AcausalAnalysisPtr(new CompileEventsView(ev)));
-	else if ((dynamic_cast<CompileEvents*>(&*_finished) && !Noted::events()->eventsViews().size()) ||
-			 (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == Noted::events()->eventsViews().size()))
-		ret.push_back(m_collateEventsAnalysis);
-
 	// Go through all other things that can give CAs; at this point, it's just the plugins
+	// TODO: Libraries should use JobSource API.
 	AcausalAnalysisPtrs acc;
-	foreach (RealLibraryPtr const& l, Noted::libs()->libraries())
+	for (RealLibraryPtr const& l: Noted::libs()->libraries())
 		if (l->plugin && (acc = l->plugin->ripeAcausalAnalysis(_finished)).size())
+			ret.insert(ret.end(), acc.begin(), acc.end());
+	for (JobSource* s: m_sources)
+		if ((acc = s->ripeAcausalAnalysis(_finished)).size())
 			ret.insert(ret.end(), acc.begin(), acc.end());
 
 	return ret;
@@ -226,7 +199,6 @@ void ComputeMan::initializeCausal(CausalAnalysisPtr const& _lastComplete)
 	todo.push_back(_lastComplete);
 	assert(m_causalQueueCache.empty());
 
-	m_eventsViewsDone = 0;
 	while (todo.size())
 	{
 		CausalAnalysisPtr ca = todo.front();
