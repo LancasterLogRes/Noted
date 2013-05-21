@@ -29,7 +29,7 @@
 using namespace std;
 using namespace lb;
 
-EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
+EventsGraphicsView::EventsGraphicsView(QWidget* _parent, QString _filename):
 	QGraphicsView		(_parent),
 	m_filename			(_filename),
 	m_lastTimerDirty	(true),
@@ -37,9 +37,8 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 {
 	setFrameShape(NoFrame);
 
-	if (isIndependent())
 	{
-		connect(NotedFace::get(), SIGNAL(eventsChanged()), this, SLOT(rerender()));
+		connect(NotedFace::events(), SIGNAL(eventsChanged()), this, SLOT(rerender()));
 		auto oe = []() -> QGraphicsEffect* { auto ret = new QGraphicsOpacityEffect; ret->setOpacity(0.7); return ret; };
 
 		QPushButton* b = new QPushButton(this);
@@ -104,36 +103,41 @@ EventsEditor::EventsEditor(QWidget* _parent, QString _filename):
 	startTimer(500);
 }
 
-EventsEditor::~EventsEditor()
+EventsGraphicsView::~EventsGraphicsView()
 {
 	QMutexLocker l(&x_events);
 	m_events.clear();
 	NotedFace::events()->noteEventCompilersChanged();
 }
 
-bool EventsEditor::isIndependent() const
+void EventsGraphicsView::clearEvents()
 {
-	return parentWidget()->objectName() == "dataDisplay";
+	QMutexLocker l(&x_events);
+	m_events.clear();
+	scene()->clear();
 }
 
-void EventsEditor::setEvents(QList<lb::StreamEvents> const& _es, int _forceChannel)
+void EventsGraphicsView::setEvents(QList<lb::StreamEvents> const& _es, int _forceChannel)
 {
 	m_scene->setEvents(_es, _forceChannel);
 }
 
-void EventsEditor::save(QSettings& _s) const
+bool EventsGraphicsView::isEnabled() const
 {
-	if (isIndependent())
-		_s.setValue(m_filename + ".enabled", m_enabled->isChecked());
+	return m_enabled && m_enabled->isChecked();
 }
 
-void EventsEditor::load(QSettings const& _s)
+void EventsGraphicsView::save(QSettings& _s) const
 {
-	if (isIndependent())
-		m_enabled->setChecked(_s.value(m_filename + ".enabled", false).toBool());
+	_s.setValue(m_filename + ".enabled", m_enabled->isChecked());
 }
 
-void EventsEditor::mousePressEvent(QMouseEvent* _e)
+void EventsGraphicsView::load(QSettings const& _s)
+{
+	m_enabled->setChecked(_s.value(m_filename + ".enabled", false).toBool());
+}
+
+void EventsGraphicsView::mousePressEvent(QMouseEvent* _e)
 {
 	m_lastScenePosition = mapToScene(_e->pos());
 	if ((itemAt(_e->pos()) || !(_e->buttons() & Qt::MiddleButton)))// && isMutable())
@@ -147,14 +151,14 @@ void EventsEditor::mousePressEvent(QMouseEvent* _e)
 	}
 }
 
-void EventsEditor::mouseReleaseEvent(QMouseEvent* _e)
+void EventsGraphicsView::mouseReleaseEvent(QMouseEvent* _e)
 {
 	QGraphicsView::mouseReleaseEvent(_e);
 	if (scene()->selectedItems().isEmpty() && _e->button() == Qt::LeftButton)
 		NotedFace::audio()->setCursor(fromSeconds(mapToScene(_e->pos()).x() / 1000), true);
 }
 
-void EventsEditor::mouseMoveEvent(QMouseEvent* _e)
+void EventsGraphicsView::mouseMoveEvent(QMouseEvent* _e)
 {
 	if (m_draggingTime != lb::UndefinedTime && _e->buttons() & Qt::MiddleButton)
 		NotedFace::view()->setOffset(m_draggingTime - _e->x() * NotedFace::view()->pitch());
@@ -168,14 +172,14 @@ void EventsEditor::mouseMoveEvent(QMouseEvent* _e)
 		QGraphicsView::mouseMoveEvent(_e);
 }
 
-StreamEvents EventsEditor::cursorEvents() const
+StreamEvents EventsGraphicsView::cursorEvents() const
 {
 	return events(NotedFace::audio()->isCausal() ? NotedFace::compute()->causalCursorIndex() : -1);
 }
 
-StreamEvents EventsEditor::events(int _i) const
+StreamEvents EventsGraphicsView::events(int _i) const
 {
-	if (isIndependent() && m_enabled->isChecked())
+	if (m_enabled->isChecked())
 	{
 		QMutexLocker l(&x_events);
 		if (_i >= 0 && _i < m_events.size())
@@ -184,21 +188,21 @@ StreamEvents EventsEditor::events(int _i) const
 	return StreamEvents();
 }
 
-void EventsEditor::onEnableChanged(bool)
+void EventsGraphicsView::onEnableChanged(bool)
 {
 	NotedFace::events()->noteEventCompilersChanged();
 }
 
-void EventsEditor::onChanged(bool _requiresRecompile)
+void EventsGraphicsView::onChanged(bool _requiresRecompile)
 {
-	if (isIndependent() && m_enabled->isChecked())
+	if (m_enabled->isChecked())
 		m_lastTimerDirty = false;
 	m_eventsDirty = _requiresRecompile;
 }
 
-void EventsEditor::timerEvent(QTimerEvent*)
+void EventsGraphicsView::timerEvent(QTimerEvent*)
 {
-	if (isIndependent() && m_enabled->isChecked())
+	if (m_enabled->isChecked())
 	{
 		if (m_lastTimerDirty)
 		{
@@ -214,13 +218,13 @@ void EventsEditor::timerEvent(QTimerEvent*)
 	}
 }
 
-void EventsEditor::onCut()
+void EventsGraphicsView::onCut()
 {
 	onCopy();
 	onDelete();
 }
 
-void EventsEditor::onCopy()
+void EventsGraphicsView::onCopy()
 {
 	QVector<QPair<int, StreamEvent> > d;
 	if (scene()->selectedItems().size())
@@ -233,7 +237,7 @@ void EventsEditor::onCopy()
 	}
 }
 
-void EventsEditor::onPaste()
+void EventsGraphicsView::onPaste()
 {
 	foreach (QGraphicsItem* it, scene()->selectedItems())
 		it->setSelected(false);
@@ -247,19 +251,22 @@ void EventsEditor::onPaste()
 	scene()->rejigEvents();
 }
 
-void EventsEditor::onDelete()
+void EventsGraphicsView::onDelete()
 {
-	foreach (QGraphicsItem* it, scene()->selectedItems())
+	if (isMutable())
 	{
-		if (auto sei = dynamic_cast<StreamEventItem*>(it))
-			m_scene->setDirty(sei->isCausal());
-		delete it;
+		for (QGraphicsItem* it: scene()->selectedItems())
+		{
+			if (auto sei = dynamic_cast<StreamEventItem*>(it))
+				m_scene->setDirty(sei->isCausal());
+			delete it;
+		}
+		scene()->rejigEvents();
 	}
-	scene()->rejigEvents();
 }
 
 #define DO(X) \
-void EventsEditor::onInsert ## X() \
+void EventsGraphicsView::onInsert ## X() \
 { \
 	StreamEventItem* it = StreamEventItem::newItem(StreamEvent(X, .125f, 0.f, Dull, .5f, .5f)); \
 	scene()->addItem(it); \
@@ -269,7 +276,7 @@ void EventsEditor::onInsert ## X() \
 #include "DoEventTypes.h"
 #undef DO
 
-void EventsEditor::drawBackground(QPainter* _p, QRectF const& _r)
+void EventsGraphicsView::drawBackground(QPainter* _p, QRectF const& _r)
 {
 	for (int x = -1; x < 4; ++x)
 	{
@@ -280,19 +287,20 @@ void EventsEditor::drawBackground(QPainter* _p, QRectF const& _r)
 	}
 }
 
-void EventsEditor::onRejigRhythm()
+void EventsGraphicsView::onRejigRhythm()
 {
 
 }
 
-QString EventsEditor::queryFilename()
+QString EventsGraphicsView::queryFilename()
 {
-	if (m_filename.isNull() || scene()->isDirty())
+	cnote << isMutable();
+	if ((m_filename.isNull() || scene()->isDirty()) && isMutable())
 		onSave();
 	return m_filename;
 }
 
-void EventsEditor::onViewParamsChanged()
+void EventsGraphicsView::onViewParamsChanged()
 {
 	resetTransform();
 	double hopsInWidth = toSeconds(NotedFace::view()->visibleDuration()) * 1000;
@@ -301,7 +309,7 @@ void EventsEditor::onViewParamsChanged()
 	scale(NotedFace::view()->width() / hopsInWidth, 1);
 }
 
-void EventsEditor::onSave()
+void EventsGraphicsView::onSave()
 {
 	if (!m_filename.isNull())
 		m_scene->saveTo(m_filename);
@@ -309,7 +317,7 @@ void EventsEditor::onSave()
 		onSaveAs();
 }
 
-void EventsEditor::onSaveAs()
+void EventsGraphicsView::onSaveAs()
 {
 	m_filename = QFileDialog::getSaveFileName(this, "Save the Event Stream", QDir::homePath(), "*.xml");
 	if (!m_filename.isNull())

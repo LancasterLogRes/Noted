@@ -163,12 +163,6 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
-   <property name="minimumSize">
-    <size>
-     <width>604</width>
-     <height>136</height>
-    </size>
-   </property>
    <property name="features">
     <set>QDockWidget::DockWidgetFeatureMask</set>
    </property>
@@ -524,8 +518,8 @@
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>20</width>
-         <height>3</height>
+         <width>0</width>
+         <height>0</height>
         </size>
        </property>
       </spacer>
@@ -574,12 +568,6 @@
      </property>
      <item row="0" column="0" rowspan="2">
       <widget class="QListWidget" name="eventCompilersList">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>50</height>
-        </size>
-       </property>
        <property name="frameShape">
         <enum>QFrame::NoFrame</enum>
        </property>
@@ -602,12 +590,6 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="dockWidget_2a">
-   <property name="minimumSize">
-    <size>
-     <width>427</width>
-     <height>149</height>
-    </size>
-   </property>
    <property name="features">
     <set>QDockWidget::DockWidgetFeatureMask</set>
    </property>
@@ -804,8 +786,8 @@
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>20</width>
-         <height>40</height>
+         <width>0</width>
+         <height>0</height>
         </size>
        </property>
       </spacer>
@@ -1016,6 +998,9 @@ p, li { white-space: pre-wrap; }
      </item>
      <item row="1" column="0" rowspan="3">
       <widget class="QTreeView" name="librariesView">
+       <property name="frameShape">
+        <enum>QFrame::NoFrame</enum>
+       </property>
        <property name="rootIsDecorated">
         <bool>false</bool>
        </property>
@@ -1232,7 +1217,7 @@ p, li { white-space: pre-wrap; }
     <set>QDockWidget::DockWidgetFeatureMask</set>
    </property>
    <property name="windowTitle">
-    <string>Workers</string>
+    <string>Graphs</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -1255,49 +1240,16 @@ p, li { white-space: pre-wrap; }
       <number>0</number>
      </property>
      <item>
-      <widget class="QTableWidget" name="tableWidget">
+      <widget class="QTreeView" name="graphsView">
        <property name="frameShape">
         <enum>QFrame::NoFrame</enum>
        </property>
-       <property name="gridStyle">
-        <enum>Qt::DotLine</enum>
-       </property>
-       <property name="sortingEnabled">
-        <bool>false</bool>
-       </property>
-       <property name="wordWrap">
-        <bool>false</bool>
-       </property>
-       <property name="cornerButtonEnabled">
-        <bool>false</bool>
-       </property>
-       <property name="columnCount">
-        <number>3</number>
-       </property>
-       <attribute name="horizontalHeaderVisible">
-        <bool>false</bool>
-       </attribute>
-       <attribute name="horizontalHeaderHighlightSections">
-        <bool>false</bool>
-       </attribute>
-       <attribute name="horizontalHeaderStretchLastSection">
+       <property name="dragEnabled">
         <bool>true</bool>
-       </attribute>
-       <attribute name="verticalHeaderVisible">
-        <bool>false</bool>
-       </attribute>
-       <attribute name="verticalHeaderDefaultSectionSize">
-        <number>12</number>
-       </attribute>
-       <attribute name="verticalHeaderHighlightSections">
-        <bool>false</bool>
-       </attribute>
-       <attribute name="verticalHeaderMinimumSectionSize">
-        <number>12</number>
-       </attribute>
-       <column/>
-       <column/>
-       <column/>
+       </property>
+       <property name="dragDropMode">
+        <enum>QAbstractItemView::DragOnly</enum>
+       </property>
       </widget>
      </item>
     </layout>
@@ -1359,8 +1311,8 @@ p, li { white-space: pre-wrap; }
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>20</width>
-         <height>43</height>
+         <width>0</width>
+         <height>0</height>
         </size>
        </property>
       </spacer>

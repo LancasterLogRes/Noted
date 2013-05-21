@@ -17,7 +17,8 @@ SOURCES += Timeline.cpp \
 	DataSet.cpp \
     ViewManFace.cpp \
     EventsManFace.cpp \
-    EventsStore.cpp
+    EventsStore.cpp \
+    GraphManFace.cpp
 
 HEADERS  += Timeline.h \
 	PrerenderedTimeline.h \

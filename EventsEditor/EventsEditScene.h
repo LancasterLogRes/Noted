@@ -27,7 +27,7 @@
 #include <Common/Time.h>
 
 class EventsStore;
-class EventsEditor;
+class EventsGraphicsView;
 class NotedFace;
 class Chained;
 class StreamEventItem;
@@ -42,7 +42,7 @@ public:
 	void copyFrom(EventsStore* _ev);
 	void setEvents(QList<lb::StreamEvents> const& _es, int _forceChannel = -1);
 
-	EventsEditor* view() const;
+	EventsGraphicsView* view() const;
 	void itemChanged(StreamEventItem* _it);
 
 	bool isDirty() const { return m_isDirty; }

@@ -25,7 +25,7 @@
 #include <QGraphicsItem>
 
 class QWidget;
-class EventsEditor;
+class EventsGraphicsView;
 class EventsEditScene;
 
 inline QBrush qLinearGradient(QPointF _a, QPointF _b, QColor _ac, QColor _bc)
@@ -46,7 +46,7 @@ public:
 	QColor cLight() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 192) : QColor::fromHsvF(lb::toHue(m_se.temperature), 0.5f, 1.0f * lb::Color::hueCorrection(lb::toHue(m_se.temperature))); }
 	QColor cPastel() const { return m_se.temperature == -1 ? QColor::fromHsv(0, 0, 224) : QColor::fromHsvF(lb::toHue(m_se.temperature), 0.25f, 1.0f * lb::Color::hueCorrection(lb::toHue(m_se.temperature))); }
 
-	EventsEditor* view() const;
+	EventsGraphicsView* view() const;
 	QPointF distanceFrom(StreamEventItem* _i, QPointF const& _onThem = QPointF(0, 0), QPointF const& _onUs = QPointF(0, 0)) const;
 	lb::StreamEvent const& streamEvent() const { return m_se; }
 	virtual QPointF evenUp(QPointF const& _n);

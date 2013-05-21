@@ -11,14 +11,25 @@ lb::Time TimelineItem::localTime(lb::Time _t, lb::Time _p)
 	return _t + mapToScene(QPointF(0, 0)).x() * _p;
 }
 
-GraphItem::GraphItem()
+TimelineItem::TimelineItem(QQuickItem* _p): QQuickItem(_p)
 {
-	connect(Noted::data(), &DataMan::dataComplete, [=](DataKey /*_key*/){ /*cdebug << "Data complete:" << (void*)(intptr_t)_key;*/ update(); });
+	setClip(true);
+	setFlag(ItemHasContents, true);
+	connect(this, SIGNAL(offsetChanged()), SLOT(update()));
+	connect(this, SIGNAL(pitchChanged()), SLOT(update()));
+	cnote << "Created TimelineItem" << (void*)this;
 }
 
-EventCompiler GraphItem::eventCompiler() const
+TimelineItem::~TimelineItem()
 {
-	return NotedFace::events()->findEventCompiler(QString::fromStdString(spec().ec));
+	cdebug << "Killing TimelineItem" << (void*)this;
+}
+
+GraphItem::GraphItem()
+{
+	connect(this, &GraphItem::urlChanged, [=](){ update(); });
+	connect(Noted::data(), &DataMan::dataComplete, [=](DataKey /*_key*/){ /*cdebug << "Data complete:" << (void*)(intptr_t)_key;*/ update(); });
+	connect(Noted::graphs(), &GraphMan::graphsChanged, [=](){ /*cdebug << "Graphs changed."; */update(); });
 }
 
 QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
@@ -29,8 +40,7 @@ QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 
 	// Update - TODO: optimise by chunking (according to how stored on disk) and only inserting new chunks - use boundingRect to work out what chunks are necessary.
 	// transform each chunk separately.
-	EventCompiler ec = eventCompiler();
-	if (GraphChart* g = ec.isNull() ? nullptr : dynamic_cast<GraphChart*>(ec.asA<EventCompilerImpl>().graph(spec().graph)))
+	if (GraphChart const* g = dynamic_cast<GraphChart const*>(NotedFace::get()->graphs()->lockGraph(m_url)))
 	{
 		if (!m_geo)
 		{
@@ -85,7 +95,42 @@ QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 		gmx.translate(m_offset / -(double)Noted::audio()->hop(), 0);
 		base->setMatrix(gmx);
 	}
+	NotedFace::get()->graphs()->unlockGraph();
 
+	return base;
+}
+
+void XLabelsItem::paint(QPainter* _p)
+{
+	_p->fillRect(_p->window(), QBrush(Qt::white));
+	GraphParameters<Time> nor(make_pair(m_offset, m_offset + m_pitch * width()), width() / 80, toBase(1, 1000000));
+	for (Time t = nor.from; t < nor.to; t += nor.incr)
+		if (nor.isMajor(t))
+		{
+			float x = (t - m_offset) / (double)m_pitch;
+			QString s = QString::fromStdString(textualTime(t, nor.delta, nor.major));
+			_p->setPen(QColor(128, 128, 128));
+			QSize z = _p->fontMetrics().boundingRect(s).size();
+			z = QSize(z.width() + z.height(), z.height() * 1.5);
+			QRect r(x - z.width() / 2 , 0, z.width(), z.height());
+			_p->drawText(r, Qt::AlignCenter, s);
+		}
+}
+
+void YLabelsItem::paint(QPainter* _p)
+{
+	_p->fillRect(_p->window(), QBrush(Qt::white));
+}
+
+QSGNode* YScaleItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
+{
+	QSGSimpleRectNode *base = static_cast<QSGSimpleRectNode*>(_old);
+	if (!base)
+	{
+		base = new QSGSimpleRectNode();
+	}
+	base->setRect(boundingRect());
+	base->setColor(QColor(255, 255, 255, 192));
 	return base;
 }
 
@@ -93,9 +138,37 @@ TimelinesItem::TimelinesItem(QQuickItem* _p):
 	QQuickItem(_p)
 {
 	setFlag(ItemHasContents, true);
+	setFlag(ItemAcceptsDrops, true);
 	connect(this, &QQuickItem::widthChanged, [=](){ widthChanged(width()); });
 	connect(this, SIGNAL(offsetChanged()), SLOT(update()));
 	connect(this, SIGNAL(pitchChanged()), SLOT(update()));
+}
+
+void TimelinesItem::dragEnterEvent(QDragEnterEvent* _event)
+{
+	_event->acceptProposedAction();
+	setCursor(Qt::DragMoveCursor);
+}
+
+void TimelinesItem::dragLeaveEvent(QDragLeaveEvent*)
+{
+	unsetCursor();
+}
+
+void TimelinesItem::dropEvent(QDropEvent* _event)
+{
+	_event->acceptProposedAction();
+	emit textDrop(_event->mimeData()->text());
+	unsetCursor();
+}
+
+void TimelinesItem::setAcceptingDrops(bool _accepting)
+{
+	if (_accepting == m_accepting)
+		return;
+	m_accepting = _accepting;
+	setFlag(ItemAcceptsDrops, _accepting);
+	emit acceptingDropsChanged();
 }
 
 QSGNode* TimelinesItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
@@ -155,38 +228,3 @@ QSGNode* TimelinesItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 
 	return base;
 }
-
-void XLabelsItem::paint(QPainter* _p)
-{
-	_p->fillRect(_p->window(), QBrush(Qt::white));
-	GraphParameters<Time> nor(make_pair(m_offset, m_offset + m_pitch * width()), width() / 80, toBase(1, 1000000));
-	for (Time t = nor.from; t < nor.to; t += nor.incr)
-		if (nor.isMajor(t))
-		{
-			float x = (t - m_offset) / (double)m_pitch;
-			QString s = QString::fromStdString(textualTime(t, nor.delta, nor.major));
-			_p->setPen(QColor(128, 128, 128));
-			QSize z = _p->fontMetrics().boundingRect(s).size();
-			z = QSize(z.width() + z.height(), z.height() * 1.5);
-			QRect r(x - z.width() / 2 , 0, z.width(), z.height());
-			_p->drawText(r, Qt::AlignCenter, s);
-		}
-}
-
-void YLabelsItem::paint(QPainter* _p)
-{
-	_p->fillRect(_p->window(), QBrush(Qt::white));
-}
-
-QSGNode* YScaleItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
-{
-	QSGSimpleRectNode *base = static_cast<QSGSimpleRectNode*>(_old);
-	if (!base)
-	{
-		base = new QSGSimpleRectNode();
-	}
-	base->setRect(boundingRect());
-	base->setColor(QColor(255, 255, 255, 192));
-	return base;
-}
-

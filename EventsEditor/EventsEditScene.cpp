@@ -165,9 +165,9 @@ void EventsEditScene::itemChanged(StreamEventItem* _it)
 	}
 }
 
-EventsEditor* EventsEditScene::view() const
+EventsGraphicsView* EventsEditScene::view() const
 {
-	return dynamic_cast<EventsEditor*>(views().first());
+	return dynamic_cast<EventsGraphicsView*>(views().first());
 }
 
 QList<StreamEvents> EventsEditScene::events(Time _hop) const

@@ -35,6 +35,7 @@ public slots:
 	void notePluginDataChanged();
 
 signals:
+	void eventsChanged();
 	void storesChanged();
 
 protected:

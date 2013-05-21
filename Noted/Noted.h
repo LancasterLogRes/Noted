@@ -51,6 +51,7 @@
 #include "LibraryMan.h"
 #include "ViewMan.h"
 #include "EventsMan.h"
+#include "GraphMan.h"
 #include "NotedBase.h"
 
 namespace Ui { class Noted; }
@@ -83,6 +84,7 @@ public:
 	static AudioMan* audio() { return static_cast<AudioMan*>(get()->m_audioMan); }
 	static LibraryMan* libs() { return static_cast<LibraryMan*>(get()->m_libraryMan); }
 	static ViewMan* view() { return static_cast<ViewMan*>(get()->m_viewMan); }
+	static GraphMan* graphs() { return static_cast<GraphMan*>(get()->m_graphMan); }
 	static TimelinesItem* timelines() { return get()->m_timelinesItem; }
 
 	virtual QGLWidget* glMaster() const;

@@ -31,7 +31,8 @@ SOURCES += main.cpp\
     LibraryMan.cpp \
     AudioMan.cpp \
     ViewMan.cpp \
-    EventsMan.cpp
+    EventsMan.cpp \
+    GraphMan.cpp
 
 HEADERS  += Noted.h \
 	WaveView.h \
@@ -59,7 +60,8 @@ HEADERS  += Noted.h \
     LibraryMan.h \
     AudioMan.h \
     ViewMan.h \
-    EventsMan.h
+    EventsMan.h \
+    GraphMan.h
 
 FORMS    += Noted.ui
 
@@ -68,7 +70,8 @@ OTHER_FILES += \
 	Noted.rc \
 	SpectraView.frag \
 	SpectraView.vert \
-    Noted.qml
+    Noted.qml \
+    GraphTimeline.qml
 
 RESOURCES += \
 	Noted.qrc

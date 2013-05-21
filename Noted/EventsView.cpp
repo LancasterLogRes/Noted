@@ -28,39 +28,33 @@
 #include <EventCompiler/GraphSpec.h>
 #include <EventsEditor/EventsEditor.h>
 #include <EventsEditor/EventsEditScene.h>
-
 #include "PropertiesEditor.h"
 #include "Noted.h"
 #include "LibraryMan.h"
 #include "EventsView.h"
-
 using namespace std;
 using namespace lb;
 
 EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
-	PrerenderedTimeline	(new QSplitter(Qt::Vertical, new QSplitter(Qt::Horizontal, _parent))),
-	m_eventCompiler		(_ec),
-	m_use				(nullptr)
+	EventsGraphicsView	(_parent),
+	m_eventCompiler		(_ec)
 {
 	connect(NotedFace::libs(), SIGNAL(eventCompilerFactoryAvailable(QString, unsigned)), SLOT(onFactoryAvailable(QString, unsigned)));
 	connect(NotedFace::libs(), SIGNAL(eventCompilerFactoryUnavailable(QString)), SLOT(onFactoryUnavailable(QString)));
 
-	m_verticalSplitter = dynamic_cast<QSplitter*>(parentWidget());
-	m_actualWidget = dynamic_cast<QSplitter*>(m_verticalSplitter->parentWidget());
-	m_propertiesEditor = new PropertiesEditor(m_actualWidget);
-	m_actualWidget->addWidget(m_propertiesEditor);
-	m_eventsEditor = new EventsEditor(m_verticalSplitter);
-	m_eventsEditor->setMaximumHeight(48);
-	m_eventsEditor->setMinimumHeight(48);
-	m_verticalSplitter->addWidget(m_eventsEditor);
-	m_verticalSplitter->addWidget(this);
-	m_propertiesEditor->setProperties(m_eventCompiler.properties());
+//	m_verticalSplitter = dynamic_cast<QSplitter*>(parentWidget());
+//	m_actualWidget = dynamic_cast<QSplitter*>(m_verticalSplitter->parentWidget());
+//	m_propertiesEditor = new PropertiesEditor(m_actualWidget);
+//	m_actualWidget->addWidget(m_propertiesEditor);
+//	m_eventsEditor = new EventsEditor(m_verticalSplitter);
+	/*m_eventsEditor->*/setMaximumHeight(48);
+	/*m_eventsEditor->*/setMinimumHeight(48);
+//	m_verticalSplitter->addWidget(m_eventsEditor);
+//	m_verticalSplitter->addWidget(this);
+//	m_propertiesEditor->setProperties(m_eventCompiler.properties());
 
-	qDebug() << m_verticalSplitter->orientation() << m_actualWidget->orientation();
-
-	connect(m_propertiesEditor, SIGNAL(changed()), NotedFace::events(), SLOT(noteEventCompilersChanged()));
-
-	connect(NotedFace::get(), SIGNAL(eventsChanged()), SLOT(rerender()));
+//	connect(m_propertiesEditor, SIGNAL(changed()), NotedFace::events(), SLOT(noteEventCompilersChanged()));
+	connect(NotedFace::events(), SIGNAL(eventsChanged()), SLOT(rerender()));
 
 	const float c_size = 16;
 	const float c_margin = 0;
@@ -70,12 +64,12 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	m_label->setStyleSheet("background: white");
 	m_label->setText(name());
 
-	QPushButton* b = new QPushButton(this);
+/*	QPushButton* b = new QPushButton(this);
 	b->setGeometry(0, m_label->height(), c_size, c_size);
 	b->setText("X");
 	connect(b, SIGNAL(clicked()), SLOT(deleteLater()));
-
-	QPushButton* ex = new QPushButton(this);
+*/
+/*	QPushButton* ex = new QPushButton(this);
 	ex->setGeometry(c_size + c_margin, m_label->height(), c_size, c_size);
 	ex->setText(">");
 	connect(ex, SIGNAL(clicked()), SLOT(exportGraph()));
@@ -84,13 +78,13 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	d->setGeometry((c_size + c_margin) * 2, m_label->height(), c_size, c_size);
 	d->setText("+");
 	connect(d, SIGNAL(clicked()), SLOT(duplicate()));
-
-	m_use = new QPushButton(this);
+*/
+/*	m_use = new QPushButton(this);
 	m_use->setGeometry((c_size + c_margin) * 3, m_label->height(), c_size, c_size);
 	m_use->setText("U");
 	m_use->setCheckable(true);
 	m_use->setChecked(true);
-	connect(m_use, SIGNAL(toggled(bool)), SLOT(onUseChanged()));
+	connect(m_use, SIGNAL(toggled(bool)), SLOT(onUseChanged()));*/
 
 	m_channel = new QComboBox(this);
 	m_channel->setGeometry((c_size + c_margin) * 4, m_label->height(), c_size * 2 + c_margin, c_size);
@@ -101,16 +95,19 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	m_channel->addItem("2");
 	m_channel->addItem("3");
 
+	setObjectName(name());
+
 	NotedFace::events()->registerEventsView(this);
 }
 
 EventsView::~EventsView()
 {
+	NotedFace::graphs()->unregisterGraphs(objectName());
 	NotedFace::events()->unregisterEventsView(this);
-	quit();
+/*	quit();
 	QWidget* w = parentWidget()->parentWidget();
 	setParent(0);
-	delete w;
+	delete w;*/
 }
 
 void EventsView::onFactoryAvailable(QString _factory, unsigned)
@@ -133,10 +130,7 @@ void EventsView::onUseChanged()
 void EventsView::clearEvents()
 {
 	QMutexLocker l(&x_events);
-	m_events.clear();
 	m_current.clear();
-	if (m_eventsEditor)
-		m_eventsEditor->scene()->clear();
 }
 
 lb::StreamEvents EventsView::cursorEvents() const
@@ -161,12 +155,12 @@ void EventsView::finalizeEvents()
 
 void EventsView::setNewEvents()
 {
-	m_eventsEditor->setEvents(m_events, 0);
+	setEvents(m_events, 0);
 }
 
 lb::StreamEvents EventsView::events(int _i) const
 {
-	if (m_use && m_use->isChecked())
+	if (isEnabled())
 	{
 		QMutexLocker l(&x_events);
 		if (_i < m_events.size())
@@ -220,7 +214,7 @@ void EventsView::restore()
 	cnote << "Restoring EventsView...";
 	m_eventCompiler = NotedFace::libs()->newEventCompiler(m_savedName);
 	m_eventCompiler.properties().deserialize(m_savedProperties);
-	m_propertiesEditor->setProperties(m_eventCompiler.properties());
+//	m_propertiesEditor->setProperties(m_eventCompiler.properties());
 	m_label->setText(name());
 
 	NotedFace::events()->noteEventCompilersChanged();
@@ -230,8 +224,9 @@ void EventsView::readSettings(QSettings& _s, QString const& _id)
 {
 	m_savedName = _s.value(_id + "/name").toString();
 	m_savedProperties = _s.value(_id + "/properties").toString().toStdString();
-	m_use->setChecked(_s.value(_id + "/use").toBool());
+//	m_use->setChecked(_s.value(_id + "/use").toBool());
 	m_channel->setCurrentIndex(_s.value(_id + "/channel").toInt());
+	setObjectName(m_savedName);
 	restore();
 }
 
@@ -239,7 +234,7 @@ void EventsView::writeSettings(QSettings& _s, QString const& _id)
 {
 	_s.setValue(_id + "/name", name());
 	_s.setValue(_id + "/properties", QString::fromStdString(m_eventCompiler.properties().serialized()));
-	_s.setValue(_id + "/use", m_use->isChecked());
+	_s.setValue(_id + "/use", isEnabled());
 	_s.setValue(_id + "/channel", m_channel->currentIndex());
 }
 

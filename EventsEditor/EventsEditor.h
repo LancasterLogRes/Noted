@@ -34,18 +34,19 @@ class EventsEditScene;
 class QPushButton;
 class QSettings;
 
-class EventsEditor: public QGraphicsView, public EventsStore, public Timeline
+class EventsGraphicsView: public QGraphicsView, public EventsStore, public Timeline
 {
 	Q_OBJECT
 
 public:
-	EventsEditor(QWidget* _parent, QString _filename = "");
-	~EventsEditor();
+	EventsGraphicsView(QWidget* _parent, QString _filename = "");
+	~EventsGraphicsView();
 
 	virtual QString niceName() const { return m_filename; }
 
-	bool isIndependent() const;
-	bool isMutable() const { return isIndependent(); }
+	bool isEnabled() const;
+	bool isIndependent() const { return true; } // TODO: remove
+	virtual bool isMutable() const { return true; }
 
 	QString queryFilename();
 	EventsEditScene* scene() const { return &*m_scene; }
@@ -78,9 +79,15 @@ public slots:
 	void onInsertSyncPoint();
 
 	void onRejigRhythm();
+	void clearEvents();
 
 	void onChanged(bool _requiresRecompile);
 	void onChanged() { onChanged(true); }
+
+protected:
+	// TODO: Move to use DataSet.
+	QList<lb::StreamEvents> m_events;
+	mutable QMutex x_events;
 
 private:
 	virtual void resizeEvent(QResizeEvent*) { onViewParamsChanged(); }
@@ -100,7 +107,13 @@ private:
 	QPushButton* m_enabled;
 	bool m_lastTimerDirty;
 	bool m_eventsDirty;
+};
 
-	QList<lb::StreamEvents> m_events;
-	mutable QMutex x_events;
+class EventsEditor: public EventsGraphicsView
+{
+	Q_OBJECT
+
+public:
+	EventsEditor(QWidget* _parent, QString _filename = ""): EventsGraphicsView(_parent, _filename) {}
+	virtual ~EventsEditor() {}
 };

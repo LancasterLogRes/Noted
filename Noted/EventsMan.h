@@ -5,6 +5,8 @@
 
 class EventsMan: public EventsManFace, public JobSource
 {
+	Q_OBJECT
+
 public:
 	EventsMan(QObject* _p = nullptr);
 	virtual ~EventsMan();
@@ -18,6 +20,9 @@ public:
 protected:
 	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&);
 	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&);
+
+private slots:
+	void onAnalyzed(AcausalAnalysis* _aa);
 
 private:
 	// DEPRECATED.

@@ -36,15 +36,17 @@
 #include <QPainter>
 #include <QSplitter>
 
+#include <EventsEditor/EventsEditor.h>
+
 class PropertiesEditor;
 class QPushButton;
 class QLabel;
 class QMutex;
 class QSettings;
 class CompileEventsView;
-class EventsEditor;
 
-class EventsView: public PrerenderedTimeline, public EventsStore
+// Relies on objectName for composing graph's URLs - if this ever changes, make sure all graphs are first unregistered.
+class EventsView: public EventsGraphicsView
 {
 	Q_OBJECT
 	friend class CompileEventsView;
@@ -62,10 +64,11 @@ public:
 	QString name() const;
 	virtual QString niceName() const { return name(); }
 
+	virtual bool isMutable() const { return false; }
+
 	lb::EventCompiler const& eventCompiler() const { return m_eventCompiler; }
 
 	QMutex* mutex() const { return &x_events; }
-	void clearEvents();
 	void appendEvents(lb::StreamEvents const& _se);
 	void finalizeEvents();
 	virtual lb::StreamEvents events(int _i) const;
@@ -73,6 +76,7 @@ public:
 	virtual unsigned eventCount() const { return 0; }
 
 public slots:
+	void clearEvents();
 	void duplicate();
 	void onUseChanged();
 	void exportGraph();
@@ -86,16 +90,17 @@ private slots:
 private:
 	lb::EventCompiler m_eventCompiler;
 
-	QSplitter* m_actualWidget;
-	QSplitter* m_verticalSplitter;
-	EventsEditor* m_eventsEditor;
-	PropertiesEditor* m_propertiesEditor;
+//	QSplitter* m_actualWidget;
+//	QSplitter* m_verticalSplitter;
+//	EventsEditor* m_eventsEditor;
+//	PropertiesEditor* m_propertiesEditor;
 	QComboBox* m_channel;
-	QPushButton* m_use;
+//	QPushButton* m_use;
 	QLabel* m_label;
 
-	QList<lb::StreamEvents> m_events;
-	mutable QMutex x_events;
+	// TODO: Move to use DataSet.
+//	QList<lb::StreamEvents> m_events;
+//	mutable QMutex x_events;
 
 	lb::StreamEvents m_current;
 

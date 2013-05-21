@@ -185,7 +185,7 @@ StreamEventItem* StreamEventItem::newItem(lb::StreamEvent const& _se)
 	return it;
 }
 
-EventsEditor* StreamEventItem::view() const
+EventsGraphicsView* StreamEventItem::view() const
 {
 	return scene()->view();
 }

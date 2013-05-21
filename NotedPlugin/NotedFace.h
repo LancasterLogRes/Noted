@@ -108,8 +108,6 @@ public slots:
 signals:
 	void constructed();
 
-	void eventsChanged();
-
 protected:
 	AudioManFace* m_audioMan = nullptr;
 	DataMan* m_dataMan = nullptr;

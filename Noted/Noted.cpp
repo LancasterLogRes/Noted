@@ -89,7 +89,7 @@ Noted::Noted(QWidget* _p):
 	m_computeMan = new ComputeMan;
 	m_dataMan = new DataMan;
 	m_audioMan = new AudioMan;
-	m_graphMan = new GraphManFace;
+	m_graphMan = new GraphMan;
 	m_viewMan = new ViewMan;
 	m_eventsMan = new EventsMan;
 
@@ -98,6 +98,7 @@ Noted::Noted(QWidget* _p):
 	ui->setupUi(this);
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
 	ui->librariesView->setModel(m_libraryMan);
+	ui->graphsView->setModel(m_graphMan);
 	setWindowIcon(QIcon(":/Noted.png"));
 
 	qmlRegisterType<ChartItem>("com.llr", 1, 0, "Chart");
@@ -115,6 +116,7 @@ Noted::Noted(QWidget* _p):
 
 	m_view = new QQuickView(QUrl("qrc:/Noted.qml"));
 	QWidget* w = QWidget::createWindowContainer(m_view);
+	w->setAcceptDrops(true);
 	m_view->setResizeMode(QQuickView::SizeRootObjectToView);
 	ui->fullDisplay->addWidget(w);
 	m_view->create();
@@ -193,10 +195,14 @@ Noted::~Noted()
 
 	for (auto i: findChildren<Prerendered*>())
 		delete i;
+	for (auto i: findChildren<EventsEditor*>())
+		delete i;
 
 	finiBase();
 
+	delete m_timelinesItem;
 	delete m_view;
+	delete ui;
 //	delete m_viewMan;	// FIXME: This should be fine to uncomment, but results in a crash :-(
 
 	delete m_eventsMan;
@@ -208,8 +214,6 @@ Noted::~Noted()
 	delete m_libraryMan;
 
 	delete m_glMaster;
-
-	delete ui;
 }
 
 void Noted::showEvent(QShowEvent*)
@@ -478,7 +482,7 @@ void Noted::writeSettings()
 	QStringList eds;
 	QString s;
 	for (EventsEditor* ed: findChildren<EventsEditor*>())
-		if (ed->isIndependent() && !(s = ed->queryFilename()).isNull())
+		if (!(s = ed->queryFilename()).isNull())
 		{
 			eds.append(s);
 			ed->save(settings);

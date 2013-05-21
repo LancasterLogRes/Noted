@@ -3,6 +3,7 @@
         <file>Noted.png</file>
         <file>SpectraView.frag</file>
         <file>SpectraView.vert</file>
-        <file>Noted.qml</file>
-    </qresource>
+		<file>Noted.qml</file>
+		<file>GraphTimeline.qml</file>
+	</qresource>
 </RCC>

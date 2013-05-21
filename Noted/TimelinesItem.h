@@ -11,13 +11,8 @@ class TimelineItem: public QQuickItem
 	Q_OBJECT
 
 public:
-	TimelineItem(QQuickItem* _p = nullptr): QQuickItem(_p)
-	{
-		setClip(true);
-		setFlag(ItemHasContents, true);
-		connect(this, SIGNAL(offsetChanged()), SLOT(update()));
-		connect(this, SIGNAL(pitchChanged()), SLOT(update()));
-	}
+	TimelineItem(QQuickItem* _p = nullptr);
+	virtual ~TimelineItem();
 
 	Q_INVOKABLE lb::Time localTime(lb::Time _t, lb::Time _p);
 
@@ -40,22 +35,13 @@ class GraphItem: public TimelineItem
 public:
 	GraphItem();
 
-	GraphViewPlot spec() const { return m_spec; }
-	QString ecName() const { return QString::fromStdString(m_spec.ec); }
-	QString graphName() const { return QString::fromStdString(m_spec.graph); }
-	void setEcName(QString const& _s) { m_spec.ec = _s.toStdString(); graphChanged(); update(); }
-	void setGraphName(QString const& _s) { m_spec.graph = _s.toStdString(); graphChanged(); update(); }
-
-	lb::EventCompiler eventCompiler() const;
-
 signals:
-	void graphChanged();
+	void urlChanged(QString _url);
 
 protected:
-	Q_PROPERTY(QString ec READ ecName WRITE setEcName NOTIFY graphChanged)
-	Q_PROPERTY(QString graph READ graphName WRITE setGraphName NOTIFY graphChanged)
+	Q_PROPERTY(QString url MEMBER m_url NOTIFY urlChanged)
 
-	GraphViewPlot m_spec;
+	QString m_url;
 };
 
 class ChartItem: public GraphItem
@@ -161,17 +147,30 @@ class TimelinesItem: public QQuickItem
 public:
 	TimelinesItem(QQuickItem* _p = nullptr);
 
+	bool isAcceptingDrops() const { return m_accepting; }
+	void setAcceptingDrops(bool _accepting);
+
 signals:
 	void offsetChanged();
 	void pitchChanged();
 	void widthChanged(int);
 
+	void textDrop(QString text);
+	void acceptingDropsChanged();
+
 protected:
 	Q_PROPERTY(lb::Time offset MEMBER m_offset NOTIFY offsetChanged)
 	Q_PROPERTY(lb::Time pitch MEMBER m_pitch NOTIFY pitchChanged)
+	Q_PROPERTY(bool acceptingDrops READ isAcceptingDrops WRITE setAcceptingDrops NOTIFY acceptingDropsChanged)
 
 	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
 
+	void dragEnterEvent(QDragEnterEvent* _event);
+	void dragLeaveEvent(QDragLeaveEvent* _event);
+	void dropEvent(QDropEvent* _event);
+
 	lb::Time m_offset = 0;
 	lb::Time m_pitch = 1;
+
+	bool m_accepting = true;
 };

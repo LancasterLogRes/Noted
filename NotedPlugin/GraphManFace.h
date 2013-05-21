@@ -1,35 +1,33 @@
 #pragma once
 
-#include <QObject>
 #include <QReadWriteLock>
-#include <QHash>
-#include <QStringList>
+#include <QAbstractItemModel>
+#include <QReadWriteLock>
+#include <QSet>
 #include <EventCompiler/GraphSpec.h>
 
-class GraphManFace: public QObject
+class GraphManFace: public QAbstractItemModel
 {
 	Q_OBJECT
 
 public:
 	GraphManFace() {}
 
-	// TODO: add a model
+	void registerGraph(QString _url, lb::GraphSpec const* _g);
+	void unregisterGraph(QString _url);
+	void unregisterGraphs(QString _ec);
 
-	void registerGraph(QString _url, lb::GraphSpec const* _g) { { QReadLocker l(&x_graphs); m_graphs.insert(_url, _g); } emit graphAdded(_url); }
-	void unregisterGraph(QString _url) { { QWriteLocker l(&x_graphs); m_graphs.remove(_url); } emit graphRemoved(_url); }
-
-	QStringList graphs() const { QReadLocker l(&x_graphs); return m_graphs.keys(); }
-	lb::GraphSpec const* lockGraph(QString const& _url) const { x_graphs.lockForRead(); if (m_graphs.contains(_url)) return m_graphs[_url]; x_graphs.unlock(); return nullptr; }
-	void unlockGraph(lb::GraphSpec const* _graph) const { if (_graph) x_graphs.unlock(); }
+	lb::GraphSpec const* lockGraph(QString _url) const { x_graphs.lockForRead(); if (m_graphs.contains(_url)) return m_graphs.value(_url); return nullptr; }
+	void unlockGraph() const { x_graphs.unlock(); }
 
 signals:
-	void graphAdded(QString _url);
-	void graphRemoved(QString _url);
+	void graphsChanged();
+	void addedGraph(QString _url);
+	void removingGraph(QString _url);
 
-private:
-	Q_PROPERTY(QStringList graphs READ graphs())
-
+protected:
+	// TODO: replace lock with guarantee that GUI thread can't be running when graphs are going to change.
 	mutable QReadWriteLock x_graphs;
-	QHash<QString, lb::GraphSpec const*> m_graphs;
+	QMap<QString, lb::GraphSpec const*> m_graphs;
 };
 
