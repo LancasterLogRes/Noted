@@ -28,7 +28,7 @@ void AcausalAnalysis::go(unsigned _from, unsigned _count)
 	init();
 	m_steps = prepare(_from, _count, NotedFace::audio()->hop());
 	analyze(_from, _count, NotedFace::audio()->hop());
-	fini();
+	fini(NotedFace::compute()->carryOn(100));
 }
 
 bool AcausalAnalysis::done(unsigned _i)

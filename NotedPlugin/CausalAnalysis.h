@@ -37,7 +37,7 @@ public:
 
 	// inherited
 	virtual void init() { init(true); }
-	virtual void fini() { fini(true); }
+	virtual void fini(bool _completed) { fini(_completed, true); }
 	virtual unsigned prepare(unsigned _from, unsigned _count, lb::Time) { noteBatch(_from, _count); return _count; }
 	virtual void analyze(unsigned _from, unsigned _count, lb::Time _hop);
 
@@ -45,7 +45,7 @@ public:
 protected:
 	virtual void init(bool _willRecord) { (void)_willRecord; }
 public:// TODO: move to protected & introduce non-virtual public API.
-	virtual void fini(bool _didRecord) { (void)_didRecord; }
+	virtual void fini(bool _completed, bool _didRecord) { (void)_completed; (void)_didRecord; }
 	virtual void noteBatch(unsigned, unsigned) {}
 	virtual void process(unsigned, lb::Time) {}
 	virtual void record() {}

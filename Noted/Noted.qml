@@ -5,13 +5,12 @@ import com.llr 1.0
 Timelines {
     id: timelines
     objectName: 'timelines'
-    offset: ViewMan.offset
-    pitch: ViewMan.pitch
+	offset: view.offset
+	pitch: view.pitch
 
-//    Row { spacing: 20; Text { text: timelines.offset;  } Text { text: timelines.pitch; } }
-    Column {
+	Column {
         anchors.fill: parent
-        XLabels {
+		XLabels {
             id: header
             anchors.left: parent.left
             anchors.right: parent.right
@@ -20,7 +19,24 @@ Timelines {
             pitch: timelines.pitch
         }
 
-        GraphTimeline {}
-        spacing: 20
-    }
+		GraphTimeline { id: gt }
+
+		Rectangle {
+			color: Qt.rgba(0.98, 0.98, 0.98, 0.9)
+			border { width: 1; color: Qt.rgba(0.9, 0.9, 0.9, 1) }
+			anchors.left: parent.left
+			anchors.right: parent.right
+			height: 200
+			Flow {
+				Repeater {
+					model: graphs
+					GraphSpec { url: model.url }
+				}
+				anchors.fill: parent
+				anchors.margins: 4
+				spacing: 2
+			}
+		}
+		spacing: 20
+	}
 }

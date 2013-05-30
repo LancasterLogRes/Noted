@@ -25,52 +25,6 @@
 using namespace std;
 using namespace lb;
 
-DataSetDataStore::DataSetDataStore(std::string const& _name)
-{
-	m_key = qHash(QString::fromStdString(_name));
-}
-
-DataSetDataStore::~DataSetDataStore()
-{
-}
-
-// Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
-void DataSetDataStore::init(unsigned _recordLength, bool _dense)
-{
-	m_s = DataMan::get()->dataSet(m_key);
-	if (!m_s)
-		cwarn << "Something else already opened the DataSet for writing?! :-(";
-
-	if (m_s->haveRaw())
-	{
-//		cdebug << "Already have DataSet";
-		m_s = nullptr;
-	}
-	else
-	{
-//		cdebug << "Don't have DataSet - initializing...";
-		m_s->init(_recordLength, _dense ? Noted::audio()->hop(): 0, 0);
-	}
-}
-
-void DataSetDataStore::shiftBuffer(unsigned _index, foreign_vector<float> const& _record)
-{
-	if (m_s)
-		m_s->appendRecord(Noted::audio()->hop() * _index, _record);
-}
-
-void DataSetDataStore::fini(DigestFlags _digests)
-{
-	if (m_s)
-	{
-		for (DigestFlags f = _digests; f; f &= ~f.highestSet())
-			if (!m_s->haveDigest(f.highestSet()))
-				m_s->digest(f.highestSet());
-		m_s->done();
-	}
-	m_s = nullptr;
-}
-
 CompileEventsView::CompileEventsView(EventsView* _ev):
 	CausalAnalysis(QString("Compiling %1 events").arg(_ev->niceName())),
 	m_ev(_ev)
@@ -79,9 +33,8 @@ CompileEventsView::CompileEventsView(EventsView* _ev):
 
 void CompileEventsView::init(bool _willRecord)
 {
-	(void)_willRecord;
 	m_ev->clearEvents();
-	if (!ec().isNull())
+	if (!ec().isNull() && _willRecord)
 	{
 		for (auto const& i: ec().asA<EventCompilerImpl>().graphMap())
 		{
@@ -121,9 +74,9 @@ void CompileEventsView::record()
 	m_ev->appendEvents(m_ev->m_current);
 }
 
-void CompileEventsView::fini(bool _didRecord)
+void CompileEventsView::fini(bool _completed, bool _didRecord)
 {
-	if (_didRecord)
+	if (_completed && _didRecord)
 	{
 		for (auto i = m_dataStores.begin(); i != m_dataStores.end(); ++i)
 		{

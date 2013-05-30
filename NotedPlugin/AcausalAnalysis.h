@@ -41,7 +41,7 @@ public:
 
 protected:
 	virtual void init() {}
-	virtual void fini() {}
+	virtual void fini(bool _completed) { (void)_completed; }
 	virtual unsigned prepare(unsigned, unsigned, lb::Time) { return 100; }
 	virtual void analyze(unsigned, unsigned, lb::Time) {}
 

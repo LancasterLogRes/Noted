@@ -125,19 +125,19 @@ void ComputeMan::abortWork()
 
 void ComputeMan::suspendWork()
 {
-	cnote << "WORK Suspending..." << m_suspends;
 	if (m_computeThread && m_computeThread->isRunning())
 	{
+		lb::DebugOutputStream<lb::RightChannel, true>() << "SUSPEND";
 		m_computeThread->quit();
 		while (!m_computeThread->wait(1000))
 			cwarn << "Worker thread not responding :-(";
 		m_suspends = 0;
-		cnote << "WORK Suspended";
+//		cnote << "WORK Suspended";
 	}
 	else
 	{
 		++m_suspends;
-		cnote << "WORK Additional suspended" << m_suspends;
+		lb::DebugOutputStream<lb::RightChannel, true>() << string(m_suspends + 1, '$');
 	}
 }
 
@@ -146,14 +146,14 @@ void ComputeMan::resumeWork(bool _force)
 	if (!_force && m_suspends)
 	{
 		m_suspends--;
-		cnote << "WORK One fewer suspend" << m_suspends;
+		lb::DebugOutputStream<lb::LeftChannel, true>() << string(m_suspends + 1, '$');
 	}
 	else
 	{
+		lb::DebugOutputStream<lb::LeftChannel, true>() << "RESUME";
 		if (m_computeThread && !m_computeThread->isRunning())
 		{
-			m_computeThread->start();//QThread::LowPriority);
-			cnote << "WORK Resumed" << m_suspends;
+			m_computeThread->start(QThread::LowPriority);
 		}
 		m_suspends = 0;
 	}

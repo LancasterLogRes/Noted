@@ -12,6 +12,11 @@ GraphMan::~GraphMan()
 {
 }
 
+QHash<int, QByteArray> GraphMan::roleNames() const
+{
+	return { { Qt::UserRole, "url" } };
+}
+
 int GraphMan::rowCount(QModelIndex const& _parent) const
 {
 	return _parent.isValid() ? 0 : m_graphs.size();
@@ -42,6 +47,8 @@ QVariant GraphMan::data(QModelIndex const& _index, int _role) const
 	auto l = (GraphSpec const*)_index.internalPointer();
 	if (_role == Qt::DisplayRole)
 		return QString::fromStdString(l->name());
+	if (_role == Qt::UserRole)
+		return QString::fromStdString(l->url());
 	return QVariant();
 }
 

@@ -2,8 +2,9 @@
     <qresource prefix="/">
         <file>Noted.png</file>
         <file>SpectraView.frag</file>
-        <file>SpectraView.vert</file>
+		<file>SpectraView.vert</file>
 		<file>Noted.qml</file>
 		<file>GraphTimeline.qml</file>
+		<file>GraphSpec.qml</file>
 	</qresource>
 </RCC>

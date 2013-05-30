@@ -28,25 +28,6 @@
 
 class EventsView;
 
-class DataSetDataStore: public lb::DataStore
-{
-public:
-	DataSetDataStore(std::string const& _name);
-	virtual ~DataSetDataStore();
-
-	bool isActive() const { return !!m_s; }
-	void fini(DigestFlags _digests);
-
-protected:
-	// Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
-	virtual void init(unsigned _recordLength, bool _dense);
-	virtual void shiftBuffer(unsigned _index, lb::foreign_vector<float> const& _record);
-
-private:
-	DataKey m_key = 0;
-	DataSet* m_s = nullptr;
-};
-
 class CompileEventsView: public CausalAnalysis
 {
 public:
@@ -56,7 +37,7 @@ public:
 	virtual void init(bool _willRecord);
 	virtual void process(unsigned _i, lb::Time);
 	virtual void record();
-	virtual void fini(bool _didRecord);
+	virtual void fini(bool _completed, bool _didRecord);
 
 	lb::EventCompiler ec() const;
 

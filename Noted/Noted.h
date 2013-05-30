@@ -173,6 +173,7 @@ private:
 	void changeEvent(QEvent *e);
 	void closeEvent(QCloseEvent*);
 	void showEvent(QShowEvent*);
+	void timerEvent(QTimerEvent*) { processNewInfo(); }
 
 	void readSettings();
 	void writeSettings();

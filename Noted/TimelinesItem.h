@@ -35,20 +35,6 @@ class GraphItem: public TimelineItem
 public:
 	GraphItem();
 
-signals:
-	void urlChanged(QString _url);
-
-protected:
-	Q_PROPERTY(QString url MEMBER m_url NOTIFY urlChanged)
-
-	QString m_url;
-};
-
-class ChartItem: public GraphItem
-{
-	Q_OBJECT
-
-public:
 	float yFrom() const { return m_yFrom; }
 	float yDelta() const { return m_yDelta; }
 	int yMode() const { return m_yMode; }
@@ -57,18 +43,24 @@ public:
 	void setYMode(int _m) { m_yMode = _m; yScaleChanged(); update(); }
 
 signals:
+	void urlChanged(QString _url);
 	void yScaleChanged();
+	void highlightChanged();
 
 protected:
+	Q_PROPERTY(QString url MEMBER m_url NOTIFY urlChanged)
 	Q_PROPERTY(float yFrom READ yFrom WRITE setYFrom NOTIFY yScaleChanged)
 	Q_PROPERTY(float yDelta READ yDelta WRITE setYDelta NOTIFY yScaleChanged)
 	Q_PROPERTY(int yMode READ yMode WRITE setYMode NOTIFY yScaleChanged)
+	Q_PROPERTY(bool highlight MEMBER m_highlight NOTIFY highlightChanged)
 
 	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
 
+	QString m_url;
 	float m_yFrom = 0;
 	float m_yDelta = 1;
 	int m_yMode = 0;		///< 0 -> yFrom/yDelta, 1 -> auto (global), 2 -> hint
+	bool m_highlight = false;
 
 	QSGGeometry* m_geo = nullptr;
 };

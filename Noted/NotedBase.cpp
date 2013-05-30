@@ -67,6 +67,8 @@ AcausalAnalysisPtrs NotedBase::ripeAcausalAnalysis(AcausalAnalysisPtr const& _fi
 
 DataKey NotedBase::spectraKey() const
 {
+	if (!m_windowFunction.size())
+		return 0;
 	DataKey ret = (DataKey&)m_windowFunction[m_windowFunction.size() * 7 / 13];
 	if (!m_zeroPhase)
 		ret *= 69;
@@ -114,7 +116,7 @@ void NotedBase::rejigSpectra()
 	QMutexLocker l(&x_spectra);
 //	qDebug() << "rejigSpectra L";
 	int ss = spectrumSize();
-	if (audio()->samples())
+	if (audio()->samples() && windowSize())
 	{
 		if (!m_spectra.init(audio()->key(), spectraKey(), 0, ss * 3 * sizeof(float), audio()->hops()))
 		{

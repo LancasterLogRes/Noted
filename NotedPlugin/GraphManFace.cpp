@@ -2,6 +2,11 @@
 using namespace std;
 using namespace lb;
 
+GraphManFace::~GraphManFace()
+{
+	cnote << "~GraphManFace()";
+}
+
 void GraphManFace::registerGraph(QString _url, lb::GraphSpec const* _g)
 {
 	cnote << "+ GRAPH" << _url.toStdString();
@@ -31,6 +36,7 @@ void GraphManFace::unregisterGraph(QString _url)
 void GraphManFace::unregisterGraphs(QString _ec)
 {
 	cnote << "- GRAPHS" << _ec.toStdString() << "/*";
+
 	{
 		QWriteLocker l(&x_graphs);
 		beginResetModel();

@@ -51,34 +51,8 @@
 #include "TimelinesItem.h"
 #include "Noted.h"
 #include "ui_Noted.h"
-
 using namespace std;
 using namespace lb;
-
-static QObject* getLibs(QQmlEngine*, QJSEngine*)
-{
-	return Noted::libs();
-}
-static QObject* getCompute(QQmlEngine*, QJSEngine*)
-{
-	return Noted::compute();
-}
-static QObject* getData(QQmlEngine*, QJSEngine*)
-{
-	return Noted::data();
-}
-static QObject* getGraphs(QQmlEngine*, QJSEngine*)
-{
-	return Noted::graphs();
-}
-static QObject* getAudio(QQmlEngine*, QJSEngine*)
-{
-	return Noted::audio();
-}
-static QObject* getView(QQmlEngine*, QJSEngine*)
-{
-	return Noted::view();
-}
 
 Noted::Noted(QWidget* _p):
 	NotedBase					(_p),
@@ -101,20 +75,21 @@ Noted::Noted(QWidget* _p):
 	ui->graphsView->setModel(m_graphMan);
 	setWindowIcon(QIcon(":/Noted.png"));
 
-	qmlRegisterType<ChartItem>("com.llr", 1, 0, "Chart");
+	qmlRegisterType<GraphItem>("com.llr", 1, 0, "Chart");
 	qmlRegisterType<TimelinesItem>("com.llr", 1, 0, "Timelines");
 	qmlRegisterType<XLabelsItem>("com.llr", 1, 0, "XLabels");
 	qmlRegisterType<YLabelsItem>("com.llr", 1, 0, "YLabels");
 	qmlRegisterType<YScaleItem>("com.llr", 1, 0, "YScale");
 
-	qmlRegisterSingletonType<LibraryMan>("com.llr", 1, 0, "LibraryMan", getLibs);
-	qmlRegisterSingletonType<ComputeMan>("com.llr", 1, 0, "ComputeMan", getCompute);
-	qmlRegisterSingletonType<DataMan>("com.llr", 1, 0, "DataMan", getData);
-	qmlRegisterSingletonType<GraphManFace>("com.llr", 1, 0, "GraphMan", getGraphs);
-	qmlRegisterSingletonType<AudioMan>("com.llr", 1, 0, "AudioMan", getAudio);
-	qmlRegisterSingletonType<ViewMan>("com.llr", 1, 0, "ViewMan", getView);
-
 	m_view = new QQuickView(QUrl("qrc:/Noted.qml"));
+	QQmlContext* context = m_view->rootContext();
+	context->setContextProperty("libs", libs());
+	context->setContextProperty("compute", compute());
+	context->setContextProperty("data", data());
+	context->setContextProperty("graphs", graphs());
+	context->setContextProperty("audio", audio());
+	context->setContextProperty("view", view());
+
 	QWidget* w = QWidget::createWindowContainer(m_view);
 	w->setAcceptDrops(true);
 	m_view->setResizeMode(QQuickView::SizeRootObjectToView);
@@ -179,6 +154,8 @@ Noted::Noted(QWidget* _p):
 
 	emit constructed();
 
+	startTimer(500);
+
 	// After Noted's readSettings to avoid computing pointless default values.
 	compute()->resumeWork();
 }
@@ -191,29 +168,45 @@ Noted::~Noted()
 
 	qDebug() << "Disabling worker(s)...";
 	compute()->suspendWork();
-	qDebug() << "Disabled permenantly.";
 
+	qDebug() << "Killing (legacy) Prerendereds...";
 	for (auto i: findChildren<Prerendered*>())
 		delete i;
+	qDebug() << "Killing (legacy) EventsEditors...";
 	for (auto i: findChildren<EventsEditor*>())
 		delete i;
 
+	qDebug() << "Finalizing base...";
 	finiBase();
 
+	qDebug() << "Killing main QtQuick item...";
 	delete m_timelinesItem;
+	qDebug() << "Killing Qt Quick view widget...";
 	delete m_view;
+	qDebug() << "Killing UI...";
 	delete ui;
-//	delete m_viewMan;	// FIXME: This should be fine to uncomment, but results in a crash :-(
 
+	qDebug() << "Killing Events Man...";
 	delete m_eventsMan;
+	qDebug() << "Killing View Man...";
+	delete m_viewMan;
+	qDebug() << "Killing Graph Man...";
 	delete m_graphMan;
+
+	qDebug() << "Killing Audio Man...";
 	delete m_audioMan;
+	qDebug() << "Killing Data Man...";
 	delete m_dataMan;
 
+	qDebug() << "Killing Compute Man...";
 	delete m_computeMan;
+	qDebug() << "Killing Library Man...";
 	delete m_libraryMan;
 
+	qDebug() << "Killing GL Master...";
 	delete m_glMaster;
+
+	qDebug() << "Takedown complete. :-)";
 }
 
 void Noted::showEvent(QShowEvent*)
@@ -406,27 +399,21 @@ void Noted::readSettings()
 	QSettings settings("LancasterLogicResponse", "Noted");
 	restoreGeometry(settings.value("geometry").toByteArray());
 
-#define DO(X, V, C) ui->X->V(settings.value(#X).C())
-	if (settings.contains("sampleRate"))
-	{
-		DO(sampleRate, setCurrentIndex, toInt);
-		DO(windowFunction, setCurrentIndex, toInt);
-		DO(hopSlider, setValue, toInt);
-		DO(windowSizeSlider, setValue, toInt);
-		DO(zeroPhase, setChecked, toBool);
-		DO(floatFFT, setChecked, toBool);
-	}
+#define DO(X, V, C, D) ui->X->V(settings.value(#X, D).C())
+	DO(sampleRate, setCurrentIndex, toInt, 4);
+	DO(windowFunction, setCurrentIndex, toInt, 1);
+	DO(hopSlider, setValue, toInt, 6);
+	DO(windowSizeSlider, setValue, toInt, 9);
+	DO(zeroPhase, setChecked, toBool, true);
+	DO(floatFFT, setChecked, toBool, true);
 
-	if (settings.contains("playRate"))
-	{
-		DO(playChunkSamples, setValue, toInt);
-		DO(playChunks, setValue, toInt);
-		DO(playRate, setCurrentIndex, toInt);
-		DO(playDevice, setCurrentIndex, toInt);
-		DO(force16Bit, setChecked, toBool);
-		DO(captureDevice, setCurrentIndex, toInt);
-		DO(captureChunks, setValue, toInt);
-	}
+	DO(playChunkSamples, setValue, toInt, 512);
+	DO(playChunks, setValue, toInt, 4);
+	DO(playRate, setCurrentIndex, toInt, 44100);
+	DO(playDevice, setCurrentIndex, toInt, 0);
+	DO(force16Bit, setChecked, toBool, false);
+	DO(captureDevice, setCurrentIndex, toInt, 0);
+	DO(captureChunks, setValue, toInt, 512);
 #undef DO
 
 	if (settings.contains("eventsViews"))
@@ -807,7 +794,6 @@ void Noted::info(QString const& _info, int _id)
 		QMutexLocker l(&x_infos);
 		m_infos += "<div style=\"margin-top: 1px;\"><span style=\"background-color:" + color + ";\">&nbsp;</span> " + _info.toHtmlEscaped() + "</div>";
 	}
-	QMetaObject::invokeMethod(this, "processNewInfo");
 }
 
 void Noted::info(QString const& _info, QString const& _c)

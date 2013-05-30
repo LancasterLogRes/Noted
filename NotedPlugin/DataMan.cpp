@@ -14,12 +14,12 @@ DataMan::DataMan()
 
 DataSet* DataMan::dataSet(DataKey _k)
 {
-//	cdebug << "DataMan::dataSet(" << hex << _k << ")";
+	cdebug << "DataMan::dataSet(" << hex << _k << ")";
 	QMutexLocker l(&x_data);
 	if (!m_data.contains(_k))
 	{
 		m_data.insert(_k, make_shared<DataSet>(_k));
-//		cdebug << "Creating.";
+		cdebug << "Creating.";
 	}
 	return m_data[_k].get();
 }

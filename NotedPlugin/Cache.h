@@ -57,6 +57,7 @@ public:
 	bool isMapped() const { return !!m_mapping; }
 	bool isGood() const { return isMapped() && header().flags & IsGood; }
 	size_t bytes() const { assert(isMapped()); return header().bytes; }
+	QFile& file() { return m_file; }
 
 	void setGood();
 

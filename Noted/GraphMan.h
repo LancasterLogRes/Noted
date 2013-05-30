@@ -16,6 +16,7 @@ protected:
 	virtual QVariant headerData(int _sectiom, Qt::Orientation _o, int _role) const;
 	virtual QModelIndex index(int _row, int _column, QModelIndex const& _parent) const;
 	virtual QModelIndex parent(QModelIndex const& _index) const;
+	virtual QHash<int, QByteArray> roleNames() const;
 
 private:
 };

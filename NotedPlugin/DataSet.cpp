@@ -5,6 +5,52 @@
 using namespace std;
 using namespace lb;
 
+DataSetDataStore::DataSetDataStore(std::string const& _name)
+{
+	m_key = qHash(QString::fromStdString(_name));
+}
+
+DataSetDataStore::~DataSetDataStore()
+{
+}
+
+// Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
+void DataSetDataStore::init(unsigned _recordLength, bool _dense)
+{
+	m_s = DataMan::get()->dataSet(m_key);
+	if (!m_s)
+		cwarn << "Something else already opened the DataSet for writing?! :-(";
+
+	if (m_s->haveRaw())
+	{
+//		cdebug << "Already have DataSet";
+		m_s = nullptr;
+	}
+	else
+	{
+//		cdebug << "Don't have DataSet - initializing...";
+		m_s->init(_recordLength, _dense ? NotedFace::audio()->hop(): 0, 0);
+	}
+}
+
+void DataSetDataStore::shiftBuffer(unsigned _index, foreign_vector<float> const& _record)
+{
+	if (m_s)
+		m_s->appendRecord(NotedFace::audio()->hop() * _index, _record);
+}
+
+void DataSetDataStore::fini(DigestFlags _digests)
+{
+	if (m_s)
+	{
+		for (DigestFlags f = _digests; f; f &= ~f.highestSet())
+			if (!m_s->haveDigest(f.highestSet()))
+				m_s->digest(f.highestSet());
+		m_s->done();
+	}
+	m_s = nullptr;
+}
+
 DataSet::DataSet(DataKey _operationKey):
 	m_operationKey(_operationKey)
 {
@@ -38,6 +84,19 @@ void DataSet::setup(unsigned _itemCount)
 	m_digest.clear();
 }
 
+void DataSet::appendRecords(foreign_vector<float> const& _vs)
+{
+	assert(_vs.size());
+	assert(m_recordLength && m_stride);
+	assert(_vs.size() % m_recordLength == 0);
+
+	if (!m_raw.isGood())
+		m_raw.append(_vs);
+	m_pos += _vs.size();
+	m_recordCount += _vs.size() / m_recordLength;
+//	cdebug << "[" << hex << m_operationKey << "] <<" << _vs.size() << "(pos:" << m_pos << " rc:" << m_recordCount << " rl:" << m_raw.file().size() << "ts" << m_toc.file().size() << ")";
+}
+
 void DataSet::appendRecord(Time _t, foreign_vector<float> const& _vs)
 {
 	assert(_vs.size());
@@ -61,10 +120,12 @@ void DataSet::appendRecord(Time _t, foreign_vector<float> const& _vs)
 	}
 	m_pos += _vs.size();
 	m_recordCount++;
+//	cdebug << "[" << hex << m_operationKey << "] <<" << _vs.size() << "(pos:" << m_pos << " rc:" << m_recordCount << " rl:" << m_raw.file().size() << "ts" << m_toc.file().size() << ")";
 }
 
 void DataSet::done()
 {
+	cdebug << "DONE [" << hex << m_operationKey << "] (pos:" << m_pos << " rc:" << m_recordCount << " rl:" << m_raw.file().size() << "ts" << m_toc.file().size() << ")";
 	m_raw.setGood();
 	if (m_toc.isOpen())
 		m_toc.setGood();
@@ -121,6 +182,45 @@ void DataSet::digest(DigestFlag _t)
 			}
 			for (; i < a.size(); ++i)
 				ret[i] = (a[i] + b[i]) / 2;
+		}, float(0));
+		break;
+	case MeanRmsDigest:
+		for (unsigned i = m_digestBase, t = 0; f < fe; ++f, ++t)
+		{
+			if (i == m_digestBase)
+			{
+				i = 0;
+				d[0] = *f;
+				d[1] = sqr(*f);
+			}
+			else
+			{
+				d[0] += *f;
+				d[1] += sqr(*f);
+			}
+			i++;
+			if (i == m_digestBase)
+			{
+				d[0] /= m_digestBase;
+				d[1] = sqrt(d[1] / m_digestBase);
+				d += 2;
+			}
+		}
+		m_digest[_t]->generate([](lb::foreign_vector<float> a, lb::foreign_vector<float> b, lb::foreign_vector<float> ret)
+		{
+			unsigned i = 0;
+			for (; i + 3 < a.size(); i += 4)
+			{
+				ret[i] = (a[i] + b[i]) / 2;
+				ret[i+1] = sqrt((sqr(a[i+1]) + sqr(b[i+1])) / 2);
+				ret[i+2] = (a[i+2] + b[i+2]) / 2;
+				ret[i+3] = sqrt((sqr(a[i+3]) + sqr(b[i+3])) / 2);
+			}
+			for (; i + 1 < a.size(); i += 2)
+			{
+				ret[i] = (a[i] + b[i]) / 2;
+				ret[i+1] = sqrt((sqr(a[i+1]) + sqr(b[i+1])) / 2);
+			}
 		}, float(0));
 		break;
 	case MinMaxInOutDigest:

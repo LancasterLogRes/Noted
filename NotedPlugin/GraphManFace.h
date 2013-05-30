@@ -12,6 +12,7 @@ class GraphManFace: public QAbstractItemModel
 
 public:
 	GraphManFace() {}
+	virtual ~GraphManFace();
 
 	void registerGraph(QString _url, lb::GraphSpec const* _g);
 	void unregisterGraph(QString _url);

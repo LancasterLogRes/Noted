@@ -5,8 +5,9 @@
 #include <Audio/Capture.h>
 #include <Audio/Playback.h>
 #include <NotedPlugin/AudioManFace.h>
-#include <NotedPlugin/Cache.h>
+#include <NotedPlugin/DataSet.h>
 #include <NotedPlugin/JobSource.h>
+#include <EventCompiler/GraphSpec.h>
 #include "WorkerThread.h"
 
 class AudioMan: public AudioManFace, public JobSource
@@ -60,6 +61,7 @@ private:
 
 	/// Data
 	// Actual data TODO: Move to a DataSet
+	DataSet m_newWave;
 	mutable QMutex x_wave;
 	Cache m_wave;
 	mutable QMutex x_waveProfile;

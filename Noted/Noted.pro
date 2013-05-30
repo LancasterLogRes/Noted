@@ -23,7 +23,7 @@ SOURCES += main.cpp\
 	WaveOverview.cpp \
 	NotedBase.cpp \
 	CompileEventsView.cpp \
-		PropertiesEditor.cpp \
+	PropertiesEditor.cpp \
 	NotedGLWidget.cpp \
 	GraphView.cpp \
     TimelinesItem.cpp \
@@ -32,7 +32,8 @@ SOURCES += main.cpp\
     AudioMan.cpp \
     ViewMan.cpp \
     EventsMan.cpp \
-    GraphMan.cpp
+	GraphMan.cpp \
+	FileAudioStream.cpp
 
 HEADERS  += Noted.h \
 	WaveView.h \
@@ -61,7 +62,8 @@ HEADERS  += Noted.h \
     AudioMan.h \
     ViewMan.h \
     EventsMan.h \
-    GraphMan.h
+	GraphMan.h \
+	FileAudioStream.h
 
 FORMS    += Noted.ui
 
@@ -71,7 +73,8 @@ OTHER_FILES += \
 	SpectraView.frag \
 	SpectraView.vert \
     Noted.qml \
-    GraphTimeline.qml
+    GraphTimeline.qml \
+    GraphSpec.qml
 
 RESOURCES += \
 	Noted.qrc

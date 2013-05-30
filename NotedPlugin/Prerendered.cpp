@@ -38,7 +38,7 @@
 using namespace std;
 using namespace lb;
 
-#define USE_RENDER_THREAD 1
+#define USE_RENDER_THREAD 0
 
 #if USE_RENDER_THREAD
 class RenderThread: public QThread
@@ -63,8 +63,8 @@ Prerendered::~Prerendered()
 {
 #if USE_RENDER_THREAD
 	quit();
-#endif
 	delete m_renderThread;
+#endif
 }
 
 void Prerendered::paintEvent(QPaintEvent* _e)
@@ -92,11 +92,13 @@ void Prerendered::paintEvent(QPaintEvent* _e)
 
 void Prerendered::quit()
 {
+#if USE_RENDER_THREAD
 	if (m_renderThread)
 	{
 		m_renderThread->quit();
 		m_renderThread->wait();
 	}
+#endif
 }
 
 void Prerendered::hideEvent(QHideEvent* _e)

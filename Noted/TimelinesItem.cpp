@@ -15,8 +15,8 @@ TimelineItem::TimelineItem(QQuickItem* _p): QQuickItem(_p)
 {
 	setClip(true);
 	setFlag(ItemHasContents, true);
-	connect(this, SIGNAL(offsetChanged()), SLOT(update()));
-	connect(this, SIGNAL(pitchChanged()), SLOT(update()));
+	connect(this, &TimelineItem::offsetChanged, this, &TimelineItem::update);
+	connect(this, &TimelineItem::pitchChanged, this, &TimelineItem::update);
 	cnote << "Created TimelineItem" << (void*)this;
 }
 
@@ -27,12 +27,14 @@ TimelineItem::~TimelineItem()
 
 GraphItem::GraphItem()
 {
-	connect(this, &GraphItem::urlChanged, [=](){ update(); });
-	connect(Noted::data(), &DataMan::dataComplete, [=](DataKey /*_key*/){ /*cdebug << "Data complete:" << (void*)(intptr_t)_key;*/ update(); });
-	connect(Noted::graphs(), &GraphMan::graphsChanged, [=](){ /*cdebug << "Graphs changed."; */update(); });
+	connect(this, &GraphItem::urlChanged, this, &GraphItem::update);
+	connect(this, &GraphItem::yScaleChanged, this, &GraphItem::update);
+	connect(this, &GraphItem::highlightChanged, this, &GraphItem::update);
+	connect(Noted::data(), &DataMan::dataComplete, this, &GraphItem::update);
+	connect(Noted::graphs(), &GraphMan::graphsChanged, this, &GraphItem::update);
 }
 
-QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
+QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 {
 	QSGTransformNode *base = static_cast<QSGTransformNode*>(_old);
 	if (!base)
@@ -66,7 +68,7 @@ QSGNode* ChartItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 		base->removeAllChildNodes();
 
 		QSGFlatColorMaterial *m = new QSGFlatColorMaterial;
-		m->setColor(Qt::black);
+		m->setColor(m_highlight ? Qt::black : Qt::gray);
 		QSGGeometryNode* n = new QSGGeometryNode();
 		n->setGeometry(m_geo);
 		n->setFlag(QSGNode::OwnsGeometry);

@@ -118,55 +118,59 @@ void WaveOverview::renderGL(QSize _s)
 	QPainter p(&glpd);
 
 	p.fillRect(rect(), Qt::white);
-	GraphParameters<Time> nor(make_pair(0, NotedFace::audio()->duration()), width() / 80, toBase(1, 1000000));
-	for (Time t = nor.from; t < nor.to; t += nor.incr)
+
+	if (NotedFace::audio()->duration())
 	{
-		int x = wx + t * ww / NotedFace::audio()->duration();
-		if (nor.isMajor(t))
+		GraphParameters<Time> nor(make_pair(0, NotedFace::audio()->duration()), width() / 80, toBase(1, 1000000));
+		for (Time t = nor.from; t < nor.to; t += nor.incr)
 		{
-			p.setPen(QColor(160, 160, 160));
-			p.drawText(QRect(x - 40, 0, 80, 12), Qt::AlignHCenter | Qt::AlignBottom, ::lb::textualTime(t, nor.delta, nor.major).c_str());
-			p.setPen(QColor(192, 192, 192));
-			p.drawLine(x, 14, x, height());
+			int x = wx + t * ww / NotedFace::audio()->duration();
+			if (nor.isMajor(t))
+			{
+				p.setPen(QColor(160, 160, 160));
+				p.drawText(QRect(x - 40, 0, 80, 12), Qt::AlignHCenter | Qt::AlignBottom, ::lb::textualTime(t, nor.delta, nor.major).c_str());
+				p.setPen(QColor(192, 192, 192));
+				p.drawLine(x, 14, x, height());
+			}
+			else
+			{
+				p.setPen(QColor(224, 224, 224));
+				p.drawLine(x, 0, x, height());
+			}
+		}
+
+		p.translate(0, 10);
+		h -= 10;
+
+		unsigned sd = sigma(wave, 0.f);
+		p.fillRect(0, (h - h * sd * 3 / 32767.f) / 2, w, h * sd * 3 / 32767.f, QColor(0, 0, 0, 16));
+		p.fillRect(0, (h - h * sd * 2 / 32767.f) / 2, w, h * sd * 2 / 32767.f, QColor(0, 0, 0, 16));
+		p.fillRect(0, (h - h * sd / 32767.f) / 2, w, h * sd / 32767.f, QColor(0, 0, 0, 16));
+
+		p.setPen(QColor(0, 0, 0, 16));
+		p.drawLine(0, h / 2 - 1, w, h / 2 - 1);
+
+		p.setPen(QColor(0, 0, 0));
+		if (isAbsolute)
+		{
+			for (int x = wx; x < wx + ww; ++x)
+			{
+				int bhMax = max(1.f, h * wave[(x - wx) * 2 + 1]);
+				p.fillRect(x, (h - bhMax) / 2, 1, bhMax, QColor(0, 0, 127));
+				int bhRms = max(1.f, h * wave[(x - wx) * 2]);
+				p.fillRect(x, (h - bhRms) / 2, 1, bhRms, QColor(127, 127, 192));
+			}
 		}
 		else
 		{
-			p.setPen(QColor(224, 224, 224));
-			p.drawLine(x, 0, x, height());
-		}
-	}
-
-	p.translate(0, 10);
-	h -= 10;
-
-	unsigned sd = sigma(wave, 0.f);
-	p.fillRect(0, (h - h * sd * 3 / 32767.f) / 2, w, h * sd * 3 / 32767.f, QColor(0, 0, 0, 16));
-	p.fillRect(0, (h - h * sd * 2 / 32767.f) / 2, w, h * sd * 2 / 32767.f, QColor(0, 0, 0, 16));
-	p.fillRect(0, (h - h * sd / 32767.f) / 2, w, h * sd / 32767.f, QColor(0, 0, 0, 16));
-
-	p.setPen(QColor(0, 0, 0, 16));
-	p.drawLine(0, h / 2 - 1, w, h / 2 - 1);
-
-	p.setPen(QColor(0, 0, 0));
-	if (isAbsolute)
-	{
-		for (int x = wx; x < wx + ww; ++x)
-		{
-			int bhMax = max(1.f, h * wave[(x - wx) * 2 + 1]);
-			p.fillRect(x, (h - bhMax) / 2, 1, bhMax, QColor(0, 0, 127));
-			int bhRms = max(1.f, h * wave[(x - wx) * 2]);
-			p.fillRect(x, (h - bhRms) / 2, 1, bhRms, QColor(127, 127, 192));
-		}
-	}
-	else
-	{
-		int ly;
-		for (int x = wx; x < wx + ww; ++x)
-		{
-			int ty = (h + h * wave[x - wx]) / 2;
-			if (x != wx)
-				p.drawLine(x - 1, ly, x, ty);
-			ly = ty;
+			int ly;
+			for (int x = wx; x < wx + ww; ++x)
+			{
+				int ty = (h + h * wave[x - wx]) / 2;
+				if (x != wx)
+					p.drawLine(x - 1, ly, x, ty);
+				ly = ty;
+			}
 		}
 	}
 }

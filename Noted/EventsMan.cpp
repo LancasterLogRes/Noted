@@ -33,7 +33,10 @@ void EventsMan::onAnalyzed(AcausalAnalysis* _aa)
 	if (_aa == &*m_collateEventsAnalysis)
 		for (EventsView* ev: m_eventsViews)
 			for (auto const& i: ev->eventCompiler().asA<EventCompilerImpl>().graphMap())
-				Noted::graphs()->registerGraph(ev->objectName() + "/" + QString::fromStdString(i.first), i.second);
+			{
+				i.second->setUrl(ev->objectName().toStdString() + "/" + i.first);
+				Noted::graphs()->registerGraph(QString::fromStdString(i.second->url()), i.second);
+			}
 }
 
 CausalAnalysisPtrs EventsMan::ripeCausalAnalysis(CausalAnalysisPtr const& _finished)

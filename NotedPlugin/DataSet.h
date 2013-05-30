@@ -3,13 +3,14 @@
 #include <QHash>
 #include <QMap>
 #include <Common/Flags.h>
+#include <EventCompiler/GraphSpec.h>
 #include "Cache.h"
 
-enum DigestFlag { MeanDigest = 0x01, MinMaxInOutDigest = 0x02, UnitCyclicMeanDigest = 0x04, PiCyclicMeanDigest = 0x08, TwoPiCyclicMeanDigest = 0x10};
+enum DigestFlag { MeanDigest = 0x01, MeanRmsDigest = 0x20, MinMaxInOutDigest = 0x02, UnitCyclicMeanDigest = 0x04, PiCyclicMeanDigest = 0x08, TwoPiCyclicMeanDigest = 0x10};
 typedef lb::Flags<DigestFlag> DigestFlags;
 namespace lb { template <> struct is_flag<DigestFlag>: public std::true_type { typedef DigestFlags FlagsType; }; }
 
-inline unsigned digestSize(DigestFlag _f) { switch (_f) { case MeanDigest: return 1; case MinMaxInOutDigest: return 4; default: return 0; } }
+inline unsigned digestSize(DigestFlag _f) { switch (_f) { case MeanDigest: return 1; case MeanRmsDigest: return 2; case MinMaxInOutDigest: return 4; default: return 0; } }
 
 /** Contains dataset of a given key, a hash of the source data and any operations applied to it.
  * Data is composed of records, each at a particular point in time.
@@ -37,6 +38,7 @@ public:
 	void init(unsigned _itemCount);
 
 	void appendRecord(lb::Time _t, lb::foreign_vector<float> const& _vs);
+	void appendRecords(lb::foreign_vector<float> const& _vs);
 
 	void digest(DigestFlag _type);
 	void done();
@@ -74,3 +76,23 @@ private:
 	unsigned m_recordCount = 0;
 	unsigned m_pos = 0;
 };
+
+class DataSetDataStore: public lb::DataStore
+{
+public:
+	DataSetDataStore(std::string const& _name);
+	virtual ~DataSetDataStore();
+
+	bool isActive() const { return !!m_s; }
+	void fini(DigestFlags _digests);
+
+protected:
+	// Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
+	virtual void init(unsigned _recordLength, bool _dense);
+	virtual void shiftBuffer(unsigned _index, lb::foreign_vector<float> const& _record);
+
+private:
+	DataKey m_key = 0;
+	DataSet* m_s = nullptr;
+};
+
