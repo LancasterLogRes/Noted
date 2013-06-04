@@ -9,12 +9,14 @@ class ViewManFace: public QObject
 	Q_OBJECT
 
 public:
-	ViewManFace(QObject* _p = nullptr): QObject(_p) {}
+	ViewManFace(QObject* _p = nullptr): QObject(_p) { connect(this, SIGNAL(widthChanged(int)), SIGNAL(globalParametersChanged())); }
 	virtual ~ViewManFace();
 
 	inline int width() const { return m_width; }
 	inline lb::Time offset() const { return m_offset; }
 	inline lb::Time pitch() const { return m_pitch; }
+	virtual lb::Time globalPitch() const = 0;
+	virtual lb::Time globalOffset() const = 0;
 
 	inline lb::Time earliestVisible() const { return m_offset; }
 	inline lb::Time latestVisible() const { return earliestVisible() + visibleDuration(); }
@@ -40,12 +42,15 @@ signals:
 	void widthChanged(int _w);
 	void offsetChanged(lb::Time _offset);
 	void pitchChanged(lb::Time _pitch);
+	void globalParametersChanged();
 	void parametersChanged(lb::Time _offset, lb::Time _pitch);
 
 private:
 	Q_PROPERTY(int width READ width NOTIFY widthChanged)
 	Q_PROPERTY(lb::Time offset READ offset WRITE setOffset NOTIFY offsetChanged)
 	Q_PROPERTY(lb::Time pitch READ pitch WRITE setPitch NOTIFY pitchChanged)
+	Q_PROPERTY(lb::Time globalOffset READ globalOffset NOTIFY globalParametersChanged)
+	Q_PROPERTY(lb::Time globalPitch READ globalPitch NOTIFY globalParametersChanged)
 
 	lb::Time m_offset = 0;
 	lb::Time m_pitch = lb::FromMsecs<1>::value;

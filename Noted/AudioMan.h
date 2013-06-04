@@ -5,6 +5,7 @@
 #include <Audio/Capture.h>
 #include <Audio/Playback.h>
 #include <NotedPlugin/AudioManFace.h>
+#include <NotedPlugin/GraphManFace.h>
 #include <NotedPlugin/DataSet.h>
 #include <NotedPlugin/JobSource.h>
 #include <EventCompiler/GraphSpec.h>
@@ -58,10 +59,11 @@ private slots:
 private:
 	bool resampleWave();
 	bool serviceAudio();
+	virtual void updateKeys();
 
 	/// Data
-	// Actual data TODO: Move to a DataSet
-	DataSet m_newWave;
+	DataSetPtr m_newWave;
+	// Actual data TODO: REMOVE
 	mutable QMutex x_wave;
 	Cache m_wave;
 	mutable QMutex x_waveProfile;
@@ -87,4 +89,7 @@ private:
 	// Cursor management...
 	lb::Time m_lastFineCursor;
 	lb::Time m_lastCursorChangedSignal;
+
+	/// Our graph
+	GraphMetadata m_waveGraph = GraphMetadata(0, {{ "Amplitude", lb::XOf(), lb::Range(-1, 1) }}, "PCM", true);
 };

@@ -53,3 +53,31 @@ void GraphManFace::unregisterGraphs(QString _ec)
 	emit graphsChanged();
 }
 
+void GraphManFace::registerGraph(QString const& _url, GraphMetadata const* _g)
+{
+	cnote << "+ GRAPH2" << _url.toStdString();
+
+	_g->setUrl(_url.toStdString());
+	{
+		QWriteLocker l(&x_graphs);
+		beginResetModel();
+		m_graphs2.insert(_url, _g);
+		endResetModel();
+		emit addedGraph(_g);
+	}
+	emit graphsChanged();
+}
+
+void GraphManFace::unregisterGraph(GraphMetadata const* _g)
+{
+	cnote << "- GRAPH" << _g->url();
+
+	{
+		QWriteLocker l(&x_graphs);
+		emit removingGraph(_g);
+		beginResetModel();
+		m_graphs.remove(QString::fromStdString(_g->url()));
+		endResetModel();
+	}
+	emit graphsChanged();
+}

@@ -17,7 +17,7 @@ DataSetDataStore::~DataSetDataStore()
 // Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
 void DataSetDataStore::init(unsigned _recordLength, bool _dense)
 {
-	m_s = DataMan::get()->dataSet(m_key);
+	m_s = DataMan::get()->dataSet(DataKeys(NotedFace::audio()->key(), m_key));
 	if (!m_s)
 		cwarn << "Something else already opened the DataSet for writing?! :-(";
 
@@ -51,8 +51,9 @@ void DataSetDataStore::fini(DigestFlags _digests)
 	m_s = nullptr;
 }
 
-DataSet::DataSet(DataKey _operationKey):
-	m_operationKey(_operationKey)
+DataSet::DataSet(DataKeys _key):
+	m_sourceKey(_key.source),
+	m_operationKey(_key.operation)
 {
 //	cdebug << (void*)this << (QThread::currentThreadId()) << "DataSet::DataSet(" << _operationKey << ")";
 }
@@ -74,11 +75,11 @@ unsigned DataSet::rawRecords() const
 void DataSet::setup(unsigned _itemCount)
 {
 	(void)_itemCount;
-	m_raw.init(NotedFace::get()->audio()->key(), m_operationKey, 0);
+	m_raw.init(m_sourceKey, m_operationKey, 0);
 	if (m_recordLength)
 		m_toc.reset();
 	else
-		m_toc.init(NotedFace::get()->audio()->key(), m_operationKey, 1);
+		m_toc.init(m_sourceKey, m_operationKey, 1);
 	m_recordCount = 0;
 	m_pos = 0;
 	m_digest.clear();
@@ -129,7 +130,7 @@ void DataSet::done()
 	m_raw.setGood();
 	if (m_toc.isOpen())
 		m_toc.setGood();
-	DataMan::get()->noteDone(m_operationKey);
+	DataMan::get()->noteDone(DataKeys(m_sourceKey, m_operationKey));
 }
 
 void DataSet::digest(DigestFlag _t)
@@ -141,7 +142,7 @@ void DataSet::digest(DigestFlag _t)
 		m_toc.setGood();
 	m_availableDigests |= _t;
 	m_digest[_t] = make_shared<MipmappedCache>();
-	bool haveDigest = m_digest[_t]->init(NotedFace::audio()->key(), m_operationKey, qHash(2 + _t), digestSize(_t) * recordLength() * sizeof(float), digestRecords());
+	bool haveDigest = m_digest[_t]->init(m_sourceKey, m_operationKey, qHash(2 + _t), digestSize(_t) * recordLength() * sizeof(float), digestRecords());
 	if (haveDigest)
 		return;
 
@@ -260,25 +261,25 @@ void DataSet::digest(DigestFlag _t)
 	}
 }
 
-tuple<Time, unsigned, int> DataSet::bestFit(Time _from, Time _duration, unsigned _idealRecords) const
+tuple<Time, unsigned, int, Time> DataSet::bestFit(Time _from, Time _duration, unsigned _idealRecords) const
 {
-	unsigned recordBegin = (_from - m_first) / m_stride;
-	unsigned recordEnd = (_from + _duration - m_first + m_stride - 1) / m_stride;
-	unsigned recordRes = _duration / m_stride;
+	int64_t recordBegin = (_from - m_first) / m_stride;
+	int64_t recordEnd = (_from + _duration - m_first + m_stride - 1) / m_stride;
+	int64_t recordRes = _duration / m_stride;
 
 	int level = -1;
 
 	while (true)
 	{
 		int nextLevel = level + 1;
-		unsigned nextBegin = nextLevel ? recordBegin / 2 : recordBegin / m_digestBase;
-		unsigned nextEnd = nextLevel ? (recordEnd + 1) / 2 : (recordBegin + m_digestBase - 1) / m_digestBase;
-		unsigned nextRes = nextLevel ? recordRes / 2 : recordBegin / m_digestBase;
+		int64_t nextBegin = nextLevel ? recordBegin / 2 : (recordBegin / (int64_t)m_digestBase);
+		int64_t nextEnd = nextLevel ? (recordEnd + 1) / 2 : ((recordEnd + (int64_t)m_digestBase - 1) / (int64_t)m_digestBase);
+		int64_t nextRes = nextLevel ? recordRes / 2 : (recordRes / (int64_t)m_digestBase);
 
 //		if (nextEnd - nextBegin < _idealRecords || recordEnd - recordBegin == _idealRecords)
 		if (recordRes < _idealRecords)
 			// Passed the place... use the last one cunningly left in recordBegin/recordEnd/level.
-			return tuple<Time, unsigned, int>(m_first + m_stride * (level > -1 ? m_digestBase << level : 1) * recordBegin, recordEnd - recordBegin, level);
+			return tuple<Time, unsigned, int, Time>(m_first + m_stride * (level > -1 ? m_digestBase << level : 1) * recordBegin, recordEnd - recordBegin, level, (recordEnd - recordBegin) * m_stride * (level > -1 ? m_digestBase << level : 1));
 		recordBegin = nextBegin;
 		recordEnd = nextEnd;
 		recordRes = nextRes;

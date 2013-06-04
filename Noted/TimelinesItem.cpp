@@ -47,13 +47,13 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 		if (!m_geo)
 		{
 			// TODO: This is all wrong; doesn't account for m_first
-			DataKey k = qHash(QString::fromStdString(g->name()));
+			DataKeys k = DataKeys(Noted::audio()->key(), qHash(QString::fromStdString(g->name())));
 			auto z = Noted::data()->rawRecordCount(k);
 			qDebug() << QString::fromStdString(g->name()) << " key:" << hex << k << " records:" << z;
-			if (!z)
-				return base;
 			float intermed[z];
-			Noted::data()->populateRaw(k, 0, intermed, z);
+			if (z)
+				Noted::data()->populateRaw(k, 0, intermed, z);
+
 			m_geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), z);
 			m_geo->setDrawingMode(GL_LINE_STRIP);
 			m_geo->setLineWidth(1);
@@ -96,8 +96,97 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 		gmx.scale(Noted::audio()->hop() / (double)m_pitch, 1.f / yd);
 		gmx.translate(m_offset / -(double)Noted::audio()->hop(), 0);
 		base->setMatrix(gmx);
+		NotedFace::get()->graphs()->unlockGraph();
 	}
-	NotedFace::get()->graphs()->unlockGraph();
+
+	if (GraphMetadata const* g = NotedFace::get()->graphs()->lock(m_url))
+	{
+		if (DataSetPtr ds = Noted::data()->readDataSet(DataKeys(g->isRawSource() ? Noted::audio()->rawKey() : Noted::audio()->key(), g->operationKey())))
+		{
+			if (ds->isMonotonic())
+			{
+				int lodReq;
+				Time from;
+				Time duration;
+				unsigned records;
+				cnote << m_url << textualTime(m_offset) << "+" << textualTime(m_pitch * width()) << "/" << width();
+				std::tie(from, records, lodReq, duration) = ds->bestFit(m_offset, m_pitch * width(), width());
+				cnote << "Got" << textualTime(from) << "+" << textualTime(duration) << "/" << records << "@" << lodReq;
+	//			if (lodReq != m_lod)
+				{
+					delete m_geo;
+					m_geo = nullptr;
+					m_lod = lodReq;
+				}
+
+				if (ds->isScalar())	// Simple 1D line graph
+				{
+					if (!m_geo)
+					{
+						if (m_lod < 0)
+						{
+							float intermed[records];
+							if (records)
+								ds->populateRaw(from, intermed, records);
+							m_geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), records);
+							m_geo->setDrawingMode(GL_LINE_STRIP);
+							m_geo->setLineWidth(1);
+							float* v = static_cast<float*>(m_geo->vertexData());
+							for (unsigned i = 0; i < records; ++i, v += 2)
+							{
+								v[0] = i;
+								v[1] = intermed[i];
+							}
+						}
+						else if (ds->haveDigest(MeanRmsDigest))
+						{
+							unsigned digestZ = digestSize(MeanRmsDigest);
+							float intermed[records * digestZ];
+							if (records)
+								ds->populateDigest(MeanRmsDigest, m_lod, from, intermed, records * digestZ);
+							m_geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), records);
+							m_geo->setDrawingMode(GL_LINE_STRIP);
+							m_geo->setLineWidth(1);
+							float* v = static_cast<float*>(m_geo->vertexData());
+							for (unsigned i = 0; i < records; ++i, v += 2)
+							{
+								v[0] = i;
+								v[1] = intermed[i * 2];
+							}
+						}
+					}
+
+					base->removeAllChildNodes();
+
+					QSGFlatColorMaterial* m = new QSGFlatColorMaterial;
+					m->setColor(m_highlight ? Qt::black : Qt::gray);
+					QSGGeometryNode* n = new QSGGeometryNode();
+					n->setGeometry(m_geo);
+					n->setFlag(QSGNode::OwnsGeometry);
+					n->setMaterial(m);
+					n->setFlag(QSGNode::OwnsMaterial);
+					base->appendChildNode(n);
+
+					// Normalize height so within range [0,1] for the height xform.
+					float yf = m_yFrom;
+					float yd = m_yDelta;
+					if (m_yMode)
+					{
+						yf = g->axis().range.first;
+						yd = g->axis().range.second - g->axis().range.first;
+					}
+					QMatrix4x4 gmx;
+					gmx.translate(0, height());
+					gmx.scale(1, -height());
+					double stride = duration / (double)records;
+					gmx.scale(stride / m_pitch, 1.f / yd);
+					gmx.translate((m_offset - from) / -stride, -yf);
+					base->setMatrix(gmx);
+				}
+			}
+		}
+		NotedFace::get()->graphs()->unlock();
+	}
 
 	return base;
 }

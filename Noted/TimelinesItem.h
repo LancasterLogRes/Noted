@@ -59,10 +59,11 @@ protected:
 	QString m_url;
 	float m_yFrom = 0;
 	float m_yDelta = 1;
-	int m_yMode = 0;		///< 0 -> yFrom/yDelta, 1 -> auto (global), 2 -> hint
+	int m_yMode = 1;		///< 0 -> yFrom/yDelta, 1 /*-> auto (global)*/, 2 -> hint
 	bool m_highlight = false;
 
 	QSGGeometry* m_geo = nullptr;
+	int m_lod = -1;
 };
 
 class YScaleItem: public QQuickItem

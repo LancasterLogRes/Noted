@@ -52,7 +52,7 @@ QVariant GraphMan::data(QModelIndex const& _index, int _role) const
 	return QVariant();
 }
 
-Qt::ItemFlags GraphMan::flags(QModelIndex const& _index) const
+Qt::ItemFlags GraphMan::flags(QModelIndex const&) const
 {
 	return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled;
 }

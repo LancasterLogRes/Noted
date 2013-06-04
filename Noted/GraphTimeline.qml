@@ -11,7 +11,7 @@ Item {
 
 	ListModel {
 		id: graphs
-		ListElement { graphUrl: "RhythmDetectorFloat/TatumPhase" }
+		ListElement { graphUrl: "wave" }
 		ListElement { graphUrl: "RhythmDetectorFloat/Loudness" }
 	}
 
@@ -101,6 +101,14 @@ Item {
 		height: parent.height
 		anchors.right: parent.right
 		anchors.left: scale.right
+		MouseArea {
+			anchors.fill: parent
+			onWheel: {
+				console.log("Wheel event; x: " + wheel.x + ", d: " + wheel.angleDelta + ", gx: " + mapToItem(timelines, wheel.x, wheel.y).x)
+				view.zoomTimeline(mapToItem(timelines, wheel.x, wheel.y).x,
+								  Math.exp(-wheel.angleDelta.y / (wheel.modifiers & Qt.ControlModifier ? 2400.0 : wheel.modifiers & Qt.ShiftModifier ? 24.0 : 240.0)))
+			}
+		}
 		YScale {
 			anchors.fill: parent
 			yFrom: panel.yFrom

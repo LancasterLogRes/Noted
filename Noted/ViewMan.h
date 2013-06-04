@@ -9,6 +9,9 @@ class ViewMan: public ViewManFace
 public:
 	ViewMan(QObject* _p = nullptr): ViewManFace(_p) {}
 
+	virtual lb::Time globalPitch() const;
+	virtual lb::Time globalOffset() const;
+
 public slots:
 	virtual void normalize();
 };

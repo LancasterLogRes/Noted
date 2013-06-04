@@ -87,12 +87,12 @@ public:
 
 	template <class _T> lb::foreign_vector<_T> item(unsigned _depth, unsigned _i)
 	{
-		return lb::foreign_vector<_T>((_T*)(m_mappingAtDepth[_depth] + std::min<unsigned>(_i, m_itemsAtDepth[_depth] - 1) * m_sizeofItem), m_sizeofItem / sizeof(_T));
+		return (int)_depth < m_mappingAtDepth.size() ? lb::foreign_vector<_T>((_T*)(m_mappingAtDepth[_depth] + std::min<unsigned>(_i, m_itemsAtDepth[_depth] - 1) * m_sizeofItem), m_sizeofItem / sizeof(_T)) : lb::foreign_vector<_T>();
 	}
 
 	template <class _T> lb::foreign_vector<_T> data(unsigned _depth = 0)
 	{
-		return lb::foreign_vector<_T>((_T*)m_mappingAtDepth[_depth], m_itemsAtDepth[_depth]);
+		return (int)_depth < m_mappingAtDepth.size() ? lb::foreign_vector<_T>((_T*)m_mappingAtDepth[_depth], m_itemsAtDepth[_depth]) : lb::foreign_vector<_T>();
 	}
 
 	template <class _T> lb::foreign_vector<_T const> item(unsigned _depth, unsigned _i) const

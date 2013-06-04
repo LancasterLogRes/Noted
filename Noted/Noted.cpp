@@ -62,8 +62,8 @@ Noted::Noted(QWidget* _p):
 	m_libraryMan = new LibraryMan;
 	m_computeMan = new ComputeMan;
 	m_dataMan = new DataMan;
-	m_audioMan = new AudioMan;
 	m_graphMan = new GraphMan;
+	m_audioMan = new AudioMan;
 	m_viewMan = new ViewMan;
 	m_eventsMan = new EventsMan;
 
@@ -97,6 +97,7 @@ Noted::Noted(QWidget* _p):
 	m_view->create();
 
 	m_timelinesItem = static_cast<TimelinesItem*>(m_view->rootObject());
+	qDebug() << m_view->rootObject();
 
 	connect(audio(), SIGNAL(prepareForDataChange()), SLOT(onDataChanging()));
 	connect(audio(), SIGNAL(dataLoaded()), SLOT(onDataLoaded()));
@@ -190,11 +191,13 @@ Noted::~Noted()
 	delete m_eventsMan;
 	qDebug() << "Killing View Man...";
 	delete m_viewMan;
-	qDebug() << "Killing Graph Man...";
-	delete m_graphMan;
 
 	qDebug() << "Killing Audio Man...";
 	delete m_audioMan;
+
+	qDebug() << "Killing Graph Man...";
+	delete m_graphMan;
+
 	qDebug() << "Killing Data Man...";
 	delete m_dataMan;
 

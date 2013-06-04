@@ -83,7 +83,7 @@ signals:
 	void cursorHasChanged(lb::Time);	// Called sometime after one or more cursor changes - meant for GUI updates that don't need per-millisecond updates.
 
 protected:
-	void updateKeys() { m_rawKey = qHash(m_filename) ^ qHash(m_rate); m_key = qHash(m_hopSamples) ^ m_rawKey; }
+	virtual void updateKeys();
 
 	/// Data
 	AcausalAnalysisPtr m_resampleWaveAcAnalysis;

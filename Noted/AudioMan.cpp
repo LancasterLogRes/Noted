@@ -16,7 +16,6 @@ public:
 };
 
 AudioMan::AudioMan():
-	m_newWave		(0),
 	x_wave			(QMutex::Recursive),
 	x_waveProfile	(QMutex::Recursive)
 {
@@ -24,6 +23,7 @@ AudioMan::AudioMan():
 	connect(Noted::compute(), SIGNAL(analyzed(AcausalAnalysis*)), SLOT(onAnalyzed(AcausalAnalysis*)));
 	m_audioThread = createWorkerThread([=](){return serviceAudio();});
 	NotedFace::compute()->registerJobSource(this);
+	NotedFace::graphs()->registerGraph("wave", &m_waveGraph);
 }
 
 AudioMan::~AudioMan()
@@ -34,6 +34,7 @@ AudioMan::~AudioMan()
 	delete m_audioThread;
 	m_audioThread = nullptr;
 	cnote << "Disabled permenantly.";
+	NotedFace::graphs()->unregisterGraph(&m_waveGraph);
 	NotedFace::compute()->unregisterJobSource(this);
 }
 
@@ -110,6 +111,12 @@ void AudioMan::setFilename(QString const& _filename)
 
 	emit dataChanged();
 	emit changed();
+}
+
+void AudioMan::updateKeys()
+{
+	AudioManFace::updateKeys();
+	m_newWave.reset();
 }
 
 void AudioMan::play(bool _causal)
@@ -257,56 +264,6 @@ lb::foreign_vector<float const> AudioMan::waveWindow(int _window) const
 }
 
 
-/**
- * @brief Data concerning, but not expressing, a graph.
- * url is an identifier for this graph within the context of an analysis; it is valid
- * between subsequent executions. It is stored within this class as a convenience; this class
- * does not administer the value; that is left to whatever class registers instantiations
- * with GraphMan.
- *
- * For event compiler graphs, it will be composed of some reference to the event compiler's
- * instance together with the operation at hand.
- *
- * key is the operation key for this graph's data. Multiple GraphMetadata instances may have
- * the same key, meaning that they refer to the same underlying graph data. For event
- * compiler graphs it is a hash of the event compiler's class name, its version and any
- * parameters it has. System graphs may have reserved keys (e.g. wave data, 0), or may hash
- * dependent parameters.
- */
-class GraphMetadata
-{
-public:
-	GraphMetadata() {}
-	GraphMetadata(DataKey _operationKey, std::string _url): m_operationKey(_operationKey), m_url(_url) {}
-
-	std::string const& url() const { return m_url; }
-	DataKey operationKey() const { return m_operationKey; }
-
-	void setUrl(std::string _url) { m_url = _url; }
-	void setOperationKey(DataKey _k) { m_operationKey = _k; }
-
-	enum { ValueAxis = 0, XAxis = 1 };
-
-	struct Axis
-	{
-		std::string label;
-		XOf transform;
-		Range range;
-	};
-
-	Axis const& axis(unsigned _i = ValueAxis) const { return m_axes[_i]; }
-	std::vector<Axis> const& axes() const { return m_axes; }
-	void setAxes(std::vector<Axis> const& _as) { m_axes = _as; }
-
-protected:
-	DataKey m_operationKey = (unsigned)-1;
-	std::string m_url = "invalid";
-
-	std::vector<Axis> m_axes = { { "", XOf(), AutoRange } };
-};
-
-
-
 bool AudioMan::resampleWave()
 {
 	SF_INFO info;
@@ -380,22 +337,26 @@ bool AudioMan::resampleWave()
 		}
 		sf_close(sndfile);
 
-		m_newWave.init(1, toBase(1, m_rate), 0);
-		if (!m_newWave.haveRaw())
+		m_newWave = NotedFace::data()->dataSet(DataKeys(rawKey(), 0));
+		m_newWave->init(1, toBase(1, m_rate), 0);
+		if (!m_newWave->haveRaw())
 		{
 			const unsigned chunkSamples = 65536;
 			float chunk[chunkSamples];
 			FileAudioStream as(chunkSamples, m_filename.toStdString(), m_rate);
+			as.init();
 			unsigned done = 0;
 			for (; done < m_samples; done += chunkSamples)
 			{
 				as.copyTo(0, chunk);
-				m_newWave.appendRecords(foreign_vector<float>(chunk, min(m_samples - done, chunkSamples)));
+				foreign_vector<float> rs(chunk, min(m_samples - done, chunkSamples));
+				m_newWave->appendRecords(rs);
 			}
-			m_newWave.done();
 		}
-		m_newWave.digest(MeanRmsDigest);
+		m_newWave->digest(MeanRmsDigest);
+		m_newWave->done();
 
+		return true;
 	}
 	else
 	{
@@ -403,7 +364,6 @@ bool AudioMan::resampleWave()
 		m_waveProfile.init(key(), "waveProfile", 2 * sizeof(float), 0);
 		return false;
 	}
-	return true;
 }
 
 bool AudioMan::serviceAudio()

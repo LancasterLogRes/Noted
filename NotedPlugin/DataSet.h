@@ -12,7 +12,16 @@ namespace lb { template <> struct is_flag<DigestFlag>: public std::true_type { t
 
 inline unsigned digestSize(DigestFlag _f) { switch (_f) { case MeanDigest: return 1; case MeanRmsDigest: return 2; case MinMaxInOutDigest: return 4; default: return 0; } }
 
-/** Contains dataset of a given key, a hash of the source data and any operations applied to it.
+LIGHTBOX_STRUCT(2, DataKeys, DataKey, source, DataKey, operation);
+inline uint qHash(DataKeys _k) { return _k.source ^ DataKey(_k.operation << 16) ^ DataKey(_k.operation >> 16); }
+
+
+/** Implementation of non-volatile map<lb::Time, Record>, where typedef vector<float> Record;
+ * API optimized for appending records, especially where the Record::size() is fixed (isFixed()) and the difference
+ * between subsequent keys (i.e. lb::Times) is constant (isMonotonic()). Also features a digest function for
+ * such cases to summarise the data in a recursive mapmap-like fashion.
+ *
+ * Contains dataset of a given key, a hash of the source data and any operations applied to it.
  * Data is composed of records, each at a particular point in time.
  * Each record is composed of a (possibly varying) number of floats (recordLength).
  * Each record is separated from the previous records by some (possibly varying) time step (stride).
@@ -32,7 +41,7 @@ void foo(DataSet* ds)
 class DataSet
 {
 public:
-	explicit DataSet(DataKey _operationKey);
+	explicit DataSet(DataKeys _key);
 
 	void init(unsigned _recordLength, lb::Time _stride = 0, lb::Time _first = 0);	// _recordLength is in floats (0 for variable). _stride is the duration between sequential readings. will be related to hops for most things. (0 for variable). Don't call digest if either are zero.
 	void init(unsigned _itemCount);
@@ -46,21 +55,34 @@ public:
 	bool haveRaw() const { return m_raw.isGood() && (!m_toc.isMapped() || m_toc.isGood()); }
 	bool haveDigest(DigestFlag _type) { return m_digest.contains(_type); }
 
+	bool isScalar() const { return m_recordLength == 1; }
+	bool isFixed() const { return m_recordLength; }
+	bool isDynamic() const { return !m_recordLength; }
+	bool isMonotonic() const { return m_stride; }
 	unsigned recordLength() const { return m_recordLength; }
+	lb::Time first() const { return m_first; }
+	lb::Time stride() const { return m_stride; }
 	DigestFlags availableDigests() const { return m_availableDigests; }
 	unsigned rawRecords() const;
 	unsigned digestRecords() const { return (rawRecords() + m_digestBase - 1) / m_digestBase; }
 
-	// Methods for extracting data from fixed stride & record length sets.
-	std::tuple<lb::Time, unsigned, int> bestFit(lb::Time _from, lb::Time _duration, unsigned _idealRecords) const;
+	// Methods for extracting data when isMonotonic() && isFixed()
+	std::tuple<lb::Time, unsigned, int, lb::Time> bestFit(lb::Time _from, lb::Time _duration, unsigned _idealRecords) const;
 	void populateRaw(lb::Time _from, float* _out, unsigned _size) const;
 	void populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size) const;
+
+	// Methods for extracting data when isFixed()
+	void populateRaw(lb::Time _latest, lb::foreign_vector<float> _dest) const;
+
+	// Methods for extracting data when !isFixed()
+	std::vector<float> readRaw(lb::Time _latest) const;
 
 private:
 	typedef uint32_t TocRef;
 
 	void setup(unsigned _itemCount);
 
+	DataKey m_sourceKey = 0;
 	DataKey m_operationKey = 0;
 	Cache m_toc;
 	Cache m_raw;
@@ -76,6 +98,8 @@ private:
 	unsigned m_recordCount = 0;
 	unsigned m_pos = 0;
 };
+
+typedef std::shared_ptr<DataSet> DataSetPtr;
 
 class DataSetDataStore: public lb::DataStore
 {
@@ -93,6 +117,6 @@ protected:
 
 private:
 	DataKey m_key = 0;
-	DataSet* m_s = nullptr;
+	DataSetPtr m_s;
 };
 

@@ -12,22 +12,28 @@ DataMan::DataMan()
 	s_this = this;
 }
 
-DataSet* DataMan::dataSet(DataKey _k)
+DataSetPtr DataMan::dataSet(DataKeys _ks)
 {
-	cdebug << "DataMan::dataSet(" << hex << _k << ")";
+	cdebug << "DataMan::dataSet(" << hex << _ks << ")";
 	QMutexLocker l(&x_data);
-	if (!m_data.contains(_k))
+	if (!m_data.contains(_ks))
 	{
-		m_data.insert(_k, make_shared<DataSet>(_k));
+		m_data.insert(_ks, make_shared<DataSet>(_ks));
 		cdebug << "Creating.";
 	}
-	return m_data[_k].get();
+	return m_data[_ks];
 }
 
-void DataMan::removeDataSet(DataKey _k)
+void DataMan::removeDataSet(DataKeys _k)
 {
 	QMutexLocker l(&x_data);
 	m_data.remove(_k);
+}
+
+void DataMan::clearData()
+{
+	QMutexLocker l(&x_data);
+	m_data.clear();
 }
 
 void DataMan::pruneDataSets(unsigned _maxMegabytes)
@@ -35,7 +41,7 @@ void DataMan::pruneDataSets(unsigned _maxMegabytes)
 	Q_UNUSED(_maxMegabytes);
 }
 
-unsigned DataMan::rawRecordCount(DataKey _key) const
+unsigned DataMan::rawRecordCount(DataKeys _key) const
 {
 	QMutexLocker l(&x_data);
 	if (m_data.contains(_key) && m_data[_key]->haveRaw())
@@ -43,29 +49,29 @@ unsigned DataMan::rawRecordCount(DataKey _key) const
 	return 0;
 }
 
-tuple<Time, unsigned, int> DataMan::bestFit(DataKey _key, Time _from, Time _duration, unsigned _idealRecords) const
+tuple<Time, unsigned, int, Time> DataMan::bestFit(DataKeys _key, Time _from, Time _duration, unsigned _idealRecords) const
 {
 	QMutexLocker l(&x_data);
 	if (m_data.contains(_key) && m_data[_key]->haveRaw())
 		return m_data[_key]->bestFit(_from, _duration, _idealRecords);
-	return tuple<Time, unsigned, int>(0, 0, 0);
+	return tuple<Time, unsigned, int, Time>(0, 0, 0, 0);
 }
 
-void DataMan::populateRaw(DataKey _key, lb::Time _from, float* _out, unsigned _size) const
+void DataMan::populateRaw(DataKeys _key, lb::Time _from, float* _out, unsigned _size) const
 {
 	QMutexLocker l(&x_data);
 	if (m_data.contains(_key) && m_data[_key]->haveRaw())
 		m_data[_key]->populateRaw(_from, _out, _size);
 }
 
-void DataMan::populateDigest(DataKey _key, DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size) const
+void DataMan::populateDigest(DataKeys _key, DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size) const
 {
 	QMutexLocker l(&x_data);
 	if (m_data.contains(_key) && m_data[_key]->haveRaw())
 		m_data[_key]->populateDigest(_digest, _level, _from, _out, _size);
 }
 
-unsigned DataMan::recordLength(DataKey _key) const
+unsigned DataMan::recordLength(DataKeys _key) const
 {
 	QMutexLocker l(&x_data);
 	if (m_data.contains(_key) && m_data[_key]->haveRaw())
@@ -73,7 +79,7 @@ unsigned DataMan::recordLength(DataKey _key) const
 	return 0;
 }
 
-DigestFlags DataMan::availableDigests(DataKey _key) const
+DigestFlags DataMan::availableDigests(DataKeys _key) const
 {
 	QMutexLocker l(&x_data);
 	if (m_data.contains(_key) && m_data[_key]->haveRaw())

@@ -13,3 +13,18 @@ void ViewMan::normalize()
 		setParameters(0, FromMsecs<1>::value);
 }
 
+Time ViewMan::globalOffset() const
+{
+	if (Noted::audio()->duration() && width())
+		return Noted::audio()->duration() * -0.025;
+	else
+		return 0;
+}
+
+Time ViewMan::globalPitch() const
+{
+	if (Noted::audio()->duration() && width())
+		return Noted::audio()->duration() / .95 / width();
+	else
+		return FromMsecs<1>::value;
+}

@@ -9,7 +9,16 @@ Timelines {
 	pitch: view.pitch
 
 	Column {
-        anchors.fill: parent
+        anchors.fill: parent		
+		Chart {
+			url: 'wave'
+			offset: view.globalOffset
+			pitch: view.globalPitch
+			anchors.left: parent.left
+			anchors.right: parent.right
+			height: 30
+			highlight: true
+		}
 		XLabels {
             id: header
             anchors.left: parent.left
