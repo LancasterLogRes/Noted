@@ -32,11 +32,12 @@ void EventsMan::onAnalyzed(AcausalAnalysis* _aa)
 {
 	if (_aa == &*m_collateEventsAnalysis)
 		for (EventsView* ev: m_eventsViews)
-			for (auto const& i: ev->eventCompiler().asA<EventCompilerImpl>().graphMap())
-			{
-				i.second->setUrl(ev->objectName().toStdString() + "/" + i.first);
-				Noted::graphs()->registerGraph(QString::fromStdString(i.second->url()), i.second);
-			}
+			if (!ev->isArchived())
+				for (auto const& i: ev->eventCompiler().asA<EventCompilerImpl>().graphMap())
+				{
+					i.second->setUrl(ev->objectName().toStdString() + "/" + i.first);
+					Noted::graphs()->registerGraph(QString::fromStdString(i.second->url()), i.second);
+				}
 }
 
 CausalAnalysisPtrs EventsMan::ripeCausalAnalysis(CausalAnalysisPtr const& _finished)
@@ -74,6 +75,7 @@ AcausalAnalysisPtrs EventsMan::ripeAcausalAnalysis(AcausalAnalysisPtr const& _fi
 
 void EventsMan::registerEventsView(EventsView* _ev)
 {
+	cnote << "REGISTER eventsView";
 	NotedFace::compute()->suspendWork();
 	m_eventsViews.insert(_ev);
 	noteEventCompilersChanged();	// OPTIMIZE: Heavy-handed, should only need to recompile the new one.
@@ -82,6 +84,7 @@ void EventsMan::registerEventsView(EventsView* _ev)
 
 void EventsMan::unregisterEventsView(EventsView* _ev)
 {
+	cnote << "UNREGISTER eventsView";
 	NotedFace::compute()->suspendWork();
 	m_eventsViews.remove(_ev);
 	notePluginDataChanged();
@@ -91,7 +94,7 @@ void EventsMan::unregisterEventsView(EventsView* _ev)
 EventCompiler EventsMan::findEventCompiler(QString const& _name) const
 {
 	for (auto ev: m_eventsViews)
-		if (ev->name() == _name)
+		if (!ev->isArchived() && ev->name() == _name)
 			return ev->eventCompiler();
 	return EventCompiler();
 }
@@ -99,7 +102,7 @@ EventCompiler EventsMan::findEventCompiler(QString const& _name) const
 QString EventsMan::getEventCompilerName(EventCompilerImpl* _ec) const
 {
 	for (auto ev: m_eventsViews)
-		if (&ev->eventCompiler().asA<EventCompilerImpl>() == _ec)
+		if (!ev->isArchived() && &ev->eventCompiler().asA<EventCompilerImpl>() == _ec)
 			return ev->name();
 	return QString();
 }

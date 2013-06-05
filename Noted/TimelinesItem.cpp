@@ -95,14 +95,13 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 								ds->populateDigest(MinMaxInOutDigest, lod, from, intermed, records * digestZ);
 
 							QSGGeometry* geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), records * 2);
-							geo->setDrawingMode(GL_QUAD_STRIP);
-//							geo->setLineWidth(1);
+							geo->setDrawingMode(GL_LINES);
 							float* v = static_cast<float*>(geo->vertexData());
 							for (unsigned i = 0; i < records; ++i, v += 4)
 							{
-								v[0] = i + 0.5;
+								v[0] = i;
 								v[1] = intermed[i * 4];
-								v[2] = i + 0.5;
+								v[2] = i;
 								v[3] = intermed[i * 4 + 1];
 							}
 
@@ -111,7 +110,7 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 							n->setFlag(QSGNode::OwnsGeometry);
 
 							QSGFlatColorMaterial* m = new QSGFlatColorMaterial;
-							m->setColor(QColor::fromHsvF(0, 0, 0, (m_highlight ? 0.5 : 0.25)));
+							m->setColor(QColor::fromHsvF(0, 0, (m_highlight ? 0.5 : 0.75), 1));
 							n->setMaterial(m);
 							n->setFlag(QSGNode::OwnsMaterial);
 

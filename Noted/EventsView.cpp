@@ -204,6 +204,8 @@ void EventsView::save()
 		m_savedName = name();
 		m_savedProperties = m_eventCompiler.properties().serialized();
 	}
+
+	NotedFace::graphs()->unregisterGraphs(objectName());
 	m_eventCompiler = EventCompiler();
 
 	NotedFace::events()->notePluginDataChanged();
