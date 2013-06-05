@@ -83,6 +83,8 @@ public:
 	bool init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, unsigned _sizeofItem, unsigned _items);
 	bool init(uint32_t _fingerprint, QString const& _type, unsigned _sizeofItem, unsigned _items) { return init(_fingerprint, qHash(_type), (uint32_t)-1, _sizeofItem, _items); }
 
+	template <class _T> size_t valuesAtDepth(unsigned _depth) const { return m_itemsAtDepth[_depth] * m_sizeofItem / sizeof(_T); }
+
 	unsigned levels() const { return m_itemsAtDepth.size(); }
 
 	template <class _T> lb::foreign_vector<_T> item(unsigned _depth, unsigned _i)
@@ -92,7 +94,7 @@ public:
 
 	template <class _T> lb::foreign_vector<_T> data(unsigned _depth = 0)
 	{
-		return (int)_depth < m_mappingAtDepth.size() ? lb::foreign_vector<_T>((_T*)m_mappingAtDepth[_depth], m_itemsAtDepth[_depth]) : lb::foreign_vector<_T>();
+		return (int)_depth < m_mappingAtDepth.size() ? lb::foreign_vector<_T>((_T*)m_mappingAtDepth[_depth], valuesAtDepth<_T>(_depth)) : lb::foreign_vector<_T>();
 	}
 
 	template <class _T> lb::foreign_vector<_T const> item(unsigned _depth, unsigned _i) const
@@ -112,7 +114,7 @@ public:
 	template <class _T> lb::foreign_vector<_T const> data(unsigned _depth = 0) const
 	{
 		if (isGood() && (int)_depth < m_itemsAtDepth.size() && m_itemsAtDepth[_depth] > 0)
-			return lb::foreign_vector<_T const>((_T*)m_mappingAtDepth[_depth], m_itemsAtDepth[_depth]);
+			return lb::foreign_vector<_T const>((_T*)m_mappingAtDepth[_depth], valuesAtDepth<_T>(_depth));
 		return lb::foreign_vector<_T const>();
 	}
 

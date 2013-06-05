@@ -277,7 +277,7 @@ tuple<Time, unsigned, int, Time> DataSet::bestFit(Time _from, Time _duration, un
 		int64_t nextRes = nextLevel ? recordRes / 2 : (recordRes / (int64_t)m_digestBase);
 
 //		if (nextEnd - nextBegin < _idealRecords || recordEnd - recordBegin == _idealRecords)
-		if (recordRes < _idealRecords)
+		if (nextRes < _idealRecords)
 			// Passed the place... use the last one cunningly left in recordBegin/recordEnd/level.
 			return tuple<Time, unsigned, int, Time>(m_first + m_stride * (level > -1 ? m_digestBase << level : 1) * recordBegin, recordEnd - recordBegin, level, (recordEnd - recordBegin) * m_stride * (level > -1 ? m_digestBase << level : 1));
 		recordBegin = nextBegin;
@@ -333,4 +333,6 @@ void DataSet::populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from
 	int valid = records - beforeStart - overEnd;
 	assert(valid <= records);
 	valcpy(_out + beforeStart * drLen, d.data() + (recordBegin + beforeStart) * drLen, drLen * valid);
+
+	cnote << "popDig: " << recordBegin << drLen << records << "(" << recordsAvailable << ") -> [" << beforeStart << "]" << valid << "[" << overEnd << "]";
 }
