@@ -10,7 +10,7 @@ Timelines {
 
 	Column {
         anchors.fill: parent		
-		Chart {
+		Graph {
 			url: 'wave'
 			offset: view.globalOffset
 			pitch: view.globalPitch
@@ -18,6 +18,7 @@ Timelines {
 			anchors.right: parent.right
 			height: 30
 			highlight: true
+			yMode: 1
 		}
 		XLabels {
             id: header

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QQuickItem>
+#include <QVector3D>
 #include <QQuickPaintedItem>
 #include <QSGGeometry>
 #include "Noted.h"
@@ -35,6 +36,9 @@ class GraphItem: public TimelineItem
 public:
 	GraphItem();
 
+	QVector3D yScaleHint() const;
+	float yFromHint() const { return yScaleHint().x(); }
+	float yDeltaHint() const { return yScaleHint().y(); }
 	float yFrom() const { return m_yFrom; }
 	float yDelta() const { return m_yDelta; }
 	int yMode() const { return m_yMode; }
@@ -46,9 +50,11 @@ signals:
 	void urlChanged(QString _url);
 	void yScaleChanged();
 	void highlightChanged();
+	void yScaleHintChanged();
 
 protected:
 	Q_PROPERTY(QString url MEMBER m_url NOTIFY urlChanged)
+	Q_PROPERTY(QVector3D yScaleHint READ yScaleHint NOTIFY yScaleHintChanged)
 	Q_PROPERTY(float yFrom READ yFrom WRITE setYFrom NOTIFY yScaleChanged)
 	Q_PROPERTY(float yDelta READ yDelta WRITE setYDelta NOTIFY yScaleChanged)
 	Q_PROPERTY(int yMode READ yMode WRITE setYMode NOTIFY yScaleChanged)
@@ -59,7 +65,7 @@ protected:
 	QString m_url;
 	float m_yFrom = 0;
 	float m_yDelta = 1;
-	int m_yMode = 1;		///< 0 -> yFrom/yDelta, 1 /*-> auto (global)*/, 2 -> hint
+	int m_yMode = 0;		///< 0 -> yFrom/yDelta, 1 /*-> auto (global)*/, 2 -> hint
 	bool m_highlight = false;
 };
 
@@ -91,6 +97,10 @@ class YLabelsItem: public QQuickPaintedItem
 	Q_OBJECT
 
 public:
+	YLabelsItem(QQuickItem* _p = nullptr): QQuickPaintedItem(_p)
+	{
+		connect(this, SIGNAL(changed()), SLOT(update()));
+	}
 
 signals:
 	void changed();

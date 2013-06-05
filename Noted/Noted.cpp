@@ -75,7 +75,7 @@ Noted::Noted(QWidget* _p):
 	ui->graphsView->setModel(m_graphMan);
 	setWindowIcon(QIcon(":/Noted.png"));
 
-	qmlRegisterType<GraphItem>("com.llr", 1, 0, "Chart");
+	qmlRegisterType<GraphItem>("com.llr", 1, 0, "Graph");
 	qmlRegisterType<TimelinesItem>("com.llr", 1, 0, "Timelines");
 	qmlRegisterType<XLabelsItem>("com.llr", 1, 0, "XLabels");
 	qmlRegisterType<YLabelsItem>("com.llr", 1, 0, "YLabels");
