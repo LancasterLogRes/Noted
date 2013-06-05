@@ -52,9 +52,9 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 				Time from;
 				Time duration;
 				unsigned records;
-//				cnote << m_url << textualTime(m_offset) << "+" << textualTime(m_pitch * width()) << "/" << width();
+				cnote << m_url << textualTime(m_offset) << "+" << textualTime(m_pitch * width()) << "/" << width();
 				std::tie(from, records, lod, duration) = ds->bestFit(m_offset, m_pitch * width(), width());
-//				cnote << "Got" << textualTime(from) << "+" << textualTime(duration) << "/" << records << "@" << lod;
+				cnote << "Got" << textualTime(from) << "+" << textualTime(duration) << "/" << records << "@" << lod;
 
 				if (ds->isScalar())	// Simple 1D line graph
 				{
@@ -79,64 +79,96 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 						n->setFlag(QSGNode::OwnsGeometry);
 
 						QSGFlatColorMaterial* m = new QSGFlatColorMaterial;
-						m->setColor(m_highlight ? Qt::black : Qt::gray);
+						m->setColor(QColor::fromHsvF(0, 0, 0, (m_highlight ? 0.5 : 0.25)));
 						n->setMaterial(m);
 						n->setFlag(QSGNode::OwnsMaterial);
 
 						base->appendChildNode(n);
 					}
-					else if (ds->haveDigest(MeanRmsDigest))
+					else
 					{
-						unsigned digestZ = digestSize(MeanRmsDigest);
-						float intermed[records * digestZ];
-						if (records)
-							ds->populateDigest(MeanRmsDigest, lod, from, intermed, records * digestZ);
-
-						QSGGeometry* geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), records);
-						geo->setDrawingMode(GL_LINE_STRIP);
-						geo->setLineWidth(1);
-						float* v = static_cast<float*>(geo->vertexData());
-						for (unsigned i = 0; i < records; ++i, v += 2)
+						if (ds->haveDigest(MinMaxInOutDigest))
 						{
-							v[0] = i;
-							v[1] = intermed[i * 2];
+							unsigned digestZ = digestSize(MinMaxInOutDigest);
+							float intermed[records * digestZ];
+							if (records)
+								ds->populateDigest(MinMaxInOutDigest, lod, from, intermed, records * digestZ);
+
+							QSGGeometry* geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), records * 2);
+							geo->setDrawingMode(GL_QUAD_STRIP);
+//							geo->setLineWidth(1);
+							float* v = static_cast<float*>(geo->vertexData());
+							for (unsigned i = 0; i < records; ++i, v += 4)
+							{
+								v[0] = i + 0.5;
+								v[1] = intermed[i * 4];
+								v[2] = i + 0.5;
+								v[3] = intermed[i * 4 + 1];
+							}
+
+							QSGGeometryNode* n = new QSGGeometryNode();
+							n->setGeometry(geo);
+							n->setFlag(QSGNode::OwnsGeometry);
+
+							QSGFlatColorMaterial* m = new QSGFlatColorMaterial;
+							m->setColor(QColor::fromHsvF(0, 0, 0, (m_highlight ? 0.5 : 0.25)));
+							n->setMaterial(m);
+							n->setFlag(QSGNode::OwnsMaterial);
+
+							base->appendChildNode(n);
 						}
-
-						QSGGeometryNode* n = new QSGGeometryNode();
-						n->setGeometry(geo);
-						n->setFlag(QSGNode::OwnsGeometry);
-
-						QSGFlatColorMaterial* m = new QSGFlatColorMaterial;
-						m->setColor(m_highlight ? Qt::black : Qt::gray);
-						n->setMaterial(m);
-						n->setFlag(QSGNode::OwnsMaterial);
-
-						base->appendChildNode(n);
-
-
-						QSGGeometry* ngeo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), records * 2);
-						ngeo->setDrawingMode(GL_QUAD_STRIP);
-						v = static_cast<float*>(ngeo->vertexData());
-						for (unsigned i = 0; i < records; ++i, v += 4)
+						if (ds->haveDigest(MeanRmsDigest))
 						{
-							v[0] = i;
-							v[1] = intermed[i * 2 + 1];
-							v[2] = i;
-							v[3] = -intermed[i * 2 + 1];
+							unsigned digestZ = digestSize(MeanRmsDigest);
+							float intermed[records * digestZ];
+							if (records)
+								ds->populateDigest(MeanRmsDigest, lod, from, intermed, records * digestZ);
+
+							QSGGeometry* geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), records);
+							geo->setDrawingMode(GL_LINE_STRIP);
+							geo->setLineWidth(1);
+							float* v = static_cast<float*>(geo->vertexData());
+							for (unsigned i = 0; i < records; ++i, v += 2)
+							{
+								v[0] = i;
+								v[1] = intermed[i * 2];
+							}
+
+							QSGGeometryNode* n = new QSGGeometryNode();
+							n->setGeometry(geo);
+							n->setFlag(QSGNode::OwnsGeometry);
+
+							QSGFlatColorMaterial* m = new QSGFlatColorMaterial;
+							m->setColor(QColor::fromHsvF(0, 0, 0, m_highlight ? 0.5 : 0.25));
+							n->setMaterial(m);
+							n->setFlag(QSGNode::OwnsMaterial);
+
+							base->appendChildNode(n);
+
+
+							QSGGeometry* ngeo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), records * 2);
+							ngeo->setDrawingMode(GL_QUAD_STRIP);
+							v = static_cast<float*>(ngeo->vertexData());
+							for (unsigned i = 0; i < records; ++i, v += 4)
+							{
+								v[0] = i;
+								v[1] = intermed[i * 2 + 1];
+								v[2] = i;
+								v[3] = -intermed[i * 2 + 1];
+							}
+
+							QSGGeometryNode* nn = new QSGGeometryNode();
+							nn->setGeometry(ngeo);
+							nn->setFlag(QSGNode::OwnsGeometry);
+
+							QSGFlatColorMaterial* nm = new QSGFlatColorMaterial;
+							nm->setColor(QColor::fromHsvF(0, 0, 0, (m_highlight ? 0.5 : 0.25) * 0.5));
+							nn->setMaterial(nm);
+							nn->setFlag(QSGNode::OwnsMaterial);
+
+							base->appendChildNode(nn);
 						}
-
-						QSGGeometryNode* nn = new QSGGeometryNode();
-						nn->setGeometry(ngeo);
-						nn->setFlag(QSGNode::OwnsGeometry);
-
-						QSGFlatColorMaterial* nm = new QSGFlatColorMaterial;
-						nm->setColor(QColor(0, 0, 0, 64));
-						nn->setMaterial(nm);
-						nn->setFlag(QSGNode::OwnsMaterial);
-
-						base->appendChildNode(nn);
 					}
-
 					// Normalize height so within range [0,1] for the height xform.
 					float yf = m_yFrom;
 					float yd = m_yDelta;

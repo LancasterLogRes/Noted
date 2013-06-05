@@ -354,6 +354,7 @@ bool AudioMan::resampleWave()
 			}
 		}
 		m_newWave->digest(MeanRmsDigest);
+		m_newWave->digest(MinMaxInOutDigest);
 		m_newWave->done();
 
 		return true;
