@@ -117,7 +117,6 @@ Item {
 			id: graphRepeater
 			model: graphs
 			Graph {
-				Text { text: parent.url + parent.yScaleHint; y: index * 20 }
 				url: graphUrl
 				offset: localTime(timelines.offset, timelines.pitch)
 				pitch: timelines.pitch
@@ -127,6 +126,13 @@ Item {
 				yFrom: panel.yFrom
 				yDelta: panel.yDelta
 			}
+		}
+		Cursor {
+			offset: localTime(timelines.offset, timelines.pitch)
+			pitch: timelines.pitch
+			cursor: audio.cursor
+			cursorWidth: audio.hop
+			anchors.fill: parent
 		}
 	}
 }

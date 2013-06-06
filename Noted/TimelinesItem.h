@@ -140,6 +140,31 @@ protected:
 	lb::Time m_pitch = 1;
 };
 
+class CursorItem: public TimelineItem
+{
+	Q_OBJECT
+
+public:
+	CursorItem(QQuickItem* _p = nullptr): TimelineItem(_p)
+	{
+		connect(this, SIGNAL(cursorChanged()), SLOT(update()));
+		connect(this, SIGNAL(cursorWidthChanged()), SLOT(update()));
+	}
+
+signals:
+	void cursorChanged();
+	void cursorWidthChanged();
+
+protected:
+	Q_PROPERTY(lb::Time cursor MEMBER m_cursor NOTIFY cursorChanged)
+	Q_PROPERTY(lb::Time cursorWidth MEMBER m_cursorWidth NOTIFY cursorWidthChanged)
+
+	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
+
+	lb::Time m_cursor = 0;
+	lb::Time m_cursorWidth = lb::FromSeconds<1>::value;
+};
+
 class TimelinesItem: public QQuickItem
 {
 	Q_OBJECT

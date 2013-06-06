@@ -61,7 +61,7 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 				Time duration;
 				unsigned records;
 				cnote << m_url << textualTime(m_offset) << "+" << textualTime(m_pitch * width()) << "/" << width();
-				std::tie(from, records, lod, duration) = ds->bestFit(m_offset, m_pitch * width(), width());
+				std::tie(from, records, lod, duration) = ds->bestFit(m_offset, m_pitch * max<qreal>(1, width()), max<qreal>(1, width()));
 				cnote << "Got" << textualTime(from) << "+" << textualTime(duration) << "/" << records << "@" << lod;
 
 				if (ds->isScalar())	// Simple 1D line graph
@@ -221,8 +221,8 @@ void YLabelsItem::paint(QPainter* _p)
 {
 	_p->fillRect(_p->window(), QBrush(Qt::white));
 	GraphParameters<double> nor(make_pair(m_yFrom, m_yFrom + m_yDelta), height() / 24, 1);
-	auto fp = ceil(log10(fabs(nor.from)));
-	auto dp = floor(log10(fabs(nor.incr)));
+//	auto fp = ceil(log10(fabs(nor.from)));
+//	auto dp = floor(log10(fabs(nor.incr)));
 	for (double v = nor.from; v < nor.to; v += nor.incr)
 		if (nor.isMajor(v))
 		{
@@ -397,6 +397,56 @@ QSGNode* TimelinesItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 
 	QMatrix4x4 gmx;
 	gmx.scale(1 / (double)m_pitch, height());
+	base->setMatrix(gmx);
+
+	return base;
+}
+
+QSGNode* CursorItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
+{
+	QSGTransformNode* base = static_cast<QSGTransformNode*>(_old);
+	if (!base)
+	{
+		base = new QSGTransformNode;
+
+		{
+			auto geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), 4);
+			float* d = static_cast<float*>(geo->vertexData());
+			d[0] = d[1] = d[3] = d[6] = 0;
+			d[2] = d[7] = d[4] = d[5] = 1;
+			geo->setDrawingMode(GL_QUADS);
+
+			QSGGeometryNode* n = new QSGGeometryNode();
+			n->setGeometry(geo);
+			n->setFlag(QSGNode::OwnsGeometry);
+			QSGFlatColorMaterial* majorMaterial = new QSGFlatColorMaterial;
+			majorMaterial->setColor(QColor(0, 0, 255, 64));
+			n->setMaterial(majorMaterial);
+			n->setFlag(QSGNode::OwnsMaterial);
+			base->appendChildNode(n);
+		}
+		{
+			auto geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), 2);
+			float* d = static_cast<float*>(geo->vertexData());
+			d[1] = 0;
+			d[0] = d[2] = d[3] = 1;
+			geo->setDrawingMode(GL_LINES);
+
+			QSGGeometryNode* n = new QSGGeometryNode();
+			n->setGeometry(geo);
+			n->setFlag(QSGNode::OwnsGeometry);
+			QSGFlatColorMaterial* majorMaterial = new QSGFlatColorMaterial;
+			majorMaterial->setColor(QColor(0, 0, 255, 128));
+			n->setMaterial(majorMaterial);
+			n->setFlag(QSGNode::OwnsMaterial);
+			base->appendChildNode(n);
+		}
+	}
+
+	QMatrix4x4 gmx;
+	double stride = m_cursorWidth;
+	gmx.scale(stride / m_pitch, height());
+	gmx.translate((m_cursor - m_offset) / stride - 1, 0);
 	base->setMatrix(gmx);
 
 	return base;

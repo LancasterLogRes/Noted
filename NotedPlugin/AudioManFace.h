@@ -43,6 +43,7 @@ public:
 	inline bool isQuiet() const { return !isAcausal() && !isCausal() && !isPassing(); }
 
 	inline lb::Time cursor() const { return m_fineCursor; }
+	inline lb::Time hopCursor() const { return (m_fineCursor < 0 ? m_fineCursor - (hop() - 1) : m_fineCursor) / hop() * hop(); }
 	inline unsigned cursorIndex() const { return index(cursor()); }
 	lb::foreign_vector<float const> cursorWaveWindow() const { return waveWindow(cursorIndex()); }
 
@@ -84,6 +85,11 @@ signals:
 
 protected:
 	virtual void updateKeys();
+
+	Q_PROPERTY(lb::Time cursor READ hopCursor NOTIFY cursorHasChanged)
+	Q_PROPERTY(lb::Time hop READ hop NOTIFY hopChanged)
+	Q_PROPERTY(lb::Time duration READ duration NOTIFY dataChanged)
+	Q_PROPERTY(unsigned cursorIndex READ cursorIndex NOTIFY cursorChanged)
 
 	/// Data
 	AcausalAnalysisPtr m_resampleWaveAcAnalysis;

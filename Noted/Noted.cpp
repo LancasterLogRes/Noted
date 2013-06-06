@@ -76,6 +76,7 @@ Noted::Noted(QWidget* _p):
 	setWindowIcon(QIcon(":/Noted.png"));
 
 	qmlRegisterType<GraphItem>("com.llr", 1, 0, "Graph");
+	qmlRegisterType<CursorItem>("com.llr", 1, 0, "Cursor");
 	qmlRegisterType<TimelinesItem>("com.llr", 1, 0, "Timelines");
 	qmlRegisterType<XLabelsItem>("com.llr", 1, 0, "XLabels");
 	qmlRegisterType<YLabelsItem>("com.llr", 1, 0, "YLabels");
@@ -96,7 +97,7 @@ Noted::Noted(QWidget* _p):
 	ui->fullDisplay->addWidget(w);
 	m_view->create();
 
-	m_timelinesItem = static_cast<TimelinesItem*>(m_view->rootObject());
+	m_timelinesItem = m_view->rootObject()->findChild<TimelinesItem*>("timelines");
 	qDebug() << m_view->rootObject();
 
 	connect(audio(), SIGNAL(prepareForDataChange()), SLOT(onDataChanging()));
