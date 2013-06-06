@@ -54,6 +54,11 @@
 using namespace std;
 using namespace lb;
 
+QObject* constructTimeHelper(QQmlEngine*, QJSEngine*)
+{
+	return new TimeHelper;
+}
+
 Noted::Noted(QWidget* _p):
 	NotedBase					(_p),
 	ui							(new Ui::Noted),
@@ -75,14 +80,16 @@ Noted::Noted(QWidget* _p):
 	ui->graphsView->setModel(m_graphMan);
 	setWindowIcon(QIcon(":/Noted.png"));
 
+	qmlRegisterSingletonType<TimeHelper>("com.llr", 1, 0, "Time", constructTimeHelper);
 	qmlRegisterType<GraphItem>("com.llr", 1, 0, "Graph");
+	qmlRegisterType<IntervalItem>("com.llr", 1, 0, "Interval");
 	qmlRegisterType<CursorItem>("com.llr", 1, 0, "Cursor");
 	qmlRegisterType<TimelinesItem>("com.llr", 1, 0, "Timelines");
 	qmlRegisterType<XLabelsItem>("com.llr", 1, 0, "XLabels");
 	qmlRegisterType<YLabelsItem>("com.llr", 1, 0, "YLabels");
 	qmlRegisterType<YScaleItem>("com.llr", 1, 0, "YScale");
 
-	m_view = new QQuickView(QUrl("qrc:/Noted.qml"));
+	m_view = new QQuickView();
 	QQmlContext* context = m_view->rootContext();
 	context->setContextProperty("libs", libs());
 	context->setContextProperty("compute", compute());
@@ -90,6 +97,7 @@ Noted::Noted(QWidget* _p):
 	context->setContextProperty("graphs", graphs());
 	context->setContextProperty("audio", audio());
 	context->setContextProperty("view", view());
+	m_view->setSource(QUrl("qrc:/Noted.qml"));
 
 	QWidget* w = QWidget::createWindowContainer(m_view);
 	w->setAcceptDrops(true);

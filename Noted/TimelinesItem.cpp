@@ -308,13 +308,11 @@ QSGNode* YScaleItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 }
 
 TimelinesItem::TimelinesItem(QQuickItem* _p):
-	QQuickItem(_p)
+	TimelineItem(_p)
 {
 	setFlag(ItemHasContents, true);
 	setFlag(ItemAcceptsDrops, true);
 	connect(this, &QQuickItem::widthChanged, [=](){ widthChanged(width()); });
-	connect(this, SIGNAL(offsetChanged()), SLOT(update()));
-	connect(this, SIGNAL(pitchChanged()), SLOT(update()));
 }
 
 void TimelinesItem::dragEnterEvent(QDragEnterEvent* _event)
@@ -402,6 +400,58 @@ QSGNode* TimelinesItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 	return base;
 }
 
+QSGNode* IntervalItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
+{
+	QSGTransformNode* base = static_cast<QSGTransformNode*>(_old);
+	if (!base)
+	{
+		base = new QSGTransformNode;
+
+		{
+			auto geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), 4);
+			float* d = static_cast<float*>(geo->vertexData());
+			d[0] = d[1] = d[3] = d[6] = 0;
+			d[2] = d[7] = d[4] = d[5] = 1;
+			geo->setDrawingMode(GL_QUADS);
+
+			QSGGeometryNode* n = new QSGGeometryNode();
+			n->setGeometry(geo);
+			n->setFlag(QSGNode::OwnsGeometry);
+			QSGFlatColorMaterial* majorMaterial = new QSGFlatColorMaterial;
+			majorMaterial->setColor(QColor(128, 0, 0, 64));
+			n->setMaterial(majorMaterial);
+			n->setFlag(QSGNode::OwnsMaterial);
+			base->appendChildNode(n);
+		}
+		{
+			auto geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), 4);
+			float* d = static_cast<float*>(geo->vertexData());
+			d[1] = 0;
+			d[0] = d[2] = d[3] = 1;
+			d[4] = d[5] = d[6] = 0;
+			d[7] = 1;
+			geo->setDrawingMode(GL_LINES);
+
+			QSGGeometryNode* n = new QSGGeometryNode();
+			n->setGeometry(geo);
+			n->setFlag(QSGNode::OwnsGeometry);
+			QSGFlatColorMaterial* majorMaterial = new QSGFlatColorMaterial;
+			majorMaterial->setColor(QColor(64, 0, 0, 128));
+			n->setMaterial(majorMaterial);
+			n->setFlag(QSGNode::OwnsMaterial);
+			base->appendChildNode(n);
+		}
+	}
+
+	QMatrix4x4 gmx;
+	double stride = m_duration;
+	gmx.scale(stride / m_pitch, height());
+	gmx.translate((m_begin - m_offset) / stride, 0);
+	base->setMatrix(gmx);
+
+	return base;
+}
+
 QSGNode* CursorItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 {
 	QSGTransformNode* base = static_cast<QSGTransformNode*>(_old);
@@ -436,7 +486,7 @@ QSGNode* CursorItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 			n->setGeometry(geo);
 			n->setFlag(QSGNode::OwnsGeometry);
 			QSGFlatColorMaterial* majorMaterial = new QSGFlatColorMaterial;
-			majorMaterial->setColor(QColor(0, 0, 255, 128));
+			majorMaterial->setColor(QColor(0, 0, 0, 192));
 			n->setMaterial(majorMaterial);
 			n->setFlag(QSGNode::OwnsMaterial);
 			base->appendChildNode(n);

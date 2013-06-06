@@ -105,8 +105,31 @@ Item {
 		anchors.left: scale.right
 		property Graph highlightedGraph: children[list.currentIndex + 2]
 		MouseArea {
+			acceptedButtons: Qt.LeftButton | Qt.RightButton
 			anchors.fill: parent
-			onWheel: view.zoomTimeline(mapToItem(timelines, wheel.x, wheel.y).x, Math.exp(-wheel.angleDelta.y / (wheel.modifiers & Qt.ControlModifier ? 24000.0 : wheel.modifiers & Qt.ShiftModifier ? 240.0 : 2400.0)))
+			onWheel: { view.zoomTimeline(mapToItem(timelines, wheel.x, wheel.y).x, Math.exp(-wheel.angleDelta.y / (wheel.modifiers & Qt.ControlModifier ? 24000.0 : wheel.modifiers & Qt.ShiftModifier ? 240.0 : 2400.0))); }
+			onPressed: {
+				if (mouse.button == Qt.RightButton)
+				{
+					mouse.accepted = true;
+					posDrag = mouse.x;
+					posOffset = view.offset
+				}
+				if (mouse.button == Qt.LeftButton)
+				{
+					mouse.accepted = true;
+					audio.cursor = Time.madd(mapToItem(timelines, mouse.x, mouse.y).x, timelines.pitch, timelines.offset);
+				}
+			}
+			onReleased: { posDrag = -1; }
+			property int posDrag: -1;
+			property var posOffset;
+			onPositionChanged: {
+				if (posDrag > -1)
+					view.offset = Time.madd(posDrag - mouse.x, view.pitch, posOffset);
+				if (mouse.buttons & Qt.LeftButton)
+					audio.cursor = Time.madd(mapToItem(timelines, mouse.x, mouse.y).x, timelines.pitch, timelines.offset);
+			}
 		}
 		YScale {
 			anchors.fill: parent

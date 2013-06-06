@@ -7,6 +7,23 @@
 #include "Noted.h"
 #include "GraphView.h"
 
+class TimeHelper: public QObject
+{
+	Q_OBJECT
+
+public:
+	Q_INVOKABLE lb::Time add(lb::Time _a, lb::Time _b) const { return _a + _b; }
+	Q_INVOKABLE lb::Time sub(lb::Time _a, lb::Time _b) const { return _a - _b; }
+	Q_INVOKABLE lb::Time mul(lb::Time _a, int _b) const { return _a * _b; }
+	Q_INVOKABLE lb::Time mul(int _a, lb::Time _b) const { return _a * _b; }
+	Q_INVOKABLE lb::Time div(lb::Time _a, int _b) const { return _a / _b; }
+	Q_INVOKABLE lb::Time madd(lb::Time _a, int _m, lb::Time _b) const { return _a * _m + _b; }
+	Q_INVOKABLE lb::Time madd(int _m, lb::Time _a, lb::Time _b) const { return _m * _a + _b; }
+	Q_INVOKABLE lb::Time fromSeconds(double _s) const { return lb::fromSeconds(_s); }
+	Q_INVOKABLE double toSeconds(lb::Time _t) const { return lb::toSeconds(_t); }
+	Q_INVOKABLE QString toString(lb::Time _t) const { return QString::fromStdString(lb::textualTime(_t)); }
+};
+
 class TimelineItem: public QQuickItem
 {
 	Q_OBJECT
@@ -16,6 +33,7 @@ public:
 	virtual ~TimelineItem();
 
 	Q_INVOKABLE lb::Time localTime(lb::Time _t, lb::Time _p);
+	Q_INVOKABLE lb::Time panOffset(lb::Time _t, int _px) { return _t + _px * m_pitch; }
 
 signals:
 	void offsetChanged();
@@ -165,7 +183,30 @@ protected:
 	lb::Time m_cursorWidth = lb::FromSeconds<1>::value;
 };
 
-class TimelinesItem: public QQuickItem
+class IntervalItem: public TimelineItem
+{
+	Q_OBJECT
+
+public:
+	IntervalItem(QQuickItem* _p = nullptr): TimelineItem(_p)
+	{
+		connect(this, SIGNAL(changed()), SLOT(update()));
+	}
+
+signals:
+	void changed();
+
+protected:
+	Q_PROPERTY(lb::Time begin MEMBER m_begin NOTIFY changed)
+	Q_PROPERTY(lb::Time duration MEMBER m_duration NOTIFY changed)
+
+	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
+
+	lb::Time m_begin = 0;
+	lb::Time m_duration = lb::FromSeconds<1>::value;
+};
+
+class TimelinesItem: public TimelineItem
 {
 	Q_OBJECT
 
@@ -176,16 +217,12 @@ public:
 	void setAcceptingDrops(bool _accepting);
 
 signals:
-	void offsetChanged();
-	void pitchChanged();
 	void widthChanged(int);
 
-	void textDrop(QString text);
+	void textDrop(QString _text);
 	void acceptingDropsChanged();
 
 protected:
-	Q_PROPERTY(lb::Time offset MEMBER m_offset NOTIFY offsetChanged)
-	Q_PROPERTY(lb::Time pitch MEMBER m_pitch NOTIFY pitchChanged)
 	Q_PROPERTY(bool acceptingDrops READ isAcceptingDrops WRITE setAcceptingDrops NOTIFY acceptingDropsChanged)
 
 	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
@@ -193,9 +230,6 @@ protected:
 	void dragEnterEvent(QDragEnterEvent* _event);
 	void dragLeaveEvent(QDragLeaveEvent* _event);
 	void dropEvent(QDropEvent* _event);
-
-	lb::Time m_offset = 0;
-	lb::Time m_pitch = 1;
 
 	bool m_accepting = true;
 };

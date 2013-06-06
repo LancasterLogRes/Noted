@@ -27,6 +27,7 @@ public:
 	inline unsigned hops() const { return samples() ? samples() / hopSamples() : 0; }
 	inline lb::Time duration() const { return lb::toBase(samples(), rate()); }
 	inline lb::Time hop() const { return lb::toBase(hopSamples(), rate()); }
+	inline lb::Time quantized(lb::Time _t) const { return (_t < 0 ? _t - (hop() - 1) : _t) / hop() * hop(); }
 	inline unsigned index(lb::Time _t) const { return (_t < 0) ? 0 : std::min<unsigned>(_t / hop(), samples() / hopSamples()); }
 
 	AcausalAnalysisPtr resampleWaveAcAnalysis() const { return m_resampleWaveAcAnalysis; }
@@ -43,7 +44,7 @@ public:
 	inline bool isQuiet() const { return !isAcausal() && !isCausal() && !isPassing(); }
 
 	inline lb::Time cursor() const { return m_fineCursor; }
-	inline lb::Time hopCursor() const { return (m_fineCursor < 0 ? m_fineCursor - (hop() - 1) : m_fineCursor) / hop() * hop(); }
+	inline lb::Time hopCursor() const { return quantized(m_fineCursor); }
 	inline unsigned cursorIndex() const { return index(cursor()); }
 	lb::foreign_vector<float const> cursorWaveWindow() const { return waveWindow(cursorIndex()); }
 
@@ -67,6 +68,7 @@ public slots:
 	virtual void passthrough() = 0;
 	virtual void stop() = 0;
 	virtual void setCursor(lb::Time _t, bool _warp = false) = 0;
+	inline void setHopCursor(lb::Time _t) { setCursor(quantized(_t), true); }
 
 signals:
 	/// Data
@@ -80,13 +82,14 @@ signals:
 
 	/// Playback
 	void stateChanged(bool _isAcausal, bool _isCausal, bool _isPassing);
+	void hopCursorChanged(lb::Time);
 	void cursorChanged(lb::Time);
 	void cursorHasChanged(lb::Time);	// Called sometime after one or more cursor changes - meant for GUI updates that don't need per-millisecond updates.
 
 protected:
 	virtual void updateKeys();
 
-	Q_PROPERTY(lb::Time cursor READ hopCursor NOTIFY cursorHasChanged)
+	Q_PROPERTY(lb::Time cursor READ hopCursor WRITE setHopCursor NOTIFY hopCursorChanged)
 	Q_PROPERTY(lb::Time hop READ hop NOTIFY hopChanged)
 	Q_PROPERTY(lb::Time duration READ duration NOTIFY dataChanged)
 	Q_PROPERTY(unsigned cursorIndex READ cursorIndex NOTIFY cursorChanged)

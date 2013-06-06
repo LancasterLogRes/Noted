@@ -24,6 +24,13 @@ Item {
 			anchors.right: parent.right
 			anchors.top: overviewLabels.bottom
 			height: 60
+			Interval {
+				anchors.fill: parent
+				offset: overview.offset
+				pitch: overview.pitch
+				begin: view.offset
+				duration: Time.mul(timelines.width, view.pitch)
+			}
 			Cursor {
 				anchors.fill: parent
 				offset: overview.offset

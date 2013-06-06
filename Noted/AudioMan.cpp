@@ -188,6 +188,9 @@ void AudioMan::processCursorChange()
 {
 	if (m_fineCursor != m_lastFineCursor)
 	{
+		if (quantized(m_fineCursor) != quantized(m_lastFineCursor))
+			emit hopCursorChanged(hopCursor());
+
 		if (m_fineCursor >= duration())
 		{
 			// Played to end of audio
