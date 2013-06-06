@@ -23,7 +23,7 @@ AudioMan::AudioMan():
 	connect(Noted::compute(), SIGNAL(analyzed(AcausalAnalysis*)), SLOT(onAnalyzed(AcausalAnalysis*)));
 	m_audioThread = createWorkerThread([=](){return serviceAudio();});
 	NotedFace::compute()->registerJobSource(this);
-	NotedFace::graphs()->registerGraph("wave", &m_waveGraph);
+	NotedFace::graphs()->registerGraph("wave", m_waveGraph);
 }
 
 AudioMan::~AudioMan()
@@ -34,7 +34,7 @@ AudioMan::~AudioMan()
 	delete m_audioThread;
 	m_audioThread = nullptr;
 	cnote << "Disabled permenantly.";
-	NotedFace::graphs()->unregisterGraph(&m_waveGraph);
+	NotedFace::graphs()->unregisterGraph("wave");
 	NotedFace::compute()->unregisterJobSource(this);
 }
 
@@ -266,6 +266,10 @@ lb::foreign_vector<float const> AudioMan::waveWindow(int _window) const
 		return m_wave.data<float>().cropped(hop * hopSamples(), windowSize).tied(std::make_shared<QMutexLocker>(&x_wave));
 }
 
+void AudioMan::populateHop(unsigned _index, std::vector<float>& _h) const
+{
+	m_newWave->populateRaw(_index * hop(), _h.data(), _h.size());
+}
 
 bool AudioMan::resampleWave()
 {

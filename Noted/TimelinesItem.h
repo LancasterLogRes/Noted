@@ -95,6 +95,7 @@ public:
 	YScaleItem(QQuickItem* _p = nullptr): QQuickItem(_p)
 	{
 		setFlag(ItemHasContents, true);
+		connect(this, SIGNAL(changed()), SLOT(update()));
 	}
 
 signals:

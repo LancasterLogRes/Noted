@@ -104,11 +104,14 @@ typedef std::shared_ptr<DataSet> DataSetPtr;
 class DataSetDataStore: public lb::DataStore
 {
 public:
-	DataSetDataStore(std::string const& _name);
+	DataSetDataStore(lb::GraphSpec const* _gs);
 	virtual ~DataSetDataStore();
 
 	bool isActive() const { return !!m_s; }
 	void fini(DigestFlags _digests);
+
+	static DataKey operationKey(lb::GraphSpec const* _gs);
+	DataKey operationKey() const { return m_operationKey; }
 
 protected:
 	// Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
@@ -116,7 +119,7 @@ protected:
 	virtual void shiftBuffer(unsigned _index, lb::foreign_vector<float> const& _record);
 
 private:
-	DataKey m_key = 0;
+	DataKey m_operationKey = 0;
 	DataSetPtr m_s;
 };
 

@@ -19,4 +19,5 @@ protected:
 	virtual QHash<int, QByteArray> roleNames() const;
 
 private:
+	mutable QList<QString> m_urls;
 };

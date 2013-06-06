@@ -22,6 +22,8 @@ public:
 	virtual ~AudioMan();
 
 	/// Data
+	virtual void populateHop(unsigned _index, std::vector<float>& _h) const;
+
 	// TODO! Kill both in favour of DataMan/DataSet.
 	virtual lb::foreign_vector<float const> waveWindow(int _window) const;
 	virtual bool waveBlock(lb::Time _from, lb::Time _duration, lb::foreign_vector<float> o_toFill, bool _forceSamples = false) const;

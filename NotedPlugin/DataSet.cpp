@@ -1,3 +1,4 @@
+#include <QHash>
 #include <QThread>
 #include <Common/Global.h>
 #include "NotedFace.h"
@@ -5,37 +6,33 @@
 using namespace std;
 using namespace lb;
 
-DataSetDataStore::DataSetDataStore(std::string const& _name)
+DataSetDataStore::DataSetDataStore(GraphSpec const* _gs): m_operationKey(operationKey(_gs))
 {
-	m_key = qHash(QString::fromStdString(_name));
 }
 
 DataSetDataStore::~DataSetDataStore()
 {
 }
 
+DataKey DataSetDataStore::operationKey(lb::GraphSpec const* _gs)
+{
+	return qHash(QString::fromStdString(_gs->name())) + 69 * qHash(QString::fromStdString(typeid(*_gs->ec()).name()));	// TODO: fold in parameters and version.
+}
+
 // Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
 void DataSetDataStore::init(unsigned _recordLength, bool _dense)
 {
-	m_s = DataMan::get()->dataSet(DataKeys(NotedFace::audio()->key(), m_key));
+	m_s = DataMan::get()->dataSet(DataKeys(NotedFace::audio()->key(), m_operationKey));
 	if (!m_s)
 		cwarn << "Something else already opened the DataSet for writing?! :-(";
 
-	if (m_s->haveRaw())
-	{
-//		cdebug << "Already have DataSet";
-		m_s = nullptr;
-	}
-	else
-	{
-//		cdebug << "Don't have DataSet - initializing...";
+	if (!m_s->haveRaw())
 		m_s->init(_recordLength, _dense ? NotedFace::audio()->hop(): 0, 0);
-	}
 }
 
 void DataSetDataStore::shiftBuffer(unsigned _index, foreign_vector<float> const& _record)
 {
-	if (m_s)
+	if (m_s && !m_s->haveRaw())
 		m_s->appendRecord(NotedFace::audio()->hop() * _index, _record);
 }
 

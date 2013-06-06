@@ -38,7 +38,7 @@ void CompileEventsView::init(bool _willRecord)
 	{
 		for (auto const& i: ec().asA<EventCompilerImpl>().graphMap())
 		{
-			auto ds = new DataSetDataStore(i.first);
+			auto ds = new DataSetDataStore(i.second);
 			m_dataStores.insert(i.second, ds);
 			i.second->setStore(ds);
 		}
@@ -58,15 +58,18 @@ lb::EventCompiler CompileEventsView::ec() const
 
 void CompileEventsView::process(unsigned _i, lb::Time)
 {
+	vector<float> wave(Noted::audio()->hopSamples());
 	vector<float> mag(Noted::get()->spectrumSize());
 	vector<float> phase(Noted::get()->spectrumSize());
-	{
-		if (auto mf = Noted::audio()->isImmediate() ? Noted::get()->cursorMagSpectrum() : Noted::get()->magSpectrum(_i, 1))
-			memcpy(mag.data(), mf.data(), sizeof(float) * mag.size());
-		if (auto pf = Noted::audio()->isImmediate() ? Noted::get()->cursorPhaseSpectrum() : Noted::get()->phaseSpectrum(_i, 1))
-			memcpy(phase.data(), pf.data(), sizeof(float) * phase.size());
-	}
-	m_ev->m_current = m_ev->m_eventCompiler.compile(mag, phase, vector<float>());
+	if (Noted::audio()->isImmediate())
+		(void)0;// TODO
+	else
+		Noted::audio()->populateHop(_i, wave);
+	if (auto mf = Noted::audio()->isImmediate() ? Noted::get()->cursorMagSpectrum() : Noted::get()->magSpectrum(_i, 1))
+		memcpy(mag.data(), mf.data(), sizeof(float) * mag.size());
+	if (auto pf = Noted::audio()->isImmediate() ? Noted::get()->cursorPhaseSpectrum() : Noted::get()->phaseSpectrum(_i, 1))
+		memcpy(phase.data(), pf.data(), sizeof(float) * phase.size());
+	m_ev->m_current = m_ev->m_eventCompiler.compile(mag, phase, wave);
 }
 
 void CompileEventsView::record()

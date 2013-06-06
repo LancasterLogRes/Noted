@@ -36,10 +36,9 @@ GraphItem::GraphItem()
 
 QVector3D GraphItem::yScaleHint() const
 {
-	GraphMetadata const* g = NotedFace::get()->graphs()->lock(m_url);
-	auto ret = g ? QVector3D(g->axis().range.first, g->axis().range.second - g->axis().range.first, 0) : QVector3D(0, 1, 0);
-	NotedFace::get()->graphs()->unlock();
-	return ret;
+	if (GraphMetadata g = NotedFace::get()->graphs()->find(m_url))
+		return QVector3D(g.axis().range.first, g.axis().range.second - g.axis().range.first, 0);
+	return QVector3D(0, 1, 0);
 }
 
 QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
@@ -50,9 +49,9 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 
 	// Update - TODO: optimise by chunking (according to how stored on disk) and only inserting new chunks - use boundingRect to work out what chunks are necessary.
 	// transform each chunk separately.
-	if (GraphMetadata const* g = NotedFace::get()->graphs()->lock(m_url))
+	if (GraphMetadata g = NotedFace::get()->graphs()->find(m_url))
 	{
-		if (DataSetPtr ds = Noted::data()->readDataSet(DataKeys(g->isRawSource() ? Noted::audio()->rawKey() : Noted::audio()->key(), g->operationKey())))
+		if (DataSetPtr ds = Noted::data()->readDataSet(DataKeys(g.isRawSource() ? Noted::audio()->rawKey() : Noted::audio()->key(), g.operationKey())))
 		{
 			if (ds->isMonotonic())
 			{
@@ -79,7 +78,7 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 						for (unsigned i = 0; i < records; ++i, v += 2)
 						{
 							v[0] = i;
-							v[1] = intermed[i];
+							v[1] = g.axis().transform.apply(intermed[i]);
 						}
 
 						QSGGeometryNode* n = new QSGGeometryNode();
@@ -108,9 +107,9 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 							for (unsigned i = 0; i < records; ++i, v += 4)
 							{
 								v[0] = i;
-								v[1] = intermed[i * 4];
+								v[1] = g.axis().transform.apply(intermed[i * 4]);
 								v[2] = i;
-								v[3] = intermed[i * 4 + 1];
+								v[3] = g.axis().transform.apply(intermed[i * 4 + 1]);
 							}
 
 							QSGGeometryNode* n = new QSGGeometryNode();
@@ -138,7 +137,7 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 							for (unsigned i = 0; i < records; ++i, v += 2)
 							{
 								v[0] = i;
-								v[1] = intermed[i * 2];
+								v[1] = g.axis().transform.apply(intermed[i * 2])];
 							}
 
 							QSGGeometryNode* n = new QSGGeometryNode();
@@ -159,9 +158,9 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 							for (unsigned i = 0; i < records; ++i, v += 4)
 							{
 								v[0] = i;
-								v[1] = intermed[i * 2 + 1];
+								v[1] = g.axis().transform.apply(intermed[i * 2 + 1]);
 								v[2] = i;
-								v[3] = -intermed[i * 2 + 1];
+								v[3] = -g.axis().transform.apply(intermed[i * 2 + 1]);
 							}
 
 							QSGGeometryNode* nn = new QSGGeometryNode();
@@ -181,8 +180,8 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 					float yd = m_yDelta;
 					if (m_yMode)
 					{
-						yf = g->axis().range.first;
-						yd = g->axis().range.second - g->axis().range.first;
+						yf = g.axis().range.first;
+						yd = g.axis().range.second - g.axis().range.first;
 					}
 					QMatrix4x4 gmx;
 					gmx.translate(0, height());
@@ -194,7 +193,6 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 				}
 			}
 		}
-		NotedFace::get()->graphs()->unlock();
 	}
 
 	return base;

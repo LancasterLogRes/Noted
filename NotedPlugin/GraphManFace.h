@@ -42,6 +42,12 @@ public:
 	GraphMetadata() {}
 	GraphMetadata(DataKey _operationKey, Axes const& _axes = { { "", lb::XOf(), lb::AutoRange } }, std::string const& _title = "Anonymous", bool _rawSource = false): m_rawSource(_rawSource), m_operationKey(_operationKey), m_title(_title), m_axes(_axes) {}
 
+	bool isNull() const { return m_title.empty() || m_axes.empty(); }
+	bool isValid() const { return !isNull(); }
+	bool isRegistered() const { return isValid() && !m_url.empty(); }
+
+	explicit operator bool() const { return isValid(); }
+
 	bool isRawSource() const { return m_rawSource; }
 	DataKey operationKey() const { return m_operationKey; }
 	std::string const& url() const { return m_url; }
@@ -56,16 +62,18 @@ public:
 	void setAxes(Axes const& _as) { m_axes = _as; }
 
 protected:
-	void setUrl(std::string const& _url) const { m_url = _url; }
+	void setUrl(std::string const& _url) { m_url = _url; }
 
 	bool m_rawSource = false;
 	DataKey m_operationKey = (unsigned)-1;
-	std::string m_title = "Anonymous";
+	std::string m_title;
 
 	Axes m_axes = { { "", lb::XOf(), lb::AutoRange } };
 
-	mutable std::string m_url = "unregistered";
+	std::string m_url;
 };
+
+static const GraphMetadata NullGraphMetadata;
 
 class GraphManFace: public QAbstractItemModel
 {
@@ -75,30 +83,22 @@ public:
 	GraphManFace() {}
 	virtual ~GraphManFace();
 
-	void registerGraph(QString const& _url, GraphMetadata const* _g);
-	void unregisterGraph(GraphMetadata const* _g);
-
-	void registerGraph(QString _url, lb::GraphSpec const* _g);
-	void unregisterGraph(QString _url);
+	void registerGraph(QString const& _url, GraphMetadata const& _g);
+	void unregisterGraph(QString const& _url);
 	void unregisterGraphs(QString _ec);
 
-	lb::GraphSpec const* lockGraph(QString _url) const { x_graphs.lockForRead(); if (m_graphs.value(_url, nullptr)) return m_graphs.value(_url); unlockGraph(); return nullptr; }
-	void unlockGraph() const { x_graphs.unlock(); }
-	GraphMetadata const* lock(QString const& _url) const { x_graphs.lockForRead(); if (m_graphs2.value(_url, nullptr)) return m_graphs2.value(_url); unlock(); return nullptr; }
-	void unlock() const { x_graphs.unlock(); }
+	GraphMetadata const& find(QString const& _url) const { QReadLocker l(&x_graphs); if (m_graphs.count(_url)) return m_graphs[_url]; return NullGraphMetadata; }
 
 signals:
 	void graphsChanged();
 	void addedGraph(QString _url);
 	void removingGraph(QString _url);
-	void addedGraph(GraphMetadata const*);
-	void removingGraph(GraphMetadata const*);
+	void addedGraph(GraphMetadata const&);
+	void removingGraph(GraphMetadata const&);
 
 protected:
 	// TODO: replace lock with guarantee that GUI thread can't be running when graphs are going to change.
 	mutable QReadWriteLock x_graphs;
-	QMap<QString, lb::GraphSpec const*> m_graphs;
-
-	QMap<QString, GraphMetadata const*> m_graphs2;
+	mutable QMap<QString, GraphMetadata> m_graphs;
 };
 

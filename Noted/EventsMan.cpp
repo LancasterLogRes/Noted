@@ -35,8 +35,14 @@ void EventsMan::onAnalyzed(AcausalAnalysis* _aa)
 			if (!ev->isArchived())
 				for (auto const& i: ev->eventCompiler().asA<EventCompilerImpl>().graphMap())
 				{
-					i.second->setUrl(ev->objectName().toStdString() + "/" + i.first);
-					Noted::graphs()->registerGraph(QString::fromStdString(i.second->url()), i.second);
+					GraphSpec* gs = i.second;
+					QString url = ev->objectName() + "/" + QString::fromStdString(i.first);
+					GraphMetadata gm = GraphMetadata(DataSetDataStore::operationKey(gs), {}, gs->name());
+					if (GraphChart* gc = dynamic_cast<GraphChart*>(gs))
+						gm.setAxes({{ gc->ylabel(), gc->ytx(), gc->yrangeHint() }});
+					else if (GraphDenseDenseFixed* gddf = dynamic_cast<GraphDenseDenseFixed*>(gs))
+						gm.setAxes({ { gddf->ylabel(), gddf->ytx(), gddf->yrangeHint() }, { gddf->xlabel(), gddf->xtx(), gddf->xrangeHint() } });
+					Noted::graphs()->registerGraph(url, gm);
 				}
 }
 

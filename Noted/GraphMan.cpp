@@ -19,6 +19,12 @@ QHash<int, QByteArray> GraphMan::roleNames() const
 
 int GraphMan::rowCount(QModelIndex const& _parent) const
 {
+	if (m_urls.size() != m_graphs.size())
+	{
+		m_urls.clear();
+		for (auto const& g: m_graphs)
+			m_urls.append(QString::fromStdString(g.url()));
+	}
 	return _parent.isValid() ? 0 : m_graphs.size();
 }
 
@@ -29,11 +35,8 @@ int GraphMan::columnCount(QModelIndex const&) const
 
 QModelIndex GraphMan::index(int _row, int _column, QModelIndex const& _parent) const
 {
-	int r = 0;
 	if (!_parent.isValid())
-		for (auto g: m_graphs)
-			if (r++ == _row)
-				return createIndex(_row, _column, (void*)g);
+		return createIndex(_row, _column, nullptr);
 	return QModelIndex();
 }
 
@@ -44,11 +47,14 @@ QModelIndex GraphMan::parent(QModelIndex const&) const
 
 QVariant GraphMan::data(QModelIndex const& _index, int _role) const
 {
-	auto l = (GraphSpec const*)_index.internalPointer();
-	if (_role == Qt::DisplayRole)
-		return QString::fromStdString(l->name());
-	if (_role == Qt::UserRole)
-		return QString::fromStdString(l->url());
+	if (_index.row() < m_urls.size())
+	{
+		auto const& g = m_graphs[m_urls[_index.row()]];
+		if (_role == Qt::DisplayRole)
+			return QString::fromStdString(g.title());
+		if (_role == Qt::UserRole)
+			return QString::fromStdString(g.url());
+	}
 	return QVariant();
 }
 

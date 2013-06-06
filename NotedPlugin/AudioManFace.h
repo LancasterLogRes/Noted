@@ -19,6 +19,8 @@ public:
 	DataKey key() const { return m_key; }
 	DataKey rawKey() const { return m_rawKey; }
 
+	virtual void populateHop(unsigned _index, std::vector<float>& _h) const = 0;
+
 	QString const& filename() const { return m_filename; }
 	inline unsigned rate() const { return m_rate; }
 	inline unsigned hopSamples() const { return m_hopSamples; }
@@ -32,6 +34,7 @@ public:
 
 	AcausalAnalysisPtr resampleWaveAcAnalysis() const { return m_resampleWaveAcAnalysis; }
 
+	// TODO: KILL
 	virtual lb::foreign_vector<float const> waveWindow(int) const { return lb::foreign_vector<float const>(); }
 	virtual bool waveBlock(lb::Time, lb::Time, lb::foreign_vector<float>, bool = false) const { return false; }
 
@@ -68,7 +71,7 @@ public slots:
 	virtual void passthrough() = 0;
 	virtual void stop() = 0;
 	virtual void setCursor(lb::Time _t, bool _warp = false) = 0;
-	inline void setHopCursor(lb::Time _t) { setCursor(quantized(_t), true); }
+	inline void setHopCursor(lb::Time _t) { setCursor(quantized(_t + hop() - 1), true); }	// Sets it to cursor that contains _t.
 
 signals:
 	/// Data
