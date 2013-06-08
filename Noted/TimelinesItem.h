@@ -14,9 +14,13 @@ class TimeHelper: public QObject
 public:
 	Q_INVOKABLE lb::Time add(lb::Time _a, lb::Time _b) const { return _a + _b; }
 	Q_INVOKABLE lb::Time sub(lb::Time _a, lb::Time _b) const { return _a - _b; }
+	Q_INVOKABLE lb::Time mul(lb::Time _a, double _b) const { return _a * _b; }
+	Q_INVOKABLE lb::Time mul(lb::Time _a, float _b) const { return _a * _b; }
 	Q_INVOKABLE lb::Time mul(lb::Time _a, int _b) const { return _a * _b; }
 	Q_INVOKABLE lb::Time mul(int _a, lb::Time _b) const { return _a * _b; }
 	Q_INVOKABLE lb::Time div(lb::Time _a, int _b) const { return _a / _b; }
+	Q_INVOKABLE lb::Time div(lb::Time _a, float _b) const { return _a / _b; }
+	Q_INVOKABLE lb::Time div(lb::Time _a, double _b) const { return _a / _b; }
 	Q_INVOKABLE lb::Time madd(lb::Time _a, int _m, lb::Time _b) const { return _a * _m + _b; }
 	Q_INVOKABLE lb::Time madd(int _m, lb::Time _a, lb::Time _b) const { return _m * _a + _b; }
 	Q_INVOKABLE lb::Time fromSeconds(double _s) const { return lb::fromSeconds(_s); }
@@ -52,7 +56,7 @@ class GraphItem: public TimelineItem
 	Q_OBJECT
 
 public:
-	GraphItem();
+	GraphItem(QQuickItem* _p = nullptr);
 
 	QVector3D yScaleHint() const;
 	float yFromHint() const { return yScaleHint().x(); }
@@ -69,6 +73,7 @@ signals:
 	void yScaleChanged();
 	void highlightChanged();
 	void yScaleHintChanged();
+	void onGraphAdded(QString _url);
 
 protected:
 	Q_PROPERTY(QString url MEMBER m_url NOTIFY urlChanged)
@@ -85,6 +90,7 @@ protected:
 	float m_yDelta = 1;
 	int m_yMode = 0;		///< 0 -> yFrom/yDelta, 1 /*-> auto (global)*/, 2 -> hint
 	bool m_highlight = false;
+	uint m_id;
 };
 
 class YScaleItem: public QQuickItem

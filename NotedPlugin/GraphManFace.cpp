@@ -17,8 +17,8 @@ void GraphManFace::registerGraph(QString const& _url, GraphMetadata const& _g)
 		m_graphs.insert(_url, _g);
 		m_graphs[_url].setUrl(_url.toStdString());
 		endResetModel();
-		emit addedGraph(_g);
 	}
+	emit addedGraph(m_graphs[_url]);
 	emit graphsChanged();
 }
 
@@ -26,22 +26,31 @@ void GraphManFace::unregisterGraph(QString const& _url)
 {
 	cnote << "- GRAPH" << _url.toStdString();
 
+	GraphMetadata removed;
+
 	{
 		QWriteLocker l(&x_graphs);
 		if (m_graphs.count(_url))
 		{
-			emit removingGraph(m_graphs[_url]);
+			removed = m_graphs[_url];
 			beginResetModel();
 			m_graphs.remove(_url);
 			endResetModel();
 		}
 	}
-	emit graphsChanged();
+
+	if (removed)
+	{
+		emit removedGraph(removed);
+		emit graphsChanged();
+	}
 }
 
 void GraphManFace::unregisterGraphs(QString _ec)
 {
 	cnote << "- GRAPHS" << _ec.toStdString() << "/*";
+
+	QVector<GraphMetadata> removed;
 
 	{
 		QWriteLocker l(&x_graphs);
@@ -49,12 +58,18 @@ void GraphManFace::unregisterGraphs(QString _ec)
 		for (auto i = m_graphs.begin(); i != m_graphs.end();)
 			if (i.key().section('/', 0, 0) == _ec)
 			{
-				emit removingGraph(i.key());
+				removed.append(i.value());
 				i = m_graphs.erase(i);
 			}
 			else
 				++i;
 		endResetModel();
 	}
-	emit graphsChanged();
+
+	if (removed.size())
+	{
+		for (auto i: removed)
+			emit removedGraph(i);
+		emit graphsChanged();
+	}
 }

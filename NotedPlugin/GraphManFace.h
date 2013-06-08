@@ -57,7 +57,8 @@ public:
 	void setRawSource(bool _rawSource = true) { m_rawSource = _rawSource; }
 	void setOperationKey(DataKey _k) { m_operationKey = _k; }
 
-	Axis const& axis(unsigned _i = ValueAxis) const { return m_axes[_i]; }
+	Axis const& axis() const { return m_axes.back(); }
+	Axis const& axis(unsigned _i) const { return m_axes[_i]; }
 	Axes const& axes() const { return m_axes; }
 	void setAxes(Axes const& _as) { m_axes = _as; }
 
@@ -91,10 +92,8 @@ public:
 
 signals:
 	void graphsChanged();
-	void addedGraph(QString _url);
-	void removingGraph(QString _url);
 	void addedGraph(GraphMetadata const&);
-	void removingGraph(GraphMetadata const&);
+	void removedGraph(GraphMetadata const&);
 
 protected:
 	// TODO: replace lock with guarantee that GUI thread can't be running when graphs are going to change.

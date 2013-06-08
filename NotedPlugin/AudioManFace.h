@@ -94,7 +94,7 @@ protected:
 
 	Q_PROPERTY(lb::Time cursor READ hopCursor WRITE setHopCursor NOTIFY hopCursorChanged)
 	Q_PROPERTY(lb::Time hop READ hop NOTIFY hopChanged)
-	Q_PROPERTY(lb::Time duration READ duration NOTIFY dataChanged)
+	Q_PROPERTY(lb::Time duration READ duration NOTIFY dataLoaded)
 	Q_PROPERTY(unsigned cursorIndex READ cursorIndex NOTIFY cursorChanged)
 
 	/// Data

@@ -11,8 +11,8 @@ Item {
 
 	ListModel {
 		id: graphs
+		ListElement { graphUrl: "RhythmDetectorFloat/Bark" }
 		ListElement { graphUrl: "wave" }
-		ListElement { graphUrl: "RhythmDetectorFloat/Loudness" }
 	}
 
 	Rectangle {
@@ -28,11 +28,12 @@ Item {
 		}
 
 		// control panel
-		width: 200
+		width: timelines.gutterWidth - yScale.width - graphHarness.anchors.leftMargin
 		id: panel
 		color: 'lightgray'
 		height: parent.height;
 		anchors.left: parent.left
+		anchors.leftMargin: -timelines.gutterWidth
 
 		border { color: 'darkgray'; width: 4 }
 		states: [
@@ -91,23 +92,25 @@ Item {
 	}
 	YLabels {
 		// yaxis labels
-		id: scale
+		id: yScale
 		width: 50
 		anchors.left: panel.right
-		height: parent.height
+		height: parent.height + 20
 		yFrom: panel.yFrom
 		yDelta: panel.yDelta
 	}
+
 	Item {
 		id: graphHarness
 		height: parent.height
 		anchors.right: parent.right
-		anchors.left: scale.right
+		anchors.left: yScale.right
+		anchors.leftMargin: 10
 		property Graph highlightedGraph: children[list.currentIndex + 2]
 		MouseArea {
 			acceptedButtons: Qt.LeftButton | Qt.RightButton
 			anchors.fill: parent
-			onWheel: { view.zoomTimeline(mapToItem(timelines, wheel.x, wheel.y).x, Math.exp(-wheel.angleDelta.y / (wheel.modifiers & Qt.ControlModifier ? 24000.0 : wheel.modifiers & Qt.ShiftModifier ? 240.0 : 2400.0))); }
+			onWheel: { view.zoomTimeline(wheel.x, Math.exp(-wheel.angleDelta.y / (wheel.modifiers & Qt.ControlModifier ? 24000.0 : wheel.modifiers & Qt.ShiftModifier ? 240.0 : 2400.0))); }
 			onPressed: {
 				if (mouse.button == Qt.RightButton)
 				{
@@ -118,7 +121,7 @@ Item {
 				if (mouse.button == Qt.LeftButton)
 				{
 					mouse.accepted = true;
-					audio.cursor = Time.madd(mapToItem(timelines, mouse.x, mouse.y).x, timelines.pitch, timelines.offset);
+					audio.cursor = Time.madd(mouse.x, timelines.pitch, timelines.offset);
 				}
 			}
 			onReleased: { posDrag = -1; }
@@ -128,20 +131,21 @@ Item {
 				if (posDrag > -1)
 					view.offset = Time.madd(posDrag - mouse.x, view.pitch, posOffset);
 				if (mouse.buttons & Qt.LeftButton)
-					audio.cursor = Time.madd(mapToItem(timelines, mouse.x, mouse.y).x, timelines.pitch, timelines.offset);
+					audio.cursor = Time.madd(mouse.x, timelines.pitch, timelines.offset);
 			}
 		}
 		YScale {
 			anchors.fill: parent
 			yFrom: panel.yFrom
 			yDelta: panel.yDelta
+			anchors.leftMargin: -10
 		}
 		Repeater {
 			id: graphRepeater
 			model: graphs
 			Graph {
 				url: graphUrl
-				offset: localTime(timelines.offset, timelines.pitch)
+				offset: timelines.offset
 				pitch: timelines.pitch
 				anchors.fill: parent
 				highlight: (index == list.currentIndex)
@@ -151,7 +155,7 @@ Item {
 			}
 		}
 		Cursor {
-			offset: localTime(timelines.offset, timelines.pitch)
+			offset: timelines.offset
 			pitch: timelines.pitch
 			cursor: audio.cursor
 			cursorWidth: audio.hop

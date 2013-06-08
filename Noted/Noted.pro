@@ -15,12 +15,10 @@ SOURCES += main.cpp\
 	MetaSpectrumView.cpp \
 	EventsView.cpp \
 	WorkerThread.cpp \
-	WaveView.cpp \
 	WaveWindowView.cpp \
 	SpectraView.cpp \
 	CurrentView.cpp \
 	Grapher.cpp \
-	WaveOverview.cpp \
 	NotedBase.cpp \
 	CompileEventsView.cpp \
 	PropertiesEditor.cpp \
@@ -36,7 +34,6 @@ SOURCES += main.cpp\
 	FileAudioStream.cpp
 
 HEADERS  += Noted.h \
-	WaveView.h \
 	SpectraView.h \
 	EventsView.h \
 	WaveWindowView.h \
@@ -47,7 +44,6 @@ HEADERS  += Noted.h \
 	WorkerThread.h \
 	CurrentView.h \
 	Grapher.h \
-	WaveOverview.h \
 	NotedGLWidget.h \
 	NotedBase.h \
 	CompileEvents.h \

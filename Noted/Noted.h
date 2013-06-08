@@ -86,6 +86,7 @@ public:
 	static ViewMan* view() { return static_cast<ViewMan*>(get()->m_viewMan); }
 	static GraphMan* graphs() { return static_cast<GraphMan*>(get()->m_graphMan); }
 	static TimelinesItem* timelines() { return get()->m_timelinesItem; }
+	static QQuickView* quickView() { return get()->m_view; }
 
 	virtual QGLWidget* glMaster() const;
 	virtual void addLegacyTimeline(QWidget* _w);

@@ -284,7 +284,7 @@ tuple<Time, unsigned, int, Time> DataSet::bestFit(Time _from, Time _duration, un
 	}
 }
 
-void DataSet::populateRaw(lb::Time _from, float* _out, unsigned _size) const
+void DataSet::populateRaw(lb::Time _from, float* _out, unsigned _size, XOf _transform) const
 {
 	int recordBegin = (_from - m_first) / m_stride;
 	int rLen = recordLength();
@@ -304,10 +304,17 @@ void DataSet::populateRaw(lb::Time _from, float* _out, unsigned _size) const
 
 	int valid = records - beforeStart - overEnd;
 	assert(valid <= records);
-	valcpy(_out + beforeStart * rLen, d.data() + (recordBegin + beforeStart) * rLen, rLen * valid);
+	if (_transform.isIdentity())
+		valcpy(_out + beforeStart * rLen, d.data() + (recordBegin + beforeStart) * rLen, rLen * valid);
+	else
+	{
+		float const* i = d.data() + (recordBegin + beforeStart) * rLen;
+		for (float* o = _out + beforeStart * rLen, *oe = _out + (beforeStart + valid) * rLen; o != oe; ++o, ++i)
+			*o = _transform.apply(*i);
+	}
 }
 
-void DataSet::populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size) const
+void DataSet::populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size, lb::XOf _transform) const
 {
 	assert(m_availableDigests & _digest);
 	assert(m_digest.contains(_digest));
@@ -329,7 +336,15 @@ void DataSet::populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from
 
 	int valid = records - beforeStart - overEnd;
 	assert(valid <= records);
-	valcpy(_out + beforeStart * drLen, d.data() + (recordBegin + beforeStart) * drLen, drLen * valid);
+
+	if (_transform.isIdentity())
+		valcpy(_out + beforeStart * drLen, d.data() + (recordBegin + beforeStart) * drLen, drLen * valid);
+	else
+	{
+		float const* i = d.data() + (recordBegin + beforeStart) * drLen;
+		for (float* o = _out + beforeStart * drLen, *oe = _out + (beforeStart + valid) * drLen; o != oe; ++o, ++i)
+			*o = _transform.apply(*i);
+	}
 
 	cnote << "popDig: " << recordBegin << drLen << records << "(" << recordsAvailable << ") -> [" << beforeStart << "]" << valid << "[" << overEnd << "]";
 }

@@ -102,7 +102,7 @@ Noted::Noted(QWidget* _p):
 	QWidget* w = QWidget::createWindowContainer(m_view);
 	w->setAcceptDrops(true);
 	m_view->setResizeMode(QQuickView::SizeRootObjectToView);
-	ui->fullDisplay->addWidget(w);
+	ui->fullDisplay->insertWidget(0, w);
 	m_view->create();
 
 	m_timelinesItem = m_view->rootObject()->findChild<TimelinesItem*>("timelines");
@@ -121,22 +121,13 @@ Noted::Noted(QWidget* _p):
 	connect(libs(), SIGNAL(eventCompilerFactoryUnavailable(QString)), SLOT(onEventCompilerFactoryUnavailable(QString)));
 
 	connect(m_timelinesItem, SIGNAL(widthChanged(int)), view(), SLOT(setWidth(int)));
-/*	connect(view(), &ViewMan::parametersChanged, [=](lb::Time o, lb::Time d)
-	{
-		cnote << "View parameters changed to" << textualTime(o) << "x" << textualTime(d) << "(" << m_timelinesItem->property("offset").toDouble() << m_timelinesItem->property("pitch").toDouble() << ")";
-	});*/
 
 	for (auto i: findChildren<PrerenderedTimeline*>())
 		i->hide();
 
 	updateAudioDevices();
 
-	ui->waveform->installEventFilter(this);
-	ui->overview->installEventFilter(this);
 	ui->dataDisplay->installEventFilter(this);
-
-//	m_timelines.insert(ui->waveform);
-//	m_timelines.insert(ui->spectra);
 
 	{
 		QLabel* l = new QLabel("No audio");

@@ -5,8 +5,8 @@ import com.llr 1.0
 Item {
 	Timelines {
 		id: overview
-		offset: view.globalOffset
-		pitch: view.globalPitch
+		offset: Time.mul(audio.duration, -0.05)
+		pitch: Time.div(audio.duration, width / 1.1)
 		anchors.top: parent.top
 		anchors.left: parent.left
 		anchors.right: parent.right
@@ -48,6 +48,7 @@ Item {
 
 	Timelines {
 		id: timelines
+		property int gutterWidth: 200
 		objectName: 'timelines'
 		offset: view.offset
 		pitch: view.pitch
@@ -55,6 +56,7 @@ Item {
 		anchors.left: parent.left
 		anchors.right: parent.right
 		anchors.bottom: parent.bottom
+		anchors.leftMargin: gutterWidth
 
 		Column {
 			anchors.fill: parent

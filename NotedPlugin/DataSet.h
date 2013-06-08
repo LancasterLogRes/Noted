@@ -68,8 +68,8 @@ public:
 
 	// Methods for extracting data when isMonotonic() && isFixed()
 	std::tuple<lb::Time, unsigned, int, lb::Time> bestFit(lb::Time _from, lb::Time _duration, unsigned _idealRecords) const;
-	void populateRaw(lb::Time _from, float* _out, unsigned _size) const;
-	void populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size) const;
+	void populateRaw(lb::Time _from, float* _out, unsigned _size, lb::XOf _transform = lb::XOf()) const;
+	void populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size, lb::XOf _transform = lb::XOf()) const;
 
 	// Methods for extracting data when isFixed()
 	void populateRaw(lb::Time _latest, lb::foreign_vector<float> _dest) const;
