@@ -181,11 +181,16 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 						delete m->texture();
 				base->removeAllChildNodes();
 
-				if (lod < 0)
+				if (lod < 0 || true)
 				{
 					float intermed[records * ds->recordLength()];
 					if (records)
-						ds->populateRaw(from, intermed, records * ds->recordLength(), g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(g.axis(GraphMetadata::ValueAxis).range)));
+					{
+						if (lod < 0)
+							ds->populateRaw(from, intermed, records * ds->recordLength(), g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(g.axis(GraphMetadata::ValueAxis).range)));
+						else
+							ds->populateDigest(MeanDigest, lod, from, intermed, records * ds->recordLength(), g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(g.axis(GraphMetadata::ValueAxis).range)));
+					}
 					QSGGeometry* geo = new QSGGeometry(MyPoint2D_AttributeSet, 4);
 					MyPoint2D* d = static_cast<MyPoint2D*>(geo->vertexData());
 					d[0] = {0, g.axis(GraphMetadata::XAxis).transform.apply(0), 0, 0};

@@ -152,21 +152,25 @@ void DataSet::digest(DigestFlag _t)
 	switch (_t)
 	{
 	case MeanDigest:
-		for (unsigned i = m_digestBase; f < fe; ++f)
+		for (unsigned i = m_digestBase; f < fe; f += m_recordLength)
 		{
-			if (i == m_digestBase)
+			for (unsigned r = 0; r < m_recordLength; ++r)
 			{
-				i = 0;
-				*d = *f;
+				if (i == m_digestBase)
+				{
+					if (!r)
+						i = 0;
+					d[r] = f[r];
+				}
+				else
+					d[r] += f[r];
+				if (!r)
+					i++;
+				if (i == m_digestBase)
+					*d /= m_digestBase;
 			}
-			else
-				*d += *f;
-			i++;
 			if (i == m_digestBase)
-			{
-				*d /= m_digestBase;
-				d++;
-			}
+				d += m_recordLength;
 		}
 		m_digest[_t]->generate([](lb::foreign_vector<float> a, lb::foreign_vector<float> b, lb::foreign_vector<float> ret)
 		{
@@ -183,6 +187,7 @@ void DataSet::digest(DigestFlag _t)
 		}, float(0));
 		break;
 	case MeanRmsDigest:
+		assert(m_recordLength == 1);
 		for (unsigned i = m_digestBase, t = 0; f < fe; ++f, ++t)
 		{
 			if (i == m_digestBase)
@@ -222,6 +227,7 @@ void DataSet::digest(DigestFlag _t)
 		}, float(0));
 		break;
 	case MinMaxInOutDigest:
+		assert(m_recordLength == 1);
 		for (unsigned i = m_digestBase; f < fe; ++f)
 		{
 			if (i == m_digestBase)
@@ -273,7 +279,6 @@ tuple<Time, unsigned, int, Time> DataSet::bestFit(Time _from, Time _duration, un
 		int64_t nextEnd = nextLevel ? (recordEnd + 1) / 2 : ((recordEnd + (int64_t)m_digestBase - 1) / (int64_t)m_digestBase);
 		int64_t nextRes = nextLevel ? recordRes / 2 : (recordRes / (int64_t)m_digestBase);
 
-//		if (nextEnd - nextBegin < _idealRecords || recordEnd - recordBegin == _idealRecords)
 		if (nextRes < _idealRecords)
 			// Passed the place... use the last one cunningly left in recordBegin/recordEnd/level.
 			return tuple<Time, unsigned, int, Time>(m_first + m_stride * (level > -1 ? m_digestBase << level : 1) * recordBegin, recordEnd - recordBegin, level, (recordEnd - recordBegin) * m_stride * (level > -1 ? m_digestBase << level : 1));
