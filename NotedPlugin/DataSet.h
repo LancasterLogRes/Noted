@@ -65,6 +65,7 @@ public:
 	DigestFlags availableDigests() const { return m_availableDigests; }
 	unsigned rawRecords() const;
 	unsigned digestRecords() const { return (rawRecords() + m_digestBase - 1) / m_digestBase; }
+	unsigned lodFactor(int _lod) const { return _lod == -1 ? 1 : (m_digestBase << _lod); }
 
 	// Methods for extracting data when isMonotonic() && isFixed()
 	std::tuple<lb::Time, unsigned, int, lb::Time> bestFit(lb::Time _from, lb::Time _duration, unsigned _idealRecords) const;

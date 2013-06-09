@@ -351,5 +351,5 @@ void DataSet::populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from
 			*o = _transform.apply(*i);
 	}
 
-	cnote << "popDig: " << recordBegin << drLen << records << "(" << recordsAvailable << ") -> [" << beforeStart << "]" << valid << "[" << overEnd << "]";
+//	cnote << "popDig: " << recordBegin << drLen << records << "(" << recordsAvailable << ") -> [" << beforeStart << "]" << valid << "[" << overEnd << "]";
 }

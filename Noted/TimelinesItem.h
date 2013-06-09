@@ -3,7 +3,7 @@
 #include <QQuickItem>
 #include <QVector3D>
 #include <QQuickPaintedItem>
-#include <QSGGeometry>
+#include <QSGGeometryNode>
 #include "Noted.h"
 #include "GraphView.h"
 
@@ -90,7 +90,16 @@ protected:
 	float m_yDelta = 1;
 	int m_yMode = 0;		///< 0 -> yFrom/yDelta, 1 /*-> auto (global)*/, 2 -> hint
 	bool m_highlight = false;
-	uint m_id;
+
+	mutable QSGGeometry* m_spectrumQuad = nullptr;
+
+	// At current LOD (m_lod)
+	QSGNode* geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _ds);
+	QSGGeometry* spectrumQuad() const;
+	void killCache();
+	bool m_invalidated = true;	// Cache is invalid.
+	int m_lod = -1;
+	mutable QMap<unsigned, QSGNode*> m_geometryCache;
 };
 
 class YScaleItem: public QQuickItem
