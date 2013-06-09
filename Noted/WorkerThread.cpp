@@ -28,7 +28,7 @@ void WorkerThread::setProgress(int _percent)
 	{
 		QMutexLocker l(&m_lock);
 		m_progress = _percent;
-		if (m_lastProgressSignal - lb::wallTime() > lb::FromMsecs<100>::value)
+		if (lb::wallTime() - m_lastProgressSignal > lb::FromMsecs<100>::value)
 		{
 			emit progressed(m_description, _percent);
 			m_lastProgressSignal = lb::wallTime();
