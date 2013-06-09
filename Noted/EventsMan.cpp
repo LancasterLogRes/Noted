@@ -65,7 +65,7 @@ CausalAnalysisPtrs EventsMan::ripeCausalAnalysis(CausalAnalysisPtr const& _finis
 AcausalAnalysisPtrs EventsMan::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finished)
 {
 	AcausalAnalysisPtrs ret;
-	if (_finished == Noted::get()->spectraAcAnalysis())
+	if (_finished == Noted::audio()->resampleWaveAcAnalysis())
 	{
 		m_eventsViewsDone = 0;
 		ret.push_back(m_compileEventsAnalysis);

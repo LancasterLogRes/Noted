@@ -42,10 +42,7 @@ GraphItem::GraphItem(QQuickItem* _p): TimelineItem(_p)
 	connect(this, &GraphItem::highlightChanged, [=](){ m_invalidated = true; update(); });
 	connect(Noted::data(), &DataMan::dataComplete, [=](DataKeys k){ if (k == findGraph(m_url).second) update(); });
 	connect(Noted::graphs(), &GraphMan::graphsChanged, this, &GraphItem::update);
-	connect(Noted::graphs(), &GraphManFace::addedGraph,
-			[=](GraphMetadata g)
-	{
-		cnote << "Added:" << g.url() << "; interested in" << m_url.toStdString();
+	connect(Noted::graphs(), &GraphManFace::addedGraph, [=](GraphMetadata g) {
 		if (QString::fromStdString(g.url()) == m_url)
 			yScaleHintChanged();
 	});

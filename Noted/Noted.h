@@ -28,6 +28,7 @@
 #include <Audio/Capture.h>
 #include <Audio/Playback.h>
 #include <EventCompiler/EventCompiler.h>
+#include <NotedPlugin/NotedFace.h>
 #include <NotedPlugin/NotedPlugin.h>
 #include <NotedPlugin/Timeline.h>
 #include <NotedPlugin/CausalAnalysis.h>
@@ -52,7 +53,6 @@
 #include "ViewMan.h"
 #include "EventsMan.h"
 #include "GraphMan.h"
-#include "NotedBase.h"
 
 namespace Ui { class Noted; }
 
@@ -69,7 +69,7 @@ class CompileEvents;
 class CollateEvents;
 class TimelinesItem;
 
-class Noted: public NotedBase
+class Noted: public NotedFace
 {
 	Q_OBJECT
 
@@ -130,14 +130,9 @@ private slots:
 	void on_captureDevice_currentIndexChanged(int);
 	void on_captureChunks_valueChanged(int);
 
-	void on_windowSizeSlider_valueChanged(int _i);
 	void on_hopSlider_valueChanged(int _i);
-	void on_windowSize_valueChanged(int _i);
 	void on_hop_valueChanged(int _i);
 	void on_sampleRate_currentIndexChanged(int _i);
-	void on_windowFunction_currentIndexChanged(int _i);
-	void on_zeroPhase_toggled(bool _v);
-	void on_floatFFT_toggled(bool _v);
 
 	void on_addEventsView_clicked();
 

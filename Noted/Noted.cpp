@@ -60,7 +60,7 @@ QObject* constructTimeHelper(QQmlEngine*, QJSEngine*)
 }
 
 Noted::Noted(QWidget* _p):
-	NotedBase					(_p),
+	NotedFace					(_p),
 	ui							(new Ui::Noted),
 	m_glMaster					(new QGLWidget)
 {
@@ -71,8 +71,6 @@ Noted::Noted(QWidget* _p):
 	m_audioMan = new AudioMan;
 	m_viewMan = new ViewMan;
 	m_eventsMan = new EventsMan;
-
-	initBase();
 
 	ui->setupUi(this);
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };
@@ -176,9 +174,6 @@ Noted::~Noted()
 	qDebug() << "Killing (legacy) EventsEditors...";
 	for (auto i: findChildren<EventsEditor*>())
 		delete i;
-
-	qDebug() << "Finalizing base...";
-	finiBase();
 
 	qDebug() << "Killing main QtQuick item...";
 	delete m_timelinesItem;
@@ -404,11 +399,7 @@ void Noted::readSettings()
 
 #define DO(X, V, C, D) ui->X->V(settings.value(#X, D).C())
 	DO(sampleRate, setCurrentIndex, toInt, 4);
-	DO(windowFunction, setCurrentIndex, toInt, 1);
 	DO(hopSlider, setValue, toInt, 6);
-	DO(windowSizeSlider, setValue, toInt, 9);
-	DO(zeroPhase, setChecked, toBool, true);
-	DO(floatFFT, setChecked, toBool, true);
 
 	DO(playChunkSamples, setValue, toInt, 512);
 	DO(playChunks, setValue, toInt, 4);
@@ -481,11 +472,7 @@ void Noted::writeSettings()
 
 #define DO(X, V) settings.setValue(#X, ui->X->V())
 	DO(sampleRate, currentIndex);
-	DO(windowFunction, currentIndex);
 	DO(hopSlider, value);
-	DO(windowSizeSlider, value);
-	DO(zeroPhase, isChecked);
-	DO(floatFFT, isChecked);
 	DO(force16Bit, isChecked);
 	DO(playChunkSamples, value);
 	DO(playChunks, value);
@@ -542,8 +529,7 @@ void Noted::on_actOpenEvents_triggered()
 
 void Noted::updateHopDisplay()
 {
-	ui->hopPeriod->setText(QString("%1ms %2%").arg(fromBase(toBase(ui->hop->value(), audio()->rate()), 100000) / 100.0).arg(((ui->windowSize->value() - ui->hop->value()) * 1000 / ui->windowSize->value()) / 10.0));
-	ui->windowPeriod->setText(QString("%1ms %2Hz").arg(fromBase(toBase(ui->windowSize->value(), audio()->rate()), 100000) / 100.0).arg((audio()->rate() * 10 / ui->windowSize->value()) / 10.0));
+	ui->hopPeriod->setText(QString("%1ms").arg(fromBase(toBase(ui->hop->value(), audio()->rate()), 100000) / 100.0));
 }
 
 void Noted::on_sampleRate_currentIndexChanged(int)
@@ -561,53 +547,6 @@ void Noted::on_hopSlider_valueChanged(int)
 void Noted::on_hop_valueChanged(int _i)
 {
 	m_audioMan->setHopSamples(_i);
-}
-
-void Noted::on_windowSizeSlider_valueChanged(int)
-{
-	ui->windowSize->setValue(1 << ui->windowSizeSlider->value());
-	updateHopDisplay();
-}
-
-void Noted::on_windowSize_valueChanged(int _i)
-{
-	if ((int)m_windowFunction.size() != _i)
-	{
-		compute()->suspendWork();
-		m_windowFunction = lb::windowFunction(_i, WindowFunction(ui->windowFunction->currentIndex()));
-		compute()->invalidate(spectraAcAnalysis());
-		compute()->resumeWork();
-	}
-}
-
-void Noted::on_windowFunction_currentIndexChanged(int _i)
-{
-	compute()->suspendWork();
-	m_windowFunction = lb::windowFunction(ui->windowSize->value(), WindowFunction(_i));
-	compute()->invalidate(spectraAcAnalysis());
-	compute()->resumeWork();
-}
-
-void Noted::on_zeroPhase_toggled(bool _v)
-{
-	if (m_zeroPhase != _v)
-	{
-		compute()->suspendWork();
-		m_zeroPhase = _v;
-		compute()->invalidate(spectraAcAnalysis());
-		compute()->resumeWork();
-	}
-}
-
-void Noted::on_floatFFT_toggled(bool _v)
-{
-	if (m_floatFFT != _v)
-	{
-		compute()->suspendWork();
-		m_floatFFT = _v;
-		compute()->invalidate(spectraAcAnalysis());
-		compute()->resumeWork();
-	}
 }
 
 void Noted::on_actFollow_changed()

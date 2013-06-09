@@ -10,16 +10,10 @@ linux: LIBS += -lX11 -lboost_system
 
 SOURCES += main.cpp\
 	Noted.cpp \
-	SpectrumView.cpp \
-	DeltaSpectrumView.cpp \
-	MetaSpectrumView.cpp \
 	EventsView.cpp \
 	WorkerThread.cpp \
-	WaveWindowView.cpp \
-	SpectraView.cpp \
 	CurrentView.cpp \
 	Grapher.cpp \
-	NotedBase.cpp \
 	CompileEventsView.cpp \
 	PropertiesEditor.cpp \
 	NotedGLWidget.cpp \
@@ -34,18 +28,12 @@ SOURCES += main.cpp\
 	FileAudioStream.cpp
 
 HEADERS  += Noted.h \
-	SpectraView.h \
 	EventsView.h \
-	WaveWindowView.h \
-	SpectrumView.h \
-	DeltaSpectrumView.h \
 	ProcessEventCompiler.h \
-	MetaSpectrumView.h \
 	WorkerThread.h \
 	CurrentView.h \
 	Grapher.h \
 	NotedGLWidget.h \
-	NotedBase.h \
 	CompileEvents.h \
 	CollateEvents.h \
 	CompileEventsView.h \
@@ -66,8 +54,6 @@ FORMS    += Noted.ui
 OTHER_FILES += \
 	TODO.txt \
 	Noted.rc \
-	SpectraView.frag \
-	SpectraView.vert \
     Noted.qml \
     GraphTimeline.qml \
     GraphSpec.qml

@@ -24,10 +24,6 @@ public:
 	/// Data
 	virtual void populateHop(unsigned _index, std::vector<float>& _h) const;
 
-	// TODO! Kill both in favour of DataMan/DataSet.
-	virtual lb::foreign_vector<float const> waveWindow(int _window) const;
-	virtual bool waveBlock(lb::Time _from, lb::Time _duration, lb::foreign_vector<float> o_toFill, bool _forceSamples = false) const;
-
 	/// Playback
 	virtual bool isPlaying() const { return !!m_playback; }
 
@@ -64,12 +60,8 @@ private:
 	virtual void updateKeys();
 
 	/// Data
+	mutable QMutex x_wave;	///< NEEDED?
 	DataSetPtr m_newWave;
-	// Actual data TODO: REMOVE
-	mutable QMutex x_wave;
-	Cache m_wave;
-	mutable QMutex x_waveProfile;
-	MipmappedCache m_waveProfile;
 
 	/// Playback
 	// Audio hardware i/o

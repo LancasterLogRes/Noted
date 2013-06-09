@@ -96,12 +96,12 @@ public:
 			glTexImage1D(GL_TEXTURE_1D, 0, 1, w.size(), 0, GL_LUMINANCE, GL_FLOAT, w.data());
 		}
 
-		if (auto p = NotedFace::get()->deltaPhaseSpectrum(NotedFace::audio()->cursorIndex(), 1))
+/*		if (auto p = NotedFace::get()->deltaPhaseSpectrum(NotedFace::audio()->cursorIndex(), 1))
 		{
 			auto s = NotedFace::get()->magSpectrum(NotedFace::audio()->cursorIndex(), 1);
 			unsigned i = maxInRange(s.begin(), s.end()) - s.begin();
 			glColor3ubv(Color(p[i], 1, 1).toRGBA8().data());
-		}
+		}*/
 
 		glBindTexture(GL_TEXTURE_1D, m_texture[0]);
 		glBegin(GL_TRIANGLE_STRIP);

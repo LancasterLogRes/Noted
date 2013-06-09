@@ -43,7 +43,7 @@ void CompileEventsView::init(bool _willRecord)
 			i.second->setStore(ds);
 		}
 
-		ec().init(Noted::get()->spectrumSize(), Noted::audio()->hop(), toBase(2, Noted::audio()->rate()));
+		ec().init(0, Noted::audio()->hop(), toBase(2, Noted::audio()->rate()));
 
 		for (auto i = m_dataStores.begin(); i != m_dataStores.end(); ++i)
 			if (!i.value()->isActive())
@@ -59,17 +59,11 @@ lb::EventCompiler CompileEventsView::ec() const
 void CompileEventsView::process(unsigned _i, lb::Time)
 {
 	vector<float> wave(Noted::audio()->hopSamples());
-	vector<float> mag(Noted::get()->spectrumSize());
-	vector<float> phase(Noted::get()->spectrumSize());
 	if (Noted::audio()->isImmediate())
 		(void)0;// TODO
 	else
 		Noted::audio()->populateHop(_i, wave);
-	if (auto mf = Noted::audio()->isImmediate() ? Noted::get()->cursorMagSpectrum() : Noted::get()->magSpectrum(_i, 1))
-		memcpy(mag.data(), mf.data(), sizeof(float) * mag.size());
-	if (auto pf = Noted::audio()->isImmediate() ? Noted::get()->cursorPhaseSpectrum() : Noted::get()->phaseSpectrum(_i, 1))
-		memcpy(phase.data(), pf.data(), sizeof(float) * phase.size());
-	m_ev->m_current = m_ev->m_eventCompiler.compile(mag, phase, wave);
+	m_ev->m_current = m_ev->m_eventCompiler.compile(vector<float>(), vector<float>(), wave);
 }
 
 void CompileEventsView::record()

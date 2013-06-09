@@ -46,8 +46,6 @@
 #include "EventsManFace.h"
 #include "QGLWidgetProxy.h"
 
-LIGHTBOX_TEXTUAL_ENUM(AudioStage, Wave, Spectrum);
-
 inline std::ostream& operator<<(std::ostream& _out, QString const& _s) { return _out << _s.toLocal8Bit().data(); }
 
 class Timeline;
@@ -75,18 +73,6 @@ public:
 	virtual ~NotedFace();
 
 	virtual QGLWidget* glMaster() const = 0;
-
-	inline unsigned windowSizeSamples() const { return m_windowFunction.size(); }
-	inline unsigned spectrumSize() const { return m_windowFunction.size() / 2 + 1; }
-	inline std::vector<float> const& windowFunction() const { return m_windowFunction; }
-	inline bool isZeroPhase() const { return m_zeroPhase; }
-	inline bool isFloatFFT() const { return m_floatFFT; }
-	inline lb::Time windowSize() const { return lb::toBase(windowSizeSamples(), audio()->rate()); }
-
-	virtual lb::foreign_vector<float const> multiSpectrum(int _i, int _n) const = 0;
-	virtual lb::foreign_vector<float const> magSpectrum(int _i, int _n) const = 0;
-	virtual lb::foreign_vector<float const> phaseSpectrum(int _i, int _n) const = 0;
-	virtual lb::foreign_vector<float const> deltaPhaseSpectrum(int _i, int _n) const = 0;
 
 	virtual void addLegacyTimeline(QWidget* _p) = 0;
 	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;
@@ -117,10 +103,6 @@ protected:
 	ViewManFace* m_viewMan = nullptr;
 	EventsManFace* m_eventsMan = nullptr;
 
-	bool m_zeroPhase = false;
-	bool m_floatFFT = true;
-	std::vector<float> m_windowFunction;
-
 	static NotedFace* s_this;
 };
 
@@ -135,16 +117,10 @@ public:
 
 	virtual QGLWidget* glMaster() const { return nullptr; }
 
-	virtual void info(QString const&, QString const& = "gray") {}
-
-	virtual lb::foreign_vector<float const> multiSpectrum(int, int) const { return lb::foreign_vector<float const>(); }
-	virtual lb::foreign_vector<float const> magSpectrum(int, int) const { return lb::foreign_vector<float const>(); }
-	virtual lb::foreign_vector<float const> deltaPhaseSpectrum(int, int) const { return lb::foreign_vector<float const>(); }
-	virtual lb::foreign_vector<float const> phaseSpectrum(int, int) const { return lb::foreign_vector<float const>(); }
-
 	virtual void addLegacyTimeline(QWidget*) {}
 	virtual QWidget* addGLWidget(QGLWidgetProxy*) { return nullptr; }
 	virtual void addDockWidget(Qt::DockWidgetArea, QDockWidget*) {}
+	virtual void info(QString const&, QString const& = "gray") {}
 
 	virtual void updateWindowTitle() {}
 };

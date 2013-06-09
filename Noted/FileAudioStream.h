@@ -15,6 +15,7 @@ public:
 	FileAudioStream(unsigned _hop, std::string const& _fn, unsigned _rate): m_hop(_hop), m_filename(_fn), m_rate(_rate) {}
 	~FileAudioStream() { fini(); }
 
+	Time duration() { return toBase(m_incomingFrames, m_incomingRate); }
 	void setHop(unsigned _samples) { m_hop = _samples; }
 	void setFile(std::string const& _fn, unsigned _rate) { m_filename = _fn; m_rate = _rate; }
 

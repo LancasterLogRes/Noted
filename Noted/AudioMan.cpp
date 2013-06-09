@@ -16,8 +16,7 @@ public:
 };
 
 AudioMan::AudioMan():
-	x_wave			(QMutex::Recursive),
-	x_waveProfile	(QMutex::Recursive)
+	x_wave			(QMutex::Recursive)
 {
 	m_resampleWaveAcAnalysis = AcausalAnalysisPtr(new ResampleWaveAc);
 	connect(Noted::compute(), SIGNAL(analyzed(AcausalAnalysis*)), SLOT(onAnalyzed(AcausalAnalysis*)));
@@ -85,7 +84,7 @@ void AudioMan::setHopSamples(unsigned _s)
 	m_hopSamples = _s;
 	updateKeys();
 
-	Noted::compute()->invalidate(Noted::get()->spectraAcAnalysis());
+	Noted::compute()->invalidate(Noted::events()->compileEventsAnalysis());
 	Noted::compute()->resumeWork();
 
 	emit hopChanged();
@@ -205,67 +204,6 @@ void AudioMan::processCursorChange()
 	}
 }
 
-// returns true if it's pairs of max/rms, false if it's samples.
-bool AudioMan::waveBlock(Time _from, Time _duration, lb::foreign_vector<float> o_toFill, bool _forceSamples) const
-{
-	if (!_duration)
-		return true;
-	int samples = fromBase(_duration, rate());
-	int items = _forceSamples ? o_toFill.size() : (o_toFill.size() / 2);
-	int samplesPerItem = samples / items;
-	if (samplesPerItem < (int)hopSamples() || _forceSamples)
-	{
-		QMutexLocker l(&x_wave);
-		int imin = -_from * items / _duration;
-		int imax = (duration() - _from) * items / _duration;
-		float const* d = m_wave.data<float>().data() + fromBase(_from, rate());
-		for (int i = 0; i < items; ++i)
-			o_toFill[i] = (i <= imin || i >= imax) ? 0 : d[samples * i / items];
-		return false;
-	}
-	else
-	{
-		QMutexLocker l(&x_waveProfile);
-		int hi = _from / hop();
-		int hs = _duration / hop();
-		for (int i = 0; i < items; ++i)
-			if (hi + i * hs / items >= 0 && hi + i * hs / items < (int)hops())
-			{
-				auto d = m_waveProfile.items<float>(hi + i * hs / items, hs / items);
-				o_toFill[i * 2] = d[0];
-				o_toFill[i * 2 + 1] = d[1];
-			}
-			else
-				o_toFill[i * 2] = o_toFill[i * 2 + 1] = 0;
-		return true;
-	}
-}
-
-lb::foreign_vector<float const> AudioMan::waveWindow(int _window) const
-{
-	QMutexLocker l(&x_wave);
-
-	_window = clamp<int, int>(_window, 0, hops());
-
-	// 0th window begins at (1 - hopsPerWindow) hops; all negative samples are 0 values.
-	unsigned windowSize = Noted::get()->m_windowFunction.size();
-	int hopsPerWindow = windowSize / hopSamples();
-	int hop = _window + 1 - hopsPerWindow;
-	if (hop < 0)
-	{
-		shared_ptr<vector<float> > data = make_shared<vector<float>>(windowSize, 0.f);
-		if (windowSize + hop * hopSamples() > 0)
-		{
-			auto i = m_wave.data<float>().cropped(0, windowSize + hop * hopSamples());
-			valcpy(data->data() + windowSize - i.count(), i.data(), i.count());
-		}
-		return foreign_vector<float const>(data->data(), windowSize).tied(data);
-	}
-	else
-		// same page - just return
-		return m_wave.data<float>().cropped(hop * hopSamples(), windowSize).tied(std::make_shared<QMutexLocker>(&x_wave));
-}
-
 void AudioMan::populateHop(unsigned _index, std::vector<float>& _h) const
 {
 	m_newWave->populateRaw(_index * hop(), _h.data(), _h.size());
@@ -273,105 +211,32 @@ void AudioMan::populateHop(unsigned _index, std::vector<float>& _h) const
 
 bool AudioMan::resampleWave()
 {
-	SF_INFO info;
-	auto sndfile = sf_open(m_filename.toLocal8Bit().data(), SFM_READ, &info);
-	if (sndfile)
+	const unsigned c_chunkSamples = 65536;
+
+	m_newWave = NotedFace::data()->dataSet(DataKeys(rawKey(), 0));
+	m_newWave->init(1, toBase(1, m_rate), 0);
+
+	FileAudioStream as(c_chunkSamples, m_filename.toStdString(), m_rate);
+	as.init();
+	m_samples = fromBase(as.duration(), m_rate);
+
+	if (!m_newWave->haveRaw())
 	{
-		QMutexLocker l1(&x_waveProfile);
-		QMutexLocker l2(&x_wave);
-		unsigned outHops = (fromBase(toBase(info.frames, info.samplerate), rate()) + hopSamples() - 1) / hopSamples();
-		m_samples = outHops * hopSamples();
-		bool waveOk = m_wave.init(rawKey(), key(), 0, samples() * sizeof(float));
-		bool waveProfileOk = m_waveProfile.init(rawKey(), key(), 1, 2 * sizeof(float), outHops);
-		if (!waveOk || !waveProfileOk)
+		float chunk[c_chunkSamples];
+		unsigned done = 0;
+		for (; done < m_samples; done += c_chunkSamples)
 		{
-			sf_seek(sndfile, 0, SEEK_SET);
-			vector<float> buffer(hopSamples() * info.channels);
-
-			float* cache = m_wave.data<float>().data();
-			float* wave = m_waveProfile.data<float>().data();
-			if (info.samplerate == (int)rate())
-			{
-				// Just copy across...
-				for (unsigned i = 0; i < outHops; ++i, wave += 2, cache += hopSamples())
-				{
-					unsigned rc = sf_readf_float(sndfile, buffer.data(), hopSamples());
-					valcpy<float>(cache, buffer.data(), rc, 1, info.channels);	// just take the channel 0.
-					memset(cache + rc, 0, sizeof(float) * (hopSamples() - rc));	// zeroify what's left.
-					wave[0] = sigma(buffer);
-					auto r = range(buffer);
-					wave[1] = max(fabs(r.first), r.second);
-					WorkerThread::setCurrentProgress(i * 100 / outHops);
-				}
-			}
-			else
-			{
-				// Needs a resample
-				double factor = double(rate()) / info.samplerate;
-				void* resampler = resample_open(1, factor, factor);
-				unsigned bufferPos = hopSamples();
-
-				for (unsigned i = 0; i < outHops; ++i, wave += 2, cache += hopSamples())
-				{
-					unsigned pagePos = 0;
-					while (pagePos != hopSamples())
-					{
-						if (bufferPos == hopSamples())
-						{
-							// At end of current (input) buffer - refill and reset position.
-							int rc = sf_readf_float(sndfile, buffer.data(), hopSamples());
-							if (rc < 0)
-								rc = 0;
-							valcpy<float>(buffer.data(), buffer.data(), rc, 1, info.channels);	// just take the channel 0.
-							memset(buffer.data() + rc, 0, sizeof(float) * (hopSamples() - rc));	// zeroify what's left.
-							bufferPos = 0;
-						}
-						int used = 0;
-						pagePos += resample_process(resampler, factor, buffer.data() + bufferPos, hopSamples() - bufferPos, i == outHops - 1, &used, cache + pagePos, hopSamples() - pagePos);
-						bufferPos += used;
-					}
-					for (unsigned j = 0; j < hopSamples(); ++j)
-						cache[j] = clamp(cache[j], -1.f, 1.f);
-					wave[0] = sigma(cache, cache + hopSamples(), 0.f);
-					auto r = range(cache, cache + hopSamples());
-					wave[1] = max(fabs(r.first), r.second);
-					WorkerThread::setCurrentProgress(i * 100 / outHops);
-				}
-				resample_close(resampler);
-			}
-			m_wave.setGood();
-			m_waveProfile.generate<float>();
+			as.copyTo(0, chunk);
+			foreign_vector<float> rs(chunk, min(m_samples - done, c_chunkSamples));
+			m_newWave->appendRecords(rs);
 		}
-		sf_close(sndfile);
-
-		m_newWave = NotedFace::data()->dataSet(DataKeys(rawKey(), 0));
-		m_newWave->init(1, toBase(1, m_rate), 0);
-		if (!m_newWave->haveRaw())
-		{
-			const unsigned chunkSamples = 65536;
-			float chunk[chunkSamples];
-			FileAudioStream as(chunkSamples, m_filename.toStdString(), m_rate);
-			as.init();
-			unsigned done = 0;
-			for (; done < m_samples; done += chunkSamples)
-			{
-				as.copyTo(0, chunk);
-				foreign_vector<float> rs(chunk, min(m_samples - done, chunkSamples));
-				m_newWave->appendRecords(rs);
-			}
-		}
-		m_newWave->digest(MeanRmsDigest);
-		m_newWave->digest(MinMaxInOutDigest);
-		m_newWave->done();
-
-		return true;
 	}
-	else
-	{
-		m_wave.init(key(), "wave", 0);
-		m_waveProfile.init(key(), "waveProfile", 2 * sizeof(float), 0);
-		return false;
-	}
+
+	m_newWave->digest(MeanRmsDigest);
+	m_newWave->digest(MinMaxInOutDigest);
+	m_newWave->done();
+
+	return true;
 }
 
 bool AudioMan::serviceAudio()
@@ -395,7 +260,7 @@ bool AudioMan::serviceAudio()
 				if (rate() == m_playback->rate())
 				{
 					// no resampling necessary
-					waveBlock(m_fineCursor, toBase(f, r), &output, true);
+					m_newWave->populateRaw(m_fineCursor, output.data(), f);
 				}
 				else
 				{
@@ -418,7 +283,7 @@ bool AudioMan::serviceAudio()
 					while (outPos != f)
 					{
 						// At end of current (input) buffer - refill and reset position.
-						waveBlock(m_nextResample, toBase(f, rate()), &source, true);
+						m_newWave->populateRaw(m_nextResample, source.data(), f);
 						outPos += resample_process(m_resampler, factor, &(source[0]), f, 0, &used, &(output[outPos]), f - outPos);
 						m_nextResample += toBase(used, rate());
 					}
@@ -453,41 +318,12 @@ bool AudioMan::serviceAudio()
 			try {
 				m_capture = shared_ptr<Audio::Capture>(new Audio::Capture(m_captureDevice, 1, rate(), hopSamples(), m_captureChunks));
 			} catch (...) {}
-			m_currentWave = vector<float>(Noted::get()->windowSizeSamples(), 0);
-			/*
-			m_fftw = shared_ptr<FFTW>(new FFTW(windowSizeSamples()));
-			m_currentMagSpectrum = vector<float>(spectrumSize(), 0);
-			m_currentPhaseSpectrum = vector<float>(spectrumSize(), 0);
-			*/
+			m_currentWave = vector<float>(hopSamples(), 0);
 		}
 		if (m_capture)
 		{
 			// pull out another chunk, rotate m_currentWave hopSamples
-			memmove(m_currentWave.data(), m_currentWave.data() + hopSamples(), (Noted::get()->windowSizeSamples() - hopSamples()) * sizeof(float));
-			m_capture->read(foreign_vector<float>(m_currentWave.data() + Noted::get()->windowSizeSamples() - hopSamples(), hopSamples()));
-			/*
-			float* b = m_fftw->in();
-			foreign_vector<float> win(&m_currentWave);
-			assert(win.data());
-			float* d = win.data();
-			float* w = m_windowFunction.data();
-			unsigned off = m_zeroPhase ? m_windowFunction.size() / 2 : 0;
-			for (unsigned j = 0; j < m_windowFunction.size(); ++d, ++j, ++w)
-				b[(j + off) % m_windowFunction.size()] = *d * *w;
-			m_fftw->process();
-
-			m_currentMagSpectrum = m_fftw->mag();
-			m_currentPhaseSpectrum = m_fftw->phase();
-			*/
-			/*
-			float const* phase = fftw.phase().data();
-			float intpart;
-			for (int i = 0; i < ss; ++i)
-			{
-				sd[i + ss] = phase[i] / twoPi<float>();
-				sd[i + ss2] = modf((phase[i] - lp[i]) / twoPi<float>() + 1.f, &intpart);
-			}
-			*/
+			m_capture->read(foreign(m_currentWave.data(), hopSamples()));
 
 			// update
 			Noted::compute()->updateCausal(m_lastIndex++, 1);
