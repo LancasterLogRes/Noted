@@ -36,20 +36,14 @@ public:
 		m_p.kill();
 		m_p.waitForFinished();
 		QStringList args;
-		args << QString::number(bands()) << QString::number(hop()) << QString::number(nyquist()) << QString::fromStdString(arguments).split(" ");
+		args << QString::number(hop()) << QString::number(nyquist()) << QString::fromStdString(arguments).split(" ");
 		m_p.start(m_program, args);
 	}
 
-	virtual lb::StreamEvents compile(lb::Time _t, std::vector<float> const& _mag, std::vector<float> const& _phase, std::vector<float> const& _wave)
+	virtual lb::StreamEvents compile(lb::Time _t, std::vector<float> const& _wave)
 	{
 		lb::StreamEvents ret;
 		m_s << _t << endl;
-		foreach (float f, _mag)
-			m_s << f;
-		m_s << endl;
-		foreach (float f, _phase)
-			m_s << f;
-		m_s << endl;
 		foreach (float f, _wave)
 			m_s << f;
 		m_s << endl;

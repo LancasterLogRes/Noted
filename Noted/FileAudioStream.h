@@ -26,6 +26,8 @@ public:
 	virtual unsigned rate() const { return m_rate; }
 	virtual unsigned hop() const { return m_hop; }
 	virtual void iterate() { m_fresh = true; }
+	virtual void copyTo(unsigned _channel, Fixed<11, 21>* _p) { translateTo<Fixed<16, 16>>(_channel, _p); }
+	virtual void copyTo(unsigned _channel, Fixed<16, 16>* _p) { translateTo<Fixed<16, 16>>(_channel, _p); }
 	virtual void copyTo(unsigned _channel, Fixed<1, 15>* _p) { translateTo<float>(_channel, _p); }
 	virtual void copyTo(unsigned _channel, float* _p);
 

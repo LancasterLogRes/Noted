@@ -43,7 +43,7 @@ void CompileEventsView::init(bool _willRecord)
 			i.second->setStore(ds);
 		}
 
-		ec().init(0, Noted::audio()->hop(), toBase(2, Noted::audio()->rate()));
+		ec().init(Noted::audio()->hop(), toBase(2, Noted::audio()->rate()));
 
 		for (auto i = m_dataStores.begin(); i != m_dataStores.end(); ++i)
 			if (!i.value()->isActive())
@@ -63,7 +63,7 @@ void CompileEventsView::process(unsigned _i, lb::Time)
 		(void)0;// TODO
 	else
 		Noted::audio()->populateHop(_i, wave);
-	m_ev->m_current = m_ev->m_eventCompiler.compile(vector<float>(), vector<float>(), wave);
+	m_ev->m_current = m_ev->m_eventCompiler.compile(wave);
 }
 
 void CompileEventsView::record()

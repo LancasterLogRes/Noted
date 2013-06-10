@@ -11,7 +11,6 @@ Item {
 
 	ListModel {
 		id: graphs
-		ListElement { graphUrl: "RhythmDetectorFloat/Bark" }
 		ListElement { graphUrl: "wave" }
 	}
 

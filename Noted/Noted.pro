@@ -25,7 +25,9 @@ SOURCES += main.cpp\
     ViewMan.cpp \
     EventsMan.cpp \
 	GraphMan.cpp \
-	FileAudioStream.cpp
+	FileAudioStream.cpp \
+    GraphItem.cpp \
+    TimelineItem.cpp
 
 HEADERS  += Noted.h \
 	EventsView.h \
@@ -47,7 +49,9 @@ HEADERS  += Noted.h \
     ViewMan.h \
     EventsMan.h \
 	GraphMan.h \
-	FileAudioStream.h
+	FileAudioStream.h \
+    GraphItem.h \
+    TimelineItem.h
 
 FORMS    += Noted.ui
 

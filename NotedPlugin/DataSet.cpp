@@ -152,25 +152,21 @@ void DataSet::digest(DigestFlag _t)
 	switch (_t)
 	{
 	case MeanDigest:
-		for (unsigned i = m_digestBase; f < fe; f += m_recordLength)
+		for (unsigned i = 0; f < fe; f += m_recordLength)
 		{
 			for (unsigned r = 0; r < m_recordLength; ++r)
-			{
-				if (i == m_digestBase)
-				{
-					if (!r)
-						i = 0;
+				if (!i)
 					d[r] = f[r];
-				}
 				else
 					d[r] += f[r];
-				if (!r)
-					i++;
-				if (i == m_digestBase)
-					*d /= m_digestBase;
-			}
+			i++;
 			if (i == m_digestBase)
+			{
+				for (unsigned r = 0; r < m_recordLength; ++r)
+					d[r] /= m_digestBase;
 				d += m_recordLength;
+				i = 0;
+			}
 		}
 		m_digest[_t]->generate([](lb::foreign_vector<float> a, lb::foreign_vector<float> b, lb::foreign_vector<float> ret)
 		{

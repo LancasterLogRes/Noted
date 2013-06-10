@@ -23,11 +23,6 @@
 #include <memory>
 #include <deque>
 #include <unordered_map>
-#include <boost/functional/factory.hpp>
-#include <functional>
-#include <boost/variant.hpp>
-#include <boost/foreach.hpp>
-#include <libresample.h>
 #include <QtGui>
 #include <QtXml>
 #include <QtOpenGL>
@@ -48,16 +43,13 @@
 #include "CollateEvents.h"
 #include "CompileEventsView.h"
 #include "NotedGLWidget.h"
+#include "TimelineItem.h"
+#include "GraphItem.h"
 #include "TimelinesItem.h"
 #include "Noted.h"
 #include "ui_Noted.h"
 using namespace std;
 using namespace lb;
-
-QObject* constructTimeHelper(QQmlEngine*, QJSEngine*)
-{
-	return new TimeHelper;
-}
 
 Noted::Noted(QWidget* _p):
 	NotedFace					(_p),
@@ -78,7 +70,7 @@ Noted::Noted(QWidget* _p):
 	ui->graphsView->setModel(m_graphMan);
 	setWindowIcon(QIcon(":/Noted.png"));
 
-	qmlRegisterSingletonType<TimeHelper>("com.llr", 1, 0, "Time", constructTimeHelper);
+	qmlRegisterSingletonType<TimeHelper>("com.llr", 1, 0, "Time", TimelineItem::constructTimeHelper);
 	qmlRegisterType<GraphItem>("com.llr", 1, 0, "Graph");
 	qmlRegisterType<IntervalItem>("com.llr", 1, 0, "Interval");
 	qmlRegisterType<CursorItem>("com.llr", 1, 0, "Cursor");
