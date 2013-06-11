@@ -63,9 +63,9 @@ void AudioMan::setRate(unsigned _s)
 	m_fineCursor = 0;
 	stop();
 	m_rate = _s;
-	updateKeys();
 
-	Noted::compute()->invalidate(resampleWaveAcAnalysis());
+	sourceChanged();
+
 	Noted::compute()->resumeWork();
 
 	emit hopChanged();
@@ -82,9 +82,9 @@ void AudioMan::setHopSamples(unsigned _s)
 	m_fineCursor = 0;
 	stop();
 	m_hopSamples = _s;
-	updateKeys();
 
-	Noted::compute()->invalidate(Noted::events()->compileEventsAnalysis());
+	sourceChanged();
+
 	Noted::compute()->resumeWork();
 
 	emit hopChanged();
@@ -103,19 +103,29 @@ void AudioMan::setFilename(QString const& _filename)
 	m_filename = _filename;
 	if (!QFile(m_filename).open(QFile::ReadOnly))
 		m_filename.clear();
-	updateKeys();
 
-	Noted::compute()->invalidate(resampleWaveAcAnalysis());
+	sourceChanged();
+
 	Noted::compute()->resumeWork();
 
 	emit dataChanged();
 	emit changed();
 }
 
-void AudioMan::updateKeys()
+void AudioMan::sourceChanged()
 {
-	AudioManFace::updateKeys();
-	m_newWave.reset();
+	auto oldKey = m_key;
+	auto oldRawKey = m_rawKey;
+	updateKeys();
+
+	if (oldRawKey != m_rawKey)
+	{
+		QMutexLocker l(&x_wave);
+		m_wave.reset();
+		Noted::compute()->invalidate(resampleWaveAcAnalysis());
+	}
+	else if (oldKey != m_key)
+		Noted::compute()->invalidate(Noted::events()->compileEventsAnalysis());
 }
 
 void AudioMan::play(bool _causal)
@@ -206,21 +216,26 @@ void AudioMan::processCursorChange()
 
 void AudioMan::populateHop(unsigned _index, std::vector<float>& _h) const
 {
-	m_newWave->populateRaw(_index * hop(), _h.data(), _h.size());
+	QMutexLocker l(&x_wave);
+	if (m_wave)
+		m_wave->populateRaw(_index * hop(), _h.data(), _h.size());
 }
 
 bool AudioMan::resampleWave()
 {
 	const unsigned c_chunkSamples = 65536;
 
-	m_newWave = NotedFace::data()->dataSet(DataKeys(rawKey(), 0));
-	m_newWave->init(1, toBase(1, m_rate), 0);
+	{
+		QMutexLocker l(&x_wave);
+		m_wave = NotedFace::data()->dataSet(DataKeys(rawKey(), 0));
+		m_wave->init(1, toBase(1, m_rate), 0);
+	}
 
 	FileAudioStream as(c_chunkSamples, m_filename.toStdString(), m_rate);
 	as.init();
 	m_samples = fromBase(as.duration(), m_rate);
 
-	if (!m_newWave->haveRaw())
+	if (!m_wave->haveRaw())
 	{
 		float chunk[c_chunkSamples];
 		unsigned done = 0;
@@ -228,13 +243,13 @@ bool AudioMan::resampleWave()
 		{
 			as.copyTo(0, chunk);
 			foreign_vector<float> rs(chunk, min(m_samples - done, c_chunkSamples));
-			m_newWave->appendRecords(rs);
+			m_wave->appendRecords(rs);
 		}
 	}
 
-	m_newWave->digest(MeanRmsDigest);
-	m_newWave->digest(MinMaxInOutDigest);
-	m_newWave->done();
+	m_wave->digest(MeanRmsDigest);
+	m_wave->digest(MinMaxInOutDigest);
+	m_wave->done();
 
 	return true;
 }
@@ -260,7 +275,9 @@ bool AudioMan::serviceAudio()
 				if (rate() == m_playback->rate())
 				{
 					// no resampling necessary
-					m_newWave->populateRaw(m_fineCursor, output.data(), f);
+					QMutexLocker l(&x_wave);
+					if (m_wave)
+						m_wave->populateRaw(m_fineCursor, output.data(), f);
 				}
 				else
 				{
@@ -283,7 +300,11 @@ bool AudioMan::serviceAudio()
 					while (outPos != f)
 					{
 						// At end of current (input) buffer - refill and reset position.
-						m_newWave->populateRaw(m_nextResample, source.data(), f);
+						{
+							QMutexLocker l(&x_wave);
+							if (m_wave)
+								m_wave->populateRaw(m_nextResample, source.data(), f);
+						}
 						outPos += resample_process(m_resampler, factor, &(source[0]), f, 0, &used, &(output[outPos]), f - outPos);
 						m_nextResample += toBase(used, rate());
 					}

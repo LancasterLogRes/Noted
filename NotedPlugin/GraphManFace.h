@@ -88,7 +88,7 @@ public:
 	void unregisterGraph(QString const& _url);
 	void unregisterGraphs(QString _ec);
 
-	GraphMetadata const& find(QString const& _url) const { QReadLocker l(&x_graphs); if (m_graphs.count(_url)) return m_graphs[_url]; return NullGraphMetadata; }
+	GraphMetadata find(QString const& _url) const { QReadLocker l(&x_graphs); if (m_graphs.count(_url)) return m_graphs[_url]; return NullGraphMetadata; }
 
 signals:
 	void graphsChanged();

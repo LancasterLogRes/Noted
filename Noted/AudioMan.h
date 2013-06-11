@@ -57,11 +57,11 @@ private slots:
 private:
 	bool resampleWave();
 	bool serviceAudio();
-	virtual void updateKeys();
+	void sourceChanged();
 
 	/// Data
-	mutable QMutex x_wave;	///< NEEDED?
-	DataSetPtr m_newWave;
+	mutable QMutex x_wave;
+	DataSetPtr m_wave;
 
 	/// Playback
 	// Audio hardware i/o

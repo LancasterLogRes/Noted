@@ -182,6 +182,9 @@
            <height>0</height>
           </size>
          </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <property name="currentIndex">
           <number>0</number>
          </property>
@@ -268,6 +271,9 @@
              <height>0</height>
             </size>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="minimum">
             <number>1</number>
            </property>
@@ -300,6 +306,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="readOnly">
             <bool>true</bool>
            </property>
@@ -328,6 +337,12 @@
        </property>
        <property name="sizeType">
         <enum>QSizePolicy::MinimumExpanding</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
        </property>
       </spacer>
      </item>
@@ -375,6 +390,9 @@
      </property>
      <item row="0" column="0" rowspan="2">
       <widget class="QListWidget" name="eventCompilersList">
+       <property name="focusPolicy">
+        <enum>Qt::WheelFocus</enum>
+       </property>
        <property name="frameShape">
         <enum>QFrame::NoFrame</enum>
        </property>
@@ -431,6 +449,9 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
       </widget>
      </item>
      <item row="3" column="0">
@@ -440,6 +461,9 @@
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
        </property>
        <property name="suffix">
         <string> samples</string>
@@ -473,6 +497,9 @@
            <width>0</width>
            <height>0</height>
           </size>
+         </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
          </property>
          <property name="currentIndex">
           <number>12</number>
@@ -552,6 +579,9 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <property name="text">
           <string>16</string>
          </property>
@@ -578,6 +608,9 @@
            <italic>false</italic>
            <bold>false</bold>
           </font>
+         </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
          </property>
          <property name="text">
           <string>⟳</string>
@@ -606,6 +639,9 @@
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
        </property>
        <property name="specialValueText">
         <string>Default</string>
@@ -710,10 +746,13 @@ p, li { white-space: pre-wrap; }
        <item>
         <widget class="QToolButton" name="lockLog">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+          <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
          </property>
          <property name="text">
           <string>L</string>
@@ -729,10 +768,13 @@ p, li { white-space: pre-wrap; }
        <item>
         <widget class="QToolButton" name="clearInfo">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+          <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
          </property>
          <property name="text">
           <string>X</string>
@@ -777,32 +819,6 @@ p, li { white-space: pre-wrap; }
      <property name="spacing">
       <number>2</number>
      </property>
-     <item row="3" column="1">
-      <widget class="QPushButton" name="addLibrary">
-       <property name="maximumSize">
-        <size>
-         <width>23</width>
-         <height>23</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>+</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QPushButton" name="killLibrary">
-       <property name="maximumSize">
-        <size>
-         <width>23</width>
-         <height>23</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>-</string>
-       </property>
-      </widget>
-     </item>
      <item row="1" column="0" rowspan="3">
       <widget class="QTreeView" name="librariesView">
        <property name="frameShape">
@@ -825,6 +841,38 @@ p, li { white-space: pre-wrap; }
         </size>
        </property>
       </spacer>
+     </item>
+     <item row="2" column="1">
+      <widget class="QToolButton" name="killLibrary">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+       <property name="text">
+        <string>-</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QToolButton" name="addLibrary">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+       <property name="text">
+        <string>+</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -900,10 +948,17 @@ p, li { white-space: pre-wrap; }
       <number>0</number>
      </property>
      <item>
-      <widget class="QComboBox" name="captureDevice"/>
+      <widget class="QComboBox" name="captureDevice">
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QSpinBox" name="captureChunks">
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
        <property name="specialValueText">
         <string>Default</string>
        </property>

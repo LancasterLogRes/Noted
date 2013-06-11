@@ -56,7 +56,7 @@ Item {
 
 		Timelines {
 			id: timelines
-			property int gutterWidth: gutterHandle.x + gutterHandle.width + 45
+			property int gutterWidth: gutterHandle.x + gutterHandle.width + 55
 			objectName: 'timelines'
 			offset: view.offset
 			pitch: view.pitch
@@ -130,7 +130,7 @@ Item {
 		}
 
 		MouseArea {
-			anchors.top: header.top
+			anchors.top: timelinesHolster.top
 			anchors.bottom: graphListView.bottom
 			anchors.left: parent.left
 			anchors.right: parent.right
@@ -169,7 +169,6 @@ Item {
 			anchors.right: parent.right
 			height: 40
 			onDropped: {
-				console.log("Dropped " + drop.source.objectName + " on " + Drag.source.objectName);
 				var i = graphListView.append()
 				i.graphs.append({ 'graphUrl': drop.source.url })
 				i.visible = true

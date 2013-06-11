@@ -90,7 +90,7 @@ signals:
 	void cursorHasChanged(lb::Time);	// Called sometime after one or more cursor changes - meant for GUI updates that don't need per-millisecond updates.
 
 protected:
-	virtual void updateKeys();
+	void updateKeys();
 
 	Q_PROPERTY(lb::Time cursor READ hopCursor WRITE setHopCursor NOTIFY hopCursorChanged)
 	Q_PROPERTY(lb::Time hop READ hop NOTIFY hopChanged)

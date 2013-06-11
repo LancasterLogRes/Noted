@@ -29,19 +29,6 @@ Item {
 		handleY: 200
 	}
 
-	YLabels {
-		id: yScale
-		overflow: 10
-		y: -overflow
-		width: 50
-		anchors.left: panel.right
-		height: parent.height + overflow * 2
-		yFrom: panel.yFrom
-		yDelta: panel.yDelta
-		MouseArea {
-		}
-	}
-
 	Item {
 		id: graphHarness
 		height: parent.height
@@ -82,6 +69,42 @@ Item {
 				color: Qt.rgba(0, 0, 1, 0.25)
 				visible: graphDrop.containsDrag
 				anchors.fill: parent
+			}
+		}
+	}
+	YLabels {
+		id: yScale
+		overflow: 10
+		y: -overflow
+		width: 60
+		anchors.left: panel.right
+		height: parent.height + overflow * 2
+		yFrom: panel.yFrom
+		yDelta: panel.yDelta
+		MouseArea {
+			anchors.fill: parent
+			anchors.topMargin: parent.overflow
+			anchors.bottomMargin: parent.overflow
+			onWheel: {
+				panel.zoomScale(wheel.y, Math.exp(-wheel.angleDelta.y / (wheel.modifiers & Qt.ControlModifier ? 24000.0 : wheel.modifiers & Qt.ShiftModifier ? 240.0 : 2400.0)));
+			}
+			acceptedButtons: Qt.LeftButton
+			preventStealing: true;
+			onPressed: {
+				if (mouse.button == Qt.LeftButton && panel.yMode == 0)
+				{
+					mouse.accepted = true;
+					posDrag = mouse.y;
+					posOffset = panel.yScaleUser.x
+
+				}
+			}
+			onReleased: { posDrag = -1; }
+			property int posDrag: -1;
+			property var posOffset;
+			onPositionChanged: {
+				if (posDrag > -1)
+					panel.yScaleUser.x = (mouse.y - posDrag) * panel.yScaleUser.y / height + posOffset;
 			}
 		}
 	}

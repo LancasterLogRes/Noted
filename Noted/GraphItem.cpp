@@ -8,6 +8,7 @@ using namespace lb;
 
 inline pair<GraphMetadata, DataKeys> findGraph(QString const& _url)
 {
+	cnote << "findGraph" << _url;
 	if (GraphMetadata g = NotedFace::get()->graphs()->find(_url))
 		return make_pair(g, DataKeys(g.isRawSource() ? Noted::audio()->rawKey() : Noted::audio()->key(), g.operationKey()));
 	return pair<GraphMetadata, DataKeys>();
@@ -23,6 +24,8 @@ GraphItem::GraphItem(QQuickItem* _p): TimelineItem(_p)
 	connect(this, &GraphItem::highlightChanged, [=](){ m_invalidated = true; update(); });
 	connect(Noted::data(), &DataMan::dataComplete, [=](DataKeys k)
 	{
+		cnote << "dataComplete(" << k << ") [" << (void*)this << "] interested in" << m_url.toStdString();
+		cnote << "=" << findGraph(m_url).second;
 		if (k == findGraph(m_url).second)
 		{
 			m_invalidated = true;
@@ -286,11 +289,14 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _
 			}
 			else if (_ds->isFixed())
 			{
-				float intermed[c_recordsPerPage * _ds->recordLength()];
+				vector<float> intermed(c_recordsPerPage * _ds->recordLength());
+//				cnote << "intermed" << (void*)&intermed[0] << "+" << (c_recordsPerPage * _ds->recordLength()) << "*4";
+				for (unsigned i = 0; i < c_recordsPerPage * _ds->recordLength(); ++i)
+					intermed[i] = 0;
 				if (m_lod < 0)
-					_ds->populateRaw(pageTime(_index, _ds, m_lod), intermed, c_recordsPerPage * _ds->recordLength(), _g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::ValueAxis).range)));
+					_ds->populateRaw(pageTime(_index, _ds, m_lod), intermed.data(), c_recordsPerPage * _ds->recordLength(), _g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::ValueAxis).range)));
 				else
-					_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), intermed, c_recordsPerPage * _ds->recordLength(), _g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::ValueAxis).range)));
+					_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), intermed.data(), c_recordsPerPage * _ds->recordLength(), _g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::ValueAxis).range)));
 
 				QSGGeometryNode* n = new QSGGeometryNode();
 				n->setFlag(QSGNode::OwnedByParent, false);
@@ -300,7 +306,7 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _
 				glEnable(GL_TEXTURE_2D);
 				glGenTextures(1, &id);
 				glBindTexture(GL_TEXTURE_2D, id);
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, _ds->recordLength(), c_recordsPerPage, 0, GL_LUMINANCE, GL_FLOAT, intermed);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, _ds->recordLength(), c_recordsPerPage, 0, GL_LUMINANCE, GL_FLOAT, intermed.data());
 				glBindTexture(GL_TEXTURE_2D, 0);
 				glDisable(GL_TEXTURE_2D);
 

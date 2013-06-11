@@ -13,6 +13,15 @@ Rectangle {
 	property real yDelta: yMode == 0 || !parent.visible ? yScaleUser.y : graphHarness.highlightedGraph.yScaleHint.y
 	property int yMode: 1		// 0 -> user, 1 -> highlighted graph, 2-> all
 
+	function zoomScale(y, q) {
+		var pivot = yFrom + yDelta * (height - y) / height
+		console.log(pivot)
+		var d = q * yDelta
+		yScaleUser.x = pivot - q * yDelta * (height - y) / height
+		yScaleUser.y = d
+		yMode = 0
+	}
+
 	height: handle.y + handle.height / 2
 
 	Column {
@@ -73,8 +82,8 @@ Rectangle {
 					height: 30
 					RowLayout {
 						anchors.fill: parent
-						anchors.margins: 5
-						spacing: 5
+						anchors.margins: 4
+						spacing: 4
 						Text {
 							id: listItemText
 							Layout.fillWidth: true
@@ -84,6 +93,12 @@ Rectangle {
 								anchors.fill: parent
 								onClicked: list.currentIndex = index
 							}
+						}
+						Row {
+							anchors.top: parent.top
+							anchors.bottom: parent.bottom
+							Button { text: "~"; selected: graphHarness.children[index].yMode == 1; onClicked: graphHarness.children[index].yMode = 1 }
+							Button { text: "S"; selected: graphHarness.children[index].yMode == 0; onClicked: graphHarness.children[index].yMode = 0 }
 						}
 						Button { text: 'X'; onClicked: graphs.remove(index); }
 					}

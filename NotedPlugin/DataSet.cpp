@@ -287,6 +287,13 @@ tuple<Time, unsigned, int, Time> DataSet::bestFit(Time _from, Time _duration, un
 
 void DataSet::populateRaw(lb::Time _from, float* _out, unsigned _size, XOf _transform) const
 {
+	assert(this);
+	if (!haveRaw())
+	{
+		memset(_out, 0, sizeof(float) * _size);
+		return;
+	}
+
 	int recordBegin = (_from - m_first) / m_stride;
 	int rLen = recordLength();
 	int records = _size / rLen;
@@ -317,8 +324,17 @@ void DataSet::populateRaw(lb::Time _from, float* _out, unsigned _size, XOf _tran
 
 void DataSet::populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size, lb::XOf _transform) const
 {
+	assert(this);
+	if (!m_digest.contains(_digest))
+	{
+		memset(_out, 0, _size * sizeof(float));
+		return;
+	}
+
+/*	for (unsigned i = 0; i < _size; ++i)
+		_out[i] = 0;*/
+
 	assert(m_availableDigests & _digest);
-	assert(m_digest.contains(_digest));
 	int recordBegin = (_from - m_first) / m_stride / (m_digestBase << _level);
 	int drLen = digestSize(_digest) * recordLength();
 	int records = _size / drLen;
@@ -339,7 +355,15 @@ void DataSet::populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from
 	assert(valid <= records);
 
 	if (_transform.isIdentity())
+	{
+/*		for (unsigned i = 0; i < drLen * valid; ++i)
+		{
+			(_out + beforeStart * drLen)[i] = 0;
+			float f = (d.data() + (recordBegin + beforeStart) * drLen)[i];
+			(_out + beforeStart * drLen)[i] = f;
+		}*/
 		valcpy(_out + beforeStart * drLen, d.data() + (recordBegin + beforeStart) * drLen, drLen * valid);
+	}
 	else
 	{
 		float const* i = d.data() + (recordBegin + beforeStart) * drLen;
