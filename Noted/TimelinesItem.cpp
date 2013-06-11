@@ -171,6 +171,23 @@ QSGNode* CursorItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 		base = new QSGTransformNode;
 
 		{
+			auto geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), 2);
+			float* d = static_cast<float*>(geo->vertexData());
+			d[1] = 0;
+			d[0] = d[2] = d[3] = 1;
+			geo->setDrawingMode(GL_LINES);
+			geo->setLineWidth(3);
+
+			QSGGeometryNode* n = new QSGGeometryNode();
+			n->setGeometry(geo);
+			n->setFlag(QSGNode::OwnsGeometry);
+			QSGFlatColorMaterial* majorMaterial = new QSGFlatColorMaterial;
+			majorMaterial->setColor(QColor(255, 255, 255, 96));
+			n->setMaterial(majorMaterial);
+			n->setFlag(QSGNode::OwnsMaterial);
+			base->appendChildNode(n);
+		}
+		{
 			auto geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), 4);
 			float* d = static_cast<float*>(geo->vertexData());
 			d[0] = d[1] = d[3] = d[6] = 0;

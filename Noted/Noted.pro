@@ -60,7 +60,9 @@ OTHER_FILES += \
 	Noted.rc \
     Noted.qml \
     GraphTimeline.qml \
-    GraphSpec.qml
+    GraphSpec.qml \
+    ControlPanel.qml \
+    Button.qml
 
 RESOURCES += \
 	Noted.qrc

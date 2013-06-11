@@ -40,6 +40,10 @@ MouseArea {
 						target: graphSpec
 						opacity: 0.5
 					}
+					PropertyChanges {
+						target: footer
+						graphSpecDrag: true
+					}
 					AnchorChanges {
 						target: graphSpec
 						anchors.horizontalCenter: undefined
