@@ -25,14 +25,15 @@ void XLabelsItem::paint(QPainter* _p)
 
 void YLabelsItem::paint(QPainter* _p)
 {
-	GraphParameters<double> nor(make_pair(m_yFrom, m_yFrom + m_yDelta), height() / 24, 1);
-	for (double v = nor.from; v < nor.to; v += nor.incr)
-		if (nor.isMajor(v))
+	int h = height() - m_overflow * 2;
+	GraphParameters<double> nor(make_pair(m_yFrom, m_yFrom + m_yDelta), h / 24, 1);
+	for (double v = nor.from; v <= nor.to + nor.incr / 2; v += nor.incr)
+		if (nor.isMajor(v) && int((v - m_yFrom) / m_yDelta * h) <= h)
 		{
 			// Avoid negative pseudo-zeroes
 			if (fabs(v) < nor.incr / 2)
 				v = 0;
-			double y = (1.0 - double(v - m_yFrom) / m_yDelta) * parentItem()->height();
+			double y = (1.0 - double(v - m_yFrom) / m_yDelta) * h + m_overflow;
 			QString s = QString::number(v);
 			_p->setPen(QColor(128, 128, 128));
 			QSize z = _p->fontMetrics().boundingRect(s).size();

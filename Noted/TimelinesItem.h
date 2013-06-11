@@ -48,11 +48,14 @@ signals:
 protected:
 	Q_PROPERTY(float yFrom MEMBER m_yFrom NOTIFY changed)
 	Q_PROPERTY(float yDelta MEMBER m_yDelta NOTIFY changed)
+	Q_PROPERTY(int overflow MEMBER m_overflow NOTIFY changed)
 
 	virtual void paint(QPainter* _p);
 
 	float m_yFrom = 0;
 	float m_yDelta = 1;
+
+	int m_overflow = 0;
 };
 
 class XLabelsItem: public QQuickPaintedItem

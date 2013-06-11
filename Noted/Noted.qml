@@ -46,85 +46,86 @@ Item {
 		}
 	}
 
-	Rectangle {
-		id: gutterHandle
-		x: 200
-		anchors.top: overview.bottom
-
-		width: 30; height: 30
-		color: gutterHandleMouseArea.pressed ? Qt.rgba(0, 0, 0, 1) : Qt.rgba(0.9, 0.9, 0.9, 1)
-		border.color: 'white'
-		border.width: 5
-		MouseArea {
-			id: gutterHandleMouseArea
-			anchors.fill: parent
-			drag.target: gutterHandle
-			drag.axis: Drag.XAxis
-			drag.minimumX: 80
-		}
-	}
-
-	Timelines {
-		id: timelines
-		property int gutterWidth: gutterHandle.x + gutterHandle.width + 45
-		objectName: 'timelines'
-		offset: view.offset
-		pitch: view.pitch
+	Item {
+		id: timelinesHolster
 		anchors.top: overview.bottom
 		anchors.left: parent.left
 		anchors.right: parent.right
 		anchors.bottom: graphSpecs.top
-		anchors.leftMargin: gutterWidth
+		clip: true
 
-		XLabels {
-			id: header
-			anchors.top: parent.top
-			anchors.left: parent.left
-			anchors.right: parent.right
-			height: 30
-			offset: timelines.offset
-			pitch: timelines.pitch
-		}
+		Timelines {
+			id: timelines
+			property int gutterWidth: gutterHandle.x + gutterHandle.width + 45
+			objectName: 'timelines'
+			offset: view.offset
+			pitch: view.pitch
+			anchors.fill: parent
+			anchors.leftMargin: gutterWidth
 
-		ListView {
-			id: graphListView
-			clip: true
-			model: VisualItemModel {
-				GraphTimeline { index: 0; visible: true; objectName: "Wave"; graphs: ListModel { ListElement { graphUrl: "wave" } } }
-				GraphTimeline { index: 1 }
-				GraphTimeline { index: 2 }
-				GraphTimeline { index: 3 }
-				GraphTimeline { index: 4 }
-				GraphTimeline { index: 5 }
-				GraphTimeline { index: 6 }
-				GraphTimeline { index: 7 }
-				GraphTimeline { index: 8 }
-				GraphTimeline { index: 9 }
-			}
-			anchors.top: header.bottom
-			anchors.bottom: parent.bottom
-			anchors.left: parent.left
-			anchors.right: parent.right
-			anchors.leftMargin: -timelines.gutterWidth
-			spacing: 20
-
-			function append() {
-				for (var i in model.children)
-				{
-					var item = model.children[i];
-					if (!item.visible)
-						return item
+			Rectangle {
+				z: 2
+				id: header
+				anchors.top: parent.top
+				anchors.left: parent.left
+				anchors.leftMargin: -timelines.gutterWidth
+				anchors.right: parent.right
+				height: 30
+				color: 'white'
+				XLabels {
+					anchors.fill: parent
+					anchors.leftMargin: timelines.gutterWidth
+					offset: timelines.offset
+					pitch: timelines.pitch
 				}
-				return 0
 			}
-			function kill(itemIndex) {
-				for (var i = itemIndex; i < model.children.length && model.children[i].visible; ++i)
-					if (i < model.children.length - 1)
-						model.children[i].swap(model.children[i + 1])
-					else
-						model.children[i].kill()
-				if (currentIndex <= itemIndex)
-					currentIndex--
+
+			ListView {
+				id: graphListView
+				anchors.top: header.bottom
+				anchors.bottom: parent.bottom
+				anchors.left: parent.left
+				anchors.right: parent.right
+				anchors.leftMargin: -timelines.gutterWidth
+				anchors.topMargin: 10
+				spacing: 20
+				model: VisualItemModel {
+					GraphTimeline { index: 0; visible: true; objectName: "Wave"; graphs: ListModel { ListElement { graphUrl: "wave" } } }
+					GraphTimeline { index: 1 }
+					GraphTimeline { index: 2 }
+					GraphTimeline { index: 3 }
+					GraphTimeline { index: 4 }
+					GraphTimeline { index: 5 }
+					GraphTimeline { index: 6 }
+					GraphTimeline { index: 7 }
+					GraphTimeline { index: 8 }
+					GraphTimeline { index: 9 }
+				}
+				function append() {
+					for (var i in model.children)
+					{
+						var item = model.children[i];
+						if (!item.visible)
+							return item
+					}
+					return 0
+				}
+				function kill(itemIndex) {
+					for (var i = itemIndex; i < model.children.length && model.children[i].visible; ++i)
+						if (i < model.children.length - 1)
+							model.children[i].swap(model.children[i + 1])
+						else
+							model.children[i].kill()
+					if (currentIndex <= itemIndex)
+						currentIndex--
+				}
+			}
+			Cursor {
+				anchors.fill: parent
+				offset: timelines.offset
+				pitch: timelines.pitch
+				cursor: audio.cursor
+				cursorWidth: audio.hop
 			}
 		}
 
@@ -133,6 +134,7 @@ Item {
 			anchors.bottom: graphListView.bottom
 			anchors.left: parent.left
 			anchors.right: parent.right
+			anchors.leftMargin: timelines.gutterWidth
 			acceptedButtons: Qt.LeftButton | Qt.RightButton
 			anchors.fill: parent
 			onWheel: { view.zoomTimeline(wheel.x, Math.exp(-wheel.angleDelta.y / (wheel.modifiers & Qt.ControlModifier ? 24000.0 : wheel.modifiers & Qt.ShiftModifier ? 240.0 : 2400.0))); }
@@ -158,16 +160,6 @@ Item {
 				if (mouse.buttons & Qt.LeftButton)
 					audio.cursor = Time.madd(mouse.x, timelines.pitch, timelines.offset);
 			}
-		}
-		Cursor {
-			anchors.top: header.bottom
-			anchors.bottom: parent.bottom
-			anchors.left: parent.left
-			anchors.right: parent.right
-			offset: timelines.offset
-			pitch: timelines.pitch
-			cursor: audio.cursor
-			cursorWidth: audio.hop
 		}
 
 		DropArea {
@@ -208,6 +200,25 @@ Item {
 					}
 				]
 			}
+		}
+	}
+
+	Rectangle {
+		id: gutterHandle
+		x: 200
+		anchors.top: overview.bottom
+		anchors.topMargin: 5
+
+		width: 30; height: 30
+		color: gutterHandleMouseArea.pressed ? Qt.rgba(0, 0, 0, 1) : Qt.rgba(0.9, 0.9, 0.9, 1)
+		border.color: 'white'
+		border.width: 5
+		MouseArea {
+			id: gutterHandleMouseArea
+			anchors.fill: parent
+			drag.target: gutterHandle
+			drag.axis: Drag.XAxis
+			drag.minimumX: 80
 		}
 	}
 

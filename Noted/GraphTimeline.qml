@@ -31,11 +31,15 @@ Item {
 
 	YLabels {
 		id: yScale
+		overflow: 10
+		y: -overflow
 		width: 50
 		anchors.left: panel.right
-		height: parent.height + 20
+		height: parent.height + overflow * 2
 		yFrom: panel.yFrom
 		yDelta: panel.yDelta
+		MouseArea {
+		}
 	}
 
 	Item {
