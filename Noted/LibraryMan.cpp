@@ -17,6 +17,11 @@ LibraryMan::LibraryMan()
 
 LibraryMan::~LibraryMan()
 {
+	unloadAll();
+}
+
+void LibraryMan::unloadAll()
+{
 	cnote << "Unloading libraries...";
 	while (m_libraries.size())
 	{

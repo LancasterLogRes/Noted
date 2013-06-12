@@ -40,7 +40,7 @@ public:
 	typedef std::vector<Axis> Axes;
 
 	GraphMetadata() {}
-	GraphMetadata(DataKey _operationKey, Axes const& _axes = { { "", lb::XOf(), lb::AutoRange } }, std::string const& _title = "Anonymous", bool _rawSource = false): m_rawSource(_rawSource), m_operationKey(_operationKey), m_title(_title), m_axes(_axes) {}
+	GraphMetadata(DataKey _operationKey, Axes const& _axes = { { "", lb::XOf(), lb::Range(0,1) } }, std::string const& _title = "Anonymous", bool _rawSource = false): m_rawSource(_rawSource), m_operationKey(_operationKey), m_title(_title), m_axes(_axes) {}
 
 	bool isNull() const { return m_title.empty() || m_axes.empty(); }
 	bool isValid() const { return !isNull(); }

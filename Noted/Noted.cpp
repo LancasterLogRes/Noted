@@ -160,6 +160,9 @@ Noted::~Noted()
 	qDebug() << "Disabling worker(s)...";
 	compute()->suspendWork();
 
+	qDebug() << "Unloading all libraries...";
+	libs()->unloadAll();
+
 	qDebug() << "Killing (legacy) Prerendereds...";
 	for (auto i: findChildren<Prerendered*>())
 		delete i;

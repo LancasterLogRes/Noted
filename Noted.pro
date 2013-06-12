@@ -6,8 +6,9 @@ SUBDIRS = \
 native: SUBDIRS += \
 	Grapher \
 	NotedPlugin \
-    ExamplePlugin \
-    EventsEditor \
+	ExamplePlugin \
+	ExampleVizPlugin \
+	EventsEditor \
     Noted \
     TestPlugin \
     PluginTest \

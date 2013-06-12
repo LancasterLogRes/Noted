@@ -32,7 +32,7 @@ void foo(DataSet* ds)
 {
   ds->init(...)
   if (!ds->haveRaw()) { ... ds->append() ... }
-  ds->digest(...);
+  ds->ensureHaveDigest(...);
   ds->done();
 }
 @endcode
@@ -49,7 +49,7 @@ public:
 	void appendRecord(lb::Time _t, lb::foreign_vector<float> const& _vs);
 	void appendRecords(lb::foreign_vector<float> const& _vs);
 
-	void digest(DigestFlag _type);
+	void ensureHaveDigest(DigestFlag _type);
 	void done();
 
 	bool haveRaw() const { return m_raw.isGood() && (!m_toc.isMapped() || m_toc.isGood()); }
@@ -69,14 +69,14 @@ public:
 
 	// Methods for extracting data when isMonotonic() && isFixed()
 	std::tuple<lb::Time, unsigned, int, lb::Time> bestFit(lb::Time _from, lb::Time _duration, unsigned _idealRecords) const;
-	void populateRaw(lb::Time _from, float* _out, unsigned _size, lb::XOf _transform = lb::XOf()) const;
-	void populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size, lb::XOf _transform = lb::XOf()) const;
+	void populateRaw(lb::Time _from, lb::foreign_vector<float> const& _out, lb::XOf _transform = lb::XOf()) const;
+	void populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from, lb::foreign_vector<float> const& _out, lb::XOf _transform = lb::XOf()) const;
 
 	// Methods for extracting data when isFixed()
-	void populateRaw(lb::Time _latest, lb::foreign_vector<float> _dest) const;
+//	void populateRaw(lb::Time _latest, lb::foreign_vector<float> _dest) const;
 
 	// Methods for extracting data when !isFixed()
-	std::vector<float> readRaw(lb::Time _latest) const;
+//	std::vector<float> readRaw(lb::Time _latest) const;
 
 private:
 	typedef uint32_t TocRef;

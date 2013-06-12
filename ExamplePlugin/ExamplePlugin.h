@@ -23,11 +23,7 @@
 #include <Common/MemberCollection.h>
 #include <NotedPlugin/NotedPlugin.h>
 
-class QDockWidget;
-class QWidget;
-class GLView;
-
-class ExamplePlugin: public NotedPlugin
+class ExamplePlugin: public NotedPlugin, public JobSource
 {
 	Q_OBJECT
 
@@ -35,12 +31,10 @@ public:
 	ExamplePlugin();
 	~ExamplePlugin();
 
-	float scale;
-	float bias;
-	LIGHTBOX_PROPERTIES(scale, bias);
-	virtual void onPropertiesChanged();
+	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const& _finished);
+	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const& _finished);
 
 private:
-	QDockWidget* m_vizDock;
-	GLView* m_glView;
+	CausalAnalysisPtr m_analysis;
+	GraphMetadata m_graph;
 };

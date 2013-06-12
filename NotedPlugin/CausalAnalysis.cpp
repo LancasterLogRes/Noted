@@ -25,6 +25,6 @@ void CausalAnalysis::analyze(unsigned _from, unsigned _count, lb::Time _hop)
 	for (unsigned i = 0; i < _count && done(i); ++i)
 	{
 		process(_from + i, _hop * (_from + i));
-		record();
+		record(_from + i, _hop * (_from + i));
 	}
 }

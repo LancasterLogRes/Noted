@@ -48,8 +48,6 @@ public:
 	virtual AuxLibraryFace* newAuxLibrary() { return nullptr; }
 	virtual void readSettings(QSettings&) {}
 	virtual void writeSettings(QSettings&) {}
-	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const&) { return AcausalAnalysisPtrs(); }
-	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&) { return CausalAnalysisPtrs(); }
 	virtual QString titleAmendment(QString const& _title) const { return _title; }
 	virtual lb::MemberMap propertyMap() const { return lb::NullMemberMap; }
 	virtual void onPropertiesChanged() {}

@@ -31,10 +31,7 @@ int main(int argc, char *argv[])
 {
 	if (!lb::UnitTesting<100>::go())
 		return -1;
-//	QApplication::setAttribute(Qt::AA_X11InitThreads);
-#ifdef Q_WS_X11
-	XInitThreads();
-#endif
+	QApplication::setAttribute(Qt::AA_X11InitThreads);
 	QApplication a(argc, argv);
 	Noted w;
 #if defined(Q_WS_S60)

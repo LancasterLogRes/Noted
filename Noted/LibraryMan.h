@@ -43,6 +43,8 @@ public:
 	void readSettings(QSettings& _s);
 	void writeSettings(QSettings& _s);
 
+	void unloadAll();
+
 public slots:
 	void addLibrary(QString const& _name, bool _isEnabled = true);
 	void removeLibrary(QString const& _name);

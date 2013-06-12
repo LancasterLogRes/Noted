@@ -66,7 +66,7 @@ void CompileEventsView::process(unsigned _i, lb::Time)
 	m_ev->m_current = m_ev->m_eventCompiler.compile(wave);
 }
 
-void CompileEventsView::record()
+void CompileEventsView::record(unsigned, Time)
 {
 	m_ev->appendEvents(m_ev->m_current);
 }

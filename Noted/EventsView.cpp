@@ -299,8 +299,8 @@ void EventsView::exportGraph()
 	if (out)
 	{
 		out << "index,time";
-		Time h = NotedFace::audio()->hop();
-		unsigned tiMax = 0;
+//		Time h = NotedFace::audio()->hop();
+	//	unsigned tiMax = 0;
 
 /*		vector<vector<float> const*> charts;
 		for (GraphSpec* g: m_eventCompiler.asA<EventCompilerImpl>().graphs())
@@ -325,13 +325,13 @@ void EventsView::exportGraph()
 			}*/
 
 		out << endl;
-
+/*
 		Time t = 0;
 		unsigned ti = 0;
 		auto inner = [&]()
 		{
 			out << ti << "," << toSeconds(t);
-/*			for (vector<float> const* s: charts)
+			for (vector<float> const* s: charts)
 				out << "," << (ti < s->size() ? s->at(ti) : 0);
 			for (map<int, vector<float>> const* s: spectra)
 			{
@@ -340,9 +340,9 @@ void EventsView::exportGraph()
 					--si;
 				for (auto f: si->second)
 					out << "," << f;
-			}*/
+			}
 			out << endl;
-		};
+		};*/
 
 /*		if (charts.size())
 			for (ti = 0; ti < tiMax; ++ti, t += h)

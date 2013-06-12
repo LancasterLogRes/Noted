@@ -218,7 +218,7 @@ void AudioMan::populateHop(unsigned _index, std::vector<float>& _h) const
 {
 	QMutexLocker l(&x_wave);
 	if (m_wave)
-		m_wave->populateRaw(_index * hop(), _h.data(), _h.size());
+		m_wave->populateRaw(_index * hop(), &_h);
 }
 
 bool AudioMan::resampleWave()
@@ -247,8 +247,8 @@ bool AudioMan::resampleWave()
 		}
 	}
 
-	m_wave->digest(MeanRmsDigest);
-	m_wave->digest(MinMaxInOutDigest);
+	m_wave->ensureHaveDigest(MeanRmsDigest);
+	m_wave->ensureHaveDigest(MinMaxInOutDigest);
 	m_wave->done();
 
 	return true;
@@ -277,7 +277,7 @@ bool AudioMan::serviceAudio()
 					// no resampling necessary
 					QMutexLocker l(&x_wave);
 					if (m_wave)
-						m_wave->populateRaw(m_fineCursor, output.data(), f);
+						m_wave->populateRaw(m_fineCursor, foreign_vector<float>(output.data(), f));
 				}
 				else
 				{
@@ -303,7 +303,7 @@ bool AudioMan::serviceAudio()
 						{
 							QMutexLocker l(&x_wave);
 							if (m_wave)
-								m_wave->populateRaw(m_nextResample, source.data(), f);
+								m_wave->populateRaw(m_nextResample, foreign_vector<float>(source.data(), f));
 						}
 						outPos += resample_process(m_resampler, factor, &(source[0]), f, 0, &used, &(output[outPos]), f - outPos);
 						m_nextResample += toBase(used, rate());

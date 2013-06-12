@@ -48,7 +48,7 @@ public:// TODO: move to protected & introduce non-virtual public API.
 	virtual void fini(bool _completed, bool _didRecord) { (void)_completed; (void)_didRecord; }
 	virtual void noteBatch(unsigned, unsigned) {}
 	virtual void process(unsigned, lb::Time) {}
-	virtual void record() {}
+	virtual void record(unsigned, lb::Time) {}
 };
 
 typedef std::shared_ptr<CausalAnalysis> CausalAnalysisPtr;

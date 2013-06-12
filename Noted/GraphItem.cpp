@@ -180,11 +180,11 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _
 			{
 				if (m_lod < 0 || _ds->haveDigest(MeanDigest))
 				{
-					float intermed[c_recordsPerPage * _ds->recordLength()];
+					vector<float> intermed(c_recordsPerPage * _ds->recordLength());
 					if (m_lod < 0)
-						_ds->populateRaw(pageTime(_index, _ds, m_lod), intermed, c_recordsPerPage * _ds->recordLength(), _g.axis(GraphMetadata::ValueAxis).transform);
+						_ds->populateRaw(pageTime(_index, _ds, m_lod), &intermed, _g.axis(GraphMetadata::ValueAxis).transform);
 					else
-						_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), intermed, c_recordsPerPage * _ds->recordLength(), _g.axis(GraphMetadata::ValueAxis).transform);
+						_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed, _g.axis(GraphMetadata::ValueAxis).transform);
 
 
 					QSGGeometryNode* n = new QSGGeometryNode();
@@ -210,8 +210,8 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _
 				if (m_lod >= 0 && _ds->haveDigest(MinMaxInOutDigest))
 				{
 					unsigned digestZ = digestSize(MinMaxInOutDigest);
-					float intermed[c_recordsPerPage * digestZ];
-					_ds->populateDigest(MinMaxInOutDigest, m_lod, pageTime(_index, _ds, m_lod), intermed, c_recordsPerPage * _ds->recordLength() * digestZ, _g.axis(GraphMetadata::ValueAxis).transform);
+					vector<float> intermed(c_recordsPerPage * _ds->recordLength() * digestZ);
+					_ds->populateDigest(MinMaxInOutDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed, _g.axis(GraphMetadata::ValueAxis).transform);
 
 					QSGGeometryNode* n = new QSGGeometryNode();
 					n->setFlag(QSGNode::OwnedByParent, false);
@@ -238,8 +238,8 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _
 				if (m_lod >= 0 && _ds->haveDigest(MeanRmsDigest))
 				{
 					unsigned digestZ = digestSize(MeanRmsDigest);
-					float intermed[c_recordsPerPage * digestZ];
-					_ds->populateDigest(MeanRmsDigest, m_lod, pageTime(_index, _ds, m_lod), intermed, c_recordsPerPage * _ds->recordLength() * digestZ, _g.axis(GraphMetadata::ValueAxis).transform);
+					vector<float> intermed(c_recordsPerPage * _ds->recordLength() * digestZ);
+					_ds->populateDigest(MeanRmsDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed, _g.axis(GraphMetadata::ValueAxis).transform);
 
 #if 0
 					QSGGeometry* geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), records);
@@ -294,9 +294,9 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _
 				for (unsigned i = 0; i < c_recordsPerPage * _ds->recordLength(); ++i)
 					intermed[i] = 0;
 				if (m_lod < 0)
-					_ds->populateRaw(pageTime(_index, _ds, m_lod), intermed.data(), c_recordsPerPage * _ds->recordLength(), _g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::ValueAxis).range)));
+					_ds->populateRaw(pageTime(_index, _ds, m_lod), &intermed, _g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::ValueAxis).range)));
 				else
-					_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), intermed.data(), c_recordsPerPage * _ds->recordLength(), _g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::ValueAxis).range)));
+					_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed, _g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::ValueAxis).range)));
 
 				QSGGeometryNode* n = new QSGGeometryNode();
 				n->setFlag(QSGNode::OwnedByParent, false);
@@ -399,6 +399,22 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 			gmx.translate(0, -yf);
 			base->setMatrix(gmx);
 		}
+	}
+	else
+	{
+		QSGGeometryNode* n = new QSGGeometryNode();
+		n->setFlag(QSGNode::OwnedByParent, false);
+		n->setGeometry(spectrumQuad());
+
+		QSGFlatColorMaterial* m = new QSGFlatColorMaterial;
+		m->setColor(QColor::fromHsvF(g ? 0.1 : 0, 1, 1, 0.25));
+		n->setMaterial(m);
+		n->setFlag(QSGNode::OwnsMaterial);
+
+		base->appendChildNode(n);
+		QMatrix4x4 gmx;
+		gmx.scale(width(), height());
+		base->setMatrix(gmx);
 	}
 
 	return base;

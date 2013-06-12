@@ -36,7 +36,7 @@ public:
 
 	virtual void init(bool _willRecord);
 	virtual void process(unsigned _i, lb::Time);
-	virtual void record();
+	virtual void record(unsigned _i, lb::Time);
 	virtual void fini(bool _completed, bool _didRecord);
 
 	lb::EventCompiler ec() const;

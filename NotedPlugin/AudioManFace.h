@@ -7,6 +7,9 @@
 #include "Common.h"
 #include "AcausalAnalysis.h"
 
+class DataSet;
+typedef std::shared_ptr<DataSet> DataSetPtr;
+
 class AudioManFace: public QObject
 {
 	Q_OBJECT
@@ -19,7 +22,9 @@ public:
 	DataKey key() const { return m_key; }
 	DataKey rawKey() const { return m_rawKey; }
 
+	virtual DataSetPtr wave() const = 0;
 	virtual void populateHop(unsigned _index, std::vector<float>& _h) const = 0;
+	virtual lb::foreign_vector<float const> cursorWaveWindow() const { return lb::foreign_vector<float const>(); } // TODO
 
 	QString const& filename() const { return m_filename; }
 	inline unsigned rate() const { return m_rate; }
@@ -34,10 +39,6 @@ public:
 
 	AcausalAnalysisPtr resampleWaveAcAnalysis() const { return m_resampleWaveAcAnalysis; }
 
-	// TODO: KILL
-	virtual lb::foreign_vector<float const> waveWindow(int) const { return lb::foreign_vector<float const>(); }
-	virtual bool waveBlock(lb::Time, lb::Time, lb::foreign_vector<float>, bool = false) const { return false; }
-
 	/// Playback [consider splitting off]
 	virtual bool isPlaying() const { return false; }
 	inline bool isAcausal() const { return m_isAcausal; }
@@ -49,7 +50,6 @@ public:
 	inline lb::Time cursor() const { return m_fineCursor; }
 	inline lb::Time hopCursor() const { return quantized(m_fineCursor); }
 	inline unsigned cursorIndex() const { return index(cursor()); }
-	lb::foreign_vector<float const> cursorWaveWindow() const { return waveWindow(cursorIndex()); }
 
 public slots:
 	/// Data

@@ -163,11 +163,8 @@ CausalAnalysisPtrs ComputeMan::ripeCausalAnalysis(CausalAnalysisPtr const& _fini
 {
 	CausalAnalysisPtrs ret;
 
-	// Go through all other things that can give CAs; at this point, it's just the plugins
+	// Go through all job sources...
 	CausalAnalysisPtrs acc;
-	for (RealLibraryPtr const& l: Noted::libs()->libraries())
-		if (l->plugin && (acc = l->plugin->ripeCausalAnalysis(_finished)).size())
-			ret.insert(ret.end(), acc.begin(), acc.end());
 	for (JobSource* s: m_sources)
 		if ((acc = s->ripeCausalAnalysis(_finished)).size())
 			ret.insert(ret.end(), acc.begin(), acc.end());
@@ -179,12 +176,8 @@ AcausalAnalysisPtrs ComputeMan::ripeAcausalAnalysis(AcausalAnalysisPtr const& _f
 {
 	AcausalAnalysisPtrs ret;
 
-	// Go through all other things that can give CAs; at this point, it's just the plugins
-	// TODO: Libraries should use JobSource API.
+	// Go through all job sources...
 	AcausalAnalysisPtrs acc;
-	for (RealLibraryPtr const& l: Noted::libs()->libraries())
-		if (l->plugin && (acc = l->plugin->ripeAcausalAnalysis(_finished)).size())
-			ret.insert(ret.end(), acc.begin(), acc.end());
 	for (JobSource* s: m_sources)
 		if ((acc = s->ripeAcausalAnalysis(_finished)).size())
 			ret.insert(ret.end(), acc.begin(), acc.end());

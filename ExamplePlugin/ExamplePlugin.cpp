@@ -18,125 +18,88 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <array>
-#include <iostream>
-#include <QtGui>
-#include <QtWidgets>
-
-#ifdef Q_OS_MAC
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
-#else
-#include <GL/gl.h>
-#include <GL/glu.h>
-#endif
-
+#include <NotedPlugin/NotedFace.h>
+#include <Preprocessors/Spectral.h>
 #include "ExamplePlugin.h"
-
 using namespace std;
 using namespace lb;
 
 NOTED_PLUGIN(ExamplePlugin);
 
-class GLView: public QGLWidgetProxy
+class ExampleAnalysis: public CausalAnalysis
 {
-	friend class ExamplePlugin;
-
 public:
-	GLView(ExamplePlugin* _p): m_p(_p) {}
-
-	virtual void initializeGL()
+	ExampleAnalysis(): CausalAnalysis("ExampleAnalysis") {}
+	virtual void init(bool _willRecord)
 	{
-		glDisable(GL_DEPTH_TEST);
-		glGenTextures (1, m_texture);
-		for (int i = 0; i < 1; ++i)
+		m_ds.reset();
+		m_lastRecord.resize(1);
+		if (_willRecord)
 		{
-			glBindTexture (GL_TEXTURE_1D, m_texture[i]);
-			glTexParameteri (GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri (GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			m_ds = NotedFace::data()->dataSet(DataKeys(NotedFace::audio()->key(), qHash("ExamplePlugin/ZeroCrossings")));
+			m_ds->init(1, NotedFace::audio()->hop());
 		}
-		glEnable(GL_TEXTURE_1D);
-	}
-	GLuint m_texture[2];
-
-	virtual void resizeGL(int _w, int _h)
-	{
-		glViewport(0, 0, _w, _h);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(-1, 1, 1, -1, -1, 1);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
 	}
 
-	virtual bool needsRepaint() const
+	virtual void fini(bool _completed, bool _didRecord)
 	{
-		if (m_lastCursor == NotedFace::audio()->cursorIndex() && !m_propertiesChanged)
-			return false;
-		m_lastCursor = NotedFace::audio()->cursorIndex();
-		m_propertiesChanged = false;
-		return true;
-	}
-
-	virtual void paintGL()
-	{
-//		cbug(42) << __PRETTY_FUNCTION__;
-		glLoadIdentity();
+		if (_completed && _didRecord && m_ds)
 		{
-			auto w = NotedFace::audio()->cursorWaveWindow();
-			glBindTexture(GL_TEXTURE_1D, m_texture[0]);
-			float scale = m_p->scale;
-			float bias = m_p->bias;
-			glPixelTransferf(GL_RED_SCALE, scale);
-			glPixelTransferf(GL_GREEN_SCALE, scale);
-			glPixelTransferf(GL_BLUE_SCALE, scale);
-			glPixelTransferf(GL_RED_BIAS, bias);
-			glPixelTransferf(GL_GREEN_BIAS, bias);
-			glPixelTransferf(GL_BLUE_BIAS, bias);
-			glTexImage1D(GL_TEXTURE_1D, 0, 1, w.size(), 0, GL_LUMINANCE, GL_FLOAT, w.data());
+			m_ds->ensureHaveDigest(MeanDigest);
+			m_ds->done();
 		}
+	}
 
-/*		if (auto p = NotedFace::get()->deltaPhaseSpectrum(NotedFace::audio()->cursorIndex(), 1))
-		{
-			auto s = NotedFace::get()->magSpectrum(NotedFace::audio()->cursorIndex(), 1);
-			unsigned i = maxInRange(s.begin(), s.end()) - s.begin();
-			glColor3ubv(Color(p[i], 1, 1).toRGBA8().data());
-		}*/
+	virtual void process(unsigned, Time _t)
+	{
+		std::vector<float> vs(NotedFace::audio()->hopSamples());
+		NotedFace::audio()->wave()->populateRaw(_t, &vs);
 
-		glBindTexture(GL_TEXTURE_1D, m_texture[0]);
-		glBegin(GL_TRIANGLE_STRIP);
-		glTexCoord1f(0.f);
-		glVertex3f(-1.0f, -1.0f, 0.0f);
-		glTexCoord1f(1.f);
-		glVertex3f( 1.0f, -1.0f, 0.0f);
-		glTexCoord1f(0.f);
-		glVertex3f(-1.0f, 1.0f, 0.0f);
-		glTexCoord1f(1.f);
-		glVertex3f( 1.0f, 1.0f, 0.0f);
-		glEnd();
+		// Count zero-crossings.
+		int zeroXs = 0;
+		for (auto v: vs)
+			if ((v > 0) == !(zeroXs % 2))
+				++zeroXs;
+
+		m_lastRecord[0] = zeroXs / float(vs.size() / 2);
+	}
+
+	virtual void record(unsigned, Time _t)
+	{
+		cnote << m_lastRecord;
+		if (m_ds && !m_ds->haveRaw())
+			m_ds->appendRecord(_t, &m_lastRecord);
 	}
 
 private:
-	mutable unsigned m_lastCursor;
-	mutable bool m_propertiesChanged;
-	ExamplePlugin* m_p;
+	DataSetPtr m_ds;
+	vector<float> m_lastRecord;
 };
 
-ExamplePlugin::ExamplePlugin(): NotedPlugin(), scale(2.f), bias(0.5f)
+ExamplePlugin::ExamplePlugin():
+	m_analysis(new ExampleAnalysis)
 {
-	m_glView = new GLView(this);
-	m_vizDock = new QDockWidget("Viz", NotedFace::get());
-	m_vizDock->setWidget(NotedFace::get()->addGLWidget(m_glView, m_vizDock));
-	m_vizDock->setFeatures(m_vizDock->features()|QDockWidget::DockWidgetVerticalTitleBar);
-	NotedFace::get()->addDockWidget(Qt::RightDockWidgetArea, m_vizDock);
+	m_graph = GraphMetadata(qHash("ExamplePlugin/ZeroCrossings"), { { "Proportion", XOf(), Range(0, 1) } }, "Zero-Crossings", false );
+	NotedFace::compute()->registerJobSource(this);
+	NotedFace::graphs()->registerGraph("ExamplePlugin/ZeroCrossings", m_graph);
 }
 
 ExamplePlugin::~ExamplePlugin()
 {
-	delete m_vizDock;
+	NotedFace::graphs()->unregisterGraph("ExamplePlugin/ZeroCrossings");
+	NotedFace::compute()->unregisterJobSource(this);
 }
 
-void ExamplePlugin::onPropertiesChanged()
+CausalAnalysisPtrs ExamplePlugin::ripeCausalAnalysis(CausalAnalysisPtr const& _finished)
 {
-	m_glView->m_propertiesChanged = true;
+	if (_finished == NotedFace::audio()->resampleWaveAcAnalysis())
+		return { m_analysis };
+	return CausalAnalysisPtrs();
+}
+
+AcausalAnalysisPtrs ExamplePlugin::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finished)
+{
+	if (_finished == NotedFace::audio()->resampleWaveAcAnalysis())
+		return { m_analysis };
+	return AcausalAnalysisPtrs();
 }

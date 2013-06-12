@@ -42,7 +42,7 @@ void DataSetDataStore::fini(DigestFlags _digests)
 	{
 		for (DigestFlags f = _digests; f; f &= ~f.highestSet())
 			if (!m_s->haveDigest(f.highestSet()))
-				m_s->digest(f.highestSet());
+				m_s->ensureHaveDigest(f.highestSet());
 		m_s->done();
 	}
 	m_s = nullptr;
@@ -130,7 +130,7 @@ void DataSet::done()
 	DataMan::get()->noteDone(DataKeys(m_sourceKey, m_operationKey));
 }
 
-void DataSet::digest(DigestFlag _t)
+void DataSet::ensureHaveDigest(DigestFlag _t)
 {
 	assert(m_stride);
 	assert(m_recordLength);
@@ -285,71 +285,70 @@ tuple<Time, unsigned, int, Time> DataSet::bestFit(Time _from, Time _duration, un
 	}
 }
 
-void DataSet::populateRaw(lb::Time _from, float* _out, unsigned _size, XOf _transform) const
+void DataSet::populateRaw(lb::Time _from, foreign_vector<float> const& _out, XOf _transform) const
 {
 	assert(this);
 	if (!haveRaw())
 	{
-		memset(_out, 0, sizeof(float) * _size);
+		memset(_out.data(), 0, sizeof(float) * _out.size());
 		return;
 	}
 
 	int recordBegin = (_from - m_first) / m_stride;
 	int rLen = recordLength();
-	int records = _size / rLen;
-	assert((int)_size == records * rLen);
+	int records = _out.size() / rLen;
+	assert((int)_out.size() == records * rLen);
 
 	foreign_vector<float const> d = m_raw.data<float>();
 	int recordsAvailable = d.size() / rLen;
 
 	// Beginning part - anything before our records begin should be zeroed.
 	int beforeStart = clamp(-recordBegin, 0, records);
-	memset(_out, 0, sizeof(float) * rLen * beforeStart);
+	memset(_out.data(), 0, sizeof(float) * rLen * beforeStart);
 
 	// End part - anything after our records end should be zeroed.
 	int overEnd = clamp(recordBegin + records - recordsAvailable, 0, records);
-	memset(_out + (records - overEnd) * rLen, 0, sizeof(float) * rLen * overEnd);
+	memset(_out.data() + (records - overEnd) * rLen, 0, sizeof(float) * rLen * overEnd);
 
 	int valid = records - beforeStart - overEnd;
 	assert(valid <= records);
 	if (_transform.isIdentity())
-		valcpy(_out + beforeStart * rLen, d.data() + (recordBegin + beforeStart) * rLen, rLen * valid);
+		valcpy(_out.data() + beforeStart * rLen, d.data() + (recordBegin + beforeStart) * rLen, rLen * valid);
 	else
 	{
 		float const* i = d.data() + (recordBegin + beforeStart) * rLen;
-		for (float* o = _out + beforeStart * rLen, *oe = _out + (beforeStart + valid) * rLen; o != oe; ++o, ++i)
+		for (float* o = _out.data() + beforeStart * rLen, *oe = _out.data() + (beforeStart + valid) * rLen; o != oe; ++o, ++i)
 			*o = _transform.apply(*i);
 	}
 }
 
-void DataSet::populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size, lb::XOf _transform) const
+void DataSet::populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from, foreign_vector<float> const& _out, lb::XOf _transform) const
 {
 	assert(this);
 	if (!m_digest.contains(_digest))
 	{
-		memset(_out, 0, _size * sizeof(float));
+		memset(_out.data(), 0, _out.size() * sizeof(float));
 		return;
 	}
 
 /*	for (unsigned i = 0; i < _size; ++i)
 		_out[i] = 0;*/
-
 	assert(m_availableDigests & _digest);
 	int recordBegin = (_from - m_first) / m_stride / (m_digestBase << _level);
 	int drLen = digestSize(_digest) * recordLength();
-	int records = _size / drLen;
-	assert((int)_size == records * drLen);
+	int records = _out.size() / drLen;
+	assert((int)_out.size() == records * drLen);
 
 	foreign_vector<float> d = m_digest[_digest]->data<float>(_level);
 	int recordsAvailable = d.size() / drLen;
 
 	// Beginning part - anything before our records begin should be zeroed.
 	int beforeStart = clamp(-recordBegin, 0, records);
-	memset(_out, 0, sizeof(float) * drLen * beforeStart);
+	memset(_out.data(), 0, sizeof(float) * drLen * beforeStart);
 
 	// End part - anything after our records end should be zeroed.
 	int overEnd = clamp(recordBegin + records - recordsAvailable, 0, records);
-	memset(_out + (records - overEnd) * drLen, 0, sizeof(float) * drLen * overEnd);
+	memset(_out.data() + (records - overEnd) * drLen, 0, sizeof(float) * drLen * overEnd);
 
 	int valid = records - beforeStart - overEnd;
 	assert(valid <= records);
@@ -362,12 +361,12 @@ void DataSet::populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from
 			float f = (d.data() + (recordBegin + beforeStart) * drLen)[i];
 			(_out + beforeStart * drLen)[i] = f;
 		}*/
-		valcpy(_out + beforeStart * drLen, d.data() + (recordBegin + beforeStart) * drLen, drLen * valid);
+		valcpy(_out.data() + beforeStart * drLen, d.data() + (recordBegin + beforeStart) * drLen, drLen * valid);
 	}
 	else
 	{
 		float const* i = d.data() + (recordBegin + beforeStart) * drLen;
-		for (float* o = _out + beforeStart * drLen, *oe = _out + (beforeStart + valid) * drLen; o != oe; ++o, ++i)
+		for (float* o = _out.data() + beforeStart * drLen, *oe = _out.data() + (beforeStart + valid) * drLen; o != oe; ++o, ++i)
 			*o = _transform.apply(*i);
 	}
 

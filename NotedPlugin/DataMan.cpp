@@ -61,14 +61,14 @@ void DataMan::populateRaw(DataKeys _key, lb::Time _from, float* _out, unsigned _
 {
 	QMutexLocker l(&x_data);
 	if (m_data.contains(_key) && m_data[_key]->haveRaw())
-		m_data[_key]->populateRaw(_from, _out, _size);
+		m_data[_key]->populateRaw(_from, foreign_vector<float>(_out, _size));
 }
 
 void DataMan::populateDigest(DataKeys _key, DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size) const
 {
 	QMutexLocker l(&x_data);
 	if (m_data.contains(_key) && m_data[_key]->haveRaw())
-		m_data[_key]->populateDigest(_digest, _level, _from, _out, _size);
+		m_data[_key]->populateDigest(_digest, _level, _from, foreign_vector<float>(_out, _size));
 }
 
 unsigned DataMan::recordLength(DataKeys _key) const
