@@ -19,6 +19,8 @@
  */
 
 #include <iostream>
+#include <QDateTime>
+#include <QFile>
 #include <QDir>
 #include "Cache.h"
 using namespace std;
@@ -40,9 +42,9 @@ bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, s
 {
 	reset();
 
-	QString p = (QDir::tempPath() + "/Noted-%1").arg(_sourceKey, 8, 16, QChar('0'));
+	QString p = QDir::tempPath() + "/Noted.cache";
 	QDir().mkpath(p);
-	QString f = (p + "/%1-%2").arg(_operationKey, 8, 16, QChar('0')).arg(_extraKey, 8, 16, QChar('0'));
+	QString f = (p + "/%1-%2-%3").arg(_sourceKey, 8, 16, QChar('0')).arg(_operationKey, 8, 16, QChar('0')).arg(_extraKey, 8, 16, QChar('0'));
 	m_file.setFileName(f);
 	m_file.open(QIODevice::ReadWrite);
 
@@ -82,9 +84,9 @@ bool Cache::init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey)
 {
 	reset();
 
-	QString p = (QDir::tempPath() + "/Noted-%1").arg(_sourceKey, 8, 16, QChar('0'));
+	QString p = QDir::tempPath() + "/Noted.cache";
 	QDir().mkpath(p);
-	QString f = (p + "/%1-%2").arg(_operationKey, 8, 16, QChar('0')).arg(_extraKey, 8, 16, QChar('0'));
+	QString f = (p + "/%1-%2-%3").arg(_sourceKey, 8, 16, QChar('0')).arg(_operationKey, 8, 16, QChar('0')).arg(_extraKey, 8, 16, QChar('0'));
 	m_file.setFileName(f);
 	m_file.open(QIODevice::ReadWrite);
 
@@ -130,6 +132,45 @@ void Cache::setGood()
 	}
 //	cdebug << "setGood on" << hex << header().sourceKey << "/" << header().operationKey << ", file" << m_file.fileName().toStdString();
 	header().flags = IsGood;
+}
+
+Cache::AvailableMap Cache::available()
+{
+	AvailableMap ret;
+	QDir d(QDir::tempPath() + "/Noted.cache");
+	QPair<DataKeySet, uint64_t> t(DataKeySet(), 0);
+	QDateTime mru;
+	for (QFileInfo const& i: d.entryInfoList(QDir::Files, QDir::Name))
+	{
+		DataKeySet dks(i.fileName().section('-', 0, 0).toULongLong(0, 16), i.fileName().section('-', 1, 1).toULongLong(0, 16));
+		if (t.first != dks || !t.second)
+		{
+			if (t.second)
+				ret.insertMulti(mru, t);
+			t.first = dks;
+			t.second = i.size();
+			mru = i.lastRead();
+		}
+		else
+		{
+			if (mru < i.lastRead())
+				mru = i.lastRead();
+			t.second += i.size();
+		}
+	}
+	if (t.second)
+		ret.insertMulti(mru, t);
+	return ret;
+}
+
+void Cache::kill(DataKeySet _k)
+{
+	QDir p(QDir::tempPath() + "/Noted.cache");
+	QString f = ("%1-%2-*");
+	f = f.arg(_k.source, 8, 16, QChar('0')).arg(_k.operation, 8, 16, QChar('0'));
+
+	for (QFileInfo const& i: QDir(p).entryInfoList({f}, QDir::Files, QDir::Name))
+		QFile::remove(i.filePath());
 }
 
 MipmappedCache::MipmappedCache() {}

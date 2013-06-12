@@ -22,7 +22,7 @@ DataKey DataSetDataStore::operationKey(lb::GraphSpec const* _gs)
 // Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
 void DataSetDataStore::init(unsigned _recordLength, bool _dense)
 {
-	m_s = DataMan::get()->dataSet(DataKeySet(NotedFace::audio()->key(), m_operationKey));
+	m_s = NotedFace::data()->dataSet(DataKeySet(NotedFace::audio()->key(), m_operationKey));
 	if (!m_s)
 		cwarn << "Something else already opened the DataSet for writing?! :-(";
 
@@ -127,7 +127,7 @@ void DataSet::done()
 	m_raw.setGood();
 	if (m_toc.isOpen())
 		m_toc.setGood();
-	DataMan::get()->noteDone(DataKeySet(m_sourceKey, m_operationKey));
+	NotedFace::data()->noteDone(DataKeySet(m_sourceKey, m_operationKey));
 }
 
 void DataSet::ensureHaveDigest(DigestFlag _t)

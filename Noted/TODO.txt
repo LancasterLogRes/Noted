@@ -1,9 +1,10 @@
-Plugin stuff
-  Reload button, load status & time of last load indication.
-
-Core
-  Prototype acausal EC API.
-  Record mode (inactive).
-  Through mode (active, no recording).
-  Optimise for Events interrogation.
-
+class DataPoint.
+- Used by CausalAnalysis (and eventually EventCompiler) for entering data instead of DataSet.
+- Allows memoisation without DataSet
+- Allows entering into DataSet if deemed useful to cache (initially just a flag somewhere).
+- DataKey-based, like DataSet
+- Probably easiest to use foreign_vector<float> CausalAnalysis::getValues(DataKey _k, []() -> vector<float> { return /* whatever */ });
+- Probably easiest to use float CausalAnalysis::getValue(DataKey _k, []() -> float { return /* whatever */ });
+- Returns value without necessarily doing computation.
+- Should automatically append to DataSet if worth doing.
+- Can then be used for more advanced stuff later.

@@ -22,9 +22,12 @@
 
 #include <boost/type_traits/function_traits.hpp>
 #include <memory>
+#include <tuple>
+#include <vector>
 #include <cstdint>
 #include <QString>
 #include <QHash>
+#include <QMap>
 #include <QFile>
 #include <Common/Global.h>
 #include <Common/Algorithms.h>
@@ -46,6 +49,11 @@ class Cache
 public:
 	Cache();
 	~Cache() { reset(); }
+
+	typedef QMultiMap<QDateTime, QPair<DataKeySet, uint64_t>> AvailableMap;
+
+	static AvailableMap available();
+	static void kill(DataKeySet);
 
 	void reset();
 

@@ -1,15 +1,12 @@
+#include <QDateTime>
 #include <Common/Global.h>
 #include "NotedFace.h"
 #include "DataMan.h"
 using namespace std;
 using namespace lb;
 
-DataMan* DataMan::s_this = nullptr;
-
 DataMan::DataMan()
 {
-	assert(!s_this);
-	s_this = this;
 }
 
 DataSetPtr DataMan::dataSet(DataKeySet _ks)
@@ -19,70 +16,76 @@ DataSetPtr DataMan::dataSet(DataKeySet _ks)
 	if (!m_data.contains(_ks))
 	{
 		m_data.insert(_ks, make_shared<DataSet>(_ks));
+		x_data.unlock();
+		emit inUseChanged();
+		emit footprintChanged();
+		emit changed();
+		x_data.lock();
 		cdebug << "Creating.";
 	}
 	return m_data[_ks];
 }
 
-void DataMan::removeDataSet(DataKeySet _k)
+DataSetPtr DataMan::readDataSet(DataKeySet _k) const
 {
 	QMutexLocker l(&x_data);
-	m_data.remove(_k);
+	auto ret = m_data.value(_k);
+	return ret && ret->haveRaw() ? ret : nullptr;
 }
 
-void DataMan::clearData()
+void DataMan::releaseDataSets()
 {
-	QMutexLocker l(&x_data);
-	m_data.clear();
+	{
+		QMutexLocker l(&x_data);
+		m_data.clear();
+	}
+	emit inUseChanged();
+	emit changed();
 }
 
-void DataMan::pruneDataSets(unsigned _maxMegabytes)
+uint64_t DataMan::footprint()
 {
-	Q_UNUSED(_maxMegabytes);
+	Cache::AvailableMap as = Cache::available();
+	uint64_t ret = 0;
+	for (auto i: as)
+		ret += i.second;
+	return ret;
 }
 
-unsigned DataMan::rawRecordCount(DataKeySet _key) const
+uint64_t DataMan::inUse() const
 {
-	QMutexLocker l(&x_data);
-	if (m_data.contains(_key) && m_data[_key]->haveRaw())
-		return m_data[_key]->rawRecords();
-	return 0;
+	Cache::AvailableMap as = Cache::available();
+	uint64_t ret = 0;
+	{
+		QMutexLocker l(&x_data);
+		for (auto i: as)
+			if (m_data.contains(i.first))
+				ret += i.second;
+	}
+	return ret;
 }
 
-tuple<Time, unsigned, int, Time> DataMan::bestFit(DataKeySet _key, Time _from, Time _duration, unsigned _idealRecords) const
+bool DataMan::pruneDataSets(uint64_t _maxBytes)
 {
-	QMutexLocker l(&x_data);
-	if (m_data.contains(_key) && m_data[_key]->haveRaw())
-		return m_data[_key]->bestFit(_from, _duration, _idealRecords);
-	return tuple<Time, unsigned, int, Time>(0, 0, 0, 0);
-}
+	Cache::AvailableMap as = Cache::available();
 
-void DataMan::populateRaw(DataKeySet _key, lb::Time _from, float* _out, unsigned _size) const
-{
-	QMutexLocker l(&x_data);
-	if (m_data.contains(_key) && m_data[_key]->haveRaw())
-		m_data[_key]->populateRaw(_from, foreign_vector<float>(_out, _size));
-}
+	int64_t amountToDelete = -(int64_t)_maxBytes;
+	for (auto i: as)
+		amountToDelete += i.second;
+	if (amountToDelete <= 0)
+		return true;
 
-void DataMan::populateDigest(DataKeySet _key, DigestFlag _digest, unsigned _level, lb::Time _from, float* _out, unsigned _size) const
-{
-	QMutexLocker l(&x_data);
-	if (m_data.contains(_key) && m_data[_key]->haveRaw())
-		m_data[_key]->populateDigest(_digest, _level, _from, foreign_vector<float>(_out, _size));
-}
+	{
+		QMutexLocker l(&x_data);
+		for (auto i = as.begin(); i != as.end() && amountToDelete > 0; ++i)
+			if (!m_data.contains(i->first))
+			{
+				Cache::kill(i->first);
+				amountToDelete -= i->second;
+			}
+	}
+	emit footprintChanged();
+	emit changed();
 
-unsigned DataMan::recordLength(DataKeySet _key) const
-{
-	QMutexLocker l(&x_data);
-	if (m_data.contains(_key) && m_data[_key]->haveRaw())
-		return m_data[_key]->recordLength();
-	return 0;
-}
-
-DigestFlags DataMan::availableDigests(DataKeySet _key) const
-{
-	QMutexLocker l(&x_data);
-	if (m_data.contains(_key) && m_data[_key]->haveRaw())
-		return m_data[_key]->availableDigests();
-	return DigestFlags(0);
+	return amountToDelete <= 0;
 }

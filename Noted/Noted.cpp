@@ -51,6 +51,20 @@
 using namespace std;
 using namespace lb;
 
+std::string prettyBytes(uint64_t _bytes)
+{
+	std::stringstream s;
+	char const* names[] = { " bytes", " KiB", " MiB", " GiB", " TiB", " PiB", " EiB", " ZiB", " YiB", 0 };
+	char const** name = names;
+	uint64_t bytes10 = _bytes * 10;
+	for (; bytes10 > 10230 && name[1]; ++name, bytes10 /= 1024) {}
+	if ((bytes10 % 10) == 0 || bytes10 / 10 > 9)
+		s << bytes10 / 10 << *name;
+	else
+		s << bytes10 / 10 << "." << (bytes10 % 10) << *name;
+	return s.str();
+}
+
 Noted::Noted(QWidget* _p):
 	NotedFace					(_p),
 	ui							(new Ui::Noted),
@@ -124,6 +138,15 @@ Noted::Noted(QWidget* _p):
 		l->setObjectName("alsa");
 		l->setMinimumWidth(220);
 		ui->statusBar->addPermanentWidget(l);
+	}
+
+	{
+		QLabel* l = new QLabel;
+		l->setObjectName("cache");
+		l->setMinimumWidth(220);
+		ui->statusBar->addPermanentWidget(l);
+
+		connect(data(), &DataMan::changed, [=](){ l->setText(QString::fromStdString(prettyBytes(data()->inUse()) + " / " + prettyBytes(data()->footprint()))); });
 	}
 
 	{
@@ -638,38 +661,18 @@ void Noted::on_actPanForward_triggered()
 	view()->setOffset(view()->offset() + view()->visibleDuration() / 4);
 }
 
+void Noted::on_actRedoEvents_triggered()
+{
+	data()->releaseDataSets();
+	data()->pruneDataSets();
+	compute()->invalidate();
+}
+
 void Noted::on_actPanic_triggered()
 {
 	ui->actPlay->setChecked(false);
 	ui->actPlayCausal->setChecked(false);
 	ui->actPassthrough->setChecked(false);
-}
-
-void Noted::updateEventStuff()
-{
-	/*
-	QMutexLocker l(&x_timelines);
-	for (EventsView* ev: eventsViews())
-		if (!ev->eventCompiler().isNull())
-			for (auto g: ev->eventCompiler().asA<EventCompilerImpl>().graphMap())
-				if (dynamic_cast<GraphSparseDense*>(g.second))
-				{
-					QString n = ev->name() + "/" + QString::fromStdString(g.second->name());
-					if (!findChild<GraphView*>(n))
-					{
-//						cdebug << "Creating" << n.toStdString();
-						QDockWidget* dw = new QDockWidget(n, this);
-						dw->setObjectName(n + "-Dock");
-						GraphView* dv = new GraphView(dw, n);
-						dv->addGraph(g.second);
-						dw->setAllowedAreas(Qt::AllDockWidgetAreas);
-						QMainWindow::addDockWidget(Qt::BottomDockWidgetArea, dw, Qt::Horizontal);
-						dw->setFeatures(dw->features() | QDockWidget::DockWidgetVerticalTitleBar);
-						dw->setWidget(dv);
-						dw->show();
-					}
-				}
-	*/
 }
 
 void Noted::onWorkFinished()

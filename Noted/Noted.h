@@ -114,7 +114,7 @@ private slots:
 	void on_actPanBack_triggered();
 	void on_actPanForward_triggered();
 	void on_actViewAll_triggered() { view()->normalize(); }
-	void on_actRedoEvents_triggered() { events()->noteEventCompilersChanged(); }
+	void on_actRedoEvents_triggered();
 	void on_actNewEvents_triggered();
 	void on_actNewEventsFrom_triggered();
 	void on_actOpenEvents_triggered();
@@ -155,8 +155,6 @@ private slots:
 
 	void onWorkProgressed(QString _desc, int _percent);
 	void onWorkFinished();
-
-	void updateEventStuff();
 
 	// TODO: Move to AudioDevices: public QAbstractItemModel.
 	void updateAudioDevices();
