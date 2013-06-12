@@ -12,9 +12,6 @@ namespace lb { template <> struct is_flag<DigestFlag>: public std::true_type { t
 
 inline unsigned digestSize(DigestFlag _f) { switch (_f) { case MeanDigest: return 1; case MeanRmsDigest: return 2; case MinMaxInOutDigest: return 4; default: return 0; } }
 
-LIGHTBOX_STRUCT(2, DataKeys, DataKey, source, DataKey, operation);
-inline uint qHash(DataKeys _k) { return _k.source ^ DataKey(_k.operation << 16) ^ DataKey(_k.operation >> 16); }
-
 
 /** Implementation of non-volatile map<lb::Time, Record>, where typedef vector<float> Record;
  * API optimized for appending records, especially where the Record::size() is fixed (isFixed()) and the difference
@@ -41,7 +38,7 @@ void foo(DataSet* ds)
 class DataSet
 {
 public:
-	explicit DataSet(DataKeys _key);
+	explicit DataSet(DataKeySet _key);
 
 	void init(unsigned _recordLength, lb::Time _stride = 0, lb::Time _first = 0);	// _recordLength is in floats (0 for variable). _stride is the duration between sequential readings. will be related to hops for most things. (0 for variable). Don't call digest if either are zero.
 	void init(unsigned _itemCount);

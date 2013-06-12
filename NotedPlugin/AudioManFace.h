@@ -19,8 +19,10 @@ public:
 	virtual ~AudioManFace() {}
 
 	/// Data
-	DataKey key() const { return m_key; }
-	DataKey rawKey() const { return m_rawKey; }
+	inline DataKey key() const { return m_key; }
+	inline DataKey rawKey() const { return m_rawKey; }
+	inline DataKeySet keySet(QString const& _operationId) const { return DataKeySet(key(), qHash(_operationId)); }
+	inline DataKeySet rawKeySet(QString const& _operationId) const { return DataKeySet(rawKey(), qHash(_operationId)); }
 
 	virtual DataSetPtr wave() const = 0;
 	virtual void populateHop(unsigned _index, std::vector<float>& _h) const = 0;

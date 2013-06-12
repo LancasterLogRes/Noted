@@ -26,17 +26,17 @@ using namespace lb;
 
 NOTED_PLUGIN(ExamplePlugin);
 
-class ExampleAnalysis: public CausalAnalysis
+class ZeroCrossingsAnalysis: public CausalAnalysis
 {
 public:
-	ExampleAnalysis(): CausalAnalysis("ExampleAnalysis") {}
+	ZeroCrossingsAnalysis(): CausalAnalysis("Zero-Crossings Analyser") {}
 	virtual void init(bool _willRecord)
 	{
 		m_ds.reset();
 		m_lastRecord.resize(1);
 		if (_willRecord)
 		{
-			m_ds = NotedFace::data()->dataSet(DataKeys(NotedFace::audio()->key(), qHash("ExamplePlugin/ZeroCrossings")));
+			m_ds = NotedFace::data()->dataSet(DataKeySet(NotedFace::audio()->key(), m_operationKey));
 			m_ds->init(1, NotedFace::audio()->hop());
 		}
 	}
@@ -45,7 +45,7 @@ public:
 	{
 		if (_completed && _didRecord && m_ds)
 		{
-			m_ds->ensureHaveDigest(MeanDigest);
+			m_ds->ensureHaveDigest(MinMaxInOutDigest);
 			m_ds->done();
 		}
 	}
@@ -66,20 +66,23 @@ public:
 
 	virtual void record(unsigned, Time _t)
 	{
-		cnote << m_lastRecord;
 		if (m_ds && !m_ds->haveRaw())
 			m_ds->appendRecord(_t, &m_lastRecord);
 	}
 
+	DataKey operationKey() const { return m_operationKey; }
+
 private:
 	DataSetPtr m_ds;
 	vector<float> m_lastRecord;
+	DataKey m_operationKey = qHash(QString("ExamplePlugin/ZeroCrossings"));
 };
 
-ExamplePlugin::ExamplePlugin():
-	m_analysis(new ExampleAnalysis)
+ExamplePlugin::ExamplePlugin()
 {
-	m_graph = GraphMetadata(qHash("ExamplePlugin/ZeroCrossings"), { { "Proportion", XOf(), Range(0, 1) } }, "Zero-Crossings", false );
+	auto a = new ZeroCrossingsAnalysis;
+	m_analysis = CausalAnalysisPtr(a);
+	m_graph = GraphMetadata(a->operationKey(), { { "Proportion", XOf(), Range(0, 1) } }, "Zero-Crossings", false );
 	NotedFace::compute()->registerJobSource(this);
 	NotedFace::graphs()->registerGraph("ExamplePlugin/ZeroCrossings", m_graph);
 }
@@ -90,16 +93,10 @@ ExamplePlugin::~ExamplePlugin()
 	NotedFace::compute()->unregisterJobSource(this);
 }
 
-CausalAnalysisPtrs ExamplePlugin::ripeCausalAnalysis(CausalAnalysisPtr const& _finished)
+CausalAnalysisPtrs ExamplePlugin::ripeAnalysis(AcausalAnalysisPtr const& _finished)
 {
 	if (_finished == NotedFace::audio()->resampleWaveAcAnalysis())
 		return { m_analysis };
 	return CausalAnalysisPtrs();
 }
 
-AcausalAnalysisPtrs ExamplePlugin::ripeAcausalAnalysis(AcausalAnalysisPtr const& _finished)
-{
-	if (_finished == NotedFace::audio()->resampleWaveAcAnalysis())
-		return { m_analysis };
-	return AcausalAnalysisPtrs();
-}

@@ -45,7 +45,8 @@ Item {
 			id: graphRepeater
 			model: graphs
 			Graph {
-				url: graphUrl
+				id: graphItem
+				url: model.url
 				offset: timelines.offset
 				pitch: timelines.pitch
 				anchors.fill: parent
@@ -53,6 +54,22 @@ Item {
 				yMode: 0		// 0 -> respect graphtimeline's y-scale, 1-> ignore y-scale and do best-fit
 				yFrom: panel.yFrom
 				yDelta: panel.yDelta
+				Text {
+					scale: 2
+					text: "Data not available for " + model.name
+					anchors.fill: parent
+					horizontalAlignment: Text.AlignHCenter
+					verticalAlignment: Text.AlignVCenter
+					visible: !graphItem.dataAvailable && graphItem.graphAvailable
+				}
+				Text {
+					scale: 2
+					text: "Graph not available for " + model.url
+					anchors.fill: parent
+					horizontalAlignment: Text.AlignHCenter
+					verticalAlignment: Text.AlignVCenter
+					visible: !graphItem.graphAvailable
+				}
 			}
 		}
 		YScale {
@@ -66,7 +83,7 @@ Item {
 			id: graphDrop
 			anchors.fill: parent
 			onDropped: {
-				graphs.append({'graphUrl': drop.source.url})
+				graphs.append({'url': drop.source.url, 'name': drop.source.name})
 				drop.accept();
 			}
 			Rectangle {

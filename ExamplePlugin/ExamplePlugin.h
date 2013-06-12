@@ -31,8 +31,7 @@ public:
 	ExamplePlugin();
 	~ExamplePlugin();
 
-	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const& _finished);
-	virtual AcausalAnalysisPtrs ripeAcausalAnalysis(AcausalAnalysisPtr const& _finished);
+	virtual CausalAnalysisPtrs ripeAnalysis(AcausalAnalysisPtr const& _finished);
 
 private:
 	CausalAnalysisPtr m_analysis;

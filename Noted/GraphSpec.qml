@@ -2,8 +2,8 @@ import QtQuick 2.0
 
 MouseArea {
 	id: dragArea
-	property string url: "RhythmDetectorFloat/Loudness"
-	property string graphType: "Chart"
+	property string url
+	property string name
 	drag.target: graphSpec
 	width: graphSpec.width; height: graphSpec.height
 	onReleased: if (graphSpec.Drag.drop() !== Qt.IgnoreAction) console.log("Accepted!");
@@ -15,9 +15,9 @@ MouseArea {
 		Rectangle {
 			id: graphSpec
 			objectName: "DragRect" + dragArea.url
-			property string url: dragArea.url
-			property string graphType: dragArea.graphType
-			Text { id: tx; text: dragArea.url; anchors.centerIn: parent }
+			property alias url: dragArea.url
+			property alias name: dragArea.name
+			Text { id: tx; text: parent.name; anchors.centerIn: parent }
 			width: tx.width + 10; height: tx.height + 10
 			border { width: 2; color: 'black' }
 			anchors {

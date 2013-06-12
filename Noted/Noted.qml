@@ -90,7 +90,7 @@ Item {
 				anchors.topMargin: 10
 				spacing: 20
 				model: VisualItemModel {
-					GraphTimeline { index: 0; visible: true; objectName: "Wave"; graphs: ListModel { ListElement { graphUrl: "wave" } } }
+					GraphTimeline { index: 0; visible: true; graphs: ListModel { ListElement { url: "wave"; name: "PCM" } } }
 					GraphTimeline { index: 1 }
 					GraphTimeline { index: 2 }
 					GraphTimeline { index: 3 }
@@ -131,7 +131,7 @@ Item {
 
 		MouseArea {
 			anchors.top: timelinesHolster.top
-			anchors.bottom: graphListView.bottom
+			anchors.bottom: timelinesHolster.bottom
 			anchors.left: parent.left
 			anchors.right: parent.right
 			anchors.leftMargin: timelines.gutterWidth
@@ -167,10 +167,10 @@ Item {
 			anchors.bottom: parent.bottom
 			anchors.left: parent.left
 			anchors.right: parent.right
-			height: 40
+			height: 80
 			onDropped: {
 				var i = graphListView.append()
-				i.graphs.append({ 'graphUrl': drop.source.url })
+				i.graphs.append({ 'url': drop.source.url, 'name': drop.source.name })
 				i.visible = true
 				drop.accept();
 			}
@@ -181,9 +181,8 @@ Item {
 				visible: graphSpecDrag
 				property bool graphSpecDrag: false
 				Text {
-					scale: 1
+					scale: 2
 					anchors.fill: parent
-					anchors.leftMargin: -timelines.gutterWidth
 					color: Qt.rgba(0.5, 0.5, 0.5, 1)
 					text: "Drag here to create"
 					verticalAlignment: Text.AlignVCenter
@@ -232,7 +231,7 @@ Item {
 		ListView {
 			model: graphs
 			orientation: ListView.Horizontal
-			delegate: GraphSpec { url: model.url }
+			delegate: GraphSpec { url: model.url; name: model.name }
 
 			anchors.fill: parent
 			anchors.margins: 4

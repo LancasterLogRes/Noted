@@ -14,7 +14,7 @@ GraphMan::~GraphMan()
 
 QHash<int, QByteArray> GraphMan::roleNames() const
 {
-	return { { Qt::UserRole, "url" }, { Qt::UserRole + 1, "range" } };
+	return { { Qt::DisplayRole, "name" }, { Qt::UserRole, "url" }, { Qt::UserRole + 1, "range" } };
 }
 
 int GraphMan::rowCount(QModelIndex const& _parent) const

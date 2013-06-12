@@ -37,7 +37,7 @@ Rectangle {
 
 		Rectangle {
 			id: title
-			color: Qt.rgba(1, 1, 1, 0.9)
+			color: Qt.rgba(1, 1, 1, 0.2)
 			height: 30
 			anchors.left: parent.left
 			anchors.right: parent.right
@@ -92,7 +92,7 @@ Rectangle {
 						Text {
 							id: listItemText
 							Layout.fillWidth: true
-							text: graphUrl
+							text: model.name
 							elide: Text.ElideRight
 							MouseArea {
 								anchors.fill: parent

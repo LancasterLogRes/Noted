@@ -1,3 +1,5 @@
+#include "DataMan.h"
+#include "NotedFace.h"
 #include "AudioManFace.h"
 using namespace std;
 using namespace lb;

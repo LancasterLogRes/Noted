@@ -227,7 +227,7 @@ bool AudioMan::resampleWave()
 
 	{
 		QMutexLocker l(&x_wave);
-		m_wave = NotedFace::data()->dataSet(DataKeys(rawKey(), 0));
+		m_wave = NotedFace::data()->dataSet(DataKeySet(rawKey(), 0));
 		m_wave->init(1, toBase(1, m_rate), 0);
 	}
 

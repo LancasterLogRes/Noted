@@ -25,12 +25,19 @@ public:
 	void setYDelta(float _v) { m_yDelta = _v; yScaleChanged(); update(); }
 	void setYMode(int _m) { m_yMode = _m; yScaleChanged(); update(); }
 
+	bool graphAvailable() const { return m_graphAvailable; }
+	bool dataAvailable() const { return m_dataAvailable; }
+
 signals:
 	void urlChanged(QString _url);
 	void yScaleChanged();
 	void highlightChanged();
 	void yScaleHintChanged();
-	void onGraphAdded(QString _url);
+	void availabilityChanged();
+
+private slots:
+	void onDataComplete(DataKeySet);
+	void onGraphAdded(GraphMetadata const&);
 
 protected:
 	Q_PROPERTY(QString url MEMBER m_url NOTIFY urlChanged)
@@ -39,6 +46,8 @@ protected:
 	Q_PROPERTY(float yDelta READ yDelta WRITE setYDelta NOTIFY yScaleChanged)
 	Q_PROPERTY(int yMode READ yMode WRITE setYMode NOTIFY yScaleChanged)
 	Q_PROPERTY(bool highlight MEMBER m_highlight NOTIFY highlightChanged)
+	Q_PROPERTY(bool graphAvailable READ graphAvailable NOTIFY availabilityChanged)
+	Q_PROPERTY(bool dataAvailable READ dataAvailable NOTIFY availabilityChanged)
 
 	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
 
@@ -47,6 +56,10 @@ protected:
 	float m_yDelta = 1;
 	int m_yMode = 0;		///< 0 -> yFrom/yDelta, 1 /*-> auto (global)*/, 2 -> hint
 	bool m_highlight = false;
+
+	void setAvailability(bool _graph, bool _data);
+	bool m_graphAvailable = false;
+	bool m_dataAvailable = false;
 
 	mutable QSGGeometry* m_spectrumQuad = nullptr;
 

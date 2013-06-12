@@ -6,12 +6,12 @@
 using namespace std;
 using namespace lb;
 
-inline pair<GraphMetadata, DataKeys> findGraph(QString const& _url)
+inline pair<GraphMetadata, DataKeySet> findGraph(QString const& _url)
 {
 	cnote << "findGraph" << _url;
 	if (GraphMetadata g = NotedFace::get()->graphs()->find(_url))
-		return make_pair(g, DataKeys(g.isRawSource() ? Noted::audio()->rawKey() : Noted::audio()->key(), g.operationKey()));
-	return pair<GraphMetadata, DataKeys>();
+		return make_pair(g, DataKeySet(g.isRawSource() ? Noted::audio()->rawKey() : Noted::audio()->key(), g.operationKey()));
+	return pair<GraphMetadata, DataKeySet>();
 }
 
 GraphItem::GraphItem(QQuickItem* _p): TimelineItem(_p)
@@ -22,23 +22,27 @@ GraphItem::GraphItem(QQuickItem* _p): TimelineItem(_p)
 	connect(this, &GraphItem::yScaleHintChanged, this, &GraphItem::yScaleChanged);
 	connect(this, &GraphItem::yScaleChanged, this, &GraphItem::update);
 	connect(this, &GraphItem::highlightChanged, [=](){ m_invalidated = true; update(); });
-	connect(Noted::data(), &DataMan::dataComplete, [=](DataKeys k)
-	{
-		cnote << "dataComplete(" << k << ") [" << (void*)this << "] interested in" << m_url.toStdString();
-		cnote << "=" << findGraph(m_url).second;
-		if (k == findGraph(m_url).second)
-		{
-			m_invalidated = true;
-			update();
-		}
-	});
+	connect(Noted::data(), &DataMan::dataComplete, this, &GraphItem::onDataComplete);
 	connect(Noted::graphs(), &GraphMan::graphsChanged, this, &GraphItem::update);
-	connect(Noted::graphs(), &GraphManFace::addedGraph, [=](GraphMetadata g)
-	{
-		if (QString::fromStdString(g.url()) == m_url)
-			yScaleHintChanged();
-	});
+	connect(Noted::graphs(), &GraphManFace::addedGraph, this, &GraphItem::onGraphAdded);
 	connect(Noted::quickView(), &QQuickView::sceneGraphInitialized, [=](){});
+}
+
+void GraphItem::onGraphAdded(GraphMetadata const& _g)
+{
+	if (QString::fromStdString(_g.url()) == m_url)
+		yScaleHintChanged();
+}
+
+void GraphItem::onDataComplete(DataKeySet _k)
+{
+	cnote << "dataComplete(" << _k << ") [" << (void*)this << "] interested in" << m_url.toStdString();
+	cnote << "=" << findGraph(m_url).second;
+	if (_k == findGraph(m_url).second)
+	{
+		m_invalidated = true;
+		update();
+	}
 }
 
 QVector3D GraphItem::yScaleHint() const
@@ -165,7 +169,16 @@ QSGGeometry* GraphItem::spectrumQuad() const
 		m_spectrumQuad->setDrawingMode(GL_QUADS);
 	}
 	return m_spectrumQuad;
+}
 
+void GraphItem::setAvailability(bool _graph, bool _data)
+{
+	if ((m_graphAvailable != _graph) || (m_dataAvailable != _data))
+	{
+		m_graphAvailable = _graph;
+		m_dataAvailable = _data;
+		emit availabilityChanged();
+	}
 }
 
 QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _ds)
@@ -346,9 +359,10 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 	// transform each chunk separately.
 
 	GraphMetadata g;
-	DataKeys dk;
+	DataKeySet dk;
 	tie(g, dk) = findGraph(m_url);
 	DataSetPtr ds = Noted::data()->readDataSet(dk);
+	setAvailability(!!g, !!ds);
 	if (g && ds)
 	{
 		if (ds->isMonotonic())
