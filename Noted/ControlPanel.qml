@@ -13,6 +13,11 @@ Rectangle {
 	property real yDelta: yMode == 0 || !parent.visible ? yScaleUser.y : graphHarness.highlightedGraph.yScaleHint.y
 	property int yMode: 1		// 0 -> user, 1 -> highlighted graph, 2-> all
 
+	function reset() {
+		yMode = 1
+		yScaleUSer = Qt.vector3d(0, 1, 0)
+	}
+
 	function zoomScale(y, q) {
 		var pivot = yFrom + yDelta * (height - y) / height
 		console.log(pivot)

@@ -14,7 +14,12 @@ Item {
 		d = handleY; handleY = x.handleY; x.handleY = d;
 		d = visible; visible = x.visible; x.visible = d;
 	}
-	function kill() { visible = false; handleY = 200; graphs.clear() }
+	function kill() {
+		visible = false
+		handleY = 200
+		graphs.clear()
+		panel.reset()
+	}
 
 	anchors.left: parent ? parent.left : undefined
 	anchors.right: parent ? parent.right : undefined

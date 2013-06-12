@@ -2,56 +2,33 @@ Noted!
 
 Copyright Lancaster Logic Response, 2011-2012.
 
-   BUILDING
+##BUILDING
 
-   Generic instructions:
+#Generic instructions:
 
 Noted is written in C++, according to the latest standard, C++11. This means you'll need a relatively recent compiler (GCC 4.7 is tested).
 
 Noted uses the Qt cross-platform toolkit as a GUI and its bundled build tool, 'qmake', to handling building. This makes the build instructions little more than "qmake && make" (though Qt Creator, the IDE is a good choice if you want to do any development). However there are a number of dependencies that must be installed and configured first:
 
-- Qt; tested against 4.8.1. The qmake from this should be in your environment.
+- Lightbox. This is a sibling repository to Noted and Noted! is heavily dependent on it.
 
-- Portaudio; tested against 1.9. Should be in the system's include/library path (generally the way with Linux distributions; noted/Audio/Audio.pro may need tweaking otherwise).
+- Qt; tested against 5.1.0beta1. The qmake from this should be in your environment. This should already be installed in order to have built the Lightbox dependency.
 
-- FFTW; tested against 3.3.0. Should be in the system's include/library path (generally the way with Linux distributions; noted/Common/Common.pro may need tweaking otherwise).
+- Portaudio; tested against 1.9.
 
-- Boost; tested against 1.48 & 1.50. Should be in the system's include/library path (generally the way with Linux distributions; noted/Common.pri may need tweaking otherwise).
+- libresample; tested against 0.1.3.
 
+- libsndfile; tested against 1.0.25.
 
-   Debian & derivatives (Ubuntu &c.):
+#Debian & derivatives (Ubuntu &c.):
 
 You can use the package manager to grab and install all of the dependencies you'll need with:
 
-sudo apt-get install libboost1.48-dev libboost-system1.48-dev portaudio19-dev libqt4-dev libfftw3-dev
+sudo apt-get install portaudio19-dev libsndfile1-dev libresample1-dev
 
-   Windows (with minGW):
+#Windows (with minGW):
 
-You'll need to download and install all components for a working minGW first. It's found at:
-
-http://builds.qt-project.org/job/mingw32-windows/
-
-The same site contains a prebuilt and compatible GDB also. Put them somewhere sensible, e.g. C:\mingw32.
-
-You'll also need to download and compile Qt (4.8.x) from:
-
-http://qt.nokia.com/downloads
-
-Make sure to get the source code - the minGW versions are too old to be useful. You can compile by running 'configure' followed by <path to Mingw>/bin/ming32-make, making sure to specify the platform as "win32-g++-4.6".
-
-NB. Mingw's make (mingw32-make.exe) has a bug making it crash if the environment's PATH variable contains parentheses. Ensure that the PATH contains no such characters; the easiest way is to reset it to precisely what you need (i.e. the path to MinGW's bin and Qt's bin directories) prior to calling make from the command line, e.g.:
-
-set PATH=C:\mingw32\bin;c:\qt-everywhere-opensource-src-4.8.2\bin
-
-Next you'll need to download and install boost:
-
-http://www.boost.org/users/download/
-
-Unpack and compile it to somewhere sensible ("C:\boost_1_50_0", perhaps). In any case, remember where the directory is. Compilation is easy enough - use the Windows command line (cmd.exe) to execute "bootstrap.bat" in boost's path, then "b2 toolset=gcc" both in boost's path.
-
-Edit Noted/Common.pri and find the line beginning "BOOST ="; edit it so the path afterwards is the freshly installed boost's directory.
-
-Next, download the latest (stable) Portaudio v19. You can get it from:
+First, download the latest (stable) Portaudio v19. You can get it from:
 
 http://www.portaudio.com/download.html
 
@@ -65,15 +42,23 @@ NB. The PATH parentheses issue is still around; make sure your PATH has no paren
 
 If building fails, you might want to ask on the Portaudio mailing list, but as a workaround, remove the offending API from the configure line and reconfigure.
 
-Finally, get FFTW 3 from here:
+You'll also need to download and compile libresample and libsndfile. libsndfile is avilable from:
 
-http://www.fftw.org/install/windows.html
+http://www.mega-nerd.com/libsndfile/
 
-Having unpacked it somewhere sensible, you'll need to configure Noted with the directory into which you unpacked it. Go into Noted/Common.pri and change the line beginning with "FFTW = " so it ends with the correct path.
+Whereas libresample, almost abandonware, must be downloaded from the Debian repository:
 
-In QtCreator, you'll need to specify the MinGW GCC & GDB in the Tools/Options/Build&Run/Toolchains. Since the make command is still broken regarding parens, you'll need to sanitize the PATH variable in the build environment (Projects tab, Build settings, Build environment) freeing it of parens (not a massive problem - just make sure it has the Qt and MinGW bin directories in it and you should be fine).
+http://ftp.debian.org/debian/pool/main/libr/libresample/libresample_0.1.3.orig.tar.gz
 
-Mac OS X
+Building both should be possible with the MSys bash shell.
+
+Finally, you need to tell the Noted build system where each of the dependencies are by editing Noted/Common.pri and altering the paths (as per the instructions there) to match your directories.
+
+NOTE: In QtCreator, you'll need to specify the MinGW GCC & GDB in the Tools/Options/Build&Run/Toolchains. Since the make command is still broken regarding parens, you'll need to sanitize the PATH variable in the build environment (Projects tab, Build settings, Build environment) freeing it of parens (not a massive problem - just make sure it has the Qt and MinGW bin directories in it and you should be fine).
+
+#Mac OS X
+
+NOTE This section is incomplete.
 
 By far the easiest way to building on Mac is to install MacPorts. Once done you can get all required software with:
 
