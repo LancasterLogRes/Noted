@@ -9,45 +9,6 @@ DataMan::DataMan()
 {
 }
 
-DataSetPtr DataMan::create(DataKey _ks)
-{
-	cdebug << "DataMan::dataSet(" << hex << _ks << ")";
-	QMutexLocker l(&x_data);
-	if (!m_data.contains(_ks))
-	{
-		m_data.insert(_ks, make_shared<DataSet>(_ks));
-		x_data.unlock();
-		emit inUseChanged();
-		emit footprintChanged();
-		emit changed();
-		x_data.lock();
-		cdebug << "Creating.";
-	}
-	return m_data[_ks];
-}
-
-DataSetPtr DataMan::get(DataKey _k)
-{
-	DataSetPtr ret;
-
-	QMutexLocker l(&x_data);
-	if (m_data.contains(_k))
-		ret = m_data[_k];
-	else
-	{
-		ret = make_shared<DataSet>(_k);
-		if (ret->haveRaw())
-		{
-			m_data[_k] = ret;
-			x_data.unlock();
-			emit inUseChanged();
-			emit changed();
-			x_data.lock();
-		}
-	}
-	return ret && ret->haveRaw() ? ret : nullptr;
-}
-
 void DataMan::releaseDataSets()
 {
 	{

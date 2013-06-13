@@ -144,14 +144,14 @@ inline void checkGL(char const* _e)
 
 static const unsigned c_recordsPerPage = 4096;
 
-static pair<unsigned, unsigned> pageIntervalsRequired(lb::Time _from, lb::Time _duration, DataSetPtr _ds, int _lod)
+static pair<unsigned, unsigned> pageIntervalsRequired(lb::Time _from, lb::Time _duration, DataSetFloatPtr _ds, int _lod)
 {
 	unsigned pf = clamp<int, int>((_from - _ds->first()) / (_ds->stride() * _ds->lodFactor(_lod) * c_recordsPerPage), 0, _ds->rawRecords() / _ds->lodFactor(_lod) / c_recordsPerPage + 1);
 	unsigned pt = clamp<int, int>((_from - _ds->first() + _duration) / (_ds->stride() * _ds->lodFactor(_lod) * c_recordsPerPage), 0, _ds->rawRecords() / _ds->lodFactor(_lod) / c_recordsPerPage + 1);
 	return make_pair(pf, pt);
 }
 
-static lb::Time pageTime(unsigned _index, DataSetPtr _ds, int _lod)
+static lb::Time pageTime(unsigned _index, DataSetFloatPtr _ds, int _lod)
 {
 	return _index * (_ds->stride() * _ds->lodFactor(_lod) * c_recordsPerPage) + _ds->first();
 }
@@ -181,7 +181,7 @@ void GraphItem::setAvailability(bool _graph, bool _data)
 	}
 }
 
-QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _ds)
+QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetFloatPtr _ds)
 {
 	if (!m_geometryCache.contains(_index))
 	{
@@ -195,10 +195,10 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _
 				{
 					vector<float> intermed(c_recordsPerPage * _ds->recordLength());
 					if (m_lod < 0)
-						_ds->populateRaw(pageTime(_index, _ds, m_lod), &intermed, _g.axis(GraphMetadata::ValueAxis).transform);
+						_ds->populateRaw(pageTime(_index, _ds, m_lod), &intermed);
 					else
-						_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed, _g.axis(GraphMetadata::ValueAxis).transform);
-
+						_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed);
+					_g.axis(GraphMetadata::ValueAxis).transform.apply(intermed);
 
 					QSGGeometryNode* n = new QSGGeometryNode();
 					n->setFlag(QSGNode::OwnedByParent, false);
@@ -224,7 +224,8 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _
 				{
 					unsigned digestZ = digestSize(MinMaxInOutDigest);
 					vector<float> intermed(c_recordsPerPage * _ds->recordLength() * digestZ);
-					_ds->populateDigest(MinMaxInOutDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed, _g.axis(GraphMetadata::ValueAxis).transform);
+					_ds->populateDigest(MinMaxInOutDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed);
+					_g.axis(GraphMetadata::ValueAxis).transform.apply(intermed);
 
 					QSGGeometryNode* n = new QSGGeometryNode();
 					n->setFlag(QSGNode::OwnedByParent, false);
@@ -252,7 +253,8 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _
 				{
 					unsigned digestZ = digestSize(MeanRmsDigest);
 					vector<float> intermed(c_recordsPerPage * _ds->recordLength() * digestZ);
-					_ds->populateDigest(MeanRmsDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed, _g.axis(GraphMetadata::ValueAxis).transform);
+					_ds->populateDigest(MeanRmsDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed);
+					_g.axis(GraphMetadata::ValueAxis).transform.apply(intermed);
 
 #if 0
 					QSGGeometry* geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), records);
@@ -307,9 +309,10 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _
 				for (unsigned i = 0; i < c_recordsPerPage * _ds->recordLength(); ++i)
 					intermed[i] = 0;
 				if (m_lod < 0)
-					_ds->populateRaw(pageTime(_index, _ds, m_lod), &intermed, _g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::ValueAxis).range)));
+					_ds->populateRaw(pageTime(_index, _ds, m_lod), &intermed);
 				else
-					_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed, _g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::ValueAxis).range)));
+					_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed);
+				_g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::ValueAxis).range)).apply(intermed);
 
 				QSGGeometryNode* n = new QSGGeometryNode();
 				n->setFlag(QSGNode::OwnedByParent, false);
@@ -361,7 +364,7 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 	GraphMetadata g;
 	DataKey dk;
 	tie(g, dk) = findGraph(m_url);
-	DataSetPtr ds = Noted::data()->get(dk);
+	DataSetFloatPtr ds = Noted::data()->get(dk);
 	setAvailability(!!g, !!ds);
 	if (g && ds)
 	{

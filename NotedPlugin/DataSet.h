@@ -21,15 +21,14 @@ typedef std::set<DigestType> DigestTypes;
 inline DigestTypes digestTypes() { return { MeanDigest, MeanRmsDigest, MinMaxInOutDigest }; }
 inline unsigned digestSize(DigestType _f) { switch (_f) { case MeanDigest: return 1; case MeanRmsDigest: return 2; case MinMaxInOutDigest: return 4; default: return 0; } }
 
-/** Implementation of non-volatile multimap<lb::Time, Record>, where typedef vector<ElementType> Record; typedef float ElementType;
- * TODO: ElementType should be a template parameter.
+/** Implementation of non-volatile map<lb::Time, Record>, where typedef vector<ElementType> Record;
  * API optimized for appending records, especially where the Record::size() is fixed (isFixed()) and the difference
  * between subsequent keys (i.e. lb::Times) is constant (isMonotonic()). Also features a digest function for
  * such cases to summarise the data in a recursive mapmap-like fashion.
  *
  * Contains dataset of a given key, a hash of the source data and any operations applied to it.
  * Data is composed of records, each at a particular point in time.
- * Each record is composed of a (possibly varying) number of floats (recordLength).
+ * Each record is composed of a (possibly varying) number of ElementTypes (recordLength).
  * Each record is separated from the previous records by some (possibly varying) time step (stride).
  * Data may be digested using one or more of several techniques, but only when neither recordLength nor stride vary.
  * e.g.
@@ -44,22 +43,23 @@ void foo(DataSet* ds)
 @endcode
  *
  */
-class DataSet
+class GenericDataSet
 {
 public:
-	explicit DataSet(DataKey _key);
+	explicit GenericDataSet(DataKey _key, size_t _elementSize, char const* _elementTypeName);
 
-	void init(unsigned _recordLength, lb::Time _stride = 0, lb::Time _first = 0);	// _recordLength is in floats (0 for variable). _stride is the duration between sequential readings. will be related to hops for most things. (0 for variable). Don't call digest if either are zero.
+	void init(unsigned _recordLength, lb::Time _stride = 0, lb::Time _first = 0);	// _recordLength is in ElementTypes (0 for variable). _stride is the duration between sequential readings. will be related to hops for most things. (0 for variable). Don't call digest if either are zero.
 	void init(unsigned _itemCount);
 
-	void appendRecord(lb::Time _t, lb::foreign_vector<float> const& _vs);
-	void appendRecords(lb::foreign_vector<float> const& _vs);
+	void appendRecord(lb::Time _t, lb::foreign_vector<uint8_t> const& _vs);
+	void appendRecords(lb::foreign_vector<uint8_t> const& _vs);
 
 	void ensureHaveDigest(DigestType _type);
 	void done();
 
 	bool haveRaw() const { return m_raw.isGood() && (!m_toc.isMapped() || m_toc.isGood()); }
 	bool haveDigest(DigestType _type) { return m_digest.contains(_type); }
+	template <class _T> bool isOfType() const { return sizeof(_T) == m_elementSize && typeid(_T).name() == m_elementTypeName; }
 
 	bool isScalar() const { return m_recordLength == 1; }
 	bool isFixed() const { return m_recordLength; }
@@ -75,8 +75,8 @@ public:
 
 	// Methods for extracting data when isMonotonic() && isFixed()
 	std::tuple<lb::Time, unsigned, int, lb::Time> bestFit(lb::Time _from, lb::Time _duration, unsigned _idealRecords) const;
-	void populateRaw(lb::Time _from, lb::foreign_vector<float> const& _out, lb::XOf _transform = lb::XOf()) const;
-	void populateDigest(DigestType _digest, unsigned _level, lb::Time _from, lb::foreign_vector<float> const& _out, lb::XOf _transform = lb::XOf()) const;
+	void populateRaw(lb::Time _from, lb::foreign_vector<uint8_t> const& _out) const;
+	void populateDigest(DigestType _digest, unsigned _level, lb::Time _from, lb::foreign_vector<uint8_t> const& _out) const;
 
 	// Methods for extracting data when isFixed()
 //	void populateRaw(lb::Time _latest, lb::foreign_vector<float> _dest) const;
@@ -118,7 +118,22 @@ private:
 	unsigned m_pos = 0;
 };
 
-typedef std::shared_ptr<DataSet> DataSetPtr;
+template <class _T>
+class DataSet: public GenericDataSet
+{
+public:
+	explicit DataSet(DataKey _key): GenericDataSet(_key, sizeof(_T), typeid(_T).name()) {}
+
+	void appendRecord(lb::Time _t, lb::foreign_vector<_T> const& _vs) { GenericDataSet::appendRecord(_t, (lb::foreign_vector<uint8_t>)_vs); }
+	void appendRecords(lb::foreign_vector<_T> const& _vs) { GenericDataSet::appendRecords((lb::foreign_vector<uint8_t>)_vs); }
+
+	void populateRaw(lb::Time _from, lb::foreign_vector<_T> const& _out) const { GenericDataSet::populateRaw(_from, (lb::foreign_vector<uint8_t>)_out); }
+	void populateDigest(DigestType _digest, unsigned _level, lb::Time _from, lb::foreign_vector<_T> const& _out) const { GenericDataSet::populateDigest(_digest, _level, _from, (lb::foreign_vector<uint8_t>)_out); }
+};
+
+template <class _T> using DataSetPtr = std::shared_ptr<DataSet<_T> >;
+
+typedef DataSetPtr<float> DataSetFloatPtr;
 
 class DataSetDataStore: public lb::DataStore
 {
@@ -139,6 +154,6 @@ protected:
 
 private:
 	SimpleKey m_operationKey = 0;
-	DataSetPtr m_s;
+	DataSetFloatPtr m_s;
 };
 

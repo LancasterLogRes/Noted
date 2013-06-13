@@ -7,8 +7,9 @@
 #include "Common.h"
 #include "AcausalAnalysis.h"
 
-class DataSet;
-typedef std::shared_ptr<DataSet> DataSetPtr;
+class GenericDataSet;
+template <class _T> class DataSet;
+typedef std::shared_ptr<DataSet<float>> DataSetFloatPtr;
 
 class AudioManFace: public QObject
 {
@@ -24,7 +25,7 @@ public:
 	inline DataKey keySet(QString const& _operationId) const { return DataKey(key(), qHash(_operationId)); }
 	inline DataKey rawKeySet(QString const& _operationId) const { return DataKey(rawKey(), qHash(_operationId)); }
 
-	virtual DataSetPtr wave() const = 0;
+	virtual DataSetFloatPtr wave() const = 0;
 	virtual void populateHop(unsigned _index, std::vector<float>& _h) const = 0;
 	virtual lb::foreign_vector<float const> cursorWaveWindow() const { return lb::foreign_vector<float const>(); } // TODO
 

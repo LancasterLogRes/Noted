@@ -22,7 +22,7 @@ public:
 	virtual ~AudioMan();
 
 	/// Data
-	virtual DataSetPtr wave() const { QMutexLocker l(&x_wave); return m_wave; }
+	virtual DataSetFloatPtr wave() const { QMutexLocker l(&x_wave); return m_wave; }
 	virtual void populateHop(unsigned _index, std::vector<float>& _h) const;
 
 	/// Playback
@@ -61,7 +61,7 @@ private:
 
 	/// Data
 	mutable QMutex x_wave;
-	DataSetPtr m_wave;
+	DataSetFloatPtr m_wave;
 
 	/// Playback
 	// Audio hardware i/o

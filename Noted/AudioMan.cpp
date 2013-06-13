@@ -14,7 +14,7 @@ public:
 	ResampleWaveAc(): AcausalAnalysis("Resampling wave") {}
 	virtual unsigned prepare(unsigned, unsigned, Time)
 	{
-		DataSetPtr wave;
+		DataSetFloatPtr wave;
 		{
 			QMutexLocker l(&((AudioMan*)NotedFace::audio())->x_wave);
 			((AudioMan*)NotedFace::audio())->m_wave = wave = NotedFace::data()->create(DataKey(NotedFace::audio()->rawKey(), 0));
@@ -39,7 +39,7 @@ public:
 		const unsigned c_chunkSamples = 65536;
 
 		unsigned r = ((AudioMan*)NotedFace::audio())->m_rate;
-		DataSetPtr wave = ((AudioMan*)NotedFace::audio())->m_wave;
+		DataSetFloatPtr wave = ((AudioMan*)NotedFace::audio())->m_wave;
 
 		FileAudioStream as(c_chunkSamples, ((AudioMan*)NotedFace::audio())->m_filename.toStdString(), r);
 		as.init();

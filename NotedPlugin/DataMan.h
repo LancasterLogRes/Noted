@@ -11,20 +11,63 @@ class DataMan: public QObject
 {
 	Q_OBJECT
 
-	friend class DataSet;
+	friend class GenericDataSet;
 
 public:
 	DataMan();
 
-	// TODO: template <class _T> DataSetPtr<_T> get(DataKey _k);
+	// TODO: template <class _T> DataSetFloatPtr<_T> get(DataKey _k);
 	/// Either create a DataSet for the given key, or return the preexisting complete DataSet.
 	/// @returns DataSet for the given key, possibly complete. Check DataSet::haveRaw() for whether
 	/// it is complete before initialisation.
-	DataSetPtr create(DataKey _k);
+	template <class _T = float> DataSetPtr<_T> create(DataKey _k)
+	{
+//		cdebug << "DataMan::dataSet(" << std::hex << _k << ")";
+		QMutexLocker l(&x_data);
+		if (m_data.contains(_k))
+		{
+			assert(m_data[_k]->isOfType<_T>());
+		}
+		else
+		{
+			m_data[_k] = std::make_shared<DataSet<_T>>(_k);
+			x_data.unlock();
+			emit inUseChanged();
+			emit footprintChanged();
+			emit changed();
+			x_data.lock();
+			cdebug << "Creating.";
+		}
+		return std::static_pointer_cast<DataSet<_T>>(m_data[_k]);
+	}
 
 	/// Get a preexisting complete DataSet for a given key.
-	/// @returns The complete DataSet for @a _k , or the null DataSetPtr if it doesn't (yet) exist.
-	DataSetPtr get(DataKey _k);
+	/// @returns The complete DataSet for @a _k , or the null DataSetFloatPtr if it doesn't (yet) exist.
+	template <class _T = float> DataSetPtr<_T> get(DataKey _k)
+	{
+		QMutexLocker l(&x_data);
+		if (m_data.contains(_k))
+		{
+			if (m_data[_k])
+			{
+				assert(m_data[_k]->isOfType<_T>());
+				if (m_data[_k]->haveRaw())
+					return std::static_pointer_cast<DataSet<_T>>(m_data[_k]);
+			}
+			return nullptr;
+		}
+		auto ds = std::make_shared<DataSet<_T>>(_k);
+		if (ds->haveRaw())
+		{
+			m_data[_k] = ds;
+			x_data.unlock();
+			emit inUseChanged();
+			emit changed();
+			x_data.lock();
+			return ds;
+		}
+		return nullptr;
+	}
 
 	/// Deletes from disk unused datasets.
 	/// @returns true if resultant cache is less than @a _maxBytes.
@@ -51,5 +94,5 @@ private:
 	Q_PROPERTY(uint64_t inUse READ inUse NOTIFY inUseChanged)
 
 	mutable QMutex x_data;
-	mutable QHash<DataKey, DataSetPtr> m_data;		// not really mutable, just because QHash doesn't provide a const returner of const& items.
+	mutable QHash<DataKey, std::shared_ptr<GenericDataSet> > m_data;		// not really mutable, just because QHash doesn't provide a const returner of const& items.
 };

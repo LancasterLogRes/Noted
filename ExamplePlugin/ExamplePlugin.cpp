@@ -72,7 +72,7 @@ public:
 	SimpleKey operationKey() const { return m_operationKey; }
 
 private:
-	DataSetPtr m_ds;
+	DataSetFloatPtr m_ds;
 	vector<float> m_lastRecord;
 	SimpleKey m_operationKey = qHash(QString("ExamplePlugin/ZeroCrossings"));
 };

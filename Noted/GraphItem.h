@@ -64,7 +64,7 @@ protected:
 	mutable QSGGeometry* m_spectrumQuad = nullptr;
 
 	// At current LOD (m_lod)
-	QSGNode* geometryPage(unsigned _index, GraphMetadata _g, DataSetPtr _ds);
+	QSGNode* geometryPage(unsigned _index, GraphMetadata _g, DataSetFloatPtr _ds);
 	QSGGeometry* spectrumQuad() const;
 	void killCache();
 	bool m_invalidated = true;	// Cache is invalid.
