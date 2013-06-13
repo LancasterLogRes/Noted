@@ -53,15 +53,14 @@ public:
 	virtual void process(unsigned, Time _t)
 	{
 		std::vector<float> vs(NotedFace::audio()->hopSamples());
-		NotedFace::audio()->wave()->populateRaw(_t, &vs);
+		NotedFace::audio()->wave()->populateRaw(_t - toBase(vs.size() - 1, NotedFace::audio()->rate()), &vs);
 
 		// Count zero-crossings.
-		int zeroXs = 0;
+		int zeroXs = 0;	// even->-ve, odd->+ve
 		for (auto v: vs)
 			if ((v > 0) == !(zeroXs % 2))
 				++zeroXs;
-
-		m_lastRecord[0] = zeroXs / float(vs.size() / 2);
+		m_lastRecord[0] = (zeroXs - (vs[0] > 0 ? 1 : 0)) / float(vs.size());
 	}
 
 	virtual void record(unsigned, Time _t)

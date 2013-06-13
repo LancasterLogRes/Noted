@@ -64,9 +64,9 @@
     <addaction name="actZoomOut"/>
     <addaction name="actPanBack"/>
     <addaction name="actPanForward"/>
-    <addaction name="actFollow"/>
     <addaction name="separator"/>
-    <addaction name="actRedoEvents"/>
+    <addaction name="actFollow"/>
+    <addaction name="actTrack"/>
    </widget>
    <widget class="QMenu" name="menu_Events">
     <property name="title">
@@ -89,12 +89,30 @@
     <addaction name="actReadSettings"/>
     <addaction name="actWriteSettings"/>
    </widget>
+   <widget class="QMenu" name="menu_Data">
+    <property name="title">
+     <string>&amp;Data</string>
+    </property>
+    <addaction name="actPrune"/>
+    <addaction name="actInvalidate"/>
+    <addaction name="actRecompute"/>
+   </widget>
+   <widget class="QMenu" name="menuAudio">
+    <property name="title">
+     <string>Audio</string>
+    </property>
+    <addaction name="actPlay"/>
+    <addaction name="actPlayCausal"/>
+    <addaction name="actPassthrough"/>
+   </widget>
    <addaction name="menu_File"/>
+   <addaction name="menuAudio"/>
    <addaction name="menu_View"/>
    <addaction name="menuOutput"/>
    <addaction name="menu_Events"/>
-   <addaction name="menu_Debug"/>
+   <addaction name="menu_Data"/>
    <addaction name="menu_Help"/>
+   <addaction name="menu_Debug"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QToolBar" name="toolBar">
@@ -110,10 +128,10 @@
    <addaction name="actOpen"/>
    <addaction name="separator"/>
    <addaction name="actPlay"/>
-   <addaction name="actPlayCausal"/>
-   <addaction name="actPassthrough"/>
-   <addaction name="separator"/>
    <addaction name="actFollow"/>
+   <addaction name="actTrack"/>
+   <addaction name="separator"/>
+   <addaction name="actRecompute"/>
   </widget>
   <widget class="QDockWidget" name="dockWidgetStft">
    <property name="sizePolicy">
@@ -1048,7 +1066,7 @@ p, li { white-space: pre-wrap; }
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>&amp;Follow Cursor</string>
+    <string>Follow &amp;Cursor</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+F</string>
@@ -1076,14 +1094,6 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="shortcut">
     <string>Right</string>
-   </property>
-  </action>
-  <action name="actRedoEvents">
-   <property name="text">
-    <string>&amp;Recalculate Events</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+R</string>
    </property>
   </action>
   <action name="actOpenEvents">
@@ -1136,6 +1146,29 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="shortcut">
     <string>F6</string>
+   </property>
+  </action>
+  <action name="actTrack">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Track Cursor</string>
+   </property>
+  </action>
+  <action name="actPrune">
+   <property name="text">
+    <string>&amp;Prune</string>
+   </property>
+  </action>
+  <action name="actRecompute">
+   <property name="text">
+    <string>&amp;Recompute All</string>
+   </property>
+  </action>
+  <action name="actInvalidate">
+   <property name="text">
+    <string>&amp;Invalidate All</string>
    </property>
   </action>
  </widget>

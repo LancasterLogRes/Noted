@@ -109,16 +109,19 @@ private slots:
 	void on_actPassthrough_changed();
 	void on_actPanic_triggered();
 	void on_actFollow_changed();
+	void on_actTrack_changed();
 	void on_actZoomIn_triggered();
 	void on_actZoomOut_triggered();
 	void on_actPanBack_triggered();
 	void on_actPanForward_triggered();
 	void on_actViewAll_triggered() { view()->normalize(); }
-	void on_actRedoEvents_triggered();
 	void on_actNewEvents_triggered();
 	void on_actNewEventsFrom_triggered();
 	void on_actOpenEvents_triggered();
 	void on_actAbout_triggered();
+	void on_actInvalidate_triggered();
+	void on_actRecompute_triggered();
+	void on_actPrune_triggered();
 	void on_clearInfo_clicked();
 
 	void on_force16Bit_toggled(bool);

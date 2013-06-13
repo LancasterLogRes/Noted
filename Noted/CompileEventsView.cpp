@@ -78,11 +78,11 @@ void CompileEventsView::fini(bool _completed, bool _didRecord)
 		for (auto i = m_dataStores.begin(); i != m_dataStores.end(); ++i)
 		{
 			if (dynamic_cast<GraphChart*>(i.key()))
-				i.value()->fini(MeanDigest | MinMaxInOutDigest);
+				i.value()->fini({MeanDigest, MinMaxInOutDigest});
 			else if (dynamic_cast<GraphDenseDenseFixed*>(i.key()))
-				i.value()->fini(MeanDigest);
+				i.value()->fini({MeanDigest});
 			else
-				i.value()->fini(DigestFlags());
+				i.value()->fini({});
 			delete i.value();
 			i.key()->setStore(nullptr);
 		}

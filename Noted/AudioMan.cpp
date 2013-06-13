@@ -12,7 +12,57 @@ class ResampleWaveAc: public AcausalAnalysis
 {
 public:
 	ResampleWaveAc(): AcausalAnalysis("Resampling wave") {}
-	virtual void analyze(unsigned, unsigned, lb::Time) { Noted::audio()->resampleWave(); }
+	virtual unsigned prepare(unsigned, unsigned, Time)
+	{
+		DataSetPtr wave;
+		{
+			QMutexLocker l(&((AudioMan*)NotedFace::audio())->x_wave);
+			((AudioMan*)NotedFace::audio())->m_wave = wave = NotedFace::data()->dataSet(DataKeySet(NotedFace::audio()->rawKey(), 0));
+		}
+
+		if (wave->haveRaw())
+		{
+			((AudioMan*)NotedFace::audio())->m_samples = wave->rawRecords();
+			return 0;
+		}
+		else
+		{
+			FileAudioStream as(256, ((AudioMan*)NotedFace::audio())->m_filename.toStdString(), ((AudioMan*)NotedFace::audio())->m_rate);
+			as.init();
+			((AudioMan*)NotedFace::audio())->m_samples = fromBase(as.duration(), ((AudioMan*)NotedFace::audio())->m_rate);
+			return ((AudioMan*)NotedFace::audio())->m_samples;
+		}
+	}
+
+	virtual void analyze(unsigned, unsigned, lb::Time)
+	{
+		const unsigned c_chunkSamples = 65536;
+
+		unsigned r = ((AudioMan*)NotedFace::audio())->m_rate;
+		DataSetPtr wave = ((AudioMan*)NotedFace::audio())->m_wave;
+
+		FileAudioStream as(c_chunkSamples, ((AudioMan*)NotedFace::audio())->m_filename.toStdString(), r);
+		as.init();
+		unsigned s = fromBase(as.duration(), r);
+		wave->init(1, toBase(1, r));
+
+		if (!wave->haveRaw())
+		{
+			float chunk[c_chunkSamples];
+			unsigned done = 0;
+			for (; done < s; done += c_chunkSamples)
+			{
+				as.copyTo(0, chunk);
+				foreign_vector<float> rs(chunk, min(s - done, c_chunkSamples));
+				wave->appendRecords(rs);
+				AcausalAnalysis::done(done);
+			}
+		}
+
+		wave->ensureHaveDigest(MeanRmsDigest);
+		wave->ensureHaveDigest(MinMaxInOutDigest);
+		wave->done();
+	}
 };
 
 AudioMan::AudioMan():
@@ -118,14 +168,8 @@ void AudioMan::sourceChanged()
 	auto oldRawKey = m_rawKey;
 	updateKeys();
 
-	if (oldRawKey != m_rawKey)
-	{
-		QMutexLocker l(&x_wave);
-		m_wave.reset();
-		Noted::compute()->invalidate(resampleWaveAcAnalysis());
-	}
-	else if (oldKey != m_key)
-		Noted::compute()->invalidate(Noted::events()->compileEventsAnalysis());
+	if (oldRawKey != m_rawKey || oldKey != m_key)
+		Noted::compute()->invalidate();
 }
 
 void AudioMan::play(bool _causal)
@@ -168,10 +212,10 @@ void AudioMan::stop()
 	}
 	if (m_isCausal)
 	{
+		m_isCausal = false;
 		while (m_audioThread->isRunning())
 			usleep(100000);
 		Noted::compute()->finalizeCausal();
-		m_isCausal = false;
 		Noted::compute()->resumeWork();
 		emit stateChanged(isAcausal(), isCausal(), isPassing());
 	}
@@ -219,39 +263,6 @@ void AudioMan::populateHop(unsigned _index, std::vector<float>& _h) const
 	QMutexLocker l(&x_wave);
 	if (m_wave)
 		m_wave->populateRaw(_index * hop(), &_h);
-}
-
-bool AudioMan::resampleWave()
-{
-	const unsigned c_chunkSamples = 65536;
-
-	{
-		QMutexLocker l(&x_wave);
-		m_wave = NotedFace::data()->dataSet(DataKeySet(rawKey(), 0));
-		m_wave->init(1, toBase(1, m_rate), 0);
-	}
-
-	FileAudioStream as(c_chunkSamples, m_filename.toStdString(), m_rate);
-	as.init();
-	m_samples = fromBase(as.duration(), m_rate);
-
-	if (!m_wave->haveRaw())
-	{
-		float chunk[c_chunkSamples];
-		unsigned done = 0;
-		for (; done < m_samples; done += c_chunkSamples)
-		{
-			as.copyTo(0, chunk);
-			foreign_vector<float> rs(chunk, min(m_samples - done, c_chunkSamples));
-			m_wave->appendRecords(rs);
-		}
-	}
-
-	m_wave->ensureHaveDigest(MeanRmsDigest);
-	m_wave->ensureHaveDigest(MinMaxInOutDigest);
-	m_wave->done();
-
-	return true;
 }
 
 bool AudioMan::serviceAudio()

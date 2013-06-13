@@ -119,7 +119,6 @@ Noted::Noted(QWidget* _p):
 
 	connect(compute(), SIGNAL(finished()), SLOT(onWorkFinished()));
 	connect(compute(), SIGNAL(progressed(QString, int)), SLOT(onWorkProgressed(QString, int)));
-	connect(compute(), SIGNAL(finished()), SLOT(updateEventStuff()));
 
 	connect(libs(), SIGNAL(eventCompilerFactoryAvailable(QString, unsigned)), SLOT(onEventCompilerFactoryAvailable(QString, unsigned)));
 	connect(libs(), SIGNAL(eventCompilerFactoryUnavailable(QString)), SLOT(onEventCompilerFactoryUnavailable(QString)));
@@ -302,7 +301,7 @@ QGLWidget* Noted::glMaster() const
 
 void Noted::on_actAbout_triggered()
 {
-	QMessageBox::about(this, "About Noted!", "<h1>Noted!</h1>Copyright (c)2011, 2012, 2013 Lancaster Logic Response Limited. This code is released under version 2 of the GNU General Public Licence.");
+	QMessageBox::about(this, "About Noted!", "<h1>Noted!</h1>Coded by Gavin Wood<br/>Copyright (c)2011, 2012, 2013 Lancaster Logic Response Limited.<br/>This code is released under version 2 of the GNU General Public Licence.");
 }
 
 void Noted::onPlaybackStatusChanged()
@@ -569,6 +568,14 @@ void Noted::on_hop_valueChanged(int _i)
 
 void Noted::on_actFollow_changed()
 {
+	if (ui->actFollow->isChecked())
+		ui->actTrack->setChecked(false);
+}
+
+void Noted::on_actTrack_changed()
+{
+	if (ui->actTrack->isChecked())
+		ui->actFollow->setChecked(false);
 }
 
 void Noted::on_actOpen_triggered()
@@ -661,11 +668,21 @@ void Noted::on_actPanForward_triggered()
 	view()->setOffset(view()->offset() + view()->visibleDuration() / 4);
 }
 
-void Noted::on_actRedoEvents_triggered()
+void Noted::on_actRecompute_triggered()
 {
 	data()->releaseDataSets();
 	data()->pruneDataSets();
 	compute()->invalidate();
+}
+
+void Noted::on_actInvalidate_triggered()
+{
+	compute()->invalidate();
+}
+
+void Noted::on_actPrune_triggered()
+{
+	data()->pruneDataSets();
 }
 
 void Noted::on_actPanic_triggered()
@@ -749,6 +766,8 @@ void Noted::onCursorChanged(lb::Time _cursor)
 {
 	ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(_cursor, toBase(audio()->samples(), audio()->rate()), 0, 0).c_str());
 	if (ui->actFollow->isChecked() && (_cursor < view()->earliestVisible() || _cursor > view()->earliestVisible() + view()->visibleDuration() * 7 / 8))
+		view()->setOffset(_cursor - view()->visibleDuration() / 8);
+	else if (ui->actTrack->isChecked())
 		view()->setOffset(_cursor - view()->visibleDuration() / 8);
 }
 

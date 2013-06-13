@@ -36,13 +36,12 @@ void DataSetDataStore::shiftBuffer(unsigned _index, foreign_vector<float> const&
 		m_s->appendRecord(NotedFace::audio()->hop() * _index, _record);
 }
 
-void DataSetDataStore::fini(DigestFlags _digests)
+void DataSetDataStore::fini(DigestTypes _digests)
 {
 	if (m_s)
 	{
-		for (DigestFlags f = _digests; f; f &= ~f.highestSet())
-			if (!m_s->haveDigest(f.highestSet()))
-				m_s->ensureHaveDigest(f.highestSet());
+		for (DigestType t: _digests)
+			m_s->ensureHaveDigest(t);
 		m_s->done();
 	}
 	m_s = nullptr;
@@ -53,6 +52,36 @@ DataSet::DataSet(DataKeySet _key):
 	m_operationKey(_key.operation)
 {
 //	cdebug << (void*)this << (QThread::currentThreadId()) << "DataSet::DataSet(" << _operationKey << ")";
+	if (!m_raw.open(m_sourceKey, m_operationKey, 0))
+	{
+		m_raw.reset();
+		return;
+	}
+
+	m_first = m_raw.metadata().first;
+	m_stride = m_raw.metadata().stride;
+	m_recordLength = m_raw.metadata().recordLength;
+	m_digestBase = m_raw.metadata().digestBase;
+	m_elementSize = m_raw.metadata().elementSize;
+	m_elementTypeName = std::string(m_raw.metadata().elementTypeName, sizeof(m_raw.mutableMetadata().elementTypeName));
+
+	if (!m_recordLength)
+	{
+		if (!m_toc.open(m_sourceKey, m_operationKey, 1))
+		{
+			m_raw.reset();
+			m_toc.reset();
+			return;
+		}
+	}
+
+	for (auto d: digestTypes())
+	{
+		MipmappedCache<>* c = new MipmappedCache<>;
+		bool haveDigest = c->open(m_sourceKey, m_operationKey, 2 + (int)d, digestSize(d) * m_recordLength * m_elementSize, digestRecords());
+		if (haveDigest)
+			m_digest[d] = shared_ptr<MipmappedCache<> >(c);
+	}
 }
 
 void DataSet::init(unsigned _recordLength, Time _stride, Time _first)
@@ -72,11 +101,11 @@ unsigned DataSet::rawRecords() const
 void DataSet::setup(unsigned _itemCount)
 {
 	(void)_itemCount;
-	m_raw.init(m_sourceKey, m_operationKey, 0);
+	m_raw.open(m_sourceKey, m_operationKey, 0);
 	if (m_recordLength)
 		m_toc.reset();
 	else
-		m_toc.init(m_sourceKey, m_operationKey, 1);
+		m_toc.open(m_sourceKey, m_operationKey, 1);
 	m_recordCount = 0;
 	m_pos = 0;
 	m_digest.clear();
@@ -121,25 +150,37 @@ void DataSet::appendRecord(Time _t, foreign_vector<float> const& _vs)
 //	cdebug << "[" << hex << m_operationKey << "] <<" << _vs.size() << "(pos:" << m_pos << " rc:" << m_recordCount << " rl:" << m_raw.file().size() << "ts" << m_toc.file().size() << ")";
 }
 
+void DataSet::finishedRaw()
+{
+	m_raw.ensureMapped();
+	if (!m_raw.isGood())
+	{
+		m_raw.mutableMetadata().first = m_first;
+		m_raw.mutableMetadata().stride = m_stride;
+		m_raw.mutableMetadata().recordLength = m_recordLength;
+		m_raw.mutableMetadata().digestBase = m_digestBase;
+		m_raw.mutableMetadata().elementSize = m_elementSize;
+		strncpy(m_raw.mutableMetadata().elementTypeName, m_elementTypeName.c_str(), sizeof(m_raw.mutableMetadata().elementTypeName));
+		m_raw.setGood();
+		if (m_toc.isOpen())
+			m_toc.setGood();
+	}
+}
+
 void DataSet::done()
 {
 	cdebug << "DONE [" << hex << m_operationKey << "] (pos:" << m_pos << " rc:" << m_recordCount << " rl:" << m_raw.file().size() << "ts" << m_toc.file().size() << ")";
-	m_raw.setGood();
-	if (m_toc.isOpen())
-		m_toc.setGood();
+	finishedRaw();
 	NotedFace::data()->noteDone(DataKeySet(m_sourceKey, m_operationKey));
 }
 
-void DataSet::ensureHaveDigest(DigestFlag _t)
+void DataSet::ensureHaveDigest(DigestType _t)
 {
 	assert(m_stride);
 	assert(m_recordLength);
-	m_raw.setGood();
-	if (m_toc.isOpen())
-		m_toc.setGood();
-	m_availableDigests |= _t;
-	m_digest[_t] = make_shared<MipmappedCache>();
-	bool haveDigest = m_digest[_t]->init(m_sourceKey, m_operationKey, qHash(2 + _t), digestSize(_t) * recordLength() * sizeof(float), digestRecords());
+	m_raw.ensureMapped();
+	m_digest[_t] = make_shared<MipmappedCache<>>();
+	bool haveDigest = m_digest[_t]->open(m_sourceKey, m_operationKey, 2 + (int)_t, digestSize(_t) * recordLength() * sizeof(float), digestRecords());
 	if (haveDigest)
 		return;
 
@@ -322,7 +363,7 @@ void DataSet::populateRaw(lb::Time _from, foreign_vector<float> const& _out, XOf
 	}
 }
 
-void DataSet::populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from, foreign_vector<float> const& _out, lb::XOf _transform) const
+void DataSet::populateDigest(DigestType _digest, unsigned _level, lb::Time _from, foreign_vector<float> const& _out, lb::XOf _transform) const
 {
 	assert(this);
 	if (!m_digest.contains(_digest))
@@ -333,7 +374,6 @@ void DataSet::populateDigest(DigestFlag _digest, unsigned _level, lb::Time _from
 
 /*	for (unsigned i = 0; i < _size; ++i)
 		_out[i] = 0;*/
-	assert(m_availableDigests & _digest);
 	int recordBegin = (_from - m_first) / m_stride / (m_digestBase << _level);
 	int drLen = digestSize(_digest) * recordLength();
 	int records = _out.size() / drLen;

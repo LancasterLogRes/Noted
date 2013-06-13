@@ -15,7 +15,7 @@ Rectangle {
 
 	function reset() {
 		yMode = 1
-		yScaleUSer = Qt.vector3d(0, 1, 0)
+		yScaleUser = Qt.vector3d(0, 1, 0)
 	}
 
 	function zoomScale(y, q) {

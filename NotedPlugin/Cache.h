@@ -34,39 +34,31 @@
 #include <Common/Time.h>
 #include "Common.h"
 
-// Usage: call init(), then initialize data with call to data(), then mention it's good with setGood(). data() can then be used to read data.
-class Cache
+struct Void {};
+
+class ProtoCache
 {
 	enum { IsGood = 1 };
-	struct Header
+
+	struct BaseHeader
 	{
 		uint32_t flags;
-		uint32_t sourceKey;
-		uint32_t operationKey;
 		uint32_t bytes;
 	};
 
 public:
-	Cache();
-	~Cache() { reset(); }
+	ProtoCache(size_t _headerSize): m_headerSize(_headerSize) {}
+	~ProtoCache() { reset(); }
 
 	typedef QMultiMap<QDateTime, QPair<DataKeySet, uint64_t>> AvailableMap;
 
 	static AvailableMap available();
 	static void kill(DataKeySet);
 
-	void reset();
+	bool open(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, size_t _bytes);
+	bool open(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey);
 
-	bool init(uint32_t _fingerprint, QString const& _type, size_t _bytes) { return init(_fingerprint, qHash(_type), 0, _bytes); }
-	bool init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, size_t _bytes);
-	bool init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey);
-
-	bool isOpen() const { return m_file.isOpen(); }
-	bool isMapped() const { return !!m_mapping; }
-	bool isGood() const { return isMapped() && header().flags & IsGood; }
-	size_t bytes() const { assert(isMapped()); return header().bytes; }
-	QFile& file() { return m_file; }
-
+	void ensureMapped();
 	void setGood();
 
 	template <class _T> void append(_T const& _raw) { assert(isOpen()); assert(!isGood()); m_file.write((char const*)&_raw, sizeof(_T)); }
@@ -74,22 +66,81 @@ public:
 	template <class _T> lb::foreign_vector<_T> data() { assert(isMapped()); return lb::foreign_vector<_T>(payload<_T>(), bytes() / sizeof(_T)); }
 	template <class _T> lb::foreign_vector<_T const> data() const { assert(isGood()); return lb::foreign_vector<_T const>((_T const*)payload<_T>(), bytes() / sizeof(_T)); }
 
+	void reset();
+
+	bool isOpen() const { return m_file.isOpen(); }
+	bool isMapped() const { return !!m_mapping; }
+	bool isGood() const { return isMapped() && header().flags & IsGood; }
+	size_t bytes() const { assert(isMapped()); return header().bytes; }
+	QFile& file() { return m_file; }
+
 protected:
-	template <class _T> _T* payload() const { return (_T*)(m_mapping + sizeof(Header)); }
-	Header& header() const { return *(Header*)m_mapping; }
+	BaseHeader& header() const { return *(BaseHeader*)m_mapping; }
+	template <class _T> _T* payload() const { return (_T*)(m_mapping + m_headerSize); }
 
 	uint8_t* m_mapping = nullptr;
 	QFile m_file;
+	size_t m_headerSize;
+};
+
+// Usage: call init(), then initialize data with call to data(), then mention it's good with setGood(). data() can then be used to read data.
+template <class _Metadata = Void>
+class Cache: public ProtoCache
+{
+	struct Header
+	{
+		uint32_t flags;
+		uint32_t bytes;
+		_Metadata metadata;
+	};
+
+public:
+	Cache(): ProtoCache(sizeof(Header)) {}
+
+	_Metadata const& metadata() const { assert(isMapped()); return header().metadata; }
+	_Metadata& mutableMetadata() { assert(isMapped() && !isGood()); return header().metadata; }
+
+protected:
+	Header& header() const { return *(Header*)m_mapping; }
 };
 
 // Usage: call init(), then initialize base level with call to data(0), then the other levels with a call to generate().
-class MipmappedCache: protected Cache
+template <class _Metadata = Void>
+class MipmappedCache: protected Cache<_Metadata>
 {
 public:
-	MipmappedCache();
+	typedef Cache<_Metadata> Super;
+	using Super::isGood;
+	using Super::setGood;
 
-	bool init(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, unsigned _sizeofItem, unsigned _items);
-	bool init(uint32_t _fingerprint, QString const& _type, unsigned _sizeofItem, unsigned _items) { return init(_fingerprint, qHash(_type), (uint32_t)-1, _sizeofItem, _items); }
+	bool open(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, unsigned _sizeofItem, unsigned _items)
+	{
+		m_sizeofItem = _sizeofItem;
+		m_items = _items;
+		m_mappingAtDepth.clear();
+		m_itemsAtDepth.clear();
+
+		unsigned totalItems = 0;
+		for (unsigned level = 0, levelItems = _items; levelItems > 2; levelItems = (levelItems + 1) / 2, ++level)
+		{
+			if (level)
+				m_mappingAtDepth.push_back(m_mappingAtDepth[level - 1] + m_itemsAtDepth[level - 1] * m_sizeofItem);
+			else
+				m_mappingAtDepth.push_back(nullptr);
+			m_itemsAtDepth.push_back(levelItems);
+			totalItems += levelItems;
+		}
+
+		bool ret = ProtoCache::open(_sourceKey, _operationKey, _extraKey, totalItems * m_sizeofItem);
+		for (unsigned i = 0; i < levels(); ++i)
+		{
+			m_mappingAtDepth[i] += (size_t)ProtoCache::payload<uint8_t>();
+			assert(m_mappingAtDepth[i] >= ProtoCache::payload<uint8_t>());
+			assert(m_mappingAtDepth[i] + m_itemsAtDepth[i] * m_sizeofItem <= ProtoCache::payload<uint8_t>() + ProtoCache::bytes());
+		}
+
+		return ret;
+	}
 
 	template <class _T> size_t valuesAtDepth(unsigned _depth) const { return m_itemsAtDepth[_depth] * m_sizeofItem / sizeof(_T); }
 

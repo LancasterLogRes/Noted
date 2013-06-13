@@ -8,7 +8,7 @@ using namespace lb;
 
 inline pair<GraphMetadata, DataKeySet> findGraph(QString const& _url)
 {
-	cnote << "findGraph" << _url;
+//	cnote << "findGraph" << _url;
 	if (GraphMetadata g = NotedFace::get()->graphs()->find(_url))
 		return make_pair(g, DataKeySet(g.isRawSource() ? Noted::audio()->rawKey() : Noted::audio()->key(), g.operationKey()));
 	return pair<GraphMetadata, DataKeySet>();

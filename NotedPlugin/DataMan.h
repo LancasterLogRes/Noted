@@ -32,7 +32,7 @@ public:
 	uint64_t inUse() const;
 
 	// TODO: template <class _T> DataSetPtr<_T> get(DataKeySet _k);
-	DataSetPtr readDataSet(DataKeySet _k) const;
+	DataSetPtr readDataSet(DataKeySet _k);
 
 public slots:
 	/// Don't call unless you're planning to recompute everything - it'll kill all your data!

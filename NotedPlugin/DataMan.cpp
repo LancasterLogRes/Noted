@@ -26,10 +26,25 @@ DataSetPtr DataMan::dataSet(DataKeySet _ks)
 	return m_data[_ks];
 }
 
-DataSetPtr DataMan::readDataSet(DataKeySet _k) const
+DataSetPtr DataMan::readDataSet(DataKeySet _k)
 {
+	DataSetPtr ret;
+
 	QMutexLocker l(&x_data);
-	auto ret = m_data.value(_k);
+	if (m_data.contains(_k))
+		ret = m_data[_k];
+	else
+	{
+		ret = make_shared<DataSet>(_k);
+		if (ret->haveRaw())
+		{
+			m_data[_k] = ret;
+			x_data.unlock();
+			emit inUseChanged();
+			emit changed();
+			x_data.lock();
+		}
+	}
 	return ret && ret->haveRaw() ? ret : nullptr;
 }
 
@@ -45,7 +60,7 @@ void DataMan::releaseDataSets()
 
 uint64_t DataMan::footprint()
 {
-	Cache::AvailableMap as = Cache::available();
+	ProtoCache::AvailableMap as = ProtoCache::available();
 	uint64_t ret = 0;
 	for (auto i: as)
 		ret += i.second;
@@ -54,7 +69,7 @@ uint64_t DataMan::footprint()
 
 uint64_t DataMan::inUse() const
 {
-	Cache::AvailableMap as = Cache::available();
+	ProtoCache::AvailableMap as = ProtoCache::available();
 	uint64_t ret = 0;
 	{
 		QMutexLocker l(&x_data);
@@ -67,7 +82,7 @@ uint64_t DataMan::inUse() const
 
 bool DataMan::pruneDataSets(uint64_t _maxBytes)
 {
-	Cache::AvailableMap as = Cache::available();
+	ProtoCache::AvailableMap as = ProtoCache::available();
 
 	int64_t amountToDelete = -(int64_t)_maxBytes;
 	for (auto i: as)
@@ -80,7 +95,7 @@ bool DataMan::pruneDataSets(uint64_t _maxBytes)
 		for (auto i = as.begin(); i != as.end() && amountToDelete > 0; ++i)
 			if (!m_data.contains(i->first))
 			{
-				Cache::kill(i->first);
+				ProtoCache::kill(i->first);
 				amountToDelete -= i->second;
 			}
 	}

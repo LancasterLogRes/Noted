@@ -56,7 +56,6 @@ private slots:
 	void processCursorChange();
 
 private:
-	bool resampleWave();
 	bool serviceAudio();
 	void sourceChanged();
 

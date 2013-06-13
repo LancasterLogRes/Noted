@@ -8,3 +8,10 @@ class DataPoint.
 - Returns value without necessarily doing computation.
 - Should automatically append to DataSet if worth doing.
 - Can then be used for more advanced stuff later.
+
+DataSet should record metadata (typeid, stride, recordLength) and discover digests.
+- Then improve DataMan API so get() can open existing without reinitialisation.
+
+Make extensible:
+- Digests.
+- Graph drawing methods.

@@ -51,6 +51,7 @@ void ComputeMan::invalidate(AcausalAnalysisPtr const& _a)
 		suspendWork();
 		cnote << "WORK Invalidated " << (_a ? _a->name().toLatin1().data() : "(None)");
 		m_toBeAnalyzed.insert(_a);
+		NotedFace::data()->releaseDataSets();
 		resumeWork();
 	}
 }
