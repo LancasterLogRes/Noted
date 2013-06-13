@@ -19,10 +19,10 @@ public:
 	virtual ~AudioManFace() {}
 
 	/// Data
-	inline DataKey key() const { return m_key; }
-	inline DataKey rawKey() const { return m_rawKey; }
-	inline DataKeySet keySet(QString const& _operationId) const { return DataKeySet(key(), qHash(_operationId)); }
-	inline DataKeySet rawKeySet(QString const& _operationId) const { return DataKeySet(rawKey(), qHash(_operationId)); }
+	inline SimpleKey key() const { return m_key; }
+	inline SimpleKey rawKey() const { return m_rawKey; }
+	inline DataKey keySet(QString const& _operationId) const { return DataKey(key(), qHash(_operationId)); }
+	inline DataKey rawKeySet(QString const& _operationId) const { return DataKey(rawKey(), qHash(_operationId)); }
 
 	virtual DataSetPtr wave() const = 0;
 	virtual void populateHop(unsigned _index, std::vector<float>& _h) const = 0;
@@ -102,8 +102,8 @@ protected:
 	/// Data
 	AcausalAnalysisPtr m_resampleWaveAcAnalysis;
 	QString m_filename;
-	DataKey m_rawKey = 0;				///< filename ^ rate
-	DataKey m_key = 0;					///< rawKey ^ hop
+	SimpleKey m_rawKey = 0;				///< filename ^ rate
+	SimpleKey m_key = 0;					///< rawKey ^ hop
 	unsigned m_rate = 1;
 	unsigned m_hopSamples = 2;
 	unsigned m_samples = 0;

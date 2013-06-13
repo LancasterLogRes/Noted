@@ -47,7 +47,7 @@ void foo(DataSet* ds)
 class DataSet
 {
 public:
-	explicit DataSet(DataKeySet _key);
+	explicit DataSet(DataKey _key);
 
 	void init(unsigned _recordLength, lb::Time _stride = 0, lb::Time _first = 0);	// _recordLength is in floats (0 for variable). _stride is the duration between sequential readings. will be related to hops for most things. (0 for variable). Don't call digest if either are zero.
 	void init(unsigned _itemCount);
@@ -99,8 +99,8 @@ private:
 		uint32_t elementSize;
 	};
 
-	DataKey m_sourceKey = 0;
-	DataKey m_operationKey = 0;
+	SimpleKey m_sourceKey = 0;
+	SimpleKey m_operationKey = 0;
 	Cache<Metadata> m_raw;
 	Cache<> m_toc;
 
@@ -129,8 +129,8 @@ public:
 	bool isActive() const { return !!m_s; }
 	void fini(DigestTypes _digests);
 
-	static DataKey operationKey(lb::GraphSpec const* _gs);
-	DataKey operationKey() const { return m_operationKey; }
+	static SimpleKey operationKey(lb::GraphSpec const* _gs);
+	SimpleKey operationKey() const { return m_operationKey; }
 
 protected:
 	// Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
@@ -138,7 +138,7 @@ protected:
 	virtual void shiftBuffer(unsigned _index, lb::foreign_vector<float> const& _record);
 
 private:
-	DataKey m_operationKey = 0;
+	SimpleKey m_operationKey = 0;
 	DataSetPtr m_s;
 };
 

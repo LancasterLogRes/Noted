@@ -9,7 +9,7 @@ DataMan::DataMan()
 {
 }
 
-DataSetPtr DataMan::dataSet(DataKeySet _ks)
+DataSetPtr DataMan::create(DataKey _ks)
 {
 	cdebug << "DataMan::dataSet(" << hex << _ks << ")";
 	QMutexLocker l(&x_data);
@@ -26,7 +26,7 @@ DataSetPtr DataMan::dataSet(DataKeySet _ks)
 	return m_data[_ks];
 }
 
-DataSetPtr DataMan::readDataSet(DataKeySet _k)
+DataSetPtr DataMan::get(DataKey _k)
 {
 	DataSetPtr ret;
 

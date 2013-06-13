@@ -7,14 +7,14 @@
 #include <Common/Time.h>
 #include <Common/Trivial.h>
 
-typedef uint32_t DataKey;
+typedef uint32_t SimpleKey;
 
-LIGHTBOX_STRUCT(2, DataKeySet, DataKey, source, DataKey, operation);
-inline uint qHash(DataKeySet _k) { return _k.source ^ DataKey(_k.operation << 16) ^ DataKey(_k.operation >> 16); }
+LIGHTBOX_STRUCT(2, DataKey, SimpleKey, source, SimpleKey, operation);
+inline uint qHash(DataKey _k) { return _k.source ^ SimpleKey(_k.operation << 16) ^ SimpleKey(_k.operation >> 16); }
 
 Q_DECLARE_METATYPE(lb::Time)
+Q_DECLARE_METATYPE(SimpleKey)
 Q_DECLARE_METATYPE(DataKey)
-Q_DECLARE_METATYPE(DataKeySet)
 
 template <class _FX, class _FY, class _FL>
 void drawPeaks(QPainter& _p, std::map<float, float> const& _ps, int _yoffset, _FX _x, _FY _y, _FL _l, int _maxCount = 5)

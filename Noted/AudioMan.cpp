@@ -17,7 +17,7 @@ public:
 		DataSetPtr wave;
 		{
 			QMutexLocker l(&((AudioMan*)NotedFace::audio())->x_wave);
-			((AudioMan*)NotedFace::audio())->m_wave = wave = NotedFace::data()->dataSet(DataKeySet(NotedFace::audio()->rawKey(), 0));
+			((AudioMan*)NotedFace::audio())->m_wave = wave = NotedFace::data()->create(DataKey(NotedFace::audio()->rawKey(), 0));
 		}
 
 		if (wave->haveRaw())

@@ -6,12 +6,12 @@
 using namespace std;
 using namespace lb;
 
-inline pair<GraphMetadata, DataKeySet> findGraph(QString const& _url)
+inline pair<GraphMetadata, DataKey> findGraph(QString const& _url)
 {
 //	cnote << "findGraph" << _url;
 	if (GraphMetadata g = NotedFace::get()->graphs()->find(_url))
-		return make_pair(g, DataKeySet(g.isRawSource() ? Noted::audio()->rawKey() : Noted::audio()->key(), g.operationKey()));
-	return pair<GraphMetadata, DataKeySet>();
+		return make_pair(g, DataKey(g.isRawSource() ? Noted::audio()->rawKey() : Noted::audio()->key(), g.operationKey()));
+	return pair<GraphMetadata, DataKey>();
 }
 
 GraphItem::GraphItem(QQuickItem* _p): TimelineItem(_p)
@@ -34,7 +34,7 @@ void GraphItem::onGraphAdded(GraphMetadata const& _g)
 		yScaleHintChanged();
 }
 
-void GraphItem::onDataComplete(DataKeySet _k)
+void GraphItem::onDataComplete(DataKey _k)
 {
 	cnote << "dataComplete(" << _k << ") [" << (void*)this << "] interested in" << m_url.toStdString();
 	cnote << "=" << findGraph(m_url).second;
@@ -359,9 +359,9 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 	// transform each chunk separately.
 
 	GraphMetadata g;
-	DataKeySet dk;
+	DataKey dk;
 	tie(g, dk) = findGraph(m_url);
-	DataSetPtr ds = Noted::data()->readDataSet(dk);
+	DataSetPtr ds = Noted::data()->get(dk);
 	setAvailability(!!g, !!ds);
 	if (g && ds)
 	{

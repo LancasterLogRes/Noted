@@ -50,13 +50,13 @@ public:
 	ProtoCache(size_t _headerSize): m_headerSize(_headerSize) {}
 	~ProtoCache() { reset(); }
 
-	typedef QMultiMap<QDateTime, QPair<DataKeySet, uint64_t>> AvailableMap;
+	typedef QMultiMap<QDateTime, QPair<DataKey, uint64_t>> AvailableMap;
 
 	static AvailableMap available();
-	static void kill(DataKeySet);
+	static void kill(DataKey);
 
-	bool open(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, size_t _bytes);
-	bool open(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey);
+	bool open(SimpleKey _sourceKey, SimpleKey _operationKey, SimpleKey _extraKey, size_t _bytes);
+	bool open(SimpleKey _sourceKey, SimpleKey _operationKey, SimpleKey _extraKey);
 
 	void ensureMapped();
 	void setGood();
@@ -113,7 +113,7 @@ public:
 	using Super::isGood;
 	using Super::setGood;
 
-	bool open(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, unsigned _sizeofItem, unsigned _items)
+	bool open(SimpleKey _sourceKey, SimpleKey _operationKey, SimpleKey _extraKey, unsigned _sizeofItem, unsigned _items)
 	{
 		m_sizeofItem = _sizeofItem;
 		m_items = _items;

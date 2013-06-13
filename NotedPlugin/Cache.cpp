@@ -36,7 +36,7 @@ void ProtoCache::reset()
 	m_file.close();
 }
 
-bool ProtoCache::open(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey, size_t _bytes)
+bool ProtoCache::open(SimpleKey _sourceKey, SimpleKey _operationKey, SimpleKey _extraKey, size_t _bytes)
 {
 	reset();
 
@@ -76,7 +76,7 @@ bool ProtoCache::open(DataKey _sourceKey, DataKey _operationKey, DataKey _extraK
 	return false;
 }
 
-bool ProtoCache::open(DataKey _sourceKey, DataKey _operationKey, DataKey _extraKey)
+bool ProtoCache::open(SimpleKey _sourceKey, SimpleKey _operationKey, SimpleKey _extraKey)
 {
 	reset();
 
@@ -108,7 +108,7 @@ bool ProtoCache::open(DataKey _sourceKey, DataKey _operationKey, DataKey _extraK
 	h.bytes = 0;
 	h.flags = 0;
 	append(h);
-	for (int i = 0; i < m_headerSize - sizeof(BaseHeader); ++i)
+	for (unsigned i = 0; i < m_headerSize - sizeof(BaseHeader); ++i)
 		append((char)0);
 
 	return false;
@@ -140,11 +140,11 @@ ProtoCache::AvailableMap ProtoCache::available()
 {
 	AvailableMap ret;
 	QDir d(QDir::tempPath() + "/Noted.cache");
-	QPair<DataKeySet, uint64_t> t(DataKeySet(), 0);
+	QPair<DataKey, uint64_t> t(DataKey(), 0);
 	QDateTime mru;
 	for (QFileInfo const& i: d.entryInfoList(QDir::Files, QDir::Name))
 	{
-		DataKeySet dks(i.fileName().section('-', 0, 0).toULongLong(0, 16), i.fileName().section('-', 1, 1).toULongLong(0, 16));
+		DataKey dks(i.fileName().section('-', 0, 0).toULongLong(0, 16), i.fileName().section('-', 1, 1).toULongLong(0, 16));
 		if (t.first != dks || !t.second)
 		{
 			if (t.second)
@@ -165,7 +165,7 @@ ProtoCache::AvailableMap ProtoCache::available()
 	return ret;
 }
 
-void ProtoCache::kill(DataKeySet _k)
+void ProtoCache::kill(DataKey _k)
 {
 	QDir p(QDir::tempPath() + "/Noted.cache");
 	QString f = ("%1-%2-*");

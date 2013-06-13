@@ -36,7 +36,7 @@ signals:
 	void availabilityChanged();
 
 private slots:
-	void onDataComplete(DataKeySet);
+	void onDataComplete(DataKey);
 	void onGraphAdded(GraphMetadata const&);
 
 protected:

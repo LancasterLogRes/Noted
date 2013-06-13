@@ -14,7 +14,7 @@ DataSetDataStore::~DataSetDataStore()
 {
 }
 
-DataKey DataSetDataStore::operationKey(lb::GraphSpec const* _gs)
+SimpleKey DataSetDataStore::operationKey(lb::GraphSpec const* _gs)
 {
 	return qHash(QString::fromStdString(_gs->name())) + 69 * qHash(QString::fromStdString(typeid(*_gs->ec()).name()));	// TODO: fold in parameters and version.
 }
@@ -22,7 +22,7 @@ DataKey DataSetDataStore::operationKey(lb::GraphSpec const* _gs)
 // Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
 void DataSetDataStore::init(unsigned _recordLength, bool _dense)
 {
-	m_s = NotedFace::data()->dataSet(DataKeySet(NotedFace::audio()->key(), m_operationKey));
+	m_s = NotedFace::data()->create(DataKey(NotedFace::audio()->key(), m_operationKey));
 	if (!m_s)
 		cwarn << "Something else already opened the DataSet for writing?! :-(";
 
@@ -47,7 +47,7 @@ void DataSetDataStore::fini(DigestTypes _digests)
 	m_s = nullptr;
 }
 
-DataSet::DataSet(DataKeySet _key):
+DataSet::DataSet(DataKey _key):
 	m_sourceKey(_key.source),
 	m_operationKey(_key.operation)
 {
@@ -171,7 +171,7 @@ void DataSet::done()
 {
 	cdebug << "DONE [" << hex << m_operationKey << "] (pos:" << m_pos << " rc:" << m_recordCount << " rl:" << m_raw.file().size() << "ts" << m_toc.file().size() << ")";
 	finishedRaw();
-	NotedFace::data()->noteDone(DataKeySet(m_sourceKey, m_operationKey));
+	NotedFace::data()->noteDone(DataKey(m_sourceKey, m_operationKey));
 }
 
 void DataSet::ensureHaveDigest(DigestType _t)

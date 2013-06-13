@@ -36,7 +36,7 @@ public:
 		m_lastRecord.resize(1);
 		if (_willRecord)
 		{
-			m_ds = NotedFace::data()->dataSet(DataKeySet(NotedFace::audio()->key(), m_operationKey));
+			m_ds = NotedFace::data()->create(DataKey(NotedFace::audio()->key(), m_operationKey));
 			m_ds->init(1, NotedFace::audio()->hop());
 		}
 	}
@@ -69,12 +69,12 @@ public:
 			m_ds->appendRecord(_t, &m_lastRecord);
 	}
 
-	DataKey operationKey() const { return m_operationKey; }
+	SimpleKey operationKey() const { return m_operationKey; }
 
 private:
 	DataSetPtr m_ds;
 	vector<float> m_lastRecord;
-	DataKey m_operationKey = qHash(QString("ExamplePlugin/ZeroCrossings"));
+	SimpleKey m_operationKey = qHash(QString("ExamplePlugin/ZeroCrossings"));
 };
 
 ExamplePlugin::ExamplePlugin()

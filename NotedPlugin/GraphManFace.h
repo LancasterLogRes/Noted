@@ -40,7 +40,7 @@ public:
 	typedef std::vector<Axis> Axes;
 
 	GraphMetadata() {}
-	GraphMetadata(DataKey _operationKey, Axes const& _axes = { { "", lb::XOf(), lb::Range(0,1) } }, std::string const& _title = "Anonymous", bool _rawSource = false): m_rawSource(_rawSource), m_operationKey(_operationKey), m_title(_title), m_axes(_axes) {}
+	GraphMetadata(SimpleKey _operationKey, Axes const& _axes = { { "", lb::XOf(), lb::Range(0,1) } }, std::string const& _title = "Anonymous", bool _rawSource = false): m_rawSource(_rawSource), m_operationKey(_operationKey), m_title(_title), m_axes(_axes) {}
 
 	bool isNull() const { return m_title.empty() || m_axes.empty(); }
 	bool isValid() const { return !isNull(); }
@@ -49,13 +49,13 @@ public:
 	explicit operator bool() const { return isValid(); }
 
 	bool isRawSource() const { return m_rawSource; }
-	DataKey operationKey() const { return m_operationKey; }
+	SimpleKey operationKey() const { return m_operationKey; }
 	std::string const& url() const { return m_url; }
 	std::string const& title() const { return m_title; }
 
 	void setTitle(std::string const& _title) { m_title = _title; }
 	void setRawSource(bool _rawSource = true) { m_rawSource = _rawSource; }
-	void setOperationKey(DataKey _k) { m_operationKey = _k; }
+	void setOperationKey(SimpleKey _k) { m_operationKey = _k; }
 
 	Axis const& axis() const { return m_axes.back(); }
 	Axis const& axis(unsigned _i) const { return m_axes[_i]; }
@@ -66,7 +66,7 @@ protected:
 	void setUrl(std::string const& _url) { m_url = _url; }
 
 	bool m_rawSource = false;
-	DataKey m_operationKey = (unsigned)-1;
+	SimpleKey m_operationKey = (unsigned)-1;
 	std::string m_title;
 
 	Axes m_axes = { { "", lb::XOf(), lb::AutoRange } };
