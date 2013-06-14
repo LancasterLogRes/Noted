@@ -37,6 +37,7 @@ public:
 
 	virtual bool providesEventCompiler(QString const& _library, QString const& _ec);
 	virtual lb::EventCompiler newEventCompiler(QString const& _name);
+	virtual unsigned eventCompilerVersion(QString const& _name);
 
 	QMap<QString, RealLibraryPtr> const& libraries() const { return m_libraries; }
 

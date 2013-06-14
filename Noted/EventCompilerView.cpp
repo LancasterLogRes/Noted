@@ -28,33 +28,24 @@
 #include <EventCompiler/GraphSpec.h>
 #include <EventsEditor/EventsEditor.h>
 #include <EventsEditor/EventsEditScene.h>
+#include <NotedPlugin/DataSet.h>
 #include "PropertiesEditor.h"
 #include "Noted.h"
 #include "LibraryMan.h"
-#include "EventsView.h"
+#include "EventCompilerView.h"
 using namespace std;
 using namespace lb;
 
-EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
+EventCompilerView::EventCompilerView(QWidget* _parent, EventCompiler const& _ec):
 	EventsGraphicsView	(_parent),
 	m_eventCompiler		(_ec)
 {
 	connect(NotedFace::libs(), SIGNAL(eventCompilerFactoryAvailable(QString, unsigned)), SLOT(onFactoryAvailable(QString, unsigned)));
 	connect(NotedFace::libs(), SIGNAL(eventCompilerFactoryUnavailable(QString)), SLOT(onFactoryUnavailable(QString)));
+	connect(NotedFace::data(), SIGNAL(dataComplete(DataKey)), this, SLOT(onDataComplete(DataKey)));
 
-//	m_verticalSplitter = dynamic_cast<QSplitter*>(parentWidget());
-//	m_actualWidget = dynamic_cast<QSplitter*>(m_verticalSplitter->parentWidget());
-//	m_propertiesEditor = new PropertiesEditor(m_actualWidget);
-//	m_actualWidget->addWidget(m_propertiesEditor);
-//	m_eventsEditor = new EventsEditor(m_verticalSplitter);
-	/*m_eventsEditor->*/setMaximumHeight(48);
-	/*m_eventsEditor->*/setMinimumHeight(48);
-//	m_verticalSplitter->addWidget(m_eventsEditor);
-//	m_verticalSplitter->addWidget(this);
-//	m_propertiesEditor->setProperties(m_eventCompiler.properties());
-
-//	connect(m_propertiesEditor, SIGNAL(changed()), NotedFace::events(), SLOT(noteEventCompilersChanged()));
-	connect(NotedFace::events(), SIGNAL(eventsChanged()), SLOT(rerender()));
+	setMaximumHeight(48);
+	setMinimumHeight(48);
 
 	const float c_size = 16;
 	const float c_margin = 0;
@@ -63,28 +54,6 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	m_label->setGeometry(0, 0, (c_size + c_margin) * 5 + c_size, 14);
 	m_label->setStyleSheet("background: white");
 	m_label->setText(name());
-
-/*	QPushButton* b = new QPushButton(this);
-	b->setGeometry(0, m_label->height(), c_size, c_size);
-	b->setText("X");
-	connect(b, SIGNAL(clicked()), SLOT(deleteLater()));
-*/
-/*	QPushButton* ex = new QPushButton(this);
-	ex->setGeometry(c_size + c_margin, m_label->height(), c_size, c_size);
-	ex->setText(">");
-	connect(ex, SIGNAL(clicked()), SLOT(exportGraph()));
-
-	QPushButton* d = new QPushButton(this);
-	d->setGeometry((c_size + c_margin) * 2, m_label->height(), c_size, c_size);
-	d->setText("+");
-	connect(d, SIGNAL(clicked()), SLOT(duplicate()));
-*/
-/*	m_use = new QPushButton(this);
-	m_use->setGeometry((c_size + c_margin) * 3, m_label->height(), c_size, c_size);
-	m_use->setText("U");
-	m_use->setCheckable(true);
-	m_use->setChecked(true);
-	connect(m_use, SIGNAL(toggled(bool)), SLOT(onUseChanged()));*/
 
 	m_channel = new QComboBox(this);
 	m_channel->setGeometry((c_size + c_margin) * 4, m_label->height(), c_size * 2 + c_margin, c_size);
@@ -100,40 +69,36 @@ EventsView::EventsView(QWidget* _parent, EventCompiler const& _ec):
 	NotedFace::events()->registerEventsView(this);
 }
 
-EventsView::~EventsView()
+EventCompilerView::~EventCompilerView()
 {
 	NotedFace::graphs()->unregisterGraphs(objectName());
 	NotedFace::events()->unregisterEventsView(this);
-/*	quit();
-	QWidget* w = parentWidget()->parentWidget();
-	setParent(0);
-	delete w;*/
 }
 
-void EventsView::onFactoryAvailable(QString _factory, unsigned)
+void EventCompilerView::onFactoryAvailable(QString _factory, unsigned)
 {
 	if (isArchived() && _factory == m_savedName)
 		restore();
 }
 
-void EventsView::onFactoryUnavailable(QString _factory)
+void EventCompilerView::onFactoryUnavailable(QString _factory)
 {
 	if (!isArchived() && _factory == name())
 		save();
 }
 
-void EventsView::onUseChanged()
+void EventCompilerView::onUseChanged()
 {
 	Noted::events()->notePluginDataChanged();
 }
 
-void EventsView::clearEvents()
+void EventCompilerView::clearCurrentEvents()
 {
-	QMutexLocker l(&x_events);
+	QMutexLocker l(&x_eventsCache);
 	m_current.clear();
 }
 
-lb::StreamEvents EventsView::cursorEvents() const
+lb::StreamEvents EventCompilerView::cursorEvents() const
 {
 	StreamEvents ret;
 	int ch = m_channel->currentIndex() - 1;
@@ -143,29 +108,44 @@ lb::StreamEvents EventsView::cursorEvents() const
 	return ret;
 }
 
-void EventsView::channelChanged()
+void EventCompilerView::channelChanged()
 {
 	onUseChanged();//for now...
 }
 
-void EventsView::finalizeEvents()
+class DataSetEventsStore: public EventsStore
 {
-	QTimer::singleShot(0, this, SLOT(setNewEvents()));
+public:
+	DataSetEventsStore(DataSetPtr<lb::StreamEvent> const& _ses): m_streamEvents(_ses) {}
+
+	virtual lb::StreamEvents events(lb::Time _from, lb::Time _before) const
+	{
+		return m_streamEvents->getInterval(_from, _before);
+	}
+
+private:
+	DataSetPtr<lb::StreamEvent> m_streamEvents;
+};
+
+void EventCompilerView::onDataComplete(DataKey _k)
+{
+	if (_k == DataKey(Noted::audio()->key(), m_operationKey))
+	{
+		// Finished computing events. Copy them into the scene.
+		DataSetEventsStore es(m_streamEvents);
+		scene()->clear();
+		scene()->copyFrom(&es);
+	}
 }
 
-void EventsView::setNewEvents()
-{
-	setEvents(m_events, 0);
-}
-
-lb::StreamEvents EventsView::events(int _i) const
+lb::StreamEvents EventCompilerView::events(int _i) const
 {
 	if (isEnabled())
 	{
-		QMutexLocker l(&x_events);
-		if (_i < m_events.size())
+		QMutexLocker l(&x_eventsCache);
+		if (_i < m_eventsCache.size())
 		{
-			StreamEvents ret = m_events[_i];
+			StreamEvents ret = m_eventsCache[_i];
 			int ch = m_channel->currentIndex() - 1;
 			if (ch >= 0)
 				for (StreamEvent& e: ret)
@@ -176,29 +156,14 @@ lb::StreamEvents EventsView::events(int _i) const
 	return StreamEvents();
 }
 
-void EventsView::appendEvents(StreamEvents const& _se)
-{
-	QMutexLocker l(&x_events);
-	m_events.push_back(_se);
-}
-
-void EventsView::duplicate()
-{
-	EventsView* ev = new EventsView(parentWidget());
-	ev->m_eventCompiler = m_eventCompiler;
-	ev->m_events = m_events;
-	auto p = dynamic_cast<QSplitter*>(parentWidget());
-	p->insertWidget(p->indexOf(this) + 1, ev);
-}
-
-QString EventsView::name() const
+QString EventCompilerView::name() const
 {
 	return QString::fromStdString(m_eventCompiler.name());
 }
 
-void EventsView::save()
+void EventCompilerView::save()
 {
-	cnote << "Saving EventsView...";
+	cnote << "Saving EventCompilerView...";
 	if (!m_eventCompiler.isNull())
 	{
 		m_savedName = name();
@@ -211,9 +176,9 @@ void EventsView::save()
 	NotedFace::events()->notePluginDataChanged();
 }
 
-void EventsView::restore()
+void EventCompilerView::restore()
 {
-	cnote << "Restoring EventsView...";
+	cnote << "Restoring EventCompilerView...";
 	m_eventCompiler = NotedFace::libs()->newEventCompiler(m_savedName);
 	m_eventCompiler.properties().deserialize(m_savedProperties);
 //	m_propertiesEditor->setProperties(m_eventCompiler.properties());
@@ -222,25 +187,23 @@ void EventsView::restore()
 	NotedFace::events()->noteEventCompilersChanged();
 }
 
-void EventsView::readSettings(QSettings& _s, QString const& _id)
+void EventCompilerView::readSettings(QSettings& _s, QString const& _id)
 {
 	m_savedName = _s.value(_id + "/name").toString();
 	m_savedProperties = _s.value(_id + "/properties").toString().toStdString();
-//	m_use->setChecked(_s.value(_id + "/use").toBool());
 	m_channel->setCurrentIndex(_s.value(_id + "/channel").toInt());
 	setObjectName(m_savedName);
 	restore();
 }
 
-void EventsView::writeSettings(QSettings& _s, QString const& _id)
+void EventCompilerView::writeSettings(QSettings& _s, QString const& _id)
 {
 	_s.setValue(_id + "/name", name());
 	_s.setValue(_id + "/properties", QString::fromStdString(m_eventCompiler.properties().serialized()));
-	_s.setValue(_id + "/use", isEnabled());
 	_s.setValue(_id + "/channel", m_channel->currentIndex());
 }
 
-/*void EventsView::exportEvents()
+/*void EventCompilerView::exportEvents()
 {
 	QString fn = QFileDialog::getSaveFileName(this, "Export a series of events", QDir::currentPath(), "Native format (*.events);;XML format (*.xml);;CSV format (*.csv *.txt)");
 	ofstream out;
@@ -290,62 +253,3 @@ void EventsView::writeSettings(QSettings& _s, QString const& _id)
 	if (fn.endsWith(".xml"))
 		out << "</events>" << endl;
 }*/
-
-void EventsView::exportGraph()
-{
-	QString fn = QFileDialog::getSaveFileName(this, "Export the graphs", QDir::currentPath(), "CSV format (*.csv *.txt)");
-	ofstream out;
-	out.open(fn.toLocal8Bit(), ios::trunc);
-	if (out)
-	{
-		out << "index,time";
-//		Time h = NotedFace::audio()->hop();
-	//	unsigned tiMax = 0;
-
-/*		vector<vector<float> const*> charts;
-		for (GraphSpec* g: m_eventCompiler.asA<EventCompilerImpl>().graphs())
-			if (GraphChart* s = dynamic_cast<GraphChart*>(g))
-			{
-				charts.push_back(&s->data());
-				tiMax = max<unsigned>(tiMax, s->data().size());
-				out << "," << s->name();
-			}
-
-		vector<map<int, vector<float>> const*> spectra;
-		for (GraphSpec* g: m_eventCompiler.asA<EventCompilerImpl>().graphs())
-			if (GraphSpectrum* s = dynamic_cast<GraphSpectrum*>(g))
-			{
-				if (s->data().size())
-				{
-					spectra.push_back(&s->data());
-					tiMax = max<unsigned>(tiMax, prev(s->data().end())->first * h + 1);
-					for (unsigned i = 0; i < s->bandCount(); ++i)
-						out << "," << s->name() << "_" << i;
-				}
-			}*/
-
-		out << endl;
-/*
-		Time t = 0;
-		unsigned ti = 0;
-		auto inner = [&]()
-		{
-			out << ti << "," << toSeconds(t);
-			for (vector<float> const* s: charts)
-				out << "," << (ti < s->size() ? s->at(ti) : 0);
-			for (map<int, vector<float>> const* s: spectra)
-			{
-				auto si = s->upper_bound(t / h);
-				if (si != s->begin())
-					--si;
-				for (auto f: si->second)
-					out << "," << f;
-			}
-			out << endl;
-		};*/
-
-/*		if (charts.size())
-			for (ti = 0; ti < tiMax; ++ti, t += h)
-				inner();*/
-	}
-}

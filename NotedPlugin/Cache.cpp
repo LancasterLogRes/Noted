@@ -86,7 +86,7 @@ bool ProtoCache::open(SimpleKey _sourceKey, SimpleKey _operationKey, SimpleKey _
 	m_file.setFileName(f);
 	m_file.open(QIODevice::ReadWrite);
 
-	if (m_file.size() > (qint64)m_headerSize)
+	if (m_file.size() >= (qint64)m_headerSize)
 	{
 		// File looks the right size - map it and check the header.
 		m_mapping = m_file.map(0, m_file.size());

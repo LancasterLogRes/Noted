@@ -16,7 +16,6 @@ class DataMan: public QObject
 public:
 	DataMan();
 
-	// TODO: template <class _T> DataSetFloatPtr<_T> get(DataKey _k);
 	/// Either create a DataSet for the given key, or return the preexisting complete DataSet.
 	/// @returns DataSet for the given key, possibly complete. Check DataSet::haveRaw() for whether
 	/// it is complete before initialisation.

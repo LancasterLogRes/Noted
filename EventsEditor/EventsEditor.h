@@ -28,32 +28,42 @@
 #include <EventCompiler/StreamEvent.h>
 #include <NotedPlugin/Timeline.h>
 #include <NotedPlugin/EventsStore.h>
+#include <NotedPlugin/DataSet.h>
 
 class NotedFace;
 class EventsEditScene;
 class QPushButton;
 class QSettings;
+class CompileEventsView;
 
+/**
+ * @brief The EventsGraphicsView class
+ * A GraphicsScene/View pair with the view (this class) storing a backing of the events
+ * in the scene for use in the compute thread(s). The events in the scene are stored via
+ * actual scene items. When the scene changes, a dirty flag is set and a timer in the
+ * view picks this up and synchronises its m_eventsCache to the new scene items.
+ */
 class EventsGraphicsView: public QGraphicsView, public EventsStore, public Timeline
 {
 	Q_OBJECT
+
+	friend class CompileEventsView;
 
 public:
 	EventsGraphicsView(QWidget* _parent, QString _filename = "");
 	~EventsGraphicsView();
 
-	virtual QString niceName() const { return m_filename; }
-
-	bool isEnabled() const;
-	bool isIndependent() const { return true; } // TODO: remove
-	virtual bool isMutable() const { return true; }
-
-	QString queryFilename();
 	EventsEditScene* scene() const { return &*m_scene; }
+
+	virtual QString niceName() const { return m_filename; }
 	virtual lb::StreamEvents events(int _i) const;
 	virtual lb::StreamEvents cursorEvents() const;
-	virtual unsigned eventCount() const { return m_events.size(); }
-	void setEvents(QList<lb::StreamEvents> const& _es, int _forceChannel = -1);
+	virtual unsigned eventCount() const { return m_eventsCache.size(); }
+
+	virtual bool isMutable() const { return true; }
+
+	bool isEnabled() const;
+	QString queryFilename();
 
 	void save(QSettings& _c) const;
 	void load(QSettings const& _c);
@@ -85,9 +95,10 @@ public slots:
 	void onChanged() { onChanged(true); }
 
 protected:
-	// TODO: Move to use DataSet.
-	QList<lb::StreamEvents> m_events;
-	mutable QMutex x_events;
+	QList<lb::StreamEvents> m_eventsCache;
+	mutable QMutex x_eventsCache;
+
+	DataSetPtr<lb::StreamEvent> m_streamEvents;
 
 private:
 	virtual void resizeEvent(QResizeEvent*) { onViewParamsChanged(); }

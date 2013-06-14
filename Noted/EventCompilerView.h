@@ -43,22 +43,23 @@ class QPushButton;
 class QLabel;
 class QMutex;
 class QSettings;
-class CompileEventsView;
+class CompileEventCompilerView;
 
 // Relies on objectName for composing graph's URLs - if this ever changes, make sure all graphs are first unregistered.
-class EventsView: public EventsGraphicsView
+class EventCompilerView: public EventsGraphicsView
 {
 	Q_OBJECT
-	friend class CompileEventsView;
+	friend class CompileEventCompilerView;
 
 public:
-	EventsView(QWidget* _parent = 0, lb::EventCompiler const& _c = lb::EventCompiler());
-	~EventsView();
+	EventCompilerView(QWidget* _parent = 0, lb::EventCompiler const& _c = lb::EventCompiler());
+	~EventCompilerView();
 
 	void readSettings(QSettings& _s, QString const& _id);
 	void writeSettings(QSettings& _s, QString const& _id);
 
 	bool isArchived() const { return eventCompiler().isNull(); }
+	SimpleKey operationKey() const { return m_operationKey; }
 	void save();
 	void restore();
 	QString name() const;
@@ -68,20 +69,15 @@ public:
 
 	lb::EventCompiler const& eventCompiler() const { return m_eventCompiler; }
 
-	QMutex* mutex() const { return &x_events; }
-	void appendEvents(lb::StreamEvents const& _se);
-	void finalizeEvents();
 	virtual lb::StreamEvents events(int _i) const;
 	virtual lb::StreamEvents cursorEvents() const;
 	virtual unsigned eventCount() const { return 0; }
 
 public slots:
-	void clearEvents();
-	void duplicate();
+	void clearCurrentEvents();
 	void onUseChanged();
-	void exportGraph();
 	void channelChanged();
-	void setNewEvents();
+	void onDataComplete(DataKey);
 
 private slots:
 	void onFactoryAvailable(QString _lib, unsigned _version);
@@ -89,18 +85,11 @@ private slots:
 
 private:
 	lb::EventCompiler m_eventCompiler;
+	DataSetPtr<lb::StreamEvent> m_streamEvents;
+	SimpleKey m_operationKey = 0;
 
-//	QSplitter* m_actualWidget;
-//	QSplitter* m_verticalSplitter;
-//	EventsEditor* m_eventsEditor;
-//	PropertiesEditor* m_propertiesEditor;
 	QComboBox* m_channel;
-//	QPushButton* m_use;
 	QLabel* m_label;
-
-	// TODO: Move to use DataSet.
-//	QList<lb::StreamEvents> m_events;
-//	mutable QMutex x_events;
 
 	lb::StreamEvents m_current;
 

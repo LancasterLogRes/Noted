@@ -35,13 +35,13 @@
 #include <NotedPlugin/CausalAnalysis.h>
 
 #include "GraphView.h"
-#include "EventsView.h"
+#include "EventCompilerView.h"
 #include "WorkerThread.h"
 #include "ProcessEventCompiler.h"
 #include "PropertiesEditor.h"
 #include "CompileEvents.h"
 #include "CollateEvents.h"
-#include "CompileEventsView.h"
+#include "CompileEventCompilerView.h"
 #include "NotedGLWidget.h"
 #include "TimelineItem.h"
 #include "GraphItem.h"
@@ -430,7 +430,7 @@ void Noted::readSettings()
 	if (settings.contains("eventsViews"))
 		for (int i = 0; i < settings.value("eventsViews").toInt(); ++i)
 		{
-			EventsView* ev = new EventsView(ui->dataDisplay);
+			EventCompilerView* ev = new EventCompilerView(ui->dataDisplay);
 			ev->readSettings(settings, QString("eventsView%1").arg(i));
 		}
 
@@ -470,7 +470,7 @@ void Noted::writeSettings()
 	libs()->writeSettings(settings);
 
 	int evc = 0;
-	for (EventsView* ev: events()->eventsViews())
+	for (EventCompilerView* ev: events()->eventsViews())
 	{
 		ev->writeSettings(settings, QString("eventsView%1").arg(evc));
 		++evc;
@@ -510,7 +510,7 @@ void Noted::writeSettings()
 void Noted::on_addEventsView_clicked()
 {
 	if (ui->eventCompilersList->currentItem())
-		new EventsView(ui->dataDisplay, libs()->newEventCompiler(ui->eventCompilersList->currentItem()->text().section(':', 0, 0)));
+		new EventCompilerView(ui->dataDisplay, libs()->newEventCompiler(ui->eventCompilersList->currentItem()->text().section(':', 0, 0)));
 }
 
 void Noted::on_actNewEvents_triggered()
@@ -765,9 +765,7 @@ void Noted::info(QString const& _info, QString const& _c)
 void Noted::onCursorChanged(lb::Time _cursor)
 {
 	ui->statusBar->findChild<QLabel*>("cursor")->setText(textualTime(_cursor, toBase(audio()->samples(), audio()->rate()), 0, 0).c_str());
-	if (ui->actFollow->isChecked() && (_cursor < view()->earliestVisible() || _cursor > view()->earliestVisible() + view()->visibleDuration() * 7 / 8))
-		view()->setOffset(_cursor - view()->visibleDuration() / 8);
-	else if (ui->actTrack->isChecked())
+	if (audio()->isPlaying() && (ui->actTrack->isChecked() || (ui->actFollow->isChecked() && (_cursor < view()->earliestVisible() || _cursor > view()->earliestVisible() + view()->visibleDuration() * 7 / 8))))
 		view()->setOffset(_cursor - view()->visibleDuration() / 8);
 }
 

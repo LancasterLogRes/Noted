@@ -195,7 +195,7 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetFloat
 				{
 					vector<float> intermed(c_recordsPerPage * _ds->recordLength());
 					if (m_lod < 0)
-						_ds->populateRaw(pageTime(_index, _ds, m_lod), &intermed);
+						_ds->populateSeries(pageTime(_index, _ds, m_lod), &intermed);
 					else
 						_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed);
 					_g.axis(GraphMetadata::ValueAxis).transform.apply(intermed);
@@ -309,7 +309,7 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetFloat
 				for (unsigned i = 0; i < c_recordsPerPage * _ds->recordLength(); ++i)
 					intermed[i] = 0;
 				if (m_lod < 0)
-					_ds->populateRaw(pageTime(_index, _ds, m_lod), &intermed);
+					_ds->populateSeries(pageTime(_index, _ds, m_lod), &intermed);
 				else
 					_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed);
 				_g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::ValueAxis).range)).apply(intermed);

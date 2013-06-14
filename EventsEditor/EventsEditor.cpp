@@ -105,21 +105,16 @@ EventsGraphicsView::EventsGraphicsView(QWidget* _parent, QString _filename):
 
 EventsGraphicsView::~EventsGraphicsView()
 {
-	QMutexLocker l(&x_events);
-	m_events.clear();
+	QMutexLocker l(&x_eventsCache);
+	m_eventsCache.clear();
 	NotedFace::events()->noteEventCompilersChanged();
 }
 
 void EventsGraphicsView::clearEvents()
 {
-	QMutexLocker l(&x_events);
-	m_events.clear();
+	QMutexLocker l(&x_eventsCache);
+	m_eventsCache.clear();
 	scene()->clear();
-}
-
-void EventsGraphicsView::setEvents(QList<lb::StreamEvents> const& _es, int _forceChannel)
-{
-	m_scene->setEvents(_es, _forceChannel);
 }
 
 bool EventsGraphicsView::isEnabled() const
@@ -181,9 +176,9 @@ StreamEvents EventsGraphicsView::events(int _i) const
 {
 	if (m_enabled->isChecked())
 	{
-		QMutexLocker l(&x_events);
-		if (_i >= 0 && _i < m_events.size())
-			return m_events[_i];
+		QMutexLocker l(&x_eventsCache);
+		if (_i >= 0 && _i < m_eventsCache.size())
+			return m_eventsCache[_i];
 	}
 	return StreamEvents();
 }
@@ -208,8 +203,8 @@ void EventsGraphicsView::timerEvent(QTimerEvent*)
 		{
 			m_lastTimerDirty = m_eventsDirty = false;
 			{
-				QMutexLocker l(&x_events);
-				m_events = scene()->events(NotedFace::audio()->hop());
+				QMutexLocker l(&x_eventsCache);
+				m_eventsCache = scene()->events(NotedFace::audio()->hop());
 			}
 			NotedFace::events()->noteEventCompilersChanged();
 		}

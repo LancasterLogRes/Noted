@@ -24,6 +24,7 @@
 #include <QGraphicsScene>
 
 #include <EventCompiler/StreamEvent.h>
+#include <NotedPlugin/EventsStore.h>
 #include <Common/Time.h>
 
 class EventsStore;
@@ -32,7 +33,7 @@ class NotedFace;
 class Chained;
 class StreamEventItem;
 
-class EventsEditScene: public QGraphicsScene
+class EventsEditScene: public QGraphicsScene, public EventsStore
 {
 	Q_OBJECT
 
@@ -50,6 +51,8 @@ public:
 	void loadFrom(QString _filename);
 	void saveTo(QString _filename) const;
 	QList<lb::StreamEvents> events(lb::Time _hop) const;
+
+	virtual lb::StreamEvents events(lb::Time _from, lb::Time _before) const;
 
 	virtual void wheelEvent(QGraphicsSceneWheelEvent* _wheelEvent);
 

@@ -10,11 +10,9 @@ linux: LIBS += -lX11 -lboost_system
 
 SOURCES += main.cpp\
 	Noted.cpp \
-	EventsView.cpp \
 	WorkerThread.cpp \
 	CurrentView.cpp \
 	Grapher.cpp \
-	CompileEventsView.cpp \
 	PropertiesEditor.cpp \
 	NotedGLWidget.cpp \
 	GraphView.cpp \
@@ -27,10 +25,11 @@ SOURCES += main.cpp\
 	GraphMan.cpp \
 	FileAudioStream.cpp \
     GraphItem.cpp \
-    TimelineItem.cpp
+    TimelineItem.cpp \
+    EventCompilerView.cpp \
+    CompileEventCompilerView.cpp
 
 HEADERS  += Noted.h \
-	EventsView.h \
 	ProcessEventCompiler.h \
 	WorkerThread.h \
 	CurrentView.h \
@@ -38,7 +37,6 @@ HEADERS  += Noted.h \
 	NotedGLWidget.h \
 	CompileEvents.h \
 	CollateEvents.h \
-	CompileEventsView.h \
 	PropertiesEditor.h \
     GraphView.h \
 	Global.h \
@@ -51,7 +49,9 @@ HEADERS  += Noted.h \
 	GraphMan.h \
 	FileAudioStream.h \
     GraphItem.h \
-    TimelineItem.h
+    TimelineItem.h \
+    EventCompilerView.h \
+    CompileEventCompilerView.h
 
 FORMS    += Noted.ui
 

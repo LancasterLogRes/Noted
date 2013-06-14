@@ -29,9 +29,10 @@ public:
 	EventsStore();
 	virtual ~EventsStore();
 
-	virtual QString niceName() const = 0;
-	virtual lb::StreamEvents events(int _i) const = 0;
-	virtual lb::StreamEvents cursorEvents() const = 0;
-	virtual unsigned eventCount() const = 0;
+	virtual QString niceName() const { return QString(); }
+	virtual lb::StreamEvents events(int _i) const;
+	virtual lb::StreamEvents cursorEvents() const;
+	virtual lb::StreamEvents events(lb::Time _from, lb::Time _before) const { (void)_from; (void)_before; return {}; }
+	virtual unsigned eventCount() const;
 	inline bool isPredetermined() const { return eventCount(); }
 };

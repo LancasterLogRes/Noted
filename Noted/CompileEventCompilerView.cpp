@@ -20,25 +20,32 @@
 
 #include <QHash>
 #include "Noted.h"
-#include "EventsView.h"
-#include "CompileEventsView.h"
+#include "EventCompilerView.h"
+#include "CompileEventCompilerView.h"
 using namespace std;
 using namespace lb;
 
-CompileEventsView::CompileEventsView(EventsView* _ev):
+CompileEventCompilerView::CompileEventCompilerView(EventCompilerView* _ev):
 	CausalAnalysis(QString("Compiling %1 events").arg(_ev->niceName())),
 	m_ev(_ev)
 {
 }
 
-void CompileEventsView::init(bool _willRecord)
+void CompileEventCompilerView::init(bool _willRecord)
 {
-	m_ev->clearEvents();
+	m_ev->m_streamEvents.reset();
+	m_ev->clearCurrentEvents();
+
 	if (!ec().isNull() && _willRecord)
 	{
+		m_ev->m_operationKey = qHash(qMakePair(qMakePair(QString::fromStdString(ec().name()), NotedFace::libs()->eventCompilerVersion(QString::fromStdString(ec().name()))), QString::fromStdString(ec().properties().serialized())));
+		m_ev->m_streamEvents = NotedFace::data()->create<StreamEvent>(DataKey(NotedFace::audio()->key(), m_ev->m_operationKey));
+		if (!m_ev->m_streamEvents->isComplete())
+			m_ev->m_streamEvents->init(0, 0);
+
 		for (auto const& i: ec().asA<EventCompilerImpl>().graphMap())
 		{
-			auto ds = new DataSetDataStore(i.second);
+			auto ds = new DataSetDataStore(i.second, m_ev->m_operationKey);
 			m_dataStores.insert(i.second, ds);
 			i.second->setStore(ds);
 		}
@@ -51,27 +58,31 @@ void CompileEventsView::init(bool _willRecord)
 	}
 }
 
-lb::EventCompiler CompileEventsView::ec() const
+lb::EventCompiler CompileEventCompilerView::ec() const
 {
 	return m_ev->m_eventCompiler;
 }
 
-void CompileEventsView::process(unsigned _i, lb::Time)
+void CompileEventCompilerView::process(unsigned _i, lb::Time)
 {
-	vector<float> wave(Noted::audio()->hopSamples());
-	if (Noted::audio()->isImmediate())
-		(void)0;// TODO
-	else
-		Noted::audio()->populateHop(_i, wave);
-	m_ev->m_current = m_ev->m_eventCompiler.compile(wave);
+	if ((m_ev->m_streamEvents && !m_ev->m_streamEvents->isComplete()) || Noted::audio()->isImmediate())
+	{
+		vector<float> wave(Noted::audio()->hopSamples());
+		if (Noted::audio()->isImmediate())
+			(void)0;// TODO
+		else
+			Noted::audio()->populateHop(_i, wave);
+		m_ev->m_current = m_ev->m_eventCompiler.compile(wave);
+	}
 }
 
-void CompileEventsView::record(unsigned, Time)
+void CompileEventCompilerView::record(unsigned, Time _t)
 {
-	m_ev->appendEvents(m_ev->m_current);
+	if ((m_ev->m_streamEvents && !m_ev->m_streamEvents->isComplete()) || Noted::audio()->isImmediate())
+		m_ev->m_streamEvents->appendRecord(_t, &m_ev->m_current);
 }
 
-void CompileEventsView::fini(bool _completed, bool _didRecord)
+void CompileEventCompilerView::fini(bool _completed, bool _didRecord)
 {
 	if (_completed && _didRecord)
 	{
@@ -88,6 +99,9 @@ void CompileEventsView::fini(bool _completed, bool _didRecord)
 		}
 		m_dataStores.clear();
 
-		m_ev->finalizeEvents();
+		if (m_ev->m_streamEvents && !m_ev->m_streamEvents->isComplete())
+			m_ev->m_streamEvents->done();
 	}
+	else
+		m_ev->m_streamEvents.reset();
 }

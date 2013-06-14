@@ -239,6 +239,14 @@ bool LibraryMan::providesEventCompiler(QString const& _library, QString const& _
 	return m_libraries.contains(_library) && m_libraries[_library]->eventCompilerFactories.count(_ec.toStdString());
 }
 
+unsigned LibraryMan::eventCompilerVersion(QString const& _name)
+{
+	for (auto dl: libraries())
+		if (dl->eventCompilerFactories.find(_name.toStdString()) != dl->eventCompilerFactories.end())
+			return dl->eventCompilerFactories[_name.toStdString()].version;
+	return InvalidVersion;
+}
+
 EventCompiler LibraryMan::newEventCompiler(QString const& _name)
 {
 	for (auto dl: libraries())

@@ -53,7 +53,7 @@ public:
 	virtual void process(unsigned, Time _t)
 	{
 		std::vector<float> vs(NotedFace::audio()->hopSamples());
-		NotedFace::audio()->wave()->populateRaw(_t - toBase(vs.size() - 1, NotedFace::audio()->rate()), &vs);
+		NotedFace::audio()->wave()->populateSeries(_t - toBase(vs.size() - 1, NotedFace::audio()->rate()), &vs);
 
 		// Count zero-crossings.
 		int zeroXs = 0;	// even->-ve, odd->+ve

@@ -6,17 +6,12 @@
 using namespace std;
 using namespace lb;
 
-DataSetDataStore::DataSetDataStore(GraphSpec const* _gs): m_operationKey(operationKey(_gs))
+DataSetDataStore::DataSetDataStore(GraphSpec const* _gs, SimpleKey _ecOpKey): m_operationKey(operationKey(_gs, _ecOpKey))
 {
 }
 
 DataSetDataStore::~DataSetDataStore()
 {
-}
-
-SimpleKey DataSetDataStore::operationKey(lb::GraphSpec const* _gs)
-{
-	return qHash(QString::fromStdString(_gs->name())) + 69 * qHash(QString::fromStdString(typeid(*_gs->ec()).name()));	// TODO: fold in parameters and version.
 }
 
 // Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
@@ -70,15 +65,13 @@ GenericDataSet::GenericDataSet(DataKey _key, size_t _elementSize, char const* _e
 	m_recordLength = m_raw.metadata().recordLength;
 	m_digestBase = m_raw.metadata().digestBase;
 
-	if (!m_recordLength)
-	{
+	if (!m_recordLength || !m_stride)
 		if (!m_toc.open(m_sourceKey, m_operationKey, 1))
 		{
 			m_raw.reset();
 			m_toc.reset();
 			return;
 		}
-	}
 
 	for (auto d: digestTypes())
 	{
@@ -100,7 +93,10 @@ void GenericDataSet::init(unsigned _recordLength, Time _stride, Time _first)
 
 unsigned GenericDataSet::rawRecords() const
 {
-	return m_raw.bytes() / m_elementSize / m_recordLength;
+	if (m_recordLength)
+		return elements() / m_recordLength;
+	else
+		return m_toc.bytes() / (sizeof(TocRef) + (m_stride ? 0 : sizeof(Time)));
 }
 
 void GenericDataSet::setup(unsigned _itemCount)
@@ -131,26 +127,24 @@ void GenericDataSet::appendRecords(foreign_vector<uint8_t> const& _vs)
 
 void GenericDataSet::appendRecord(Time _t, foreign_vector<uint8_t> const& _vs)
 {
-	assert(_vs.size());
+	if (!_vs.size())
+		return;
 
-	if (m_stride && m_recordLength)
-		assert(m_recordCount == (_t - m_first) / m_stride);
-	if (m_stride && !m_recordLength)
+	assert(!(_vs.size() % m_elementSize));
+
+	if (m_stride)
 		assert(m_recordCount == (_t - m_first) / m_stride);
 
-	if (!m_toc.isGood() && !m_recordLength)
+	if (!m_toc.isGood() && (!m_recordLength || !m_stride))
 	{
 		if (!m_stride)
 			m_toc.append(_t);
-		m_toc.append((TocRef)m_pos);
+		if (!m_recordLength)
+			m_toc.append((TocRef)m_pos);
 	}
 	if (!m_raw.isGood())
-	{
-		if (!m_stride && m_recordLength)
-			m_raw.append(_t);
 		m_raw.append(_vs);
-	}
-	m_pos += _vs.size();
+	m_pos += _vs.size() / m_elementSize;
 	m_recordCount++;
 //	cdebug << "[" << hex << m_operationKey << "] <<" << _vs.size() << "(pos:" << m_pos << " rc:" << m_recordCount << " rl:" << m_raw.file().size() << "ts" << m_toc.file().size() << ")";
 }
@@ -177,6 +171,195 @@ void GenericDataSet::done()
 	cdebug << "DONE [" << hex << m_operationKey << "] (pos:" << m_pos << " rc:" << m_recordCount << " rl:" << m_raw.file().size() << "ts" << m_toc.file().size() << ")";
 	finishedRaw();
 	NotedFace::data()->noteDone(DataKey(m_sourceKey, m_operationKey));
+}
+
+tuple<Time, unsigned, int, Time> GenericDataSet::bestFit(Time _from, Time _duration, unsigned _idealRecords) const
+{
+	int64_t recordBegin = (_from - m_first) / m_stride;
+	int64_t recordEnd = (_from + _duration - m_first + m_stride - 1) / m_stride;
+	int64_t recordRes = _duration / m_stride;
+
+	int level = -1;
+
+	while (true)
+	{
+		int nextLevel = level + 1;
+		int64_t nextBegin = nextLevel ? recordBegin / 2 : (recordBegin / (int64_t)m_digestBase);
+		int64_t nextEnd = nextLevel ? (recordEnd + 1) / 2 : ((recordEnd + (int64_t)m_digestBase - 1) / (int64_t)m_digestBase);
+		int64_t nextRes = nextLevel ? recordRes / 2 : (recordRes / (int64_t)m_digestBase);
+
+		if (nextRes < _idealRecords)
+			// Passed the place... use the last one cunningly left in recordBegin/recordEnd/level.
+			return tuple<Time, unsigned, int, Time>(m_first + m_stride * (level > -1 ? m_digestBase << level : 1) * recordBegin, recordEnd - recordBegin, level, (recordEnd - recordBegin) * m_stride * (level > -1 ? m_digestBase << level : 1));
+		recordBegin = nextBegin;
+		recordEnd = nextEnd;
+		recordRes = nextRes;
+		level = nextLevel;
+	}
+}
+
+// Returns index of first element of earliest record of time >= _t if !_earlier
+// ..or index of first element of latest record of time <= _t if _earlier
+TocRef GenericDataSet::elementIndexFixedRecordSize(lb::Time _t, bool _earlier) const
+{
+	if (!rawRecords())
+		return InvalidTocRef;
+
+	if (m_stride)
+		if (_t < m_first)
+			return _earlier ? InvalidTocRef : 0;
+		else if (_t == m_first)
+			return 0;
+		else if (_t == m_first + m_stride * (rawRecords() - 1))
+			return rawRecords() - 1;
+		else if (_t > m_first + m_stride * (rawRecords() - 1))
+			return _earlier ? rawRecords() - 1 : InvalidTocRef;
+		else
+			return (_t - m_first + (_earlier ? 0 : (m_stride - 1))) / m_stride;
+
+	auto d = m_toc.data<Time>();
+
+	// Binary chop through TOC
+	unsigned l = 0;
+	unsigned r = d.size() - 1;
+
+	if (d[l] == _t)
+		return 0;
+	if (_t == d[r])
+		return r;
+	if (_t < d[l])
+		return _earlier ? InvalidTocRef : 0;
+	if (_t > d[r])
+		return _earlier ? d.size() - 1 : InvalidTocRef;
+
+	while (r - l > 1)
+	{
+		unsigned m = (l + r) / 2;
+		if (d[m] == _t)
+			return m;
+		else
+			(d[m] > _t ? r : l) = m;
+	}
+	return _earlier ? l : r;
+}
+
+TocRef GenericDataSet::elementIndexVariableRecordSize(lb::Time _t, bool _earlier) const
+{
+	if (!rawRecords())
+		return InvalidTocRef;
+
+	if (m_stride)
+	{
+		auto d = m_toc.data<TocRef>();
+
+		if (_t < m_first)
+			return _earlier ? InvalidTocRef : d[0];
+		else if (_t == m_first)
+			return d[0];
+		else if (_t == m_first + m_stride * (rawRecords() - 1))
+			return d[rawRecords() - 1];
+		else if (_t > m_first + m_stride * (rawRecords() - 1))
+			return _earlier ? d[rawRecords() - 1] : InvalidTocRef;
+		else
+			return d[(_t - m_first + (_earlier ? 0 : (m_stride - 1))) / m_stride];
+	}
+
+	struct TimeTocRef { Time t; TocRef r; };
+	auto d = m_toc.data<TimeTocRef>();
+
+	// Binary chop through TOC
+	unsigned l = 0;
+	unsigned r = d.size() - 1;
+
+	if (d[l].t == _t)
+		return d[l].r;
+	if (d[r].t == _t)
+		return d[r].r;
+
+	if (_t < d[l].t)
+		return _earlier ? InvalidTocRef : d[l].r;
+	if (_t > d[r].t)
+		return _earlier ? d[r].r : InvalidTocRef;
+
+	while (r - l > 1)
+	{
+		unsigned m = (l + r) / 2;
+		if (d[m].t == _t)
+			return d[m].r;
+		else
+			(d[m].t > _t ? r : l) = m;
+	}
+	return _earlier ? d[l].r : d[r].r;
+}
+
+void GenericDataSet::populateSeries(lb::Time _from, foreign_vector<uint8_t> const& _out) const
+{
+	assert(this);
+	if (!haveRaw())
+	{
+		memset(_out.data(), 0, m_elementSize * _out.size());
+		return;
+	}
+
+	int recordBegin = (_from - m_first) / m_stride;
+	int rSize = m_recordLength * m_elementSize;
+	int records = _out.size() / rSize;
+	assert((int)_out.size() == records * rSize);
+
+	foreign_vector<uint8_t const> d = m_raw.data<uint8_t>();
+	int recordsAvailable = d.size() / rSize;
+
+	// Beginning part - anything before our records begin should be zeroed.
+	int beforeStart = clamp(-recordBegin, 0, records);
+	memset(_out.data(), 0, rSize * beforeStart);
+
+	// End part - anything after our records end should be zeroed.
+	int overEnd = clamp(recordBegin + records - recordsAvailable, 0, records);
+	memset(_out.data() + (records - overEnd) * rSize, 0, rSize * overEnd);
+
+	int valid = records - beforeStart - overEnd;
+	assert(valid <= records);
+	valcpy(_out.data() + beforeStart * rSize, d.data() + (recordBegin + beforeStart) * rSize, rSize * valid);
+}
+
+void GenericDataSet::populateDigest(DigestType _digest, unsigned _level, lb::Time _from, foreign_vector<uint8_t> const& _out) const
+{
+	assert(this);
+	if (!m_digest.contains(_digest))
+	{
+		memset(_out.data(), 0, _out.size() * m_elementSize);
+		return;
+	}
+
+/*	for (unsigned i = 0; i < _size; ++i)
+		_out[i] = 0;*/
+	int recordBegin = (_from - m_first) / m_stride / (m_digestBase << _level);
+	int drSize = digestSize(_digest) * recordLength() * m_elementSize;
+	int records = _out.size() / drSize;
+	assert((int)_out.size() == records * drSize);
+
+	foreign_vector<uint8_t> d = m_digest[_digest]->data<uint8_t>(_level);
+	int recordsAvailable = d.size() / drSize;
+
+	// Beginning part - anything before our records begin should be zeroed.
+	int beforeStart = clamp(-recordBegin, 0, records);
+	memset(_out.data(), 0, drSize * beforeStart);
+
+	// End part - anything after our records end should be zeroed.
+	int overEnd = clamp(recordBegin + records - recordsAvailable, 0, records);
+	memset(_out.data() + (records - overEnd) * drSize, 0, drSize * overEnd);
+
+	int valid = records - beforeStart - overEnd;
+	assert(valid <= records);
+
+/*	for (unsigned i = 0; i < drLen * valid; ++i)
+	{
+		(_out + beforeStart * drLen)[i] = 0;
+		float f = (d.data() + (recordBegin + beforeStart) * drLen)[i];
+		(_out + beforeStart * drLen)[i] = f;
+	}*/
+	valcpy(_out.data() + beforeStart * drSize, d.data() + (recordBegin + beforeStart) * drSize, drSize * valid);
+//	cnote << "popDig: " << recordBegin << drLen << records << "(" << recordsAvailable << ") -> [" << beforeStart << "]" << valid << "[" << overEnd << "]";
 }
 
 void GenericDataSet::ensureHaveDigest(DigestType _t)
@@ -308,99 +491,4 @@ void GenericDataSet::ensureHaveDigest(DigestType _t)
 			break;
 		}
 	}
-}
-
-tuple<Time, unsigned, int, Time> GenericDataSet::bestFit(Time _from, Time _duration, unsigned _idealRecords) const
-{
-	int64_t recordBegin = (_from - m_first) / m_stride;
-	int64_t recordEnd = (_from + _duration - m_first + m_stride - 1) / m_stride;
-	int64_t recordRes = _duration / m_stride;
-
-	int level = -1;
-
-	while (true)
-	{
-		int nextLevel = level + 1;
-		int64_t nextBegin = nextLevel ? recordBegin / 2 : (recordBegin / (int64_t)m_digestBase);
-		int64_t nextEnd = nextLevel ? (recordEnd + 1) / 2 : ((recordEnd + (int64_t)m_digestBase - 1) / (int64_t)m_digestBase);
-		int64_t nextRes = nextLevel ? recordRes / 2 : (recordRes / (int64_t)m_digestBase);
-
-		if (nextRes < _idealRecords)
-			// Passed the place... use the last one cunningly left in recordBegin/recordEnd/level.
-			return tuple<Time, unsigned, int, Time>(m_first + m_stride * (level > -1 ? m_digestBase << level : 1) * recordBegin, recordEnd - recordBegin, level, (recordEnd - recordBegin) * m_stride * (level > -1 ? m_digestBase << level : 1));
-		recordBegin = nextBegin;
-		recordEnd = nextEnd;
-		recordRes = nextRes;
-		level = nextLevel;
-	}
-}
-
-void GenericDataSet::populateRaw(lb::Time _from, foreign_vector<uint8_t> const& _out) const
-{
-	assert(this);
-	if (!haveRaw())
-	{
-		memset(_out.data(), 0, m_elementSize * _out.size());
-		return;
-	}
-
-	int recordBegin = (_from - m_first) / m_stride;
-	int rSize = recordLength() * m_elementSize;
-	int records = _out.size() / rSize;
-	assert((int)_out.size() == records * rSize);
-
-	foreign_vector<uint8_t const> d = m_raw.data<uint8_t>();
-	int recordsAvailable = d.size() / rSize;
-
-	// Beginning part - anything before our records begin should be zeroed.
-	int beforeStart = clamp(-recordBegin, 0, records);
-	memset(_out.data(), 0, rSize * beforeStart);
-
-	// End part - anything after our records end should be zeroed.
-	int overEnd = clamp(recordBegin + records - recordsAvailable, 0, records);
-	memset(_out.data() + (records - overEnd) * rSize, 0, rSize * overEnd);
-
-	int valid = records - beforeStart - overEnd;
-	assert(valid <= records);
-	valcpy(_out.data() + beforeStart * rSize, d.data() + (recordBegin + beforeStart) * rSize, rSize * valid);
-}
-
-void GenericDataSet::populateDigest(DigestType _digest, unsigned _level, lb::Time _from, foreign_vector<uint8_t> const& _out) const
-{
-	assert(this);
-	if (!m_digest.contains(_digest))
-	{
-		memset(_out.data(), 0, _out.size() * m_elementSize);
-		return;
-	}
-
-/*	for (unsigned i = 0; i < _size; ++i)
-		_out[i] = 0;*/
-	int recordBegin = (_from - m_first) / m_stride / (m_digestBase << _level);
-	int drSize = digestSize(_digest) * recordLength() * m_elementSize;
-	int records = _out.size() / drSize;
-	assert((int)_out.size() == records * drSize);
-
-	foreign_vector<uint8_t> d = m_digest[_digest]->data<uint8_t>(_level);
-	int recordsAvailable = d.size() / drSize;
-
-	// Beginning part - anything before our records begin should be zeroed.
-	int beforeStart = clamp(-recordBegin, 0, records);
-	memset(_out.data(), 0, drSize * beforeStart);
-
-	// End part - anything after our records end should be zeroed.
-	int overEnd = clamp(recordBegin + records - recordsAvailable, 0, records);
-	memset(_out.data() + (records - overEnd) * drSize, 0, drSize * overEnd);
-
-	int valid = records - beforeStart - overEnd;
-	assert(valid <= records);
-
-/*	for (unsigned i = 0; i < drLen * valid; ++i)
-	{
-		(_out + beforeStart * drLen)[i] = 0;
-		float f = (d.data() + (recordBegin + beforeStart) * drLen)[i];
-		(_out + beforeStart * drLen)[i] = f;
-	}*/
-	valcpy(_out.data() + beforeStart * drSize, d.data() + (recordBegin + beforeStart) * drSize, drSize * valid);
-//	cnote << "popDig: " << recordBegin << drLen << records << "(" << recordsAvailable << ") -> [" << beforeStart << "]" << valid << "[" << overEnd << "]";
 }

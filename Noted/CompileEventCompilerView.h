@@ -26,13 +26,13 @@
 #include <NotedPlugin/DataSet.h>
 #include <EventCompiler/GraphSpec.h>
 
-class EventsView;
+class EventCompilerView;
 
-class CompileEventsView: public CausalAnalysis
+class CompileEventCompilerView: public CausalAnalysis
 {
 public:
-	CompileEventsView(EventsView* _ev);
-	virtual ~CompileEventsView() {}
+	CompileEventCompilerView(EventCompilerView* _ev);
+	virtual ~CompileEventCompilerView() {}
 
 	virtual void init(bool _willRecord);
 	virtual void process(unsigned _i, lb::Time);
@@ -42,7 +42,7 @@ public:
 	lb::EventCompiler ec() const;
 
 private:
-	EventsView* m_ev;
+	EventCompilerView* m_ev;
 	QMap<lb::GraphSpec*, DataSetDataStore*> m_dataStores;
 };
 

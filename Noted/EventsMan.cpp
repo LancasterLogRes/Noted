@@ -2,10 +2,10 @@
 #include <NotedPlugin/Timeline.h>
 #include "CompileEvents.h"
 #include "CollateEvents.h"
-#include "CompileEventsView.h"
+#include "CompileEventCompilerView.h"
 #include "Global.h"
 #include "Noted.h"
-#include "EventsView.h"
+#include "EventCompilerView.h"
 #include "EventsMan.h"
 using namespace std;
 using namespace lb;
@@ -31,13 +31,13 @@ EventsMan::~EventsMan()
 void EventsMan::onAnalyzed(AcausalAnalysis* _aa)
 {
 	if (_aa == &*m_collateEventsAnalysis)
-		for (EventsView* ev: m_eventsViews)
+		for (EventCompilerView* ev: m_eventsViews)
 			if (!ev->isArchived())
 				for (auto const& i: ev->eventCompiler().asA<EventCompilerImpl>().graphMap())
 				{
 					GraphSpec* gs = i.second;
 					QString url = ev->objectName() + "/" + QString::fromStdString(i.first);
-					GraphMetadata gm = GraphMetadata(DataSetDataStore::operationKey(gs), {}, gs->name());
+					GraphMetadata gm = GraphMetadata(DataSetDataStore::operationKey(gs, ev->operationKey()), {}, gs->name());
 					if (GraphChart* gc = dynamic_cast<GraphChart*>(gs))
 						gm.setAxes({{ gc->ylabel(), gc->ytx(), gc->yrangeHint() }});
 					else if (GraphDenseDenseFixed* gddf = dynamic_cast<GraphDenseDenseFixed*>(gs))
@@ -55,9 +55,9 @@ CausalAnalysisPtrs EventsMan::ripeCausalAnalysis(CausalAnalysisPtr const& _finis
 		ret.push_back(m_compileEventsAnalysis);
 	}
 	else if (dynamic_cast<CompileEvents*>(&*_finished) && m_eventsViews.size())
-		for (EventsView* ev: m_eventsViews)
-			ret.push_back(CausalAnalysisPtr(new CompileEventsView(ev)));
-	else if ((_finished == m_compileEventsAnalysis && !m_eventsViews.size()) || (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == m_eventsViews.size()))
+		for (EventCompilerView* ev: m_eventsViews)
+			ret.push_back(CausalAnalysisPtr(new CompileEventCompilerView(ev)));
+	else if ((_finished == m_compileEventsAnalysis && !m_eventsViews.size()) || (dynamic_cast<CompileEventCompilerView*>(&*_finished) && ++m_eventsViewsDone == m_eventsViews.size()))
 		ret.push_back(m_collateEventsAnalysis);
 	return ret;
 }
@@ -71,15 +71,15 @@ AcausalAnalysisPtrs EventsMan::ripeAcausalAnalysis(AcausalAnalysisPtr const& _fi
 		ret.push_back(m_compileEventsAnalysis);
 	}
 	else if (_finished == m_compileEventsAnalysis && m_eventsViews.size())
-		for (EventsView* ev: m_eventsViews)
-			ret.push_back(AcausalAnalysisPtr(new CompileEventsView(ev)));
+		for (EventCompilerView* ev: m_eventsViews)
+			ret.push_back(AcausalAnalysisPtr(new CompileEventCompilerView(ev)));
 	else if ((_finished == m_compileEventsAnalysis && !m_eventsViews.size()) ||
-			 (dynamic_cast<CompileEventsView*>(&*_finished) && ++m_eventsViewsDone == m_eventsViews.size()))
+			 (dynamic_cast<CompileEventCompilerView*>(&*_finished) && ++m_eventsViewsDone == m_eventsViews.size()))
 		ret.push_back(m_collateEventsAnalysis);
 	return ret;
 }
 
-void EventsMan::registerEventsView(EventsView* _ev)
+void EventsMan::registerEventsView(EventCompilerView* _ev)
 {
 	cnote << "REGISTER eventsView";
 	NotedFace::compute()->suspendWork();
@@ -88,7 +88,7 @@ void EventsMan::registerEventsView(EventsView* _ev)
 	NotedFace::compute()->resumeWork();
 }
 
-void EventsMan::unregisterEventsView(EventsView* _ev)
+void EventsMan::unregisterEventsView(EventCompilerView* _ev)
 {
 	cnote << "UNREGISTER eventsView";
 	NotedFace::compute()->suspendWork();

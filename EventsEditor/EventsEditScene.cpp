@@ -190,6 +190,21 @@ QList<StreamEvents> EventsEditScene::events(Time _hop) const
 	return ret;
 }
 
+StreamEvents EventsEditScene::events(Time _from, Time _before) const
+{
+	StreamEvents ret;
+	for (QGraphicsItem* it: items(Qt::AscendingOrder))
+		if (auto sei = dynamic_cast<StreamEventItem*>(it))
+		{
+			Time t = fromSeconds(sei->pos().x() / 1000);
+			if (t >= _before)
+				break;
+			else if (t > _from)
+				ret.push_back(sei->streamEvent());
+		}
+	return ret;
+}
+
 void EventsEditScene::saveTo(QString _filename) const
 {
 	using boost::property_tree::ptree;

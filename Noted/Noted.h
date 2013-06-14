@@ -63,7 +63,7 @@ class QComboBox;
 class QQuickView;
 class WorkerThread;
 class PrerenderedTimeline;
-class EventsView;
+class EventCompilerView;
 class EventsEditor;
 class CompileEvents;
 class CollateEvents;

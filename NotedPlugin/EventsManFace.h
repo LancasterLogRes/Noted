@@ -7,7 +7,7 @@
 #include "EventsStore.h"
 #include "CausalAnalysis.h"
 
-class EventsView;
+class EventCompilerView;
 class Timeline;
 
 class EventsManFace: public QObject
@@ -21,9 +21,9 @@ public:
 	void unregisterStore(EventsStore* _es);
 	QSet<EventsStore*> eventsStores() const { return m_stores; }
 
-	virtual void registerEventsView(EventsView* _ev) = 0;
-	virtual void unregisterEventsView(EventsView* _ev) = 0;
-	virtual QSet<EventsView*> eventsViews() const = 0;
+	virtual void registerEventsView(EventCompilerView* _ev) = 0;
+	virtual void unregisterEventsView(EventCompilerView* _ev) = 0;
+	virtual QSet<EventCompilerView*> eventsViews() const = 0;
 	virtual lb::EventCompiler findEventCompiler(QString const& _name) const = 0;
 	virtual QString getEventCompilerName(lb::EventCompilerImpl* _ec) const = 0;
 

@@ -60,7 +60,7 @@ class GraphManFace;
 class AudioManFace;
 class ComputeManFace;
 class ViewManFace;
-class EventsView;
+class EventCompilerView;
 
 class NotedFace: public QMainWindow
 {
