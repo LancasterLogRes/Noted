@@ -7,14 +7,12 @@
 #include "GraphView.h"
 #include "TimelineItem.h"
 
-class QSGTexture;
-
-class GraphItem: public TimelineItem
+class CursorGraphItem: public QQuickItem
 {
 	Q_OBJECT
 
 public:
-	GraphItem(QQuickItem* _p = nullptr);
+	CursorGraphItem(QQuickItem* _p = nullptr);
 
 	QVector3D yScaleHint() const;
 	float yFromHint() const { return yScaleHint().x(); }
@@ -25,6 +23,16 @@ public:
 	void setYFrom(float _v) { m_yFrom = _v; yScaleChanged(); update(); }
 	void setYDelta(float _v) { m_yDelta = _v; yScaleChanged(); update(); }
 	void setYMode(int _m) { m_yMode = _m; yScaleChanged(); update(); }
+
+	QVector3D xScaleHint() const;
+	float xFromHint() const { return xScaleHint().x(); }
+	float xDeltaHint() const { return xScaleHint().y(); }
+	float xFrom() const { return m_xFrom; }
+	float xDelta() const { return m_xDelta; }
+	int xMode() const { return m_xMode; }
+	void setXFrom(float _v) { m_xFrom = _v; yScaleChanged(); update(); }
+	void setXDelta(float _v) { m_xDelta = _v; yScaleChanged(); update(); }
+	void setXMode(int _m) { m_xMode = _m; yScaleChanged(); update(); }
 
 	bool graphAvailable() const { return m_graphAvailable; }
 	bool dataAvailable() const { return m_dataAvailable; }
@@ -53,23 +61,23 @@ protected:
 	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
 
 	QString m_url;
+
+	float m_xFrom = 0;
+	float m_xDelta = 1;
+	int m_xMode = 0;		///< 0 -> xFrom/xDelta, 1 -> hint
+
 	float m_yFrom = 0;
 	float m_yDelta = 1;
-	int m_yMode = 0;		///< 0 -> yFrom/yDelta, 1 /*-> auto (global)*/, 2 -> hint
+	int m_yMode = 0;		///< 0 -> yFrom/yDelta, 1 -> hint
+
 	bool m_highlight = false;
 
 	void setAvailability(bool _graph, bool _data);
 	bool m_graphAvailable = false;
 	bool m_dataAvailable = false;
 
-	mutable QSGGeometry* m_spectrumQuad = nullptr;
-	QSGGeometry* spectrumQuad() const;
+	bool m_invalidated = true;
 
-	// At current LOD (m_lod)
-	QSGNode* geometryPage(unsigned _index, GraphMetadata _g, DataSetFloatPtr _ds);
-	void killCache();
-	bool m_invalidated = true;	// Cache is invalid.
-	int m_lod = -1;
-	mutable QMap<unsigned, QSGNode*> m_geometryCache;
-	QList<QSGTexture*> m_textures;
+	mutable QSGGeometry* m_quad = nullptr;
+	QSGGeometry* quad() const;
 };

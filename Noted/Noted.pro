@@ -27,7 +27,8 @@ SOURCES += main.cpp\
     GraphItem.cpp \
     TimelineItem.cpp \
     EventCompilerView.cpp \
-    CompileEventCompilerView.cpp
+    CompileEventCompilerView.cpp \
+    CursorGraphItem.cpp
 
 HEADERS  += Noted.h \
 	ProcessEventCompiler.h \
@@ -51,7 +52,8 @@ HEADERS  += Noted.h \
     GraphItem.h \
     TimelineItem.h \
     EventCompilerView.h \
-    CompileEventCompilerView.h
+    CompileEventCompilerView.h \
+    CursorGraphItem.h
 
 FORMS    += Noted.ui
 

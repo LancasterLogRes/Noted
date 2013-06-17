@@ -41,6 +41,7 @@ void GraphItem::onDataComplete(DataKey _k)
 	if (_k == findGraph(m_url).second)
 	{
 		m_invalidated = true;
+		yScaleHintChanged();
 		update();
 	}
 }
@@ -48,7 +49,7 @@ void GraphItem::onDataComplete(DataKey _k)
 QVector3D GraphItem::yScaleHint() const
 {
 	if (GraphMetadata g = NotedFace::get()->graphs()->find(m_url))
-		return QVector3D(g.axis().range.first, g.axis().range.second - g.axis().range.first, 0);
+		return QVector3D(g.axis(0).range.first, g.axis(0).range.second - g.axis(0).range.first, 0);
 	return QVector3D(0, 1, 0);
 }
 
@@ -79,24 +80,6 @@ struct SpectrumShaderState
 
 class SpectrumShader: public QSGSimpleMaterialShader<SpectrumShaderState>
 {
-	static QSGMaterialShader* createShader()
-	{
-		return new SpectrumShader;
-	}
-
-public:
-	class Material: public QSGSimpleMaterial<SpectrumShaderState>
-	{
-	public:
-		template <class _T> Material(_T const& _t): QSGSimpleMaterial<SpectrumShaderState>(_t) {}
-		virtual ~Material() { delete state()->t; }
-	};
-
-	static Material* createMaterial()
-	{
-		return new Material(createShader);
-	}
-
 public:
 	const char *vertexShader() const {
 		return
@@ -134,6 +117,8 @@ public:
 		program()->setUniformValue("offset", _state->transform.offset());
 		_state->t->bind();
 	}
+
+	QSG_DECLARE_SIMPLE_SHADER(SpectrumShader, SpectrumShaderState)
 };
 
 inline void checkGL(char const* _e)
@@ -264,7 +249,7 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetFloat
 					for (unsigned i = 0; i < records; ++i, v += 2)
 					{
 						v[0] = i;
-						v[1] = g.axis().transform.apply(intermed[i * 2]);
+						v[1] = g.axis(0).transform.apply(intermed[i * 2]);
 					}
 
 					QSGGeometryNode* n = new QSGGeometryNode();
@@ -312,7 +297,7 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetFloat
 					_ds->populateSeries(pageTime(_index, _ds, m_lod), &intermed);
 				else
 					_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed);
-				_g.axis(GraphMetadata::ValueAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::ValueAxis).range)).apply(intermed);
+				_g.axis(GraphMetadata::YAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::YAxis).range)).apply(intermed);
 
 				QSGGeometryNode* n = new QSGGeometryNode();
 				n->setFlag(QSGNode::OwnedByParent, false);
@@ -329,6 +314,7 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetFloat
 				auto m = SpectrumShader::createMaterial();
 				m->state()->transform = XOf(1, 0);
 				m->state()->t = window()->createTextureFromId(id, QSize(_ds->recordLength(), c_recordsPerPage), QQuickWindow::TextureOwnsGLTexture);
+				m_textures.append(m->state()->t);
 				n->setMaterial(m);
 				n->setFlag(QSGNode::OwnsMaterial);
 
@@ -347,7 +333,10 @@ void GraphItem::killCache()
 {
 	for (auto i: m_geometryCache)
 		delete i;
+	for (auto i: m_textures)
+		delete i;
 	m_geometryCache.clear();
+	m_textures.clear();
 }
 
 QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
@@ -406,8 +395,8 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 			float yd = m_yDelta;
 			if (m_yMode)
 			{
-				yf = g.axis().range.first;
-				yd = g.axis().range.second - g.axis().range.first;
+				yf = g.axis(0).range.first;
+				yd = g.axis(0).range.second - g.axis(0).range.first;
 			}
 			QMatrix4x4 gmx;
 			gmx.translate(0, height());

@@ -198,22 +198,48 @@ tuple<Time, unsigned, int, Time> GenericDataSet::bestFit(Time _from, Time _durat
 	}
 }
 
+struct TimeTocRef { Time t; TocRef r; };
+
+Time GenericDataSet::timeOfRecord(unsigned _e) const
+{
+	if (_e == (unsigned)-1)
+		return 0;
+	else if (m_stride)
+		return m_first + m_stride * _e;
+	else if (m_recordLength)
+		return m_toc.data<Time>()[_e];
+	else
+		return m_toc.data<TimeTocRef>()[_e].t;
+}
+
+TocRef GenericDataSet::elementIndexOfRecord(unsigned _e) const
+{
+	if (_e == (unsigned)-1)
+		return InvalidTocRef;
+	else if (m_recordLength)
+		return _e * m_recordLength;
+	else if (m_stride)
+		return m_toc.data<TocRef>()[_e];
+	else
+		return m_toc.data<TimeTocRef>()[_e].r;
+}
+
 // Returns index of first element of earliest record of time >= _t if !_earlier
 // ..or index of first element of latest record of time <= _t if _earlier
-TocRef GenericDataSet::elementIndexFixedRecordSize(lb::Time _t, bool _earlier) const
+unsigned GenericDataSet::recordIndexFixedRecordSize(lb::Time _t, bool _earlier) const
 {
 	if (!rawRecords())
-		return InvalidTocRef;
+		return (unsigned)-1;
 
 	if (m_stride)
 		if (_t < m_first)
-			return _earlier ? InvalidTocRef : 0;
+			return _earlier ? (unsigned)-1 : 0;
 		else if (_t == m_first)
 			return 0;
 		else if (_t == m_first + m_stride * (rawRecords() - 1))
 			return rawRecords() - 1;
 		else if (_t > m_first + m_stride * (rawRecords() - 1))
-			return _earlier ? rawRecords() - 1 : InvalidTocRef;
+			return _earlier ? rawRecords() - 1 : (unsigned)-1;
 		else
 			return (_t - m_first + (_earlier ? 0 : (m_stride - 1))) / m_stride;
 
@@ -224,13 +250,13 @@ TocRef GenericDataSet::elementIndexFixedRecordSize(lb::Time _t, bool _earlier) c
 	unsigned r = d.size() - 1;
 
 	if (d[l] == _t)
-		return 0;
+		return l;
 	if (_t == d[r])
 		return r;
 	if (_t < d[l])
-		return _earlier ? InvalidTocRef : 0;
+		return _earlier ? (unsigned)-1 : 0;
 	if (_t > d[r])
-		return _earlier ? d.size() - 1 : InvalidTocRef;
+		return _earlier ? d.size() - 1 : (unsigned)-1;
 
 	while (r - l > 1)
 	{
@@ -243,28 +269,25 @@ TocRef GenericDataSet::elementIndexFixedRecordSize(lb::Time _t, bool _earlier) c
 	return _earlier ? l : r;
 }
 
-TocRef GenericDataSet::elementIndexVariableRecordSize(lb::Time _t, bool _earlier) const
+unsigned GenericDataSet::recordIndexVariableRecordSize(lb::Time _t, bool _earlier) const
 {
 	if (!rawRecords())
 		return InvalidTocRef;
 
 	if (m_stride)
 	{
-		auto d = m_toc.data<TocRef>();
-
 		if (_t < m_first)
-			return _earlier ? InvalidTocRef : d[0];
+			return _earlier ? (unsigned)-1 : 0;
 		else if (_t == m_first)
-			return d[0];
+			return 0;
 		else if (_t == m_first + m_stride * (rawRecords() - 1))
-			return d[rawRecords() - 1];
+			return rawRecords() - 1;
 		else if (_t > m_first + m_stride * (rawRecords() - 1))
-			return _earlier ? d[rawRecords() - 1] : InvalidTocRef;
+			return _earlier ? rawRecords() - 1 : (unsigned)-1;
 		else
-			return d[(_t - m_first + (_earlier ? 0 : (m_stride - 1))) / m_stride];
+			return (_t - m_first + (_earlier ? 0 : (m_stride - 1))) / m_stride;
 	}
 
-	struct TimeTocRef { Time t; TocRef r; };
 	auto d = m_toc.data<TimeTocRef>();
 
 	// Binary chop through TOC
@@ -272,24 +295,24 @@ TocRef GenericDataSet::elementIndexVariableRecordSize(lb::Time _t, bool _earlier
 	unsigned r = d.size() - 1;
 
 	if (d[l].t == _t)
-		return d[l].r;
+		return l;
 	if (d[r].t == _t)
-		return d[r].r;
+		return r;
 
 	if (_t < d[l].t)
-		return _earlier ? InvalidTocRef : d[l].r;
+		return _earlier ? (unsigned)-1 : l;
 	if (_t > d[r].t)
-		return _earlier ? d[r].r : InvalidTocRef;
+		return _earlier ? r : (unsigned)-1;
 
 	while (r - l > 1)
 	{
 		unsigned m = (l + r) / 2;
 		if (d[m].t == _t)
-			return d[m].r;
+			return m;
 		else
 			(d[m].t > _t ? r : l) = m;
 	}
-	return _earlier ? d[l].r : d[r].r;
+	return _earlier ? l : r;
 }
 
 void GenericDataSet::populateSeries(lb::Time _from, foreign_vector<uint8_t> const& _out) const
@@ -364,18 +387,20 @@ void GenericDataSet::populateDigest(DigestType _digest, unsigned _level, lb::Tim
 
 void GenericDataSet::ensureHaveDigest(DigestType _t)
 {
-	assert(m_stride);
-	assert(m_recordLength);
+	if (!m_stride || !m_recordLength)
+		return;
+
 	m_raw.ensureMapped();
 	m_digest[_t] = make_shared<MipmappedCache<>>();
-	bool haveDigest = m_digest[_t]->open(m_sourceKey, m_operationKey, 2 + (int)_t, digestSize(_t) * recordLength() * m_elementSize, digestRecords());
-	if (haveDigest)
+	bool haveDigest = m_digest[_t]->open(m_sourceKey, m_operationKey, 2 + (int)_t, digestSize(_t) * m_recordLength * m_elementSize, digestRecords());
+	if (haveDigest || digestRecords() < m_digestBase)
 		return;
 
 	// Only know how to digest floats for now.
 	if (m_elementTypeName == typeid(float).name())
 	{
 		foreign_vector<float> digestData = m_digest[_t]->data<float>(0);
+
 		float* d = digestData.data();
 
 		auto rawData = m_raw.data<float>();

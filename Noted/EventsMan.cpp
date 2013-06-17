@@ -41,7 +41,7 @@ void EventsMan::onAnalyzed(AcausalAnalysis* _aa)
 					if (GraphChart* gc = dynamic_cast<GraphChart*>(gs))
 						gm.setAxes({{ gc->ylabel(), gc->ytx(), gc->yrangeHint() }});
 					else if (GraphDenseDenseFixed* gddf = dynamic_cast<GraphDenseDenseFixed*>(gs))
-						gm.setAxes({ { gddf->ylabel(), gddf->ytx(), gddf->yrangeHint() }, { gddf->xlabel(), gddf->xtx(), gddf->xrangeHint() } });
+						gm.setAxes({ { gddf->xlabel(), gddf->xtx(), gddf->xrangeHint() }, { gddf->ylabel(), gddf->ytx(), gddf->yrangeHint() } });
 					Noted::graphs()->registerGraph(url, gm);
 				}
 }

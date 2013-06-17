@@ -101,13 +101,38 @@ public:
 		valcpy(ret.data(), m_raw.data<_T>().data() + _from, ret.size());
 		return ret;
 	}
-	TocRef elementIndex(lb::Time _from) const { return m_recordLength ? elementIndexFixedRecordSize(_from, false) : elementIndexVariableRecordSize(_from, false); }
-	TocRef elementIndexEarlier(lb::Time _latest) const { return m_recordLength ? elementIndexFixedRecordSize(_latest, true) : elementIndexVariableRecordSize(_latest, true); }
+
+	unsigned recordIndex(lb::Time _from) const { return m_recordLength ? recordIndexFixedRecordSize(_from, false) : recordIndexVariableRecordSize(_from, false); }
+	unsigned recordIndexEarlier(lb::Time _latest) const { return m_recordLength ? recordIndexFixedRecordSize(_latest, true) : recordIndexVariableRecordSize(_latest, true); }
+
+	TocRef elementIndex(lb::Time _from) const { return elementIndexOfRecord(recordIndex(_from)); }
+	TocRef elementIndexEarlier(lb::Time _latest) const { return elementIndexOfRecord(recordIndexEarlier(_latest)); }
+
+	TocRef elementIndexOfRecord(unsigned _e) const;
+	lb::Time timeOfRecord(unsigned _e) const;
+	unsigned lengthOfRecord(unsigned _e) const { return lb::defaultTo(elementIndexOfRecord(_e + 1), elements(), InvalidTocRef) - elementIndexOfRecord(_e); }
+
+	template <class _T> std::vector<_T> getRecord(lb::Time _latest, lb::Time* o_recordTime = nullptr) const
+	{
+		if (!rawRecords())
+			return {};
+
+		unsigned i = recordIndexEarlier(_latest);
+		if (i == (unsigned)-1)
+			return {};
+
+		if (o_recordTime)
+			*o_recordTime = timeOfRecord(i);
+
+		std::vector<_T> ret(lengthOfRecord(i));
+		lb::valcpy(ret.data(), m_raw.data<_T>().data() + i, ret.size());
+		return ret;
+	}
 
 private:
 	void setup(unsigned _itemCount);
-	TocRef elementIndexFixedRecordSize(lb::Time _from, bool _earlier) const;
-	TocRef elementIndexVariableRecordSize(lb::Time _from, bool _earlier) const;
+	unsigned recordIndexFixedRecordSize(lb::Time _from, bool _earlier) const;
+	unsigned recordIndexVariableRecordSize(lb::Time _from, bool _earlier) const;
 	void populateElements(TocRef _from, lb::foreign_vector<uint8_t> const& _out) const;
 
 	struct Metadata
@@ -152,6 +177,7 @@ public:
 	void populateDigest(DigestType _digest, unsigned _level, lb::Time _from, lb::foreign_vector<_T> const& _out) const { GenericDataSet::populateDigest(_digest, _level, _from, (lb::foreign_vector<uint8_t>)_out); }
 
 	std::vector<_T> getInterval(lb::Time _from, lb::Time _before) const { return GenericDataSet::getInterval<_T>(_from, _before); }
+	std::vector<_T> getRecord(lb::Time _latest, lb::Time* o_recordTime = nullptr) const { return GenericDataSet::getRecord<_T>(_latest, o_recordTime); }
 };
 
 template <class _T> using DataSetPtr = std::shared_ptr<DataSet<_T> >;

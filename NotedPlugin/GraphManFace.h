@@ -22,13 +22,19 @@
  * compiler graphs it is a hash of the event compiler's class name, its version and any
  * parameters it has. System graphs may have reserved keys (e.g. wave data, 0), or may hash
  * dependent parameters.
+ *
+ * Note: The first axis is always the Y-axis when plotting against time (i.e. for line charts
+ * it's the point value and for spectra it's the bin value). The axes increment through X & Y
+ * (and Z, in the future, perhaps) ending with the "value" axis, which is the Y-axis when plotting
+ * a point in time.
+ * ValueAxis can be passed to axis() to retrive the last axis.
  */
 class GraphMetadata
 {
 	friend class GraphManFace;
 
 public:
-	enum { ValueAxis = 0, XAxis = 1 };
+	enum { ValueAxis = -1, XAxis = 0, YAxis = 1 };
 
 	struct Axis
 	{
@@ -57,8 +63,7 @@ public:
 	void setRawSource(bool _rawSource = true) { m_rawSource = _rawSource; }
 	void setOperationKey(SimpleKey _k) { m_operationKey = _k; }
 
-	Axis const& axis() const { return m_axes.back(); }
-	Axis const& axis(unsigned _i) const { return m_axes[_i]; }
+	Axis const& axis(unsigned _i = ValueAxis) const { return m_axes[lb::defaultTo((int)_i, (int)m_axes.size() - 1, (int)ValueAxis)]; }
 	Axes const& axes() const { return m_axes; }
 	void setAxes(Axes const& _as) { m_axes = _as; }
 

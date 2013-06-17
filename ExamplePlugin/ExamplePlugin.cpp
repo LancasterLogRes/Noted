@@ -37,7 +37,8 @@ public:
 		if (_willRecord)
 		{
 			m_ds = NotedFace::data()->create(DataKey(NotedFace::audio()->key(), m_operationKey));
-			m_ds->init(1, NotedFace::audio()->hop());
+			if (!m_ds->isComplete())
+				m_ds->init(1, NotedFace::audio()->hop());
 		}
 	}
 
@@ -65,7 +66,7 @@ public:
 
 	virtual void record(unsigned, Time _t)
 	{
-		if (m_ds && !m_ds->haveRaw())
+		if (m_ds && !m_ds->isComplete())
 			m_ds->appendRecord(_t, &m_lastRecord);
 	}
 
