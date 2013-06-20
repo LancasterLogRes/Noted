@@ -45,6 +45,7 @@
 #include "NotedGLWidget.h"
 #include "TimelineItem.h"
 #include "GraphItem.h"
+#include "CursorGraphItem.h"
 #include "TimelinesItem.h"
 #include "Noted.h"
 #include "ui_Noted.h"
@@ -86,10 +87,13 @@ Noted::Noted(QWidget* _p):
 
 	qmlRegisterSingletonType<TimeHelper>("com.llr", 1, 0, "Time", TimelineItem::constructTimeHelper);
 	qmlRegisterType<GraphItem>("com.llr", 1, 0, "Graph");
+	qmlRegisterType<CursorGraphItem>("com.llr", 1, 0, "CursorGraph");
 	qmlRegisterType<IntervalItem>("com.llr", 1, 0, "Interval");
 	qmlRegisterType<CursorItem>("com.llr", 1, 0, "Cursor");
 	qmlRegisterType<TimelinesItem>("com.llr", 1, 0, "Timelines");
+	qmlRegisterType<TimeLabelsItem>("com.llr", 1, 0, "TimeLabels");
 	qmlRegisterType<XLabelsItem>("com.llr", 1, 0, "XLabels");
+	qmlRegisterType<XScaleItem>("com.llr", 1, 0, "XScale");
 	qmlRegisterType<YLabelsItem>("com.llr", 1, 0, "YLabels");
 	qmlRegisterType<YScaleItem>("com.llr", 1, 0, "YScale");
 

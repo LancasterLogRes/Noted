@@ -8,6 +8,10 @@ public:
 	GraphMan();
 	virtual ~GraphMan();
 
+public slots:
+	virtual void exportGraph(QString const& _url);
+	virtual void exportGraph(QString const& _url, QString _filename);
+
 protected:
 	virtual int rowCount(QModelIndex const& _parent) const;
 	virtual int columnCount(QModelIndex const& _parent) const;

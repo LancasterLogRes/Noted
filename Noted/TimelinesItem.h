@@ -23,13 +23,33 @@ signals:
 	void changed();
 
 protected:
-	Q_PROPERTY(float yFrom MEMBER m_yFrom NOTIFY changed)
-	Q_PROPERTY(float yDelta MEMBER m_yDelta NOTIFY changed)
+	Q_PROPERTY(QVector3D yScale MEMBER m_yScale NOTIFY changed)
 
 	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
 
-	float m_yFrom = 0;
-	float m_yDelta = 1;
+	QVector3D m_yScale = QVector3D(0, 1, 0);
+};
+
+class XScaleItem: public QQuickItem
+{
+	Q_OBJECT
+
+public:
+	XScaleItem(QQuickItem* _p = nullptr): QQuickItem(_p)
+	{
+		setFlag(ItemHasContents, true);
+		connect(this, SIGNAL(changed()), SLOT(update()));
+	}
+
+signals:
+	void changed();
+
+protected:
+	Q_PROPERTY(QVector3D xScale MEMBER m_xScale NOTIFY changed)
+
+	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
+
+	QVector3D m_xScale = QVector3D(0, 1, 0);
 };
 
 class YLabelsItem: public QQuickPaintedItem
@@ -46,14 +66,12 @@ signals:
 	void changed();
 
 protected:
-	Q_PROPERTY(float yFrom MEMBER m_yFrom NOTIFY changed)
-	Q_PROPERTY(float yDelta MEMBER m_yDelta NOTIFY changed)
+	Q_PROPERTY(QVector3D yScale MEMBER m_yScale NOTIFY changed)
 	Q_PROPERTY(int overflow MEMBER m_overflow NOTIFY changed)
 
 	virtual void paint(QPainter* _p);
 
-	float m_yFrom = 0;
-	float m_yDelta = 1;
+	QVector3D m_yScale = QVector3D(0, 1, 0);
 
 	int m_overflow = 0;
 };
@@ -64,6 +82,30 @@ class XLabelsItem: public QQuickPaintedItem
 
 public:
 	XLabelsItem(QQuickItem* _p = nullptr): QQuickPaintedItem(_p)
+	{
+		connect(this, SIGNAL(changed()), SLOT(update()));
+	}
+
+signals:
+	void changed();
+
+protected:
+	Q_PROPERTY(QVector3D xScale MEMBER m_xScale NOTIFY changed)
+	Q_PROPERTY(int overflow MEMBER m_overflow NOTIFY changed)
+
+	virtual void paint(QPainter* _p);
+
+	QVector3D m_xScale = QVector3D(0, 1, 0);
+
+	int m_overflow = 0;
+};
+
+class TimeLabelsItem: public QQuickPaintedItem
+{
+	Q_OBJECT
+
+public:
+	TimeLabelsItem(QQuickItem* _p = nullptr): QQuickPaintedItem(_p)
 	{
 		connect(this, SIGNAL(offsetChanged()), SLOT(update()));
 		connect(this, SIGNAL(pitchChanged()), SLOT(update()));

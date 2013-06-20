@@ -1,4 +1,8 @@
+#include <QFileDialog>
 #include <Common/Global.h>
+#include <NotedPlugin/DataMan.h>
+#include <NotedPlugin/DataSet.h>
+#include <NotedPlugin/NotedFace.h>
 #include "Global.h"
 #include "GraphMan.h"
 using namespace std;
@@ -68,3 +72,50 @@ QVariant GraphMan::headerData(int _section, Qt::Orientation, int _role) const
 	return _role == Qt::DisplayRole && _section == 0 ? "Name" : QVariant();
 }
 
+void GraphMan::exportGraph(QString const& _url)
+{
+	QString f = QFileDialog::getSaveFileName(NotedFace::get(), "Export Graph Data", QDir::homePath(), "CSV format (*.csv *.txt)");
+	if (f.size())
+	{
+		if (!f.contains("."))
+			f.append(".csv");
+		exportGraph(_url, f);
+	}
+}
+
+void GraphMan::exportGraph(QString const& _url, QString _filename)
+{
+	pair<GraphMetadata, DataKey> m = graphAndKey(_url);
+	if (DataSetPtr<float> ds = NotedFace::data()->get<float>(m.second))
+	{
+		ofstream out;
+		out.open(_filename.toLocal8Bit(), ios::trunc);
+		if (!out)
+			return;
+		out << "time";
+		if (ds->isDynamic())
+			out << "," << m.first.axis(GraphMetadata::XAxis).label << "," << m.first.title();
+		else if (ds->isScalar())
+			out << "," << m.first.title();
+		else
+			for (unsigned i = 0; i < ds->recordLength(); ++i)
+				out << "," << m.first.axis(GraphMetadata::XAxis).label << m.first.axis(GraphMetadata::XAxis).transform.apply(i);
+		out << endl;
+
+		auto rs = ds->rawRecords();
+		for (unsigned i = 0; i < rs; ++i)
+		{
+			if (ds->isDynamic())
+			{
+				unsigned i = 0;
+				ds->forEachElement<float>(i, [&](float f) {out << ds->timeOfRecord(i) << "," << m.first.axis(GraphMetadata::XAxis).transform.apply(i) << "," << m.first.axis().transform.apply(f) << endl; i++; });
+			}
+			else
+			{
+				out << toSeconds(ds->timeOfRecord(i));
+				ds->forEachElement<float>(i, [&](float f) {out << "," << m.first.axis().transform.apply(f);});
+				out << endl;
+			}
+		}
+	}
+}

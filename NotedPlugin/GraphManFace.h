@@ -94,11 +94,17 @@ public:
 	void unregisterGraphs(QString _ec);
 
 	GraphMetadata find(QString const& _url) const { QReadLocker l(&x_graphs); if (m_graphs.count(_url)) return m_graphs[_url]; return NullGraphMetadata; }
+	std::pair<GraphMetadata, DataKey> graphAndKey(QString const& _url);
+
 
 signals:
 	void graphsChanged();
 	void addedGraph(GraphMetadata const&);
 	void removedGraph(GraphMetadata const&);
+
+public slots:
+	virtual void exportGraph(QString const& _url) = 0;
+	virtual void exportGraph(QString const& _url, QString _filename) = 0;
 
 protected:
 	// TODO: replace lock with guarantee that GUI thread can't be running when graphs are going to change.

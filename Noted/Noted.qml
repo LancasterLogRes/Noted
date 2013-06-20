@@ -1,5 +1,4 @@
 import QtQuick 2.0
-import QtGraphicalEffects 1.0
 import com.llr 1.0
 
 Item {
@@ -11,7 +10,7 @@ Item {
 		anchors.left: parent.left
 		anchors.right: parent.right
 		height: 90
-		XLabels {
+		TimeLabels {
 			id: overviewLabels
 			height: 30
 			anchors.left: parent.left
@@ -72,7 +71,7 @@ Item {
 				anchors.right: parent.right
 				height: 30
 				color: 'white'
-				XLabels {
+				TimeLabels {
 					anchors.fill: parent
 					anchors.leftMargin: timelines.gutterWidth
 					offset: timelines.offset
@@ -89,8 +88,9 @@ Item {
 				anchors.leftMargin: -timelines.gutterWidth
 				anchors.topMargin: 10
 				spacing: 20
+				property int maxHandleX: Math.max(model.children[0].handleX, model.children[1].handleX, model.children[2].handleX, model.children[3].handleX, model.children[4].handleX, model.children[5].handleX, model.children[6].handleX, model.children[7].handleX, model.children[8].handleX, model.children[9].handleX)
 				model: VisualItemModel {
-					GraphTimeline { index: 0; visible: true; graphs: ListModel { ListElement { url: "wave"; name: "PCM" } } }
+					GraphTimeline { index: 0; visible: true; timelineGraphs: ListModel { ListElement { url: "wave"; name: "PCM" } } }
 					GraphTimeline { index: 1 }
 					GraphTimeline { index: 2 }
 					GraphTimeline { index: 3 }
@@ -170,14 +170,14 @@ Item {
 			height: 80
 			onDropped: {
 				var i = graphListView.append()
-				i.graphs.append({ 'url': drop.source.url, 'name': drop.source.name })
+				i.timelineGraphs.append({ 'url': drop.source.url, 'name': drop.source.name })
 				i.visible = true
 				drop.accept();
 			}
 			Rectangle {
 				id: footer
 				anchors.fill: parent
-				color: Qt.rgba(1, 1, 1, 0.9)
+				color: newGraphDrop.containsDrag ? Qt.rgba(0.9, 0.9, 1, 0.9) : Qt.rgba(1, 1, 1, 0.9);
 				visible: graphSpecDrag
 				property bool graphSpecDrag: false
 				Text {
@@ -188,15 +188,6 @@ Item {
 					verticalAlignment: Text.AlignVCenter
 					horizontalAlignment: Text.AlignHCenter
 				}
-				states: [
-					State {
-						when: newGraphDrop.containsDrag
-						PropertyChanges {
-							target: footer
-							color: Qt.rgba(0.9, 0.9, 1, 0.9)
-						}
-					}
-				]
 			}
 		}
 	}
@@ -216,7 +207,7 @@ Item {
 			anchors.fill: parent
 			drag.target: gutterHandle
 			drag.axis: Drag.XAxis
-			drag.minimumX: 80
+			drag.minimumX: graphListView.maxHandleX
 		}
 	}
 

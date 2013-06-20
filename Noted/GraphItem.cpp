@@ -1,3 +1,4 @@
+#include <GL/glu.h>
 #include <QtQuick>
 #include <Common/Global.h>
 #include <EventCompiler/GraphSpec.h>
@@ -6,14 +7,6 @@
 using namespace std;
 using namespace lb;
 
-inline pair<GraphMetadata, DataKey> findGraph(QString const& _url)
-{
-//	cnote << "findGraph" << _url;
-	if (GraphMetadata g = NotedFace::get()->graphs()->find(_url))
-		return make_pair(g, DataKey(g.isRawSource() ? Noted::audio()->rawKey() : Noted::audio()->key(), g.operationKey()));
-	return pair<GraphMetadata, DataKey>();
-}
-
 GraphItem::GraphItem(QQuickItem* _p): TimelineItem(_p)
 {
 	connect(this, &GraphItem::urlChanged, this, &GraphItem::update);
@@ -21,29 +14,33 @@ GraphItem::GraphItem(QQuickItem* _p): TimelineItem(_p)
 	connect(this, &GraphItem::urlChanged, this, &GraphItem::yScaleHintChanged);
 	connect(this, &GraphItem::yScaleHintChanged, this, &GraphItem::yScaleChanged);
 	connect(this, &GraphItem::yScaleChanged, this, &GraphItem::update);
-	connect(this, &GraphItem::highlightChanged, [=](){ m_invalidated = true; update(); });
+	connect(this, &GraphItem::highlightChanged, this, &GraphItem::invalidate);
 	connect(Noted::data(), &DataMan::dataComplete, this, &GraphItem::onDataComplete);
-	connect(Noted::graphs(), &GraphMan::graphsChanged, this, &GraphItem::update);
 	connect(Noted::graphs(), &GraphManFace::addedGraph, this, &GraphItem::onGraphAdded);
+	connect(Noted::graphs(), &GraphManFace::removedGraph, this, &GraphItem::onGraphRemoved);
 	connect(Noted::quickView(), &QQuickView::sceneGraphInitialized, [=](){});
+}
+
+void GraphItem::onGraphRemoved(GraphMetadata const& _g)
+{
+	cnote << "graphRemoved(" << _g.url() << ") [" << (void*)this << "] interested in" << m_url.toStdString();
+	if (QString::fromStdString(_g.url()) == m_url)
+		invalidate();
 }
 
 void GraphItem::onGraphAdded(GraphMetadata const& _g)
 {
+	cnote << "graphAdded(" << _g.url() << ") [" << (void*)this << "] interested in" << m_url.toStdString();
 	if (QString::fromStdString(_g.url()) == m_url)
-		yScaleHintChanged();
+		invalidate();
 }
 
 void GraphItem::onDataComplete(DataKey _k)
 {
 	cnote << "dataComplete(" << _k << ") [" << (void*)this << "] interested in" << m_url.toStdString();
-	cnote << "=" << findGraph(m_url).second;
-	if (_k == findGraph(m_url).second)
-	{
-		m_invalidated = true;
-		yScaleHintChanged();
-		update();
-	}
+	cnote << "=" << Noted::graphs()->graphAndKey(m_url).second;
+	if (_k == Noted::graphs()->graphAndKey(m_url).second)
+		invalidate();
 }
 
 QVector3D GraphItem::yScaleHint() const
@@ -168,11 +165,12 @@ void GraphItem::setAvailability(bool _graph, bool _data)
 
 QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetFloatPtr _ds)
 {
-	if (!m_geometryCache.contains(_index))
+	if (!m_geometryCache.contains(qMakePair(m_lod, _index)))
 	{
 		if (_ds->isMonotonic())
 		{
-			m_geometryCache[_index] = new QSGTransformNode;
+			m_geometryCache[qMakePair(m_lod, _index)].first = new QSGTransformNode;
+			m_geometryCache[qMakePair(m_lod, _index)].second = nullptr;
 
 			if (_ds->isScalar())
 			{
@@ -203,7 +201,7 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetFloat
 					m->setColor(QColor::fromHsvF(0, 0, (m_highlight ? 0.5 : 0.75), 1));
 					n->setMaterial(m);
 					n->setFlag(QSGNode::OwnsMaterial);
-					m_geometryCache[_index]->appendChildNode(n);
+					m_geometryCache[qMakePair(m_lod, _index)].first->appendChildNode(n);
 				}
 				if (m_lod >= 0 && _ds->haveDigest(MinMaxInOutDigest))
 				{
@@ -232,7 +230,7 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetFloat
 					m->setColor(QColor::fromHsvF(0, 0, (m_highlight ? 0.5 : 0.75), 1));
 					n->setMaterial(m);
 					n->setFlag(QSGNode::OwnsMaterial);
-					m_geometryCache[_index]->appendChildNode(n);
+					m_geometryCache[qMakePair(m_lod, _index)].first->appendChildNode(n);
 				}
 				if (m_lod >= 0 && _ds->haveDigest(MeanRmsDigest))
 				{
@@ -284,20 +282,23 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetFloat
 					m->setColor(QColor::fromHsvF(0, 0, (m_highlight ? 0.75 : 0.875), 1));
 					n->setMaterial(m);
 					n->setFlag(QSGNode::OwnsMaterial);
-					m_geometryCache[_index]->appendChildNode(n);
+					m_geometryCache[qMakePair(m_lod, _index)].first->appendChildNode(n);
 				}
 			}
 			else if (_ds->isFixed())
 			{
+				Timer t;
 				vector<float> intermed(c_recordsPerPage * _ds->recordLength());
 //				cnote << "intermed" << (void*)&intermed[0] << "+" << (c_recordsPerPage * _ds->recordLength()) << "*4";
-				for (unsigned i = 0; i < c_recordsPerPage * _ds->recordLength(); ++i)
-					intermed[i] = 0;
 				if (m_lod < 0)
 					_ds->populateSeries(pageTime(_index, _ds, m_lod), &intermed);
 				else
 					_ds->populateDigest(MeanDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed);
+				cnote << textualTime(t.elapsed());
+				t.reset();
 				_g.axis(GraphMetadata::YAxis).transform.composed(XOf::toUnity(_g.axis(GraphMetadata::YAxis).range)).apply(intermed);
+				cnote << textualTime(t.elapsed());
+				t.reset();
 
 				QSGGeometryNode* n = new QSGGeometryNode();
 				n->setFlag(QSGNode::OwnedByParent, false);
@@ -308,35 +309,41 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetFloat
 				glGenTextures(1, &id);
 				glBindTexture(GL_TEXTURE_2D, id);
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, _ds->recordLength(), c_recordsPerPage, 0, GL_LUMINANCE, GL_FLOAT, intermed.data());
+//				QOpenGLContext::currentContext()->functions()->glGenerateMipmap(GL_TEXTURE_2D);
 				glBindTexture(GL_TEXTURE_2D, 0);
 				glDisable(GL_TEXTURE_2D);
+				cnote << textualTime(t.elapsed());
+				t.reset();
 
 				auto m = SpectrumShader::createMaterial();
 				m->state()->transform = XOf(1, 0);
-				m->state()->t = window()->createTextureFromId(id, QSize(_ds->recordLength(), c_recordsPerPage), QQuickWindow::TextureOwnsGLTexture);
-				m_textures.append(m->state()->t);
+				QSGTexture* tex = window()->createTextureFromId(id, QSize(_ds->recordLength(), c_recordsPerPage), QQuickWindow::CreateTextureOptions(QQuickWindow::TextureOwnsGLTexture/* | QQuickWindow::TextureHasMipmaps*/));
+				m->state()->t = tex;
+				m_geometryCache[qMakePair(m_lod, _index)].second = tex;
 				n->setMaterial(m);
 				n->setFlag(QSGNode::OwnsMaterial);
+				cnote << textualTime(t.elapsed());
+				t.reset();
 
 				QMatrix4x4 mx;
 				mx.translate(0, _g.axis(GraphMetadata::XAxis).transform.offset());
 				mx.scale(c_recordsPerPage, _g.axis(GraphMetadata::XAxis).transform.scale() * _ds->recordLength());
-				static_cast<QSGTransformNode*>(m_geometryCache[_index])->setMatrix(mx);
-				m_geometryCache[_index]->appendChildNode(n);
+				static_cast<QSGTransformNode*>(m_geometryCache[qMakePair(m_lod, _index)].first)->setMatrix(mx);
+				m_geometryCache[qMakePair(m_lod, _index)].first->appendChildNode(n);
 			}
 		}
 	}
-	return m_geometryCache[_index];
+	return m_geometryCache[qMakePair(m_lod, _index)].first;
 }
 
 void GraphItem::killCache()
 {
 	for (auto i: m_geometryCache)
-		delete i;
-	for (auto i: m_textures)
-		delete i;
+	{
+		delete i.first;
+		delete i.second;
+	}
 	m_geometryCache.clear();
-	m_textures.clear();
 }
 
 QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
@@ -352,7 +359,7 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 
 	GraphMetadata g;
 	DataKey dk;
-	tie(g, dk) = findGraph(m_url);
+	tie(g, dk) = Noted::graphs()->graphAndKey(m_url);
 	DataSetFloatPtr ds = Noted::data()->get(dk);
 	setAvailability(!!g, !!ds);
 	if (g && ds)
@@ -367,9 +374,10 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 			std::tie(from, records, lod, duration) = ds->bestFit(m_offset, m_pitch * max<qreal>(1, width()), max<qreal>(1, width()));
 //			cnote << "Got" << textualTime(from) << "+" << textualTime(duration) << "/" << records << "@" << lod;
 
-			if (lod != m_lod || m_invalidated)
-			{
+			if (lod != m_lod)
 				m_lod = lod;
+			if (m_invalidated)
+			{
 				killCache();
 				m_invalidated = false;
 			}
@@ -391,8 +399,8 @@ QSGNode* GraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 			}
 
 			// Normalize height so within range [0,1] for the height xform.
-			float yf = m_yFrom;
-			float yd = m_yDelta;
+			float yf = m_yScale.x();
+			float yd = m_yScale.y();
 			if (m_yMode)
 			{
 				yf = g.axis(0).range.first;

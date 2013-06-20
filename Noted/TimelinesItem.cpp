@@ -6,7 +6,7 @@
 using namespace std;
 using namespace lb;
 
-void XLabelsItem::paint(QPainter* _p)
+void TimeLabelsItem::paint(QPainter* _p)
 {
 	_p->fillRect(_p->window(), QBrush(Qt::white));
 	GraphParameters<Time> nor(make_pair(m_offset, m_offset + m_pitch * width()), width() / 80, toBase(1, 1000000));
@@ -23,17 +23,41 @@ void XLabelsItem::paint(QPainter* _p)
 		}
 }
 
-void YLabelsItem::paint(QPainter* _p)
+void XLabelsItem::paint(QPainter* _p)
 {
-	int h = height() - m_overflow * 2;
-	GraphParameters<double> nor(make_pair(m_yFrom, m_yFrom + m_yDelta), h / 24, 1);
+	int w = width() - m_overflow * 2;
+	if (w <= 0)
+		return;
+	GraphParameters<double> nor(make_pair(m_xScale.x(), m_xScale.x() + m_xScale.y()), w / 64, 1);
 	for (double v = nor.from; v <= nor.to + nor.incr / 2; v += nor.incr)
-		if (nor.isMajor(v) && int((v - m_yFrom) / m_yDelta * h) <= h)
+		if (nor.isMajor(v) && int((v - m_xScale.x()) / m_xScale.y() * w) <= w)
 		{
 			// Avoid negative pseudo-zeroes
 			if (fabs(v) < nor.incr / 2)
 				v = 0;
-			double y = (1.0 - double(v - m_yFrom) / m_yDelta) * h + m_overflow;
+			double x = double(v - m_xScale.x()) / m_xScale.y() * w + m_overflow;
+			QString s = QString::number(v);
+			_p->setPen(QColor(128, 128, 128));
+			QSize z = _p->fontMetrics().boundingRect(s).size();
+			z = QSize(z.width() + z.height(), z.height() * 1.5);
+			QRect r(x - z.width() / 2, 0, z.width(), height());
+			_p->drawText(r, Qt::AlignCenter, s);
+		}
+}
+
+void YLabelsItem::paint(QPainter* _p)
+{
+	int h = height() - m_overflow * 2;
+	if (h <= 0)
+		return;
+	GraphParameters<double> nor(make_pair(m_yScale.x(), m_yScale.x() + m_yScale.y()), h / 24, 1);
+	for (double v = nor.from; v <= nor.to + nor.incr / 2; v += nor.incr)
+		if (nor.isMajor(v) && int((v - m_yScale.x()) / m_yScale.y() * h) <= h)
+		{
+			// Avoid negative pseudo-zeroes
+			if (fabs(v) < nor.incr / 2)
+				v = 0;
+			double y = (1.0 - double(v - m_yScale.x()) / m_yScale.y()) * h + m_overflow;
 			QString s = QString::number(v);
 			_p->setPen(QColor(128, 128, 128));
 			QSize z = _p->fontMetrics().boundingRect(s).size();
@@ -51,17 +75,21 @@ QSGNode* YScaleItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 		base->appendChildNode(new QSGTransformNode);
 		base->setColor(QColor(255, 255, 255, 192));
 	}
+
 	QSGTransformNode* obase = dynamic_cast<QSGTransformNode*>(base->firstChild());
 
 	base->setRect(boundingRect());
 
 	obase->removeAllChildNodes();
 
+	if (width() <= 5 || height() <= 5)
+		return base;
+
 	unsigned majorCount = 0;
 	unsigned minorCount = 0;
-	GraphParameters<double> nor(make_pair(m_yFrom, m_yFrom + m_yDelta), height() / 24, 1);
+	GraphParameters<double> nor(make_pair(m_yScale.x(), m_yScale.x() + m_yScale.y()), height() / 24, 1);
 	for (double v = nor.from; v <= nor.to + nor.incr / 2; v += nor.incr)
-		if (int((v - m_yFrom) / m_yDelta * height()) <= height())
+		if (int((v - m_yScale.x()) / m_yScale.y() * height()) <= height())
 			(nor.isMajor(v) ? majorCount : minorCount)++;
 
 	auto majorGeo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), majorCount * 2);
@@ -70,7 +98,7 @@ QSGNode* YScaleItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 	float* majorData = static_cast<float*>(majorGeo->vertexData());
 	float* minorData = static_cast<float*>(minorGeo->vertexData());
 	for (double v = nor.from; v <= nor.to + nor.incr / 2; v += nor.incr)
-		if (int((v - m_yFrom) / m_yDelta * height()) <= height())
+		if (int((v - m_yScale.x()) / m_yScale.y() * height()) <= height())
 		{
 			float*& d = nor.isMajor(v) ? majorData : minorData;
 			d[1] = d[3] = v;
@@ -105,8 +133,80 @@ QSGNode* YScaleItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 	QMatrix4x4 gmx;
 	gmx.translate(0, height());
 	gmx.scale(width(), -height());
-	gmx.scale(1, 1.f / m_yDelta);
-	gmx.translate(0, -m_yFrom);
+	gmx.scale(1, 1.f / m_yScale.y());
+	gmx.translate(0, -m_yScale.x());
+	obase->setMatrix(gmx);
+
+	return base;
+}
+
+QSGNode* XScaleItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
+{
+	QSGSimpleRectNode* base = static_cast<QSGSimpleRectNode*>(_old);
+	if (!base)
+	{
+		base = new QSGSimpleRectNode;
+		base->appendChildNode(new QSGTransformNode);
+		base->setColor(QColor(255, 255, 255, 192));
+	}
+
+	QSGTransformNode* obase = dynamic_cast<QSGTransformNode*>(base->firstChild());
+
+	base->setRect(boundingRect());
+
+	obase->removeAllChildNodes();
+
+	if (width() <= 5 || height() <= 5)
+		return base;
+
+	unsigned majorCount = 0;
+	unsigned minorCount = 0;
+	GraphParameters<double> nor(make_pair(m_xScale.x(), m_xScale.y() + m_xScale.y()), height() / 24, 1);
+	for (double v = nor.from; v <= nor.to + nor.incr / 2; v += nor.incr)
+		if (int((v - m_xScale.x()) / m_xScale.y() * width()) <= width())
+			(nor.isMajor(v) ? majorCount : minorCount)++;
+
+	auto majorGeo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), majorCount * 2);
+	auto minorGeo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), minorCount * 2);
+
+	float* majorData = static_cast<float*>(majorGeo->vertexData());
+	float* minorData = static_cast<float*>(minorGeo->vertexData());
+	for (double v = nor.from; v <= nor.to + nor.incr / 2; v += nor.incr)
+		if (int((v - m_xScale.x()) / m_xScale.y() * width()) <= width())
+		{
+			float*& d = nor.isMajor(v) ? majorData : minorData;
+			d[0] = d[2] = v;
+			d[1] = 0;
+			d[3] = 1;
+			d += 4;
+		}
+	assert(majorData == static_cast<float*>(majorGeo->vertexData()) + majorCount * 4);
+	assert(minorData == static_cast<float*>(minorGeo->vertexData()) + minorCount * 4);
+
+	minorGeo->setDrawingMode(GL_LINES);
+	majorGeo->setDrawingMode(GL_LINES);
+
+	QSGFlatColorMaterial* majorMaterial = new QSGFlatColorMaterial;
+	majorMaterial->setColor(QColor::fromHsv(0, 0, 208));
+	QSGGeometryNode* majorNode = new QSGGeometryNode();
+	majorNode->setGeometry(majorGeo);
+	majorNode->setFlag(QSGNode::OwnsGeometry);
+	majorNode->setMaterial(majorMaterial);
+	majorNode->setFlag(QSGNode::OwnsMaterial);
+	obase->appendChildNode(majorNode);
+
+	QSGFlatColorMaterial* minorMaterial = new QSGFlatColorMaterial;
+	minorMaterial->setColor(QColor::fromHsv(0, 0, 232));
+	QSGGeometryNode* minorNode = new QSGGeometryNode();
+	minorNode->setGeometry(minorGeo);
+	minorNode->setFlag(QSGNode::OwnsGeometry);
+	minorNode->setMaterial(minorMaterial);
+	minorNode->setFlag(QSGNode::OwnsMaterial);
+	obase->appendChildNode(minorNode);
+
+	QMatrix4x4 gmx;
+	gmx.scale(width() / m_xScale.y(), height());
+	gmx.translate(-m_xScale.x(), 0);
 	obase->setMatrix(gmx);
 
 	return base;

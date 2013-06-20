@@ -47,12 +47,8 @@ public:
 		QMutexLocker l(&x_data);
 		if (m_data.contains(_k))
 		{
-			if (m_data[_k])
-			{
-				assert(m_data[_k]->isOfType<_T>());
-				if (m_data[_k]->haveRaw())
-					return std::static_pointer_cast<DataSet<_T>>(m_data[_k]);
-			}
+			if (m_data[_k] && m_data[_k]->haveRaw())
+				return dataset_cast<_T>(m_data[_k]);
 			return nullptr;
 		}
 		auto ds = std::make_shared<DataSet<_T>>(_k);
@@ -93,5 +89,5 @@ private:
 	Q_PROPERTY(uint64_t inUse READ inUse NOTIFY inUseChanged)
 
 	mutable QMutex x_data;
-	mutable QHash<DataKey, std::shared_ptr<GenericDataSet> > m_data;		// not really mutable, just because QHash doesn't provide a const returner of const& items.
+	mutable QHash<DataKey, GenericDataSetPtr> m_data;		// not really mutable, just because QHash doesn't provide a const returner of const& items.
 };

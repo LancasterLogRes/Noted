@@ -22,11 +22,6 @@
 #include <Common/Common.h>
 #include "Noted.h"
 
-extern "C"
-{
-void XInitThreads();
-}
-
 int main(int argc, char *argv[])
 {
 	if (!lb::UnitTesting<100>::go())

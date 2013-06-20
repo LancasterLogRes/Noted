@@ -4,25 +4,36 @@ import QtQuick.Layouts 1.0
 Rectangle {
 	color: Qt.rgba(0.9, 0.9, 0.9, 1)
 
+	property alias handleX: handle.x
 	property alias handleY: handle.y
+	property vector3d yScaleUser: Qt.vector3d(0, 1, 0)
+	property vector3d yScale: yMode == 0 || !parent.visible ? yScaleUser : graphHarness.highlightedGraph.yScaleHint
+	property int yMode: 1		// 0 -> user, 1 -> highlighted graph, 2-> all
+
+	property int maxHandleX
 	property int index
 	property alias currentIndex: list.currentIndex
 
-	property vector3d yScaleUser: Qt.vector3d(0, 1, 0)
-	property real yFrom: yMode == 0 || !parent.visible ? yScaleUser.x : graphHarness.highlightedGraph.yScaleHint.x
-	property real yDelta: yMode == 0 || !parent.visible ? yScaleUser.y : graphHarness.highlightedGraph.yScaleHint.y
-	property int yMode: 1		// 0 -> user, 1 -> highlighted graph, 2-> all
+	function swap(x) {
+		var d;
+		d = yMode; yMode = x.yMode; x.yMode = d;
+		d = yScaleUser; yScaleUser = x.yScaleUser; x.yScaleUser = d;
+		d = handleX; handleX = x.handleX; x.handleX = d;
+		d = handleY; handleY = x.handleY; x.handleY = d;
+	}
 
 	function reset() {
 		yMode = 1
 		yScaleUser = Qt.vector3d(0, 1, 0)
+		handleX = 200
+		handleY = 200
 	}
 
 	function zoomScale(y, q) {
-		var pivot = yFrom + yDelta * (height - y) / height
+		var pivot = yScale.x + yScale.y * (height - y) / height
 		console.log(pivot)
-		var d = q * yDelta
-		yScaleUser.x = pivot - q * yDelta * (height - y) / height
+		var d = q * yScale.y
+		yScaleUser.x = pivot - q * yScale.y * (height - y) / height
 		yScaleUser.y = d
 		yMode = 0
 	}
@@ -77,7 +88,7 @@ Rectangle {
 			ListView {
 				id: list
 				clip: true
-				model: graphs
+				model: timelineGraphs
 				anchors.fill: parent
 				highlight: highlight
 				highlightFollowsCurrentItem: false
@@ -99,13 +110,14 @@ Rectangle {
 								onClicked: list.currentIndex = index
 							}
 						}
+						Button { text: "<"; onClicked: graphs.exportGraph(model.url) }
 						Row {
 							anchors.top: parent.top
 							anchors.bottom: parent.bottom
 							Button { text: "~"; selected: graphHarness.children[index].yMode == 1; onClicked: graphHarness.children[index].yMode = 1 }
 							Button { text: "S"; selected: graphHarness.children[index].yMode == 0; onClicked: graphHarness.children[index].yMode = 0 }
 						}
-						Button { text: 'X'; onClicked: graphs.remove(index); }
+						Button { text: 'X'; onClicked: timelineGraphs.remove(index); }
 					}
 				}
 			}
@@ -114,9 +126,9 @@ Rectangle {
 
 	Rectangle {
 		id: handle
+		x: 200
 		y: 200
 
-		anchors.horizontalCenter: parent.horizontalCenter
 		width: 30
 		height: 30
 		color: handleMouseArea.pressed ? Qt.rgba(0, 0, 0, 1) : Qt.rgba(0.9, 0.9, 0.9, 1)
@@ -126,7 +138,9 @@ Rectangle {
 			id: handleMouseArea
 			anchors.fill: parent
 			drag.target: handle
-			drag.axis: Drag.YAxis
+			drag.axis: Drag.XAndYAxis
+			drag.minimumX: 100
+			drag.maximumX: col.parent.maxHandleX - width / 2
 			drag.minimumY: title.anchors.margins * 2 + title.height + list.anchors.margins * 2 + 40 - height / 2 + col.anchors.margins * 2
 		}
 	}

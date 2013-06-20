@@ -5,19 +5,19 @@ import com.llr 1.0
 Item {
 	id: graphSet
 	property int index
+	property alias handleX: panel.handleX
 	property alias handleY: panel.handleY
-	property ListModel graphs: ListModel { }
+	property ListModel timelineGraphs: ListModel { }
 
 	function swap(x) {
 		var d;
-		d = graphs; graphs = x.graphs; x.graphs = d;
-		d = handleY; handleY = x.handleY; x.handleY = d;
+		d = timelineGraphs; timelineGraphs = x.timelineGraphs; x.timelineGraphs = d;
 		d = visible; visible = x.visible; x.visible = d;
+		panel.swap(x.panel)
 	}
 	function kill() {
 		visible = false
-		handleY = 200
-		graphs.clear()
+		timelineGraphs.clear()
 		panel.reset()
 	}
 
@@ -29,9 +29,19 @@ Item {
 	ControlPanel {
 		id: panel
 		anchors.left: parent.left
-		width: timelines.gutterWidth - yScale.width - graphHarness.anchors.leftMargin
+		width: handleX
 		index: parent.index
+		maxHandleX: timelines.gutterWidth - yScale.width - graphHarness.anchors.leftMargin
+		handleX: 200
 		handleY: 200
+	}
+
+	ImmediateGraph {
+		id: immGraph
+		anchors.left: panel.right
+		width: panel.maxHandleX - panel.width
+		height: panel.height
+		timelineGraphs: parent.timelineGraphs
 	}
 
 	Item {
@@ -40,10 +50,10 @@ Item {
 		anchors.right: parent.right
 		anchors.left: yScale.right
 		anchors.leftMargin: 10
-		property var highlightedGraph: parent.visible && graphs.count ? children[panel.currentIndex] : 0
+		property var highlightedGraph: parent.visible && timelineGraphs.count ? children[panel.currentIndex] : 0
 		Repeater {
 			id: graphRepeater
-			model: graphs
+			model: timelineGraphs
 			Graph {
 				id: graphItem
 				url: model.url
@@ -52,8 +62,8 @@ Item {
 				anchors.fill: parent
 				highlight: (index == panel.currentIndex)
 				yMode: 0		// 0 -> respect graphtimeline's y-scale, 1-> ignore y-scale and do best-fit
-				yFrom: panel.yFrom
-				yDelta: panel.yDelta
+				yScale: panel.yScale
+				z: highlight ? 1 : 0
 				Text {
 					scale: 2
 					text: "Data not available for " + model.name
@@ -75,15 +85,14 @@ Item {
 		YScale {
 			z: -1
 			anchors.fill: parent
-			yFrom: panel.yFrom
-			yDelta: panel.yDelta
+			yScale: panel.yScale
 			anchors.leftMargin: -10
 		}
 		DropArea {
 			id: graphDrop
 			anchors.fill: parent
 			onDropped: {
-				graphs.append({'url': drop.source.url, 'name': drop.source.name})
+				timelineGraphs.append({'url': drop.source.url, 'name': drop.source.name})
 				drop.accept();
 			}
 			Rectangle {
@@ -99,10 +108,9 @@ Item {
 		overflow: 10
 		y: -overflow
 		width: 60
-		anchors.left: panel.right
+		anchors.left: immGraph.right
 		height: parent.height + overflow * 2
-		yFrom: panel.yFrom
-		yDelta: panel.yDelta
+		yScale: panel.yScale
 		MouseArea {
 			anchors.fill: parent
 			anchors.topMargin: parent.overflow

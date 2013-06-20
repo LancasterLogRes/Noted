@@ -3,8 +3,9 @@
         <file>Noted.png</file>
         <file>Noted.qml</file>
         <file>GraphTimeline.qml</file>
-		<file>GraphSpec.qml</file>
-		<file>ControlPanel.qml</file>
-		<file>Button.qml</file>
-	</qresource>
+        <file>GraphSpec.qml</file>
+        <file>ControlPanel.qml</file>
+        <file>Button.qml</file>
+        <file>ImmediateGraph.qml</file>
+    </qresource>
 </RCC>

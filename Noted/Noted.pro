@@ -64,7 +64,8 @@ OTHER_FILES += \
     GraphTimeline.qml \
     GraphSpec.qml \
     ControlPanel.qml \
-    Button.qml
+    Button.qml \
+    ImmediateGraph.qml
 
 RESOURCES += \
 	Noted.qrc

@@ -17,14 +17,10 @@ public:
 	GraphItem(QQuickItem* _p = nullptr);
 
 	QVector3D yScaleHint() const;
-	float yFromHint() const { return yScaleHint().x(); }
-	float yDeltaHint() const { return yScaleHint().y(); }
-	float yFrom() const { return m_yFrom; }
-	float yDelta() const { return m_yDelta; }
+	QVector3D yScale() const { return m_yScale; }
 	int yMode() const { return m_yMode; }
-	void setYFrom(float _v) { m_yFrom = _v; yScaleChanged(); update(); }
-	void setYDelta(float _v) { m_yDelta = _v; yScaleChanged(); update(); }
-	void setYMode(int _m) { m_yMode = _m; yScaleChanged(); update(); }
+	void setYScale(QVector3D _s) { m_yScale = _s; yScaleChanged(); }
+	void setYMode(int _m) { m_yMode = _m; yScaleChanged(); }
 
 	bool graphAvailable() const { return m_graphAvailable; }
 	bool dataAvailable() const { return m_dataAvailable; }
@@ -39,12 +35,13 @@ signals:
 private slots:
 	void onDataComplete(DataKey);
 	void onGraphAdded(GraphMetadata const&);
+	void onGraphRemoved(GraphMetadata const&);
+	void invalidate() { m_invalidated = true; update(); }
 
 protected:
 	Q_PROPERTY(QString url MEMBER m_url NOTIFY urlChanged)
+	Q_PROPERTY(QVector3D yScale READ yScale WRITE setYScale NOTIFY yScaleChanged)
 	Q_PROPERTY(QVector3D yScaleHint READ yScaleHint NOTIFY yScaleHintChanged)
-	Q_PROPERTY(float yFrom READ yFrom WRITE setYFrom NOTIFY yScaleChanged)
-	Q_PROPERTY(float yDelta READ yDelta WRITE setYDelta NOTIFY yScaleChanged)
 	Q_PROPERTY(int yMode READ yMode WRITE setYMode NOTIFY yScaleChanged)
 	Q_PROPERTY(bool highlight MEMBER m_highlight NOTIFY highlightChanged)
 	Q_PROPERTY(bool graphAvailable READ graphAvailable NOTIFY availabilityChanged)
@@ -53,9 +50,8 @@ protected:
 	virtual QSGNode* updatePaintNode(QSGNode* _old, UpdatePaintNodeData*);
 
 	QString m_url;
-	float m_yFrom = 0;
-	float m_yDelta = 1;
-	int m_yMode = 0;		///< 0 -> yFrom/yDelta, 1 /*-> auto (global)*/, 2 -> hint
+	QVector3D m_yScale = QVector3D(0, 1, 0);
+	int m_yMode = 0;		///< 0 -> yScale, 1 -> hint
 	bool m_highlight = false;
 
 	void setAvailability(bool _graph, bool _data);
@@ -70,6 +66,5 @@ protected:
 	void killCache();
 	bool m_invalidated = true;	// Cache is invalid.
 	int m_lod = -1;
-	mutable QMap<unsigned, QSGNode*> m_geometryCache;
-	QList<QSGTexture*> m_textures;
+	mutable QHash<QPair<int, unsigned>, QPair<QSGNode*, QSGTexture*>> m_geometryCache;
 };

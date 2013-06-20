@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <boost/function_types/parameter_types.hpp>
 #include <QHash>
 #include <QMap>
 #include <Common/Flags.h>
@@ -114,19 +115,46 @@ public:
 
 	template <class _T> std::vector<_T> getRecord(lb::Time _latest, lb::Time* o_recordTime = nullptr) const
 	{
-		if (!rawRecords())
-			return {};
-
-		unsigned i = recordIndexEarlier(_latest);
-		if (i == (unsigned)-1)
-			return {};
-
+		auto i = recordIndexEarlier(_latest);
 		if (o_recordTime)
 			*o_recordTime = timeOfRecord(i);
-
 		std::vector<_T> ret(lengthOfRecord(i));
-		lb::valcpy(ret.data(), m_raw.data<_T>().data() + i, ret.size());
+		populateRecord<_T>(i, &ret);
 		return ret;
+	}
+
+	template <class _T> void populateRecord(unsigned _i, lb::foreign_vector<_T> const& _data) const
+	{
+		if (!rawRecords())
+			return;
+
+		if (_i == (unsigned)-1)
+			return;
+
+		if (lengthOfRecord(_i) != _data.size())
+			return;
+
+		if (!isOfType<_T>())
+			return;
+
+		lb::valcpy(_data.data(), m_raw.data<_T>().data() + elementIndexOfRecord(_i), _data.size());
+	}
+
+	template <class _T, class _F> void forEachElement(unsigned _i, _F const& _f)
+	{
+		if (!rawRecords())
+			return;
+
+		if (_i == (unsigned)-1)
+			return;
+
+		if (!isOfType<_T>())
+			return;
+
+		auto d = m_raw.data<_T>().data() + elementIndexOfRecord(_i);
+		unsigned l = lengthOfRecord(_i);
+		for (unsigned i = 0; i < l; ++i, ++d)
+			_f(*d);
 	}
 
 private:
@@ -164,6 +192,8 @@ private:
 	unsigned m_pos = 0;
 };
 
+using GenericDataSetPtr = std::shared_ptr<GenericDataSet>;
+
 template <class _T>
 class DataSet: public GenericDataSet
 {
@@ -182,7 +212,14 @@ public:
 
 template <class _T> using DataSetPtr = std::shared_ptr<DataSet<_T> >;
 
-typedef DataSetPtr<float> DataSetFloatPtr;
+using DataSetFloatPtr = DataSetPtr<float>;
+
+template <class _T> DataSetPtr<_T> dataset_cast(GenericDataSetPtr const& _p)
+{
+	if (_p && _p->isOfType<_T>())
+		return std::static_pointer_cast<DataSet<_T>>(_p);
+	return nullptr;
+}
 
 class DataSetDataStore: public lb::DataStore
 {
