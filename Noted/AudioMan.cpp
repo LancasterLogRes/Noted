@@ -44,7 +44,7 @@ public:
 		FileAudioStream as(c_chunkSamples, ((AudioMan*)NotedFace::audio())->m_filename.toStdString(), r);
 		as.init();
 		unsigned s = fromBase(as.duration(), r);
-		wave->init(1, toBase(1, r));
+		wave->setDense(1, toBase(1, r));
 
 		if (!wave->haveRaw())
 		{
@@ -54,7 +54,7 @@ public:
 			{
 				as.copyTo(0, chunk);
 				foreign_vector<float> rs(chunk, min(s - done, c_chunkSamples));
-				wave->appendRecords(rs);
+				wave->appendDenseRecords(rs);
 				AcausalAnalysis::done(done);
 			}
 		}

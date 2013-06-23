@@ -18,7 +18,9 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <Compute/Compute.h>
 #include <NotedPlugin/NotedFace.h>
+#include <NotedPlugin/NotedComputeRegistrar.h>
 #include <Preprocessors/Spectral.h>
 #include "ExamplePlugin.h"
 using namespace std;
@@ -26,20 +28,39 @@ using namespace lb;
 
 NOTED_PLUGIN(ExamplePlugin);
 
+class ZeroCrossingsImpl: public ComputeImpl<VoidInfo, float>
+{
+public:
+	ZeroCrossingsImpl(Compute<PCMInfo, float> const& _input): input(_input) {}
+	virtual SimpleKey hash() { return generateKey("ZeroCrossingsImpl", input.hash()); }
+	virtual void compute(std::vector<float>& _v)
+	{
+		_v.resize(1);
+		auto vs = input.get();
+		int zeroXs = 0;	// even->-ve, odd->+ve
+		for (auto v: vs)
+			if ((v > 0) == !(zeroXs % 2))
+				++zeroXs;
+		_v[0] = (zeroXs - (vs[0] > 0 ? 1 : 0)) / float(vs.size());
+	}
+
+	Compute<PCMInfo, float> input;
+};
+using ZeroCrossings = ComputeBase<ZeroCrossingsImpl>;
+
+
+/*
 class ZeroCrossingsAnalysis: public CausalAnalysis
 {
 public:
 	ZeroCrossingsAnalysis(): CausalAnalysis("Zero-Crossings Analyser") {}
-	virtual void init(bool _willRecord)
+	virtual bool init(bool _willRecord)
 	{
 		m_ds.reset();
 		m_lastRecord.resize(1);
 		if (_willRecord)
-		{
 			m_ds = NotedFace::data()->create(DataKey(NotedFace::audio()->key(), m_operationKey));
-			if (!m_ds->isComplete())
-				m_ds->init(1, NotedFace::audio()->hop());
-		}
+		return m_ds && !m_ds->isComplete();
 	}
 
 	virtual void fini(bool _completed, bool _didRecord)
@@ -77,9 +98,41 @@ private:
 	vector<float> m_lastRecord;
 	SimpleKey m_operationKey = qHash(QString("ExamplePlugin/ZeroCrossings"));
 };
+*/
+
+class ZeroCrossingsAnalysis: public CausalAnalysis
+{
+public:
+	ZeroCrossingsAnalysis(): CausalAnalysis("Zero-Crossings Analyser") {}
+
+	virtual bool init(bool _willRecord)
+	{
+		return _willRecord ? !ComputeRegistrar::get()->store(zc) : true;
+	}
+
+	virtual void fini(bool _completed, bool _didRecord)
+	{
+		if (_completed && _didRecord)
+			if (auto ds = NotedFace::data()->get(DataKey(NotedFace::audio()->key(), zc.hash())))
+				ds->ensureHaveDigest(MinMaxInOutDigest);
+	}
+
+	virtual void process(unsigned, Time)
+	{
+		//zc.get();
+		ComputeRegistrar::get()->compute(zc);
+	}
+
+	SimpleKey operationKey() const { return zc.hash(); }
+
+private:
+	ZeroCrossings zc = ZeroCrossings(ComputeRegistrar::feeder());
+};
+
 
 ExamplePlugin::ExamplePlugin()
 {
+	NotedComputeRegistrar::get();
 	auto a = new ZeroCrossingsAnalysis;
 	m_analysis = CausalAnalysisPtr(a);
 	m_graph = GraphMetadata(a->operationKey(), { { "Proportion", XOf(), Range(0, 1) } }, "Zero-Crossings", false );

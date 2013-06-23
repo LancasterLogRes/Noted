@@ -7,6 +7,7 @@ Item {
 
 	property int overflow: 10
 	property var highlighted: h
+	property var immGraphHarness: graphHarness
 
 	Item {
 		anchors.fill: parent
@@ -35,7 +36,7 @@ Item {
 						anchors.fill: parent
 						xScale: xscale.xScale
 						yScale: yscale.yScale
-						xMode: 0
+						xMode: yMode
 						yMode: 0
 						color: Qt.hsla(0, 0, 0.5, 1)
 						url: model.url

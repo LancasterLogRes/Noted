@@ -147,8 +147,8 @@ QSGNode* CursorGraphItem::updatePaintNode(QSGNode* _old, UpdatePaintNodeData*)
 		gmx.scale(width(), -height());
 		gmx.scale(1.f / xd, 1.f / yd);
 		gmx.translate(-xf, -yf);
-		gmx.scale(g.axis(GraphMetadata::XAxis).transform.scale(), 1);
 		gmx.translate(g.axis(GraphMetadata::XAxis).transform.offset(), 0);
+		gmx.scale(g.axis(GraphMetadata::XAxis).transform.scale(), 1);
 		base->setMatrix(gmx);
 	}
 	else

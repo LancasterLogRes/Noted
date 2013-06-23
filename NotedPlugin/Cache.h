@@ -55,8 +55,8 @@ public:
 	static AvailableMap available();
 	static void kill(DataKey);
 
-	bool open(SimpleKey _sourceKey, SimpleKey _operationKey, SimpleKey _extraKey, size_t _bytes);
-	bool open(SimpleKey _sourceKey, SimpleKey _operationKey, SimpleKey _extraKey);
+	bool open(lb::SimpleKey _sourceKey, lb::SimpleKey _operationKey, lb::SimpleKey _extraKey, size_t _bytes);
+	bool open(lb::SimpleKey _sourceKey, lb::SimpleKey _operationKey, lb::SimpleKey _extraKey);
 
 	void ensureMapped();
 	void setGood();
@@ -113,7 +113,7 @@ public:
 	using Super::isGood;
 	using Super::setGood;
 
-	bool open(SimpleKey _sourceKey, SimpleKey _operationKey, SimpleKey _extraKey, unsigned _sizeofItem, unsigned _items)
+	bool open(lb::SimpleKey _sourceKey, lb::SimpleKey _operationKey, lb::SimpleKey _extraKey, unsigned _sizeofItem, unsigned _items)
 	{
 		m_sizeofItem = _sizeofItem;
 		m_items = _items;

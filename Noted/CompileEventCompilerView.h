@@ -34,7 +34,7 @@ public:
 	CompileEventCompilerView(EventCompilerView* _ev);
 	virtual ~CompileEventCompilerView() {}
 
-	virtual void init(bool _willRecord);
+	virtual bool init(bool _willRecord);
 	virtual void process(unsigned _i, lb::Time);
 	virtual void record(unsigned _i, lb::Time);
 	virtual void fini(bool _completed, bool _didRecord);

@@ -42,4 +42,6 @@ HEADERS  += Timeline.h \
     ViewManFace.h \
     EventsManFace.h \
     EventsStore.h \
-    JobSource.h
+	JobSource.h \
+	NotedComputeRegistrar.h \
+    NotedFeeder.h

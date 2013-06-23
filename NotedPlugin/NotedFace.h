@@ -75,7 +75,7 @@ public:
 	virtual QGLWidget* glMaster() const = 0;
 
 	virtual void addLegacyTimeline(QWidget* _p) = 0;
-	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr) = 0;
+	virtual QWidget* addGLView(QGLWidgetProxy* _v) = 0;
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d) = 0;
 	virtual void info(QString const& _info, QString const& _color = "gray") = 0;
 
@@ -118,7 +118,7 @@ public:
 	virtual QGLWidget* glMaster() const { return nullptr; }
 
 	virtual void addLegacyTimeline(QWidget*) {}
-	virtual QWidget* addGLWidget(QGLWidgetProxy*) { return nullptr; }
+	virtual QWidget* addGLView(QGLWidgetProxy*) { return nullptr; }
 	virtual void addDockWidget(Qt::DockWidgetArea, QDockWidget*) {}
 	virtual void info(QString const&, QString const& = "gray") {}
 

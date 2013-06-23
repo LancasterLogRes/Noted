@@ -344,9 +344,11 @@ void Noted::addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d)
 	QMainWindow::addDockWidget(_a, _d);
 }
 
-QWidget* Noted::addGLWidget(QGLWidgetProxy* _v, QWidget* _p)
+QWidget* Noted::addGLView(QGLWidgetProxy* _v)
 {
-	return new NotedGLWidget(_v, _p);
+	auto ret = new NotedGLWidget(_v);
+	ret->show();
+	return ret;
 }
 
 void Noted::addLegacyTimeline(QWidget* _w)

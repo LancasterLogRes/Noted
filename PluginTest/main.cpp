@@ -33,7 +33,7 @@ using namespace lb;
 class NotedGLWidget: public QGLWidget
 {
 public:
-	NotedGLWidget(QGLWidgetProxy* _v, QWidget* _p): QGLWidget(_p), m_v(_v) {}
+	NotedGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr): QGLWidget(_p), m_v(_v) {}
 	virtual ~NotedGLWidget() { delete m_v; }
 
 	virtual void initializeGL() { m_v->initializeGL(); }
@@ -73,9 +73,9 @@ public:
 		pb->setChecked(false);
 	}
 
-	QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr)
+	QWidget* addGLView(QGLWidgetProxy* _v)
 	{
-		return new NotedGLWidget(_v, _p);
+		return new NotedGLWidget(_v);
 	}
 
 public slots:

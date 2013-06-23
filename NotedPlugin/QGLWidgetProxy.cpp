@@ -19,5 +19,11 @@
  */
 
 #include <QDebug>
+#include <QWidget>
 
 #include "QGLWidgetProxy.h"
+
+void QGLWidgetProxy::update()
+{
+	m_widget->update();
+}

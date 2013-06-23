@@ -36,6 +36,8 @@ class QGLWidgetProxy: public QObject
 public:
 	virtual ~QGLWidgetProxy() {}
 
+	void update();
+
 	virtual bool needsRepaint() const { return true; }
 	virtual void initializeGL() {}
 	virtual void resizeGL(int, int) {}

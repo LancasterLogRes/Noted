@@ -114,8 +114,8 @@ Rectangle {
 						Row {
 							anchors.top: parent.top
 							anchors.bottom: parent.bottom
-							Button { text: "~"; selected: graphHarness.children[index].yMode == 1; onClicked: graphHarness.children[index].yMode = 1 }
-							Button { text: "S"; selected: graphHarness.children[index].yMode == 0; onClicked: graphHarness.children[index].yMode = 0 }
+							Button { text: "~"; selected: graphHarness.children[index].yMode == 1; onClicked: graphHarness.children[index].yMode = immGraphHarness.children[index].yMode = 1 }
+							Button { text: "S"; selected: graphHarness.children[index].yMode == 0; onClicked: graphHarness.children[index].yMode = immGraphHarness.children[index].yMode = 0 }
 						}
 						Button { text: 'X'; onClicked: timelineGraphs.remove(index); }
 					}

@@ -1,3 +1,4 @@
+#include <NotedPlugin/NotedComputeRegistrar.h>
 #include <Common/Global.h>
 #include "Global.h"
 #include "WorkerThread.h"
@@ -188,6 +189,8 @@ AcausalAnalysisPtrs ComputeMan::ripeAcausalAnalysis(AcausalAnalysisPtr const& _f
 
 void ComputeMan::initializeCausal(CausalAnalysisPtr const& _lastComplete)
 {
+	// TODO: ComputeRegistrar stuff.
+
 	QMutexLocker l(&x_analysis);
 	deque<CausalAnalysisPtr> todo;	// will become a member.
 	todo.push_back(_lastComplete);

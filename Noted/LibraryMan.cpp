@@ -270,7 +270,7 @@ void LibraryMan::load(RealLibraryPtr const& _dl)
 		{
 			typedef EventCompilerFactories&(*cf_t)();
 			typedef NotedPlugin*(*pf_t)();
-			typedef char const*(*pnf_t)();
+//			typedef char const*(*pnf_t)();
 			if (cf_t cf = (cf_t)_dl->library.resolve("eventCompilerFactories"))
 			{
 				cnote << "LOAD" << _dl->nick << " [ECF]";

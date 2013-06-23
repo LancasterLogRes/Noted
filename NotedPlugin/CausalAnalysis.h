@@ -36,19 +36,22 @@ public:
 	void initialize(bool _willRecord) { init(_willRecord); }
 
 	// inherited
-	virtual void init() { init(true); }
-	virtual void fini(bool _completed) { fini(_completed, true); }
-	virtual unsigned prepare(unsigned _from, unsigned _count, lb::Time) { noteBatch(_from, _count); return _count; }
+	virtual void init();
+	virtual void fini(bool _completed);
+	virtual unsigned prepare(unsigned _from, unsigned _count, lb::Time);
 	virtual void analyze(unsigned _from, unsigned _count, lb::Time _hop);
 
 	// new
 protected:
-	virtual void init(bool _willRecord) { (void)_willRecord; }
+	virtual bool init(bool _willRecord) { return _willRecord; }
 public:// TODO: move to protected & introduce non-virtual public API.
 	virtual void fini(bool _completed, bool _didRecord) { (void)_completed; (void)_didRecord; }
 	virtual void noteBatch(unsigned, unsigned) {}
 	virtual void process(unsigned, lb::Time) {}
 	virtual void record(unsigned, lb::Time) {}
+
+private:
+	bool m_willCompute;
 };
 
 typedef std::shared_ptr<CausalAnalysis> CausalAnalysisPtr;

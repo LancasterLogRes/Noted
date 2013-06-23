@@ -30,7 +30,7 @@
 class NotedGLWidget: public QGLWidget, public QThread
 {
 public:
-	NotedGLWidget(QGLWidgetProxy* _v, QWidget* _p);
+	NotedGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr);
 	~NotedGLWidget();
 
 	virtual void run();

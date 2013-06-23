@@ -19,8 +19,10 @@
  */
 
 #include <cassert>
+#include <QtOpenGL>
 #include <QDebug>
 #include <QTimer>
+#include <NotedPlugin/NotedComputeRegistrar.h>
 #include "NotedGLWidget.h"
 
 NotedGLWidget::NotedGLWidget(QGLWidgetProxy* _v, QWidget* _p):
@@ -59,6 +61,7 @@ void NotedGLWidget::paintEvent(QPaintEvent*)
 	{
 		m_quitting = false;
 		doneCurrent();
+		context()->moveToThread(this);
 		start();
 	}
 	m_newSize = size();
@@ -73,7 +76,6 @@ void NotedGLWidget::quit()
 		terminate();
 		wait(1000);
 	}
-//	makeCurrent();
 }
 
 void NotedGLWidget::hideEvent(QShowEvent*)
@@ -93,8 +95,9 @@ void NotedGLWidget::resizeEvent(QResizeEvent* _e)
 
 void NotedGLWidget::run()
 {
-//	makeCurrent();
+	makeCurrent();
 	m_v->initializeGL();
+	NotedComputeRegistrar::get()->init();
 	while (!m_quitting)
 	{
 		bool resized = false;
@@ -106,11 +109,14 @@ void NotedGLWidget::run()
 		}
 		if (!size().isEmpty() && isVisible() && (resized || m_v->needsRepaint()))
 		{
+			NotedComputeRegistrar::get()->beginTime(NotedFace::audio()->hopCursor());
 			m_v->paintGL();
+			NotedComputeRegistrar::get()->endTime(NotedFace::audio()->hopCursor());
 			swapBuffers();
 		}
 		else
 			msleep(5);
 	}
+	NotedComputeRegistrar::get()->fini();
 	doneCurrent();
 }

@@ -59,7 +59,7 @@ public:
 	void writeSettings(QSettings& _s, QString const& _id);
 
 	bool isArchived() const { return eventCompiler().isNull(); }
-	SimpleKey operationKey() const { return m_operationKey; }
+	lb::SimpleKey operationKey() const { return m_operationKey; }
 	void save();
 	void restore();
 	QString name() const;
@@ -86,7 +86,7 @@ private slots:
 private:
 	lb::EventCompiler m_eventCompiler;
 	DataSetPtr<lb::StreamEvent> m_streamEvents;
-	SimpleKey m_operationKey = 0;
+	lb::SimpleKey m_operationKey = 0;
 
 	QComboBox* m_channel;
 	QLabel* m_label;

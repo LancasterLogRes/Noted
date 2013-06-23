@@ -8,12 +8,14 @@ Item {
 	property alias handleX: panel.handleX
 	property alias handleY: panel.handleY
 	property ListModel timelineGraphs: ListModel { }
+	property alias immGraphHarness: immGraph.immGraphHarness
+	property alias panel: panel
 
 	function swap(x) {
+		panel.swap(x.panel)
 		var d;
 		d = timelineGraphs; timelineGraphs = x.timelineGraphs; x.timelineGraphs = d;
 		d = visible; visible = x.visible; x.visible = d;
-		panel.swap(x.panel)
 	}
 	function kill() {
 		visible = false

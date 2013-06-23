@@ -90,7 +90,7 @@ public:
 
 	virtual QGLWidget* glMaster() const;
 	virtual void addLegacyTimeline(QWidget* _w);
-	virtual QWidget* addGLWidget(QGLWidgetProxy* _v, QWidget* _p = nullptr);
+	virtual QWidget* addGLView(QGLWidgetProxy* _v);
 	virtual void addDockWidget(Qt::DockWidgetArea _a, QDockWidget* _d);
 
 public slots:

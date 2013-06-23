@@ -15,14 +15,11 @@ DataSetDataStore::~DataSetDataStore()
 }
 
 // Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
-void DataSetDataStore::init(unsigned _recordLength, bool _dense)
+void DataSetDataStore::init()
 {
 	m_s = NotedFace::data()->create(DataKey(NotedFace::audio()->key(), m_operationKey));
 	if (!m_s)
 		cwarn << "Something else already opened the GenericDataSet for writing?! :-(";
-
-	if (!m_s->haveRaw())
-		m_s->init(_recordLength, _dense ? NotedFace::audio()->hop(): 0, 0);
 }
 
 void DataSetDataStore::shiftBuffer(unsigned _index, foreign_vector<float> const& _record)
@@ -46,49 +43,80 @@ GenericDataSet::GenericDataSet(DataKey _key, size_t _elementSize, char const* _e
 	m_sourceKey(_key.source),
 	m_operationKey(_key.operation),
 	m_elementSize(_elementSize),
-	m_elementTypeName(_elementTypeName)
+	m_elementTypeName(defaultTo(_elementTypeName, "", (char const*)nullptr))
 {
 //	cdebug << (void*)this << (QThread::currentThreadId()) << "GenericDataSet::GenericDataSet(" << _operationKey << ")";
 	if (!m_raw.open(m_sourceKey, m_operationKey, 0))
 	{
-		m_raw.reset();
-		return;
-	}
-	if (m_elementSize != m_raw.metadata().elementSize || m_elementTypeName != std::string(m_raw.metadata().elementTypeName, strnlen(m_raw.metadata().elementTypeName, sizeof(m_raw.mutableMetadata().elementTypeName))))
-	{
-		m_raw.reset();
+		init();
+		assert(m_recordLength);
 		return;
 	}
 
+	size_t elementSize = m_raw.metadata().elementSize;
+	string elementTypeName = string(m_raw.metadata().elementTypeName, strnlen(m_raw.metadata().elementTypeName, sizeof(m_raw.mutableMetadata().elementTypeName)));
+	if (_elementSize || _elementTypeName)
+		if (_elementSize != elementSize || _elementTypeName != elementTypeName)
+		{
+			init();
+			assert(m_recordLength);
+			return;
+		}
+
+	m_elementSize = elementSize;
+	m_elementTypeName = elementTypeName;
 	m_first = m_raw.metadata().first;
 	m_stride = m_raw.metadata().stride;
 	m_recordLength = m_raw.metadata().recordLength;
 	m_digestBase = m_raw.metadata().digestBase;
 
-	if (!m_recordLength || !m_stride)
-		if (!m_toc.open(m_sourceKey, m_operationKey, 1))
-		{
-			m_raw.reset();
-			m_toc.reset();
-			return;
-		}
+	if (!m_recordLength && !m_recordPositions.open(m_sourceKey, m_operationKey, 1))
+	{
+		init();
+		assert(m_recordLength);
+		return;
+	}
+	assert(m_recordLength || m_recordPositions.isOpen());
+
+	if (!m_stride && !m_recordTimes.open(m_sourceKey, m_operationKey, 2))
+	{
+		init();
+		assert(m_stride);
+		return;
+	}
+	assert(m_stride || m_recordTimes.isOpen());
 
 	for (auto d: digestTypes())
 	{
 		MipmappedCache<>* c = new MipmappedCache<>;
-		bool haveDigest = c->open(m_sourceKey, m_operationKey, 2 + (int)d, digestSize(d) * m_recordLength * m_elementSize, digestRecords());
+		bool haveDigest = c->open(m_sourceKey, m_operationKey, 3 + (int)d, digestSize(d) * m_recordLength * m_elementSize, digestRecords());
 		if (haveDigest)
 			m_digest[d] = shared_ptr<MipmappedCache<> >(c);
 	}
 }
 
-void GenericDataSet::init(unsigned _recordLength, Time _stride, Time _first)
+void GenericDataSet::init()
+{
+	m_raw.reset();
+	m_recordPositions.reset();
+	m_recordTimes.reset();
+	m_first = UndefinedTime;
+	m_stride = UndefinedTime;
+	m_recordLength = (unsigned)-1;
+	m_raw.open(m_sourceKey, m_operationKey, 0);
+	m_recordCount = 0;
+	m_pos = 0;
+	m_digest.clear();
+}
+
+void GenericDataSet::setDense(unsigned _recordLength, Time _stride, Time _first)
 {
 //	cdebug << (void*)this << (QThread::currentThreadId()) << "GenericDataSet::init()";
 	m_first = _first;
 	m_stride = _stride;
 	m_recordLength = _recordLength;
-	setup(_stride ? (NotedFace::audio()->duration() - _first) / _stride : 0);
+	assert(m_recordLength);
+	assert(m_stride);
 }
 
 unsigned GenericDataSet::rawRecords() const
@@ -96,23 +124,10 @@ unsigned GenericDataSet::rawRecords() const
 	if (m_recordLength)
 		return elements() / m_recordLength;
 	else
-		return m_toc.bytes() / (sizeof(TocRef) + (m_stride ? 0 : sizeof(Time)));
+		return m_recordPositions.bytes() / sizeof(TocRef);
 }
 
-void GenericDataSet::setup(unsigned _itemCount)
-{
-	(void)_itemCount;
-	m_raw.open(m_sourceKey, m_operationKey, 0);
-	if (m_recordLength)
-		m_toc.reset();
-	else
-		m_toc.open(m_sourceKey, m_operationKey, 1);
-	m_recordCount = 0;
-	m_pos = 0;
-	m_digest.clear();
-}
-
-void GenericDataSet::appendRecords(foreign_vector<uint8_t> const& _vs)
+void GenericDataSet::appendDenseRecords(foreign_vector<uint8_t> const& _vs)
 {
 	assert(_vs.size());
 	assert(m_recordLength && m_stride);
@@ -127,23 +142,50 @@ void GenericDataSet::appendRecords(foreign_vector<uint8_t> const& _vs)
 
 void GenericDataSet::appendRecord(Time _t, foreign_vector<uint8_t> const& _vs)
 {
-	if (!_vs.size())
-		return;
-
 	assert(!(_vs.size() % m_elementSize));
+	assert(m_raw.isOpen());
 
-	if (m_stride)
-		assert(m_recordCount == (_t - m_first) / m_stride);
-
-	if (!m_toc.isGood() && (!m_recordLength || !m_stride))
+	if (m_first == UndefinedTime)
+		m_first = _t;
+	else if (m_stride == UndefinedTime)
 	{
-		if (!m_stride)
-			m_toc.append(_t);
-		if (!m_recordLength)
-			m_toc.append((TocRef)m_pos);
+		if (m_first == _t)
+			return;
+		m_stride = _t - m_first;
 	}
+	else if (m_stride && m_recordCount != (_t - m_first) / m_stride)
+	{
+		cdebug << hex << m_operationKey << "stride changed after" << m_recordCount << "records (" << m_pos << " elements) from" << textualTime(m_stride) << "to" << textualTime(_t - (m_first + m_stride * m_recordCount));
+		// stride is different.. need to use m_recordTimes.
+		m_recordTimes.open(m_sourceKey, m_operationKey, 2);
+		for (unsigned i = 0; i < m_recordCount; ++i)
+			m_recordTimes.append(Time(m_first + i * m_stride));
+		m_first = 0;
+		m_stride = 0;
+	}
+
+	if (m_recordLength == (unsigned)-1)
+	{
+		if (!_vs.size())
+			return;
+		m_recordLength = _vs.size() / m_elementSize;
+	}
+	else if (m_recordLength != _vs.size() / m_elementSize)
+	{
+		cdebug << hex << m_operationKey << "recordLength changed after" << m_recordCount << "records (" << m_pos << " elements) from" << m_recordLength << "to" << (_vs.size() / m_elementSize);
+		m_recordPositions.open(m_sourceKey, m_operationKey, 1);
+		for (unsigned i = 0; i < m_recordCount; ++i)
+			m_recordPositions.append(TocRef(i * m_recordLength));
+		m_recordLength = 0;
+		assert(m_recordPositions.isOpen());
+	}
+
 	if (!m_raw.isGood())
 		m_raw.append(_vs);
+	if (!m_recordPositions.isGood() && !m_recordLength)
+		m_recordPositions.append(m_pos);
+	if (!m_recordTimes.isGood() && !m_stride)
+		m_recordTimes.append(_t);
 	m_pos += _vs.size() / m_elementSize;
 	m_recordCount++;
 //	cdebug << "[" << hex << m_operationKey << "] <<" << _vs.size() << "(pos:" << m_pos << " rc:" << m_recordCount << " rl:" << m_raw.file().size() << "ts" << m_toc.file().size() << ")";
@@ -161,14 +203,16 @@ void GenericDataSet::finishedRaw()
 		m_raw.mutableMetadata().elementSize = m_elementSize;
 		strncpy(m_raw.mutableMetadata().elementTypeName, m_elementTypeName.c_str(), sizeof(m_raw.mutableMetadata().elementTypeName));
 		m_raw.setGood();
-		if (m_toc.isOpen())
-			m_toc.setGood();
+		if (m_recordPositions.isOpen())
+			m_recordPositions.setGood();
+		if (m_recordTimes.isOpen())
+			m_recordTimes.setGood();
 	}
 }
 
 void GenericDataSet::done()
 {
-	cdebug << "DONE [" << hex << m_operationKey << "] (pos:" << m_pos << " rc:" << m_recordCount << " rl:" << m_raw.file().size() << "ts" << m_toc.file().size() << ")";
+	cdebug << "DONE [" << hex << m_operationKey << "] (pos:" << m_pos << " rc:" << m_recordCount << " rl:" << m_raw.file().size() << "ts" << m_recordPositions.file().size() << ")";
 	finishedRaw();
 	NotedFace::data()->noteDone(DataKey(m_sourceKey, m_operationKey));
 }
@@ -198,18 +242,14 @@ tuple<Time, unsigned, int, Time> GenericDataSet::bestFit(Time _from, Time _durat
 	}
 }
 
-struct TimeTocRef { Time t; TocRef r; };
-
 Time GenericDataSet::timeOfRecord(unsigned _e) const
 {
 	if (_e == (unsigned)-1)
 		return 0;
 	else if (m_stride)
 		return m_first + m_stride * _e;
-	else if (m_recordLength)
-		return m_toc.data<Time>()[_e];
 	else
-		return m_toc.data<TimeTocRef>()[_e].t;
+		return m_recordTimes.data<Time>()[_e];
 }
 
 TocRef GenericDataSet::elementIndexOfRecord(unsigned _e) const
@@ -218,15 +258,13 @@ TocRef GenericDataSet::elementIndexOfRecord(unsigned _e) const
 		return InvalidTocRef;
 	else if (m_recordLength)
 		return _e * m_recordLength;
-	else if (m_stride)
-		return m_toc.data<TocRef>()[_e];
 	else
-		return m_toc.data<TimeTocRef>()[_e].r;
+		return m_recordPositions.data<TocRef>()[_e];
 }
 
 // Returns index of first element of earliest record of time >= _t if !_earlier
 // ..or index of first element of latest record of time <= _t if _earlier
-unsigned GenericDataSet::recordIndexFixedRecordSize(lb::Time _t, bool _earlier) const
+unsigned GenericDataSet::recordIndex(lb::Time _t, bool _earlier) const
 {
 	if (!rawRecords())
 		return (unsigned)-1;
@@ -243,7 +281,7 @@ unsigned GenericDataSet::recordIndexFixedRecordSize(lb::Time _t, bool _earlier) 
 		else
 			return (_t - m_first + (_earlier ? 0 : (m_stride - 1))) / m_stride;
 
-	auto d = m_toc.data<Time>();
+	auto d = m_recordTimes.data<Time>();
 
 	// Binary chop through TOC
 	unsigned l = 0;
@@ -254,9 +292,9 @@ unsigned GenericDataSet::recordIndexFixedRecordSize(lb::Time _t, bool _earlier) 
 	if (_t == d[r])
 		return r;
 	if (_t < d[l])
-		return _earlier ? (unsigned)-1 : 0;
+		return _earlier ? (unsigned)-1 : l;
 	if (_t > d[r])
-		return _earlier ? d.size() - 1 : (unsigned)-1;
+		return _earlier ? r : (unsigned)-1;
 
 	while (r - l > 1)
 	{
@@ -265,52 +303,6 @@ unsigned GenericDataSet::recordIndexFixedRecordSize(lb::Time _t, bool _earlier) 
 			return m;
 		else
 			(d[m] > _t ? r : l) = m;
-	}
-	return _earlier ? l : r;
-}
-
-unsigned GenericDataSet::recordIndexVariableRecordSize(lb::Time _t, bool _earlier) const
-{
-	if (!rawRecords())
-		return InvalidTocRef;
-
-	if (m_stride)
-	{
-		if (_t < m_first)
-			return _earlier ? (unsigned)-1 : 0;
-		else if (_t == m_first)
-			return 0;
-		else if (_t == m_first + m_stride * (rawRecords() - 1))
-			return rawRecords() - 1;
-		else if (_t > m_first + m_stride * (rawRecords() - 1))
-			return _earlier ? rawRecords() - 1 : (unsigned)-1;
-		else
-			return (_t - m_first + (_earlier ? 0 : (m_stride - 1))) / m_stride;
-	}
-
-	auto d = m_toc.data<TimeTocRef>();
-
-	// Binary chop through TOC
-	unsigned l = 0;
-	unsigned r = d.size() - 1;
-
-	if (d[l].t == _t)
-		return l;
-	if (d[r].t == _t)
-		return r;
-
-	if (_t < d[l].t)
-		return _earlier ? (unsigned)-1 : l;
-	if (_t > d[r].t)
-		return _earlier ? r : (unsigned)-1;
-
-	while (r - l > 1)
-	{
-		unsigned m = (l + r) / 2;
-		if (d[m].t == _t)
-			return m;
-		else
-			(d[m].t > _t ? r : l) = m;
 	}
 	return _earlier ? l : r;
 }
@@ -392,7 +384,7 @@ void GenericDataSet::ensureHaveDigest(DigestType _t)
 
 	m_raw.ensureMapped();
 	m_digest[_t] = make_shared<MipmappedCache<>>();
-	bool haveDigest = m_digest[_t]->open(m_sourceKey, m_operationKey, 2 + (int)_t, digestSize(_t) * m_recordLength * m_elementSize, digestRecords());
+	bool haveDigest = m_digest[_t]->open(m_sourceKey, m_operationKey, 3 + (int)_t, digestSize(_t) * m_recordLength * m_elementSize, digestRecords());
 	if (haveDigest || digestRecords() < m_digestBase)
 		return;
 

@@ -29,7 +29,8 @@ public:
 		}
 		else
 		{
-			m_data[_k] = std::make_shared<DataSet<_T>>(_k);
+
+			m_data[_k] = DataSetPtr<_T>(new DataSet<_T>(_k));
 			x_data.unlock();
 			emit inUseChanged();
 			emit footprintChanged();
@@ -37,11 +38,31 @@ public:
 			x_data.lock();
 			cdebug << "Creating.";
 		}
-		return std::static_pointer_cast<DataSet<_T>>(m_data[_k]);
+		return dataset_cast<_T>(m_data[_k]);
+	}
+	GenericDataSetPtr create(DataKey _k, size_t _elementSize, char const* _elementTypeName)
+	{
+//		cdebug << "DataMan::dataSet(" << std::hex << _k << ")";
+		QMutexLocker l(&x_data);
+		if (m_data.contains(_k))
+		{
+			assert(m_data[_k]->isOfType(_elementSize, _elementTypeName));
+		}
+		else
+		{
+			m_data[_k] = std::make_shared<GenericDataSet>(_k, _elementSize, _elementTypeName);
+			x_data.unlock();
+			emit inUseChanged();
+			emit footprintChanged();
+			emit changed();
+			x_data.lock();
+			cdebug << "Creating.";
+		}
+		return m_data[_k];
 	}
 
 	/// Get a preexisting complete DataSet for a given key.
-	/// @returns The complete DataSet for @a _k , or the null DataSetFloatPtr if it doesn't (yet) exist.
+	/// @returns The complete DataSet for @a _k , or the null DataSetPtr if it doesn't (yet) exist.
 	template <class _T = float> DataSetPtr<_T> get(DataKey _k)
 	{
 		QMutexLocker l(&x_data);
@@ -52,6 +73,30 @@ public:
 			return nullptr;
 		}
 		auto ds = std::make_shared<DataSet<_T>>(_k);
+		if (ds->haveRaw())
+		{
+			m_data[_k] = ds;
+			x_data.unlock();
+			emit inUseChanged();
+			emit changed();
+			x_data.lock();
+			return ds;
+		}
+		return nullptr;
+	}
+
+	/// Get a preexisting complete DataSet for a given key.
+	/// @returns The complete DataSet for @a _k , or the null DataSetPtr if it doesn't (yet) exist.
+	GenericDataSetPtr getGeneric(DataKey _k)
+	{
+		QMutexLocker l(&x_data);
+		if (m_data.contains(_k))
+		{
+			if (m_data[_k] && m_data[_k]->haveRaw())
+				return m_data[_k];
+			return nullptr;
+		}
+		GenericDataSetPtr ds(new GenericDataSet(_k));
 		if (ds->haveRaw())
 		{
 			m_data[_k] = ds;

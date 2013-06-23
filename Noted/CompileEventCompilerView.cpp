@@ -31,7 +31,7 @@ CompileEventCompilerView::CompileEventCompilerView(EventCompilerView* _ev):
 {
 }
 
-void CompileEventCompilerView::init(bool _willRecord)
+bool CompileEventCompilerView::init(bool _willRecord)
 {
 	m_ev->m_streamEvents.reset();
 	m_ev->clearCurrentEvents();
@@ -40,8 +40,6 @@ void CompileEventCompilerView::init(bool _willRecord)
 	{
 		m_ev->m_operationKey = qHash(qMakePair(qMakePair(QString::fromStdString(ec().name()), NotedFace::libs()->eventCompilerVersion(QString::fromStdString(ec().name()))), QString::fromStdString(ec().properties().serialized())));
 		m_ev->m_streamEvents = NotedFace::data()->create<StreamEvent>(DataKey(NotedFace::audio()->key(), m_ev->m_operationKey));
-		if (!m_ev->m_streamEvents->isComplete())
-			m_ev->m_streamEvents->init(0, 0);
 
 		for (auto const& i: ec().asA<EventCompilerImpl>().graphMap())
 		{
@@ -56,6 +54,7 @@ void CompileEventCompilerView::init(bool _willRecord)
 			if (!i.value()->isActive())
 				i.key()->setStore(nullptr);
 	}
+	return m_ev->m_streamEvents && !m_ev->m_streamEvents->isComplete();
 }
 
 lb::EventCompiler CompileEventCompilerView::ec() const
@@ -65,21 +64,17 @@ lb::EventCompiler CompileEventCompilerView::ec() const
 
 void CompileEventCompilerView::process(unsigned _i, lb::Time)
 {
-	if ((m_ev->m_streamEvents && !m_ev->m_streamEvents->isComplete()) || Noted::audio()->isImmediate())
-	{
-		vector<float> wave(Noted::audio()->hopSamples());
-		if (Noted::audio()->isImmediate())
-			(void)0;// TODO
-		else
-			Noted::audio()->populateHop(_i, wave);
-		m_ev->m_current = m_ev->m_eventCompiler.compile(wave);
-	}
+	vector<float> wave(Noted::audio()->hopSamples());
+	if (Noted::audio()->isImmediate())
+		(void)0;// TODO
+	else
+		Noted::audio()->populateHop(_i, wave);
+	m_ev->m_current = m_ev->m_eventCompiler.compile(wave);
 }
 
 void CompileEventCompilerView::record(unsigned, Time _t)
 {
-	if ((m_ev->m_streamEvents && !m_ev->m_streamEvents->isComplete()) || Noted::audio()->isImmediate())
-		m_ev->m_streamEvents->appendRecord(_t, &m_ev->m_current);
+	m_ev->m_streamEvents->appendRecord(_t, &m_ev->m_current);
 }
 
 void CompileEventCompilerView::fini(bool _completed, bool _didRecord)

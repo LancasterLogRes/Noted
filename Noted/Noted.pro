@@ -53,7 +53,7 @@ HEADERS  += Noted.h \
     TimelineItem.h \
     EventCompilerView.h \
     CompileEventCompilerView.h \
-    CursorGraphItem.h
+	CursorGraphItem.h
 
 FORMS    += Noted.ui
 

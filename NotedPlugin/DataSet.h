@@ -50,21 +50,23 @@ void foo(DataSet* ds)
 class GenericDataSet
 {
 public:
-	explicit GenericDataSet(DataKey _key, size_t _elementSize, char const* _elementTypeName);
+	explicit GenericDataSet(DataKey _key, size_t _elementSize = 0, char const* _elementTypeName = nullptr);
 
-	void init(unsigned _recordLength, lb::Time _stride = 0, lb::Time _first = 0);	// _recordLength is in ElementTypes (0 for variable). _stride is the duration between sequential readings. will be related to hops for most things. (0 for variable). Don't call digest if either are zero.
-	void init(unsigned _itemCount);
+	void setDense(unsigned _recordLength, lb::Time _stride, lb::Time _first = 0);
 
 	void appendRecord(lb::Time _t, lb::foreign_vector<uint8_t> const& _vs);
-	void appendRecords(lb::foreign_vector<uint8_t> const& _vs);
+	void appendDenseRecords(lb::foreign_vector<uint8_t> const& _vs);
 
 	void ensureHaveDigest(DigestType _type);
 	void done();
 
+	bool isAppendable() const { return m_raw.isOpen() && !isComplete(); }
+	bool isValid() const { return m_elementTypeName.size() && m_elementSize; }
 	bool isComplete() const { return haveRaw(); }
-	bool haveRaw() const { return m_raw.isGood() && (!m_toc.isMapped() || m_toc.isGood()); }
+	bool haveRaw() const { return m_raw.isGood() && (!m_recordPositions.isMapped() || m_recordPositions.isGood()) && (!m_recordTimes.isMapped() || m_recordTimes.isGood()); }
 	bool haveDigest(DigestType _type) { return m_digest.contains(_type); }
 	template <class _T> bool isOfType() const { return sizeof(_T) == m_elementSize && typeid(_T).name() == m_elementTypeName; }
+	bool isOfType(size_t _elementSize, char const* _elementTypeName) const { return _elementSize == m_elementSize && _elementTypeName == m_elementTypeName; }
 
 	bool isScalar() const { return m_recordLength == 1; }
 	bool isFixed() const { return m_recordLength; }
@@ -84,12 +86,6 @@ public:
 	void populateSeries(lb::Time _from, lb::foreign_vector<uint8_t> const& _out) const;
 	void populateDigest(DigestType _digest, unsigned _level, lb::Time _from, lb::foreign_vector<uint8_t> const& _out) const;
 
-	// Methods for extracting data when isFixed()
-//	void populateSeries(lb::Time _latest, lb::foreign_vector<float> _dest) const;
-
-	// Methods for extracting data when !isFixed()
-//	std::vector<float> readRaw(lb::Time _latest) const;
-
 	// General extraction method
 	template <class _T> std::vector<_T> getInterval(lb::Time _from, lb::Time _before) const
 	{
@@ -103,8 +99,9 @@ public:
 		return ret;
 	}
 
-	unsigned recordIndex(lb::Time _from) const { return m_recordLength ? recordIndexFixedRecordSize(_from, false) : recordIndexVariableRecordSize(_from, false); }
-	unsigned recordIndexEarlier(lb::Time _latest) const { return m_recordLength ? recordIndexFixedRecordSize(_latest, true) : recordIndexVariableRecordSize(_latest, true); }
+	unsigned recordIndex(lb::Time _t, bool _earlier = false) const;
+	unsigned recordIndexLater(lb::Time _earliest) const { return recordIndex(_earliest, false); }
+	unsigned recordIndexEarlier(lb::Time _latest) const { return recordIndex(_latest, true); }
 
 	TocRef elementIndex(lb::Time _from) const { return elementIndexOfRecord(recordIndex(_from)); }
 	TocRef elementIndexEarlier(lb::Time _latest) const { return elementIndexOfRecord(recordIndexEarlier(_latest)); }
@@ -115,12 +112,38 @@ public:
 
 	template <class _T> std::vector<_T> getRecord(lb::Time _latest, lb::Time* o_recordTime = nullptr) const
 	{
+		if (!isOfType<_T>())
+			return std::vector<_T>();
 		auto i = recordIndexEarlier(_latest);
 		if (o_recordTime)
 			*o_recordTime = timeOfRecord(i);
 		std::vector<_T> ret(lengthOfRecord(i));
 		populateRecord<_T>(i, &ret);
 		return ret;
+	}
+
+	template <class _T> lb::foreign_vector<_T> peek(lb::Time _latest, unsigned _elements, lb::Time* o_recordTime = nullptr) const
+	{
+		if (!isOfType<_T>())
+			return lb::foreign_vector<_T>();
+		auto i = recordIndexEarlier(_latest);
+		if (o_recordTime)
+			*o_recordTime = timeOfRecord(i);
+		auto ei = elementIndexOfRecord(i);
+		if (ei == InvalidTocRef)
+			return lb::foreign_vector<_T>();
+		return m_raw.data<_T>().cropped(ei, _elements);
+	}
+
+	lb::foreign_vector<uint8_t> peekRecordBytes(lb::Time _latest, lb::Time* o_recordTime = nullptr) const
+	{
+		auto i = recordIndexEarlier(_latest);
+		if (o_recordTime)
+			*o_recordTime = timeOfRecord(i);
+		auto ei = elementIndexOfRecord(i);
+		if (ei == InvalidTocRef)
+			return lb::foreign_vector<uint8_t>();
+		return m_raw.data<uint8_t>().cropped(ei * m_elementSize, lengthOfRecord(i) * m_elementSize);
 	}
 
 	template <class _T> void populateRecord(unsigned _i, lb::foreign_vector<_T> const& _data) const
@@ -158,9 +181,7 @@ public:
 	}
 
 private:
-	void setup(unsigned _itemCount);
-	unsigned recordIndexFixedRecordSize(lb::Time _from, bool _earlier) const;
-	unsigned recordIndexVariableRecordSize(lb::Time _from, bool _earlier) const;
+	void init();
 	void populateElements(TocRef _from, lb::foreign_vector<uint8_t> const& _out) const;
 
 	struct Metadata
@@ -173,10 +194,11 @@ private:
 		uint32_t elementSize;
 	};
 
-	SimpleKey m_sourceKey = 0;
-	SimpleKey m_operationKey = 0;
+	lb::SimpleKey m_sourceKey = 0;
+	lb::SimpleKey m_operationKey = 0;
 	Cache<Metadata> m_raw;
-	Cache<> m_toc;
+	Cache<> m_recordTimes;
+	Cache<> m_recordPositions;
 
 	QMap<DigestType, std::shared_ptr<MipmappedCache<>>> m_digest;
 	DigestTypes m_availableDigests;
@@ -188,8 +210,9 @@ private:
 	unsigned m_recordLength = 0;
 	lb::Time m_stride = 0;
 	lb::Time m_first = 0;
+
 	unsigned m_recordCount = 0;
-	unsigned m_pos = 0;
+	TocRef m_pos = 0;
 };
 
 using GenericDataSetPtr = std::shared_ptr<GenericDataSet>;
@@ -201,13 +224,14 @@ public:
 	explicit DataSet(DataKey _key): GenericDataSet(_key, sizeof(_T), typeid(_T).name()) {}
 
 	void appendRecord(lb::Time _t, lb::foreign_vector<_T> const& _vs) { GenericDataSet::appendRecord(_t, (lb::foreign_vector<uint8_t>)_vs); }
-	void appendRecords(lb::foreign_vector<_T> const& _vs) { GenericDataSet::appendRecords((lb::foreign_vector<uint8_t>)_vs); }
+	void appendDenseRecords(lb::foreign_vector<_T> const& _vs) { GenericDataSet::appendDenseRecords((lb::foreign_vector<uint8_t>)_vs); }
 
 	void populateSeries(lb::Time _from, lb::foreign_vector<_T> const& _out) const { GenericDataSet::populateSeries(_from, (lb::foreign_vector<uint8_t>)_out); }
 	void populateDigest(DigestType _digest, unsigned _level, lb::Time _from, lb::foreign_vector<_T> const& _out) const { GenericDataSet::populateDigest(_digest, _level, _from, (lb::foreign_vector<uint8_t>)_out); }
 
 	std::vector<_T> getInterval(lb::Time _from, lb::Time _before) const { return GenericDataSet::getInterval<_T>(_from, _before); }
 	std::vector<_T> getRecord(lb::Time _latest, lb::Time* o_recordTime = nullptr) const { return GenericDataSet::getRecord<_T>(_latest, o_recordTime); }
+	lb::foreign_vector<_T> peek(lb::Time _latest, unsigned _elements, lb::Time* o_recordTime = nullptr) const { return GenericDataSet::peek<_T>(_latest, _elements, o_recordTime); }
 };
 
 template <class _T> using DataSetPtr = std::shared_ptr<DataSet<_T> >;
@@ -224,22 +248,22 @@ template <class _T> DataSetPtr<_T> dataset_cast(GenericDataSetPtr const& _p)
 class DataSetDataStore: public lb::DataStore
 {
 public:
-	DataSetDataStore(lb::GraphSpec const* _gs, SimpleKey _ecOpKey);
+	DataSetDataStore(lb::GraphSpec const* _gs, lb::SimpleKey _ecOpKey);
 	virtual ~DataSetDataStore();
 
 	bool isActive() const { return !!m_s; }
 	void fini(DigestTypes _digests);
 
-	static SimpleKey operationKey(lb::GraphSpec const* _gs, SimpleKey _ecOpKey) { return qHash(qMakePair(QString::fromStdString(_gs->name()), _ecOpKey)); }
-	SimpleKey operationKey() const { return m_operationKey; }
+	static lb::SimpleKey operationKey(lb::GraphSpec const* _gs, lb::SimpleKey _ecOpKey) { return qHash(qMakePair(QString::fromStdString(_gs->name()), _ecOpKey)); }
+	lb::SimpleKey operationKey() const { return m_operationKey; }
 
 protected:
 	// Variable record length if 0. _dense if all hops are stored, otherwise will store sparsely.
-	virtual void init(unsigned _recordLength, bool _dense);
+	virtual void init();
 	virtual void shiftBuffer(unsigned _index, lb::foreign_vector<float> const& _record);
 
 private:
-	SimpleKey m_operationKey = 0;
+	lb::SimpleKey m_operationKey = 0;
 	DataSetFloatPtr m_s;
 };
 

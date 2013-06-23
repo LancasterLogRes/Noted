@@ -36,7 +36,7 @@ void ProtoCache::reset()
 	m_file.close();
 }
 
-bool ProtoCache::open(SimpleKey _sourceKey, SimpleKey _operationKey, SimpleKey _extraKey, size_t _bytes)
+bool ProtoCache::open(lb::SimpleKey _sourceKey, lb::SimpleKey _operationKey, lb::SimpleKey _extraKey, size_t _bytes)
 {
 	reset();
 
@@ -76,7 +76,7 @@ bool ProtoCache::open(SimpleKey _sourceKey, SimpleKey _operationKey, SimpleKey _
 	return false;
 }
 
-bool ProtoCache::open(SimpleKey _sourceKey, SimpleKey _operationKey, SimpleKey _extraKey)
+bool ProtoCache::open(lb::SimpleKey _sourceKey, lb::SimpleKey _operationKey, lb::SimpleKey _extraKey)
 {
 	reset();
 

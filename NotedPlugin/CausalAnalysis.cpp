@@ -18,13 +18,40 @@
  * along with Noted.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "NotedComputeRegistrar.h"
 #include "CausalAnalysis.h"
+using namespace std;
+using namespace lb;
+
+void CausalAnalysis::init()
+{
+	NotedComputeRegistrar::get()->init();
+	m_willCompute = init(true);
+}
+
+void CausalAnalysis::fini(bool _completed)
+{
+	if (m_willCompute && _completed)
+		NotedComputeRegistrar::get()->fini();
+	fini(_completed, true);
+}
+
+unsigned CausalAnalysis::prepare(unsigned _from, unsigned _count, lb::Time)
+{
+	if (m_willCompute)
+		noteBatch(_from, _count);
+	return _count;
+}
 
 void CausalAnalysis::analyze(unsigned _from, unsigned _count, lb::Time _hop)
 {
-	for (unsigned i = 0; i < _count && done(i); ++i)
-	{
-		process(_from + i, _hop * (_from + i));
-		record(_from + i, _hop * (_from + i));
-	}
+	if (m_willCompute)
+		for (unsigned i = 0; i < _count && done(i); ++i)
+		{
+			lb::Time t = _hop * (_from + i);
+			NotedComputeRegistrar::get()->beginTime(t);
+			process(_from + i, t);
+			record(_from + i, t);
+			NotedComputeRegistrar::get()->endTime(t);
+		}
 }

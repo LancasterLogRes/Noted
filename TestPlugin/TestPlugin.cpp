@@ -73,7 +73,7 @@ public:
 
 TestPlugin::TestPlugin(): NotedPlugin()
 {
-	glw = NotedFace::get()->addGLWidget(new TestGLView);
+	glw = NotedFace::get()->addGLView(new TestGLView);
 	glw->show();
 }
 

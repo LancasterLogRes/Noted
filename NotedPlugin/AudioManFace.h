@@ -20,14 +20,13 @@ public:
 	virtual ~AudioManFace() {}
 
 	/// Data
-	inline SimpleKey key() const { return m_key; }
-	inline SimpleKey rawKey() const { return m_rawKey; }
+	inline lb::SimpleKey key() const { return m_key; }
+	inline lb::SimpleKey rawKey() const { return m_rawKey; }
 	inline DataKey keySet(QString const& _operationId) const { return DataKey(key(), qHash(_operationId)); }
 	inline DataKey rawKeySet(QString const& _operationId) const { return DataKey(rawKey(), qHash(_operationId)); }
 
 	virtual DataSetFloatPtr wave() const = 0;
 	virtual void populateHop(unsigned _index, std::vector<float>& _h) const = 0;
-	virtual lb::foreign_vector<float const> cursorWaveWindow() const { return lb::foreign_vector<float const>(); } // TODO
 
 	QString const& filename() const { return m_filename; }
 	inline unsigned rate() const { return m_rate; }
@@ -103,8 +102,8 @@ protected:
 	/// Data
 	AcausalAnalysisPtr m_resampleWaveAcAnalysis;
 	QString m_filename;
-	SimpleKey m_rawKey = 0;				///< filename ^ rate
-	SimpleKey m_key = 0;					///< rawKey ^ hop
+	lb::SimpleKey m_rawKey = 0;				///< filename ^ rate
+	lb::SimpleKey m_key = 0;					///< rawKey ^ hop
 	unsigned m_rate = 1;
 	unsigned m_hopSamples = 2;
 	unsigned m_samples = 0;

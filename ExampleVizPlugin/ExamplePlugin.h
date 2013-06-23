@@ -26,21 +26,27 @@
 class QDockWidget;
 class QWidget;
 class GLView;
+class AnalyzeViz;
 
-class ExamplePlugin: public NotedPlugin
+class ExamplePlugin: public NotedPlugin, public JobSource
 {
 	Q_OBJECT
 
+	friend class AnalyzeViz;
+
 public:
 	ExamplePlugin();
-	~ExamplePlugin();
+	virtual ~ExamplePlugin();
 
-	float scale;
-	float bias;
+	virtual CausalAnalysisPtrs ripeAnalysis(AcausalAnalysisPtr const& _finished);
+
+	float scale = 2.f;
+	float bias = .5f;
 	LIGHTBOX_PROPERTIES(scale, bias);
 	virtual void onPropertiesChanged();
 
 private:
-	QDockWidget* m_vizDock;
+	QWidget* m_vizDock;
 	GLView* m_glView;
+	CausalAnalysisPtr m_analysis;
 };
