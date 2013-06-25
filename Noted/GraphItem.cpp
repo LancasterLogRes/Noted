@@ -98,8 +98,8 @@ public:
 		"uniform lowp float offset;                 \n"
 		"varying vec2 v_tex;\n"
 		"void main() {                              \n"
-		"    float f = (texture2D(qt_Texture, v_tex).r * scale + offset) * 3;\n"
-		"    gl_FragColor = vec4(f, f - 1, f - 2, qt_Opacity);\n"
+		"    float f = (texture2D(qt_Texture, v_tex).r * scale + offset) * 3.0;\n"
+		"    gl_FragColor = vec4(f, f - 1.0, f - 2.0, qt_Opacity);\n"
 		"}";
 	}
 
