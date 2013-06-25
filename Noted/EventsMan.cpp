@@ -33,6 +33,7 @@ void EventsMan::onAnalyzed(AcausalAnalysis* _aa)
 	if (_aa == &*m_collateEventsAnalysis)
 		for (EventCompilerView* ev: m_eventsViews)
 			if (!ev->isArchived())
+			{
 				for (auto const& i: ev->eventCompiler().asA<EventCompilerImpl>().graphMap())
 				{
 					GraphSpec* gs = i.second;
@@ -44,6 +45,12 @@ void EventsMan::onAnalyzed(AcausalAnalysis* _aa)
 						gm.setAxes({ { gddf->xlabel(), gddf->xtx(), gddf->xrangeHint() }, { gddf->ylabel(), gddf->ytx(), gddf->yrangeHint() } });
 					Noted::graphs()->registerGraph(url, gm);
 				}
+				for (GraphMetadata const& i: ev->eventCompiler().asA<EventCompilerImpl>().graphsX())
+				{
+					QString url = ev->objectName() + "/" + QString::fromStdString(i.title());
+					Noted::graphs()->registerGraph(url, i);
+				}
+			}
 }
 
 CausalAnalysisPtrs EventsMan::ripeCausalAnalysis(CausalAnalysisPtr const& _finished)

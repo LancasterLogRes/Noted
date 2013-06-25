@@ -96,6 +96,18 @@ void CompileEventCompilerView::fini(bool _completed, bool _didRecord)
 
 		if (m_ev->m_streamEvents && !m_ev->m_streamEvents->isComplete())
 			m_ev->m_streamEvents->done();
+
+		for (GraphMetadata const& g: ec().asA<EventCompilerImpl>().graphsX())
+			if (auto ds = NotedFace::data()->get(DataKey(NotedFace::audio()->key(), g.operationKey())))
+			{
+				if (ds->isMonotonic())
+					if (ds->isFixed())
+						if ((ds->isScalar() && (g.hints() & Acyclic)) || !ds->isScalar())
+							ds->ensureHaveDigest(MeanDigest);
+						else if (ds->isScalar())
+							ds->ensureHaveDigest(MinMaxInOutDigest);
+				ds->done();
+			}
 	}
 	else
 		m_ev->m_streamEvents.reset();

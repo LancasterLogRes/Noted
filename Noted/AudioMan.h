@@ -85,5 +85,5 @@ private:
 	lb::Time m_lastCursorChangedSignal;
 
 	/// Our graph
-	GraphMetadata m_waveGraph = GraphMetadata(0, {{ "Amplitude", lb::XOf(), lb::Range(-1, 1) }}, "PCM", true);
+	lb::GraphMetadata m_waveGraph = lb::GraphMetadata(0, {{ "Amplitude", lb::XOf(), lb::Range(-1, 1) }}, "PCM", true);
 };

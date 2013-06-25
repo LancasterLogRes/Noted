@@ -41,7 +41,7 @@ signals:
 
 private slots:
 	void onDataComplete(DataKey);
-	void onGraphAdded(GraphMetadata const&);
+	void onGraphAdded(lb::GraphMetadata const&);
 
 protected:
 	Q_PROPERTY(QString url MEMBER m_url NOTIFY urlChanged)

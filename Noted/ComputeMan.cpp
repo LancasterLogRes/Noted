@@ -32,6 +32,7 @@ void ComputeMan::registerJobSource(JobSource* _js)
 		suspendWork();
 		m_sources.insert(_js);
 		resumeWork();
+		invalidate();
 	}
 }
 

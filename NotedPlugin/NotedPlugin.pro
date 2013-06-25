@@ -19,7 +19,8 @@ SOURCES += Timeline.cpp \
     EventsManFace.cpp \
     EventsStore.cpp \
     GraphManFace.cpp \
-    AudioManFace.cpp
+    AudioManFace.cpp \
+    ComputeAnalysis.cpp
 
 HEADERS  += Timeline.h \
 	PrerenderedTimeline.h \
@@ -44,4 +45,5 @@ HEADERS  += Timeline.h \
     EventsStore.h \
 	JobSource.h \
 	NotedComputeRegistrar.h \
-    NotedFeeder.h
+    NotedFeeder.h \
+    ComputeAnalysis.h 

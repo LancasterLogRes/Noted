@@ -127,7 +127,7 @@ public:
 
 private:
 //	MagnitudeComponent ms = MagnitudeComponent(WindowedFourier(Accumulate(NotedCursorFeeder())));
-	Accumulate ms = Accumulate(ComputeRegistrar::feeder(), 8);
+	AccumulateWave ms = AccumulateWave(ComputeRegistrar::feeder(), 8);
 
 	mutable unsigned m_lastCursor = (unsigned)-1;
 	mutable bool m_propertiesChanged = true;
@@ -140,15 +140,15 @@ class AnalyzeViz: public CausalAnalysis
 public:
 	AnalyzeViz(GLView* _p): CausalAnalysis("Precomputing visualization"), m_p(_p) {}
 
-	bool init(bool _willRecord)
+	bool init(bool)
 	{
 		return !m_p->init();
 	}
-	void process(unsigned _i, lb::Time _t)
+	void process(unsigned, lb::Time)
 	{
 		m_p->compute();
 	}
-	void fini(bool _completed, bool _didRecord)
+	void fini(bool, bool)
 	{
 		m_p->update();
 	}

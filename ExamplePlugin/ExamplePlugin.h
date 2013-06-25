@@ -35,5 +35,5 @@ public:
 
 private:
 	CausalAnalysisPtr m_analysis;
-	GraphMetadata m_graph;
+	lb::GraphMetadata m_graph;
 };

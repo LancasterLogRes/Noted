@@ -49,7 +49,7 @@ protected:
 		if (ds->isComplete())
 			return true;
 
-		cdebug << "ComputeRegistrar: Writing to DS" << _p.p()->hash();
+		cnote << "ComputeRegistrar: Writing" << _p.name() << "to DS" << std::hex << _p.p()->hash();
 		m_stored.insert(std::make_pair(_p.p()->hash(), ds));
 		assert(ds->isAppendable());
 		return false;

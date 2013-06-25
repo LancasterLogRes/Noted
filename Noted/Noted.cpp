@@ -33,7 +33,7 @@
 #include <NotedPlugin/AuxLibraryFace.h>
 #include <NotedPlugin/AcausalAnalysis.h>
 #include <NotedPlugin/CausalAnalysis.h>
-
+#include <NotedPlugin/NotedComputeRegistrar.h>
 #include "GraphView.h"
 #include "EventCompilerView.h"
 #include "WorkerThread.h"
@@ -78,6 +78,7 @@ Noted::Noted(QWidget* _p):
 	m_audioMan = new AudioMan;
 	m_viewMan = new ViewMan;
 	m_eventsMan = new EventsMan;
+	NotedComputeRegistrar::get();
 
 	ui->setupUi(this);
 	g_debugPost = [&](std::string const& _s, int _id){ simpleDebugOut(_s, _id); info(_s.c_str(), _id); };

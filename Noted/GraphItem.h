@@ -34,8 +34,8 @@ signals:
 
 private slots:
 	void onDataComplete(DataKey);
-	void onGraphAdded(GraphMetadata const&);
-	void onGraphRemoved(GraphMetadata const&);
+	void onGraphAdded(lb::GraphMetadata const&);
+	void onGraphRemoved(lb::GraphMetadata const&);
 	void invalidate() { m_invalidated = true; update(); }
 
 protected:
@@ -62,7 +62,7 @@ protected:
 	QSGGeometry* spectrumQuad() const;
 
 	// At current LOD (m_lod)
-	QSGNode* geometryPage(unsigned _index, GraphMetadata _g, DataSetFloatPtr _ds);
+	QSGNode* geometryPage(unsigned _index, lb::GraphMetadata _g, DataSetFloatPtr _ds);
 	void killCache();
 	bool m_invalidated = true;	// Cache is invalid.
 	int m_lod = -1;

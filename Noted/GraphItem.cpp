@@ -30,7 +30,7 @@ void GraphItem::onGraphRemoved(GraphMetadata const& _g)
 
 void GraphItem::onGraphAdded(GraphMetadata const& _g)
 {
-	cnote << "graphAdded(" << _g.url() << ") [" << (void*)this << "] interested in" << m_url.toStdString();
+	cnote << "graphAdded(" << _g.url() << "/" << std::hex << _g.operationKey() << ") [" << (void*)this << "] interested in" << m_url.toStdString();
 	if (QString::fromStdString(_g.url()) == m_url)
 		invalidate();
 }

@@ -10,7 +10,8 @@ public:
 	{
 		return { NotedFace::audio()->rate(), NotedFace::audio()->hopSamples() };
 	}
-	virtual lb::SimpleKey hash() { return lb::generateKey("NotedCursorFeeder", NotedFace::audio()->key()); }
+	virtual char const* name() const { return "NotedFeeder"; }
+	virtual lb::SimpleKey hash() const { return 0; }
 	virtual lb::foreign_vector<float> get()
 	{
 		if (NotedFace::audio()->wave()->isComplete())

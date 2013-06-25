@@ -1,6 +1,6 @@
 Audio.depends =
 Grapher.depends = Common
-NotedPlugin.depends = EventCompiler
+NotedPlugin.depends = EventCompiler Compute
 ExamplePlugin.depends = NotedPlugin
 ExampleVizPlugin.depends = NotedPlugin
 EventsEditor.depends = NotedPlugin
