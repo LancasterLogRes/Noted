@@ -20,7 +20,8 @@ SOURCES += Timeline.cpp \
     EventsStore.cpp \
     GraphManFace.cpp \
     AudioManFace.cpp \
-    ComputeAnalysis.cpp
+    ComputeAnalysis.cpp \
+    NotedComputeRegistrar.cpp
 
 HEADERS  += Timeline.h \
 	PrerenderedTimeline.h \

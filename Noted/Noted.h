@@ -121,6 +121,7 @@ private slots:
 	void on_actAbout_triggered();
 	void on_actInvalidate_triggered();
 	void on_actRecompute_triggered();
+	void on_actRecomputeAnalyses_triggered();
 	void on_actPrune_triggered();
 	void on_clearInfo_clicked();
 

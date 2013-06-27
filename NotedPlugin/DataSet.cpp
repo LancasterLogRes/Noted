@@ -170,7 +170,7 @@ void GenericDataSet::appendRecord(Time _t, foreign_vector<uint8_t> const& _vs)
 			return;
 		m_recordLength = _vs.size() / m_elementSize;
 	}
-	else if (m_recordLength != _vs.size() / m_elementSize)
+	else if (m_recordLength && m_recordLength != _vs.size() / m_elementSize)
 	{
 		cdebug << hex << m_operationKey << "recordLength changed after" << m_recordCount << "records (" << m_pos << " elements) from" << m_recordLength << "to" << (_vs.size() / m_elementSize);
 		m_recordPositions.open(m_sourceKey, m_operationKey, 1);
@@ -342,7 +342,7 @@ void GenericDataSet::populateDigest(DigestType _digest, unsigned _level, lb::Tim
 	assert(this);
 	if (!m_digest.contains(_digest))
 	{
-		memset(_out.data(), 0, _out.size() * m_elementSize);
+		memset(_out.data(), 0, _out.size());
 		return;
 	}
 

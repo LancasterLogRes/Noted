@@ -33,7 +33,7 @@ void CausalAnalysis::fini(bool _completed)
 {
 	if (m_willCompute && _completed)
 		NotedComputeRegistrar::get()->fini();
-	fini(_completed, true);
+	fini(_completed, m_willCompute);
 }
 
 unsigned CausalAnalysis::prepare(unsigned _from, unsigned _count, lb::Time)

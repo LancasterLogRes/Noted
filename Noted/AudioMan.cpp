@@ -103,6 +103,11 @@ void AudioMan::onAnalyzed(AcausalAnalysis* _analysis)
 	}
 }
 
+void AudioMan::ensureWaveHeld()
+{
+	m_wave = NotedFace::data()->get(DataKey(rawKey(), 0));
+}
+
 void AudioMan::setRate(unsigned _s)
 {
 	emit prepareForChange();

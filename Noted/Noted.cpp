@@ -682,6 +682,14 @@ void Noted::on_actRecompute_triggered()
 	compute()->invalidate();
 }
 
+void Noted::on_actRecomputeAnalyses_triggered()
+{
+	data()->releaseDataSets();
+	audio()->ensureWaveHeld();
+	data()->pruneDataSets();
+	compute()->invalidate();
+}
+
 void Noted::on_actInvalidate_triggered()
 {
 	compute()->invalidate();

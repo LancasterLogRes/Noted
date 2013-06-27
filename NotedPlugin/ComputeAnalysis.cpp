@@ -33,6 +33,7 @@ bool ComputeAnalysis::init(bool _willRecord)
 
 void ComputeAnalysis::fini(bool _completed, bool _didRecord)
 {
+	cnote << "ComputeRegistrar: Finishing all DSs";
 	if (_completed && _didRecord)
 		for (auto const& c: m_computes)
 			if (auto ds = NotedFace::data()->get(DataKey(NotedFace::audio()->key(), c.compute.hash())))

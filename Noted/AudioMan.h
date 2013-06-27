@@ -51,6 +51,8 @@ public slots:
 	/// Safe to be called from any thread.
 	virtual void setCursor(lb::Time _t, bool _warp = false);
 
+	void ensureWaveHeld();
+
 private slots:
 	void onAnalyzed(AcausalAnalysis*);
 	void processCursorChange();

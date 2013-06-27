@@ -31,7 +31,7 @@ NOTED_PLUGIN(ExamplePlugin);
 ExamplePlugin::ExamplePlugin()
 {
 	auto mag = ExtractMagnitude(WindowedFourier(AccumulateWave(ComputeRegistrar::feeder())));
-	auto bark = Bark(mag);
+	auto bark = BarkPhon(mag);
 	auto zc = ZeroCrossings(ComputeRegistrar::feeder());
 	std::vector<ComputeTask> tasks = {
 		{ zc, zc.info().axes(), { MinMaxInOutDigest } },
