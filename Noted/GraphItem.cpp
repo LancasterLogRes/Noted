@@ -203,86 +203,90 @@ QSGNode* GraphItem::geometryPage(unsigned _index, GraphMetadata _g, DataSetFloat
 					n->setFlag(QSGNode::OwnsMaterial);
 					m_geometryCache[qMakePair(m_lod, _index)].first->appendChildNode(n);
 				}
-				if (m_lod >= 0 && _ds->haveDigest(MinMaxInOutDigest))
+				if (m_lod >= 0)
 				{
-					unsigned digestZ = digestSize(MinMaxInOutDigest);
-					vector<float> intermed(c_recordsPerPage * _ds->recordLength() * digestZ);
-					_ds->populateDigest(MinMaxInOutDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed);
-					_g.axis(GraphMetadata::ValueAxis).transform.apply(intermed);
-
-					QSGGeometryNode* n = new QSGGeometryNode();
-					n->setFlag(QSGNode::OwnedByParent, false);
-
-					QSGGeometry* geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), c_recordsPerPage * 2);
-					geo->setDrawingMode(GL_LINES);
-					float* v = static_cast<float*>(geo->vertexData());
-					for (unsigned i = 0; i < c_recordsPerPage; ++i, v += 4)
+					vector<float> nxio;
+					if (_ds->haveDigest(MinMaxInOutDigest))
 					{
-						v[0] = i;
-						v[1] = intermed[i * 4];
-						v[2] = i;
-						v[3] = intermed[i * 4 + 1];
-					}
-					n->setGeometry(geo);
-					n->setFlag(QSGNode::OwnsGeometry);
+						unsigned digestZ = digestSize(MinMaxInOutDigest);
+						nxio = vector<float>(c_recordsPerPage * _ds->recordLength() * digestZ);
+						_ds->populateDigest(MinMaxInOutDigest, m_lod, pageTime(_index, _ds, m_lod), &nxio);
+						_g.axis(GraphMetadata::ValueAxis).transform.apply(nxio);
 
-					QSGFlatColorMaterial* m = new QSGFlatColorMaterial;
-					m->setColor(QColor::fromHsvF(0, 0, (m_highlight ? 0.5 : 0.75), 1));
-					n->setMaterial(m);
-					n->setFlag(QSGNode::OwnsMaterial);
-					m_geometryCache[qMakePair(m_lod, _index)].first->appendChildNode(n);
-				}
-				if (m_lod >= 0 && _ds->haveDigest(MeanRmsDigest))
-				{
-					unsigned digestZ = digestSize(MeanRmsDigest);
-					vector<float> intermed(c_recordsPerPage * _ds->recordLength() * digestZ);
-					_ds->populateDigest(MeanRmsDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed);
-					_g.axis(GraphMetadata::ValueAxis).transform.apply(intermed);
+						QSGGeometryNode* n = new QSGGeometryNode();
+						n->setFlag(QSGNode::OwnedByParent, false);
+
+						QSGGeometry* geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), c_recordsPerPage * 2);
+						geo->setDrawingMode(GL_LINES);
+						float* v = static_cast<float*>(geo->vertexData());
+						for (unsigned i = 0; i < c_recordsPerPage; ++i, v += 4)
+						{
+							v[0] = i;
+							v[1] = nxio[i * 4];
+							v[2] = i;
+							v[3] = nxio[i * 4 + 1];
+						}
+						n->setGeometry(geo);
+						n->setFlag(QSGNode::OwnsGeometry);
+
+						QSGFlatColorMaterial* m = new QSGFlatColorMaterial;
+						m->setColor(QColor::fromHsvF(0, 0, (m_highlight ? 0.5 : 0.75), 1));
+						n->setMaterial(m);
+						n->setFlag(QSGNode::OwnsMaterial);
+						m_geometryCache[qMakePair(m_lod, _index)].first->appendChildNode(n);
+					}
+					if (m_lod >= 0 && _ds->haveDigest(MeanRmsDigest))
+					{
+						unsigned digestZ = digestSize(MeanRmsDigest);
+						vector<float> intermed(c_recordsPerPage * _ds->recordLength() * digestZ);
+						_ds->populateDigest(MeanRmsDigest, m_lod, pageTime(_index, _ds, m_lod), &intermed);
+						_g.axis(GraphMetadata::ValueAxis).transform.apply(intermed);
 
 #if 0
-					QSGGeometry* geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), records);
-					geo->setDrawingMode(GL_LINE_STRIP);
-					geo->setLineWidth(1);
-					float* v = static_cast<float*>(geo->vertexData());
-					for (unsigned i = 0; i < records; ++i, v += 2)
-					{
-						v[0] = i;
-						v[1] = g.axis(0).transform.apply(intermed[i * 2]);
-					}
+						QSGGeometry* geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), records);
+						geo->setDrawingMode(GL_LINE_STRIP);
+						geo->setLineWidth(1);
+						float* v = static_cast<float*>(geo->vertexData());
+						for (unsigned i = 0; i < records; ++i, v += 2)
+						{
+							v[0] = i;
+							v[1] = g.axis(0).transform.apply(intermed[i * 2]);
+						}
 
-					QSGGeometryNode* n = new QSGGeometryNode();
-					n->setGeometry(geo);
-					n->setFlag(QSGNode::OwnsGeometry);
+						QSGGeometryNode* n = new QSGGeometryNode();
+						n->setGeometry(geo);
+						n->setFlag(QSGNode::OwnsGeometry);
 
-					QSGFlatColorMaterial* m = new QSGFlatColorMaterial;
-					m->setColor(QColor::fromHsvF(0, 0, 0, m_highlight ? 0.5 : 0.25));
-					n->setMaterial(m);
-					n->setFlag(QSGNode::OwnsMaterial);
+						QSGFlatColorMaterial* m = new QSGFlatColorMaterial;
+						m->setColor(QColor::fromHsvF(0, 0, 0, m_highlight ? 0.5 : 0.25));
+						n->setMaterial(m);
+						n->setFlag(QSGNode::OwnsMaterial);
 
-					base->appendChildNode(n);
+						base->appendChildNode(n);
 #endif
 
-					QSGGeometryNode* n = new QSGGeometryNode();
-					n->setFlag(QSGNode::OwnedByParent, false);
+						QSGGeometryNode* n = new QSGGeometryNode();
+						n->setFlag(QSGNode::OwnedByParent, false);
 
-					QSGGeometry* geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), c_recordsPerPage * 2);
-					geo->setDrawingMode(GL_QUAD_STRIP);
-					auto v = static_cast<float*>(geo->vertexData());
-					for (unsigned i = 0; i < c_recordsPerPage; ++i, v += 4)
-					{
-						v[0] = i;
-						v[1] = intermed[i * 2 + 1];
-						v[2] = i;
-						v[3] = -intermed[i * 2 + 1];
+						QSGGeometry* geo = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), c_recordsPerPage * 2);
+						geo->setDrawingMode(GL_QUAD_STRIP);
+						auto v = static_cast<float*>(geo->vertexData());
+						for (unsigned i = 0; i < c_recordsPerPage; ++i, v += 4)
+						{
+							v[0] = i;
+							v[1] = min(max(0.f, nxio[i * 4 + 1]), intermed[i * 2 + 1]);
+							v[2] = i;
+							v[3] = max(min(0.f, nxio[i * 4]), -intermed[i * 2 + 1]);
+						}
+						n->setGeometry(geo);
+						n->setFlag(QSGNode::OwnsGeometry);
+
+						QSGFlatColorMaterial* m = new QSGFlatColorMaterial;
+						m->setColor(QColor::fromHsvF(0, 0, (m_highlight ? 0.75 : 0.875), 1));
+						n->setMaterial(m);
+						n->setFlag(QSGNode::OwnsMaterial);
+						m_geometryCache[qMakePair(m_lod, _index)].first->appendChildNode(n);
 					}
-					n->setGeometry(geo);
-					n->setFlag(QSGNode::OwnsGeometry);
-
-					QSGFlatColorMaterial* m = new QSGFlatColorMaterial;
-					m->setColor(QColor::fromHsvF(0, 0, (m_highlight ? 0.75 : 0.875), 1));
-					n->setMaterial(m);
-					n->setFlag(QSGNode::OwnsMaterial);
-					m_geometryCache[qMakePair(m_lod, _index)].first->appendChildNode(n);
 				}
 			}
 			else if (_ds->isFixed())
