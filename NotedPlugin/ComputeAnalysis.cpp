@@ -9,16 +9,20 @@ ComputeAnalysis::ComputeAnalysis(std::vector<ComputeTask> const& _c, std::string
 	m_computes(_c)
 {
 	for (auto const& c: m_computes)
-	{
-		std::string url = _name + "/" + c.compute.name();
-		m_graphs.push_back(url);
-		NotedFace::graphs()->registerGraph(QString::fromStdString(url), GraphMetadata(c.compute.hash(), c.axes, c.compute.name()));
-	}
+		m_graphs.push_back(_name + "/" + c.compute.name());
 }
+
 ComputeAnalysis::~ComputeAnalysis()
 {
 	for (auto g: m_graphs)
 		NotedFace::graphs()->unregisterGraph(QString::fromStdString(g));
+}
+
+void ComputeAnalysis::onAnalyzed()
+{
+	for (unsigned i = 0; i < m_computes.size(); ++i)
+		if (m_computes[i].axes)
+			NotedFace::graphs()->registerGraph(QString::fromStdString(m_graphs[i]), GraphMetadata(m_computes[i].compute.hash(), m_computes[i].axes(), m_computes[i].compute.name()));
 }
 
 bool ComputeAnalysis::init(bool _willRecord)
@@ -36,12 +40,13 @@ void ComputeAnalysis::fini(bool _completed, bool _didRecord)
 	cnote << "ComputeRegistrar: Finishing all DSs";
 	if (_completed && _didRecord)
 		for (auto const& c: m_computes)
-			if (auto ds = NotedFace::data()->get(DataKey(NotedFace::audio()->key(), c.compute.hash())))
-			{
-				for (auto d: c.digests)
-					ds->ensureHaveDigest(d);
-				ds->done();
-			}
+			if (c.axes)
+				if (auto ds = NotedFace::data()->get(DataKey(NotedFace::audio()->key(), c.compute.hash())))
+				{
+					for (auto d: c.digests)
+						ds->ensureHaveDigest(d);
+					ds->done();
+				}
 }
 
 void ComputeAnalysis::process(unsigned, Time)

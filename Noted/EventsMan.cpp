@@ -16,7 +16,7 @@ EventsMan::EventsMan(QObject* _p):
 	m_compileEventsAnalysis = CausalAnalysisPtr(new CompileEvents);
 	m_collateEventsAnalysis = CausalAnalysisPtr(new CollateEvents);
 	NotedFace::compute()->registerJobSource(this);
-	connect(NotedFace::compute(), SIGNAL(analyzed(AcausalAnalysis*)), SLOT(onAnalyzed(AcausalAnalysis*)));
+	connect(NotedFace::compute(), SIGNAL(analyzed(AcausalAnalysisPtr)), SLOT(onAnalyzed(AcausalAnalysisPtr)));
 }
 
 EventsMan::~EventsMan()
@@ -28,9 +28,9 @@ EventsMan::~EventsMan()
 	cnote << "Killed.";
 }
 
-void EventsMan::onAnalyzed(AcausalAnalysis* _aa)
+void EventsMan::onAnalyzed(AcausalAnalysisPtr _aa)
 {
-	if (_aa == &*m_collateEventsAnalysis)
+	if (_aa == m_collateEventsAnalysis)
 		for (EventCompilerView* ev: m_eventsViews)
 			if (!ev->isArchived())
 			{

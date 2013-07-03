@@ -67,14 +67,16 @@ public:
 	bool haveDigest(DigestType _type) { return m_digest.contains(_type); }
 	template <class _T> bool isOfType() const { return sizeof(_T) == m_elementSize && typeid(_T).name() == m_elementTypeName; }
 	bool isOfType(size_t _elementSize, char const* _elementTypeName) const { return _elementSize == m_elementSize && _elementTypeName == m_elementTypeName; }
+	std::string const& elementTypeName() const { return m_elementTypeName; }
 
 	bool isScalar() const { return m_recordLength == 1; }
 	bool isFixed() const { return m_recordLength; }
 	bool isDynamic() const { return !m_recordLength; }
 	bool isMonotonic() const { return m_stride; }
 	unsigned recordLength() const { return m_recordLength; }
-	lb::Time first() const { return m_first; }
+	lb::Time first() const { return m_first ? m_first : timeOfRecord(0); }
 	lb::Time stride() const { return m_stride; }
+	lb::Time last() const { return timeOfRecord(rawRecords() - 1); }
 	TocRef elements() const { return m_raw.bytes() / m_elementSize; }
 	unsigned rawRecords() const;
 	unsigned digestRecords() const { return (rawRecords() + m_digestBase - 1) / m_digestBase; }
@@ -135,6 +137,19 @@ public:
 		return m_raw.data<_T>().cropped(ei, _elements);
 	}
 
+	template <class _T> lb::foreign_vector<_T> peek(lb::Time _exact) const
+	{
+		if (!isOfType<_T>())
+			return lb::foreign_vector<_T>();
+		auto i = recordIndexEarlier(_exact);
+		if (timeOfRecord(i) != _exact)
+			return lb::foreign_vector<_T>();
+		auto ei = elementIndexOfRecord(i);
+		if (ei == InvalidTocRef)
+			return lb::foreign_vector<_T>();
+		return m_raw.data<_T>().cropped(ei, lengthOfRecord(i));
+	}
+
 	lb::foreign_vector<uint8_t> peekRecordBytes(lb::Time _latest, lb::Time* o_recordTime = nullptr) const
 	{
 		auto i = recordIndexEarlier(_latest);
@@ -148,10 +163,7 @@ public:
 
 	template <class _T> void populateRecord(unsigned _i, lb::foreign_vector<_T> const& _data) const
 	{
-		if (!rawRecords())
-			return;
-
-		if (_i == (unsigned)-1)
+		if (_i >= rawRecords())
 			return;
 
 		if (lengthOfRecord(_i) != _data.size())
@@ -163,12 +175,9 @@ public:
 		lb::valcpy(_data.data(), m_raw.data<_T>().data() + elementIndexOfRecord(_i), _data.size());
 	}
 
-	template <class _T, class _F> void forEachElement(unsigned _i, _F const& _f)
+	template <class _T, class _F> void forEachElement(unsigned _i, _F const& _f) const
 	{
-		if (!rawRecords())
-			return;
-
-		if (_i == (unsigned)-1)
+		if (_i >= rawRecords())
 			return;
 
 		if (!isOfType<_T>())
@@ -201,12 +210,10 @@ private:
 	Cache<> m_recordPositions;
 
 	QMap<DigestType, std::shared_ptr<MipmappedCache<>>> m_digest;
-	DigestTypes m_availableDigests;
 	unsigned m_digestBase = 8;
 	size_t m_elementSize = 4;
 	std::string m_elementTypeName;
 
-	bool m_isReady = false;
 	unsigned m_recordLength = 0;
 	lb::Time m_stride = 0;
 	lb::Time m_first = 0;
@@ -232,6 +239,9 @@ public:
 	std::vector<_T> getInterval(lb::Time _from, lb::Time _before) const { return GenericDataSet::getInterval<_T>(_from, _before); }
 	std::vector<_T> getRecord(lb::Time _latest, lb::Time* o_recordTime = nullptr) const { return GenericDataSet::getRecord<_T>(_latest, o_recordTime); }
 	lb::foreign_vector<_T> peek(lb::Time _latest, unsigned _elements, lb::Time* o_recordTime = nullptr) const { return GenericDataSet::peek<_T>(_latest, _elements, o_recordTime); }
+	lb::foreign_vector<_T> peek(lb::Time _exact) const { return GenericDataSet::peek<_T>(_exact); }
+
+	template <class _F> void forEachElement(unsigned _i, _F const& _f) const { GenericDataSet::forEachElement<_T, _F>(_i, _f); }
 };
 
 template <class _T> using DataSetPtr = std::shared_ptr<DataSet<_T> >;

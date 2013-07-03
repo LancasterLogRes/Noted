@@ -22,7 +22,7 @@ protected:
 	virtual CausalAnalysisPtrs ripeCausalAnalysis(CausalAnalysisPtr const&);
 
 private slots:
-	void onAnalyzed(AcausalAnalysis* _aa);
+	void onAnalyzed(AcausalAnalysisPtr _aa);
 
 private:
 	// DEPRECATED.

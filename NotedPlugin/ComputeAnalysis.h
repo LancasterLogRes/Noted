@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <functional>
 #include <QString>
 #include <Common/GraphMetadata.h>
 #include <Compute/Compute.h>
@@ -9,8 +10,11 @@
 
 struct ComputeTask
 {
+	ComputeTask() = default;
+	ComputeTask(lb::GenericCompute const& _c): compute(_c) {}
+	ComputeTask(lb::GenericCompute const& _c, std::function<lb::GraphMetadata::Axes()> const& _axes, DigestTypes const& _ds): compute(_c), axes(_axes), digests(_ds) {}
 	lb::GenericCompute compute;
-	lb::GraphMetadata::Axes axes;
+	std::function<lb::GraphMetadata::Axes()> axes;
 	DigestTypes digests;
 };
 
@@ -22,6 +26,7 @@ public:
 	virtual bool init(bool _willRecord);
 	virtual void fini(bool _completed, bool _didRecord);
 	virtual void process(unsigned, lb::Time);
+	virtual void onAnalyzed();
 
 private:
 	std::vector<ComputeTask> m_computes;

@@ -9,6 +9,27 @@ DataMan::DataMan()
 {
 }
 
+GenericDataSetPtr DataMan::create(DataKey _k, size_t _elementSize, char const* _elementTypeName)
+{
+	QMutexLocker l(&x_data);
+	if (m_data.contains(_k))
+	{
+		cdebug << "DataMan::dataSet(" << std::hex << _k << "):" << m_data[_k]->elementTypeName() << "vs." << _elementTypeName;
+		assert(m_data[_k]->isOfType(_elementSize, _elementTypeName));
+	}
+	else
+	{
+		m_data[_k] = std::make_shared<GenericDataSet>(_k, _elementSize, _elementTypeName);
+		x_data.unlock();
+		emit inUseChanged();
+		emit footprintChanged();
+		emit changed();
+		x_data.lock();
+		cdebug << "Creating.";
+	}
+	return m_data[_k];
+}
+
 void DataMan::releaseDataSets()
 {
 	{

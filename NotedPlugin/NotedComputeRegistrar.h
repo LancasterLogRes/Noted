@@ -18,7 +18,7 @@ public:
 	}
 
 protected:
-	virtual lb::Compute<lb::PCMInfo, float> createFeeder() { return NotedFeeder(); }
+	virtual lb::Compute<float, lb::PCMInfo> createFeeder() { return NotedFeeder(); }
 
 	virtual void onInit();
 	virtual void onEndTime(lb::Time _oldTime);

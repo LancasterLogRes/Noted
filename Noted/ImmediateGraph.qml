@@ -6,7 +6,6 @@ Item {
 	property ListModel timelineGraphs: ListModel { }
 
 	property int overflow: 10
-	property var highlighted: h
 	property var immGraphHarness: graphHarness
 
 	Item {
@@ -63,16 +62,15 @@ Item {
 				XScale {
 					id: xscale
 					anchors.fill: parent
-					xScale: graphHarness.highlightedGraph.xScaleHint
+					xScale: graphHarness.highlightedGraph ? graphHarness.highlightedGraph.xScaleHint : Qt.vector3d(0, 1, 0)
 					z: -1
 				}
 				YScale {
 					id: yscale
 					anchors.fill: parent
-					yScale: graphHarness.highlightedGraph.yScaleHint
+					yScale: graphHarness.highlightedGraph ? graphHarness.highlightedGraph.yScaleHint : Qt.vector3d(0, 1, 0)
 					z: -1
 				}
-
 			}
 			Item {
 				id: ylabels

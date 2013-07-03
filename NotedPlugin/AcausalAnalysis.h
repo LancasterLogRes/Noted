@@ -27,9 +27,12 @@
 #include <Common/Time.h>
 
 class NotedFace;
+class ComputeManGuiDispatch;
 
 class AcausalAnalysis
 {
+	friend class ComputeManGuiDispatch;
+
 public:
 	explicit AcausalAnalysis(QString const& _processName): m_name(_processName) {}
 	virtual ~AcausalAnalysis() {}
@@ -44,6 +47,7 @@ protected:
 	virtual void fini(bool _completed) { (void)_completed; }
 	virtual unsigned prepare(unsigned, unsigned, lb::Time) { return 100; }
 	virtual void analyze(unsigned, unsigned, lb::Time) {}
+	virtual void onAnalyzed() {}
 
 	bool done(unsigned _i);
 
@@ -55,7 +59,7 @@ private:
 typedef std::shared_ptr<AcausalAnalysis> AcausalAnalysisPtr;
 typedef std::vector<AcausalAnalysisPtr> AcausalAnalysisPtrs;
 
-Q_DECLARE_METATYPE(AcausalAnalysis*);
+Q_DECLARE_METATYPE(AcausalAnalysisPtr);
 
 template <class _S> _S& operator<<(_S& _out, AcausalAnalysis const& _ca) { return _out << "AcA(" << _ca.name() << ")"; }
 

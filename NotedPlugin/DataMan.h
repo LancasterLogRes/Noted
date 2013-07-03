@@ -40,26 +40,7 @@ public:
 		}
 		return dataset_cast<_T>(m_data[_k]);
 	}
-	GenericDataSetPtr create(DataKey _k, size_t _elementSize, char const* _elementTypeName)
-	{
-//		cdebug << "DataMan::dataSet(" << std::hex << _k << ")";
-		QMutexLocker l(&x_data);
-		if (m_data.contains(_k))
-		{
-			assert(m_data[_k]->isOfType(_elementSize, _elementTypeName));
-		}
-		else
-		{
-			m_data[_k] = std::make_shared<GenericDataSet>(_k, _elementSize, _elementTypeName);
-			x_data.unlock();
-			emit inUseChanged();
-			emit footprintChanged();
-			emit changed();
-			x_data.lock();
-			cdebug << "Creating.";
-		}
-		return m_data[_k];
-	}
+	GenericDataSetPtr create(DataKey _k, size_t _elementSize, char const* _elementTypeName);
 
 	/// Get a preexisting complete DataSet for a given key.
 	/// @returns The complete DataSet for @a _k , or the null DataSetPtr if it doesn't (yet) exist.

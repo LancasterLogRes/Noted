@@ -69,7 +69,7 @@ AudioMan::AudioMan():
 	x_wave			(QMutex::Recursive)
 {
 	m_resampleWaveAcAnalysis = AcausalAnalysisPtr(new ResampleWaveAc);
-	connect(Noted::compute(), SIGNAL(analyzed(AcausalAnalysis*)), SLOT(onAnalyzed(AcausalAnalysis*)));
+	connect(Noted::compute(), SIGNAL(analyzed(AcausalAnalysisPtr)), SLOT(onAnalyzed(AcausalAnalysisPtr)));
 	m_audioThread = createWorkerThread([=](){return serviceAudio();});
 	NotedFace::compute()->registerJobSource(this);
 	NotedFace::graphs()->registerGraph("wave", m_waveGraph);
@@ -94,9 +94,9 @@ AcausalAnalysisPtrs AudioMan::ripeAcausalAnalysis(AcausalAnalysisPtr const& _fin
 	return {};
 }
 
-void AudioMan::onAnalyzed(AcausalAnalysis* _analysis)
+void AudioMan::onAnalyzed(AcausalAnalysisPtr _analysis)
 {
-	if (_analysis == &*m_resampleWaveAcAnalysis)
+	if (_analysis == m_resampleWaveAcAnalysis)
 	{
 		setCursor(0, true);
 		emit dataLoaded();

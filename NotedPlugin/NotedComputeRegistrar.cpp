@@ -1,3 +1,4 @@
+#include <utility>
 #include "NotedComputeRegistrar.h"
 using namespace std;
 using namespace lb;
@@ -5,7 +6,7 @@ using namespace lb;
 void NotedComputeRegistrar::onEndTime(lb::Time _oldTime)
 {
 	for (auto i: m_stored)
-		if (i.second->isAppendable())
+		if (i.second && i.second->isAppendable())
 			i.second->appendRecord(_oldTime, m_memos[i.first].second);
 }
 
@@ -20,7 +21,8 @@ void NotedComputeRegistrar::onFini()
 	cnote << "ComputeRegistrar: Finishing all DSs";
 	// Finished
 	for (auto i: m_stored)
-		i.second->done();
+		if (i.second)
+			i.second->done();
 	m_stored.clear();
 }
 
@@ -41,7 +43,9 @@ void NotedComputeRegistrar::insertMemo(lb::SimpleKey _operation)
 {
 	lb::foreign_vector<uint8_t> v;
 	auto it = m_stored.find(_operation);
-	if (it != m_stored.end() && it->second->isComplete())
+	if (it == m_stored.end())
+		it = m_stored.insert(make_pair(_operation, NotedFace::data()->getGeneric(DataKey(NotedFace::audio()->key(), _operation)))).first;
+	if (it != m_stored.end() && it->second && it->second->isComplete())
 		v = it->second->peekRecordBytes(m_time, nullptr);
 	m_memos[_operation].second = v;
 }

@@ -34,9 +34,9 @@ ExamplePlugin::ExamplePlugin()
 	auto bark = BarkPhon(mag);
 	auto zc = ZeroCrossings(ComputeRegistrar::feeder());
 	std::vector<ComputeTask> tasks = {
-		{ zc, zc.info().axes(), { MinMaxInOutDigest } },
-		{ mag, mag.info().axes(), { MeanDigest } },
-		{ bark, bark.info().axes(), { MeanDigest } }
+		{ zc, [=](){return zc.info().axes();}, { MinMaxInOutDigest } },
+		{ mag, [=](){return mag.info().axes();}, { MeanDigest } },
+		{ bark, [=](){return bark.info().axes();}, { MeanDigest } }
 	};
 	m_analysis = CausalAnalysisPtr(new ComputeAnalysis(tasks));
 	NotedFace::compute()->registerJobSource(this);

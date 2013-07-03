@@ -54,7 +54,7 @@ public slots:
 	void ensureWaveHeld();
 
 private slots:
-	void onAnalyzed(AcausalAnalysis*);
+	void onAnalyzed(AcausalAnalysisPtr);
 	void processCursorChange();
 
 private:

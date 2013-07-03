@@ -12,6 +12,7 @@ ComputeMan::ComputeMan():
 {
 	moveToThread(m_computeThread);
 	connect(m_computeThread, SIGNAL(progressed(QString,int)), SIGNAL(progressed(QString,int)));
+	connect(this, SIGNAL(analyzed(AcausalAnalysisPtr)), &m_guiDispatch, SLOT(onAnalyzed(AcausalAnalysisPtr)));
 }
 
 ComputeMan::~ComputeMan()
@@ -94,7 +95,7 @@ bool ComputeMan::serviceCompute()
 						break;
 					}
 					else
-						emit analyzed(&*aa);
+						emit analyzed(aa);
 				}
 				else if (aa)
 				{

@@ -8,6 +8,14 @@
 class WorkerThread;
 class JobSource;
 
+class ComputeManGuiDispatch: public QObject
+{
+	Q_OBJECT
+
+public slots:
+	void onAnalyzed(AcausalAnalysisPtr _a) { _a->onAnalyzed(); }
+};
+
 class ComputeMan: public ComputeManFace
 {
 	Q_OBJECT
@@ -51,4 +59,6 @@ private:
 
 	int m_suspends = 0;
 	WorkerThread* m_computeThread;
+
+	ComputeManGuiDispatch m_guiDispatch;
 };

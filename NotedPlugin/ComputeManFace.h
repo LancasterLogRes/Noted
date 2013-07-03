@@ -36,7 +36,7 @@ public slots:
 signals:
 	void progressed(QString, int);
 	void aboutToAnalyze(AcausalAnalysis*);
-	void analyzed(AcausalAnalysis*);
+	void analyzed(AcausalAnalysisPtr);
 	void finished();
 };
 

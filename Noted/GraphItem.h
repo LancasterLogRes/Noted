@@ -62,7 +62,7 @@ protected:
 	QSGGeometry* spectrumQuad() const;
 
 	// At current LOD (m_lod)
-	QSGNode* geometryPage(unsigned _index, lb::GraphMetadata _g, DataSetFloatPtr _ds);
+	QSGNode* geometryPage(unsigned _index, lb::GraphMetadata _g, GenericDataSetPtr _ds);
 	void killCache();
 	bool m_invalidated = true;	// Cache is invalid.
 	int m_lod = -1;

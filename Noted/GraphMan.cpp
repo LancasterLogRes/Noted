@@ -108,12 +108,12 @@ void GraphMan::exportGraph(QString const& _url, QString _filename)
 			if (ds->isDynamic())
 			{
 				unsigned i = 0;
-				ds->forEachElement<float>(i, [&](float f) {out << ds->timeOfRecord(i) << "," << m.first.axis(GraphMetadata::XAxis).transform.apply(i) << "," << m.first.axis().transform.apply(f) << endl; i++; });
+				ds->forEachElement(i, [&](float f) {out << ds->timeOfRecord(i) << "," << m.first.axis(GraphMetadata::XAxis).transform.apply(i) << "," << m.first.axis().transform.apply(f) << endl; i++; });
 			}
 			else
 			{
 				out << toSeconds(ds->timeOfRecord(i));
-				ds->forEachElement<float>(i, [&](float f) {out << "," << m.first.axis().transform.apply(f);});
+				ds->forEachElement(i, [&](float f) {out << "," << m.first.axis().transform.apply(f);});
 				out << endl;
 			}
 		}

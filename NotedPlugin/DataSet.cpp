@@ -232,7 +232,7 @@ tuple<Time, unsigned, int, Time> GenericDataSet::bestFit(Time _from, Time _durat
 		int64_t nextEnd = nextLevel ? (recordEnd + 1) / 2 : ((recordEnd + (int64_t)m_digestBase - 1) / (int64_t)m_digestBase);
 		int64_t nextRes = nextLevel ? recordRes / 2 : (recordRes / (int64_t)m_digestBase);
 
-		if (nextRes < _idealRecords)
+		if (nextRes < _idealRecords || m_digest.empty())
 			// Passed the place... use the last one cunningly left in recordBegin/recordEnd/level.
 			return tuple<Time, unsigned, int, Time>(m_first + m_stride * (level > -1 ? m_digestBase << level : 1) * recordBegin, recordEnd - recordBegin, level, (recordEnd - recordBegin) * m_stride * (level > -1 ? m_digestBase << level : 1));
 		recordBegin = nextBegin;
@@ -244,7 +244,7 @@ tuple<Time, unsigned, int, Time> GenericDataSet::bestFit(Time _from, Time _durat
 
 Time GenericDataSet::timeOfRecord(unsigned _e) const
 {
-	if (_e == (unsigned)-1)
+	if (_e == (unsigned)-1 || _e >= rawRecords())
 		return 0;
 	else if (m_stride)
 		return m_first + m_stride * _e;
@@ -254,7 +254,7 @@ Time GenericDataSet::timeOfRecord(unsigned _e) const
 
 TocRef GenericDataSet::elementIndexOfRecord(unsigned _e) const
 {
-	if (_e == (unsigned)-1)
+	if (_e == (unsigned)-1 || _e >= rawRecords())
 		return InvalidTocRef;
 	else if (m_recordLength)
 		return _e * m_recordLength;
