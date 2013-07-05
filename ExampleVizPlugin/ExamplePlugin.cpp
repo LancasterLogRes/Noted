@@ -40,203 +40,74 @@ using namespace lb;
 
 NOTED_PLUGIN(ExamplePlugin);
 
-float lext(float _a, float _b)
+template <class _EventsStores>
+inline lb::StreamEvents mergedAt(_EventsStores const& _s, int _i)
 {
-	return _b / (_a + _b);
+	StreamEvents ses;
+	foreach (EventsStore* es, _s)
+		merge(ses, es->events(_i));
+	return ses;
 }
 
-float llerp(float _x, float _a, float _b)
+template <class _EventsStores>
+inline lb::StreamEvents mergedAtCursor(_EventsStores const& _s, bool _force, bool _usePre, int _trackPos)
 {
-	return pow(_a, 1.f - _x) * pow(_b, _x);
+	StreamEvents ses;
+	foreach (EventsStore* es, _s)
+		if (_force)
+			merge(ses, es->cursorEvents());
+		else if (_usePre && es->isPredetermined())
+			merge(ses, es->events(_trackPos));
+		else if (!_usePre && !es->isPredetermined())
+			merge(ses, es->cursorEvents());
+	return ses;
 }
 
-class PeakGatherImpl: public ComputeImplBase<SpectrumInfo, Peak<> >
+class VizPlugin
 {
 public:
-	PeakGatherImpl(Compute<float, SpectrumInfo> const& _input, unsigned _count): ComputeImplBase(input, count), input(_input), count(_count) {}
-	virtual ~PeakGatherImpl() {}
+	typedef VizPlugin LIGHTBOX_PROPERTIES_BaseClass;
 
-	virtual char const* name() const { return "PeakGather"; }
-	virtual SpectrumInfo info() { return input.info(); }
-	virtual void init()
-	{
-	}
+	virtual lb::MemberMap propertyMap() const { return lb::NullMemberMap; }
+	virtual void onPropertiesChanged() {}
 
-	virtual void compute(std::vector<Peak<>>& _v)
-	{
-		_v.resize(count);
-		auto m = input.get();
-		unsigned peakCount = topPeaks(m, foreign_vector<Peak<>>(&_v));
-		_v.resize(peakCount);
-	}
-
-	Compute<float, SpectrumInfo> input;
-	unsigned count;
+	virtual std::vector<ComputeTask> tasks() { return {}; }
+	virtual void initializeGL() {}
+	virtual void resizeGL(int, int) {}
+	virtual void updateState(StreamEvents const&) {}
+	virtual void paintGL() {}
 };
 
-using PeakGather = ComputeBase<PeakGatherImpl>;
-
-struct PeakState: public FreqPeak
-{
-	float speed(float _gravity) const { return _gravity / mag; }
-	void move(float _b, float _gravity)
-	{
-		band += sign(_b - band) * min(speed(_gravity), fabs(_b - band));
-		assert(band >= 0);
-	}
-	void attract(Peak<> _p, float _gravity)
-	{
-		float db = _p.band - band;
-		band += sign(db) * min(speed(_gravity) * _p.mag, fabs(db));
-		assert(band > 0);
-		mag += 1.f / (fabs(db) + 1) * (_p.mag - mag);
-	}
-	float fit(Peak<> _p) const { return fabs(_p.band - band) * fabs(_p.mag - mag); }
-	bool operator<(PeakState _s) const { return band < _s.band; }
-};
-
-class PeakTrackImpl: public ComputeImplBase<SpectrumInfo, FreqPeak>
-{
-public:
-	PeakTrackImpl(Compute<Peak<>, SpectrumInfo> const& _input, unsigned _count, float _gravity): ComputeImplBase(input, count, gravity), input(_input), count(_count), gravity(_gravity) {}
-	virtual ~PeakTrackImpl() {}
-
-	virtual char const* name() const { return "PeakTrackv2"; }
-	virtual SpectrumInfo info() { return input.info(); }
-	virtual void init()
-	{
-		m_peaks.resize(count);
-		for (auto& p: m_peaks)
-			p.band = rand() * input.info().bands / RAND_MAX;
-		sort(m_peaks.begin(), m_peaks.end());
-	}
-
-	virtual void compute(std::vector<FreqPeak>& _v)
-	{
-		_v.resize(count);
-
-		foreign_vector<Peak<>> peaks = input.get();
-
-		for (int pi = peaks.size() - 1; pi >= 0; --pi)
-		{
-			int bestSi = -1;
-			PeakState bestS;
-			float best;
-
-			Peak<> p = peaks[pi];
-			for (unsigned si = 0; si < m_peaks.size(); ++si)
-			{
-				PeakState s = m_peaks[si];
-				// Attract s to peaks[pi]
-				s.attract(p, gravity);
-				float f = s.fit(p);
-				if (bestSi == -1 || f < best)
-				{
-					bestSi = si;
-					bestS = s;
-					best = f;
-				}
-			}
-			m_peaks[bestSi] = bestS;
-		}
-
-		for (auto it = m_peaks.begin(); it != m_peaks.end(); it++)
-		{
-			/*if (it == m_peaks.begin())
-			{
-				auto np = *next(it);
-				it->move(llerp(lext(it->mag, np.mag), 0.f, np.band), gravity);
-			}
-			else if (it == prev(m_peaks.end()))
-			{
-				auto pp = *prev(it);
-				it->move(llerp(lext(pp.mag, it->mag), pp.band, (float)m.size()), gravity);
-			}
-			else
-			{
-				auto pp = *prev(it);
-				auto np = *next(it);
-				it->move(llerp(1.f - lext(pp.mag, np.mag), pp.band, np.band), gravity);
-			}*/
-
-			it->phase += 0.1;
-			it->mag *= 0.95;
-		}
-		valcpy(_v.data(), (FreqPeak*)m_peaks.data(), count);
-	}
-
-	Compute<Peak<>, SpectrumInfo> input;
-	unsigned count;
-	float gravity;
-
-private:
-	vector<PeakState> m_peaks;
-};
-
-using PeakTrack = ComputeBase<PeakTrackImpl>;
-
-class GLView: public QGLWidgetProxy
+class VizGLWidgetProxy: public QGLWidgetProxy
 {
 	friend class ExamplePlugin;
 
 public:
-	GLView(ExamplePlugin* _p): m_p(_p) {}
+	VizGLWidgetProxy(VizPlugin* _v): m_viz(_v) {}
 
-	virtual vector<ComputeTask> tasks() { return { { tracks, [=](){ return tracks.info().axes(); }, {} }, { peaks, [=](){ return peaks.info().axes(); }, {} } }; }
+	void stop() { m_suspended = true; }
+	void start() { m_suspended = false; }
 
 	virtual void initializeGL()
 	{
 		m_last = wallTime();
-		glDisable(GL_DEPTH_TEST);
-		glGenTextures (1, m_texture);
-		for (int i = 0; i < 1; ++i)
-		{
-			glBindTexture (GL_TEXTURE_1D, m_texture[i]);
-			glTexParameteri (GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri (GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		}
-		glTexParameteri (GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri (GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		float f[2] = { 0, 1 };
-		glTexImage1D(GL_TEXTURE_1D, 0, 1, 2, 0, GL_LUMINANCE, GL_FLOAT, &f[0]);
-/*
-		// compute some initial iterations to settle into the orbit of the attractor
-		for (int i = 0; i < initialIterations; i++) {
-
-			// compute a new point using the strange attractor equations
-			float xnew = sin(y*b) + c*sin(x*b);
-			float ynew = sin(x*a) + d*sin(y*a);
-
-			// save the new point
-			x = xnew;
-			y = ynew;
-		}
-		// set the foreground (pen) color
-		glColor4f(1.0f, 1.0f, 1.0f, 0.02f);
-
-		// enable blending
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		// enable point smoothing
-		glEnable(GL_POINT_SMOOTH);
-		glPointSize(1.0f);*/
-}
+		m_viz->initializeGL();
+	}
 
 	virtual void resizeGL(int _w, int _h)
 	{
-/*		glViewport(0, 0, _w, _h);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(-1, 1, 1, -1, -1, 1);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();*/
+		m_viz->resizeGL(_w, _h);
 	}
 
 	virtual bool needsRepaint() const
 	{
 		if (m_lastCursor == NotedFace::audio()->cursorIndex() && !m_propertiesChanged)
 			return false;
+
+		if (NotedFace::audio()->cursorIndex() - m_lastCursor < 10)
+			for (; m_lastCursor < NotedFace::audio()->cursorIndex(); m_lastCursor++)
+				m_viz->updateState({});
+				// TODO: merge events from Noted.
 		m_lastCursor = NotedFace::audio()->cursorIndex();
 		m_propertiesChanged = false;
 		return true;
@@ -260,106 +131,29 @@ public:
 
 		NotedComputeRegistrar::get()->beginTime(NotedFace::audio()->hopCursor());
 
-		auto peaks = this->tracks.get().toVector();
-		sort(peaks.begin(), peaks.end(), [](FreqPeak a, FreqPeak b){return a.band < b.band;});
-		float t = 0;
-		for (auto p: peaks)
-			t += p.mag;
+		m_viz->paintGL();
 
-		glLoadIdentity();
-		glEnable(GL_TEXTURE_1D);
-		glBindTexture(GL_TEXTURE_1D, m_texture[0]);
-		glBegin(GL_QUADS);
-		float y = -1.f;
-		if (t && false)
-			for (auto p: peaks)
-			{
-				float f = p.band * .2;
-				float ph = p.phase * sqrt(float(p.band) * .01);
-
-				float yf = y;
-				y += 2 * p.mag / t;
-
-				glTexCoord1f(ph);
-				glVertex3f(-1.0f, yf, 0.0f);
-				glTexCoord1f(f + ph);
-				glVertex3f( 1.0f, yf, 0.0f);
-				glTexCoord1f(f + ph);
-				glVertex3f( 1.0f, y, 0.0f);
-				glTexCoord1f(ph);
-				glVertex3f(-1.0f, y, 0.0f);
-			}
-		glEnd();
-		glDisable(GL_TEXTURE_1D);
-/*
-		glClearColor(0, 0, 0, 0);
-		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-		// set up the projection matrix (the camera)
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-
-		// set up the modelview matrix (the objects)
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-
-		glScalef(.5f, .5f, 1.f);
-
-		glBegin(GL_POINTS);
-
-			// go through the equations many times, drawing a point for each iteration
-			for (int i = 0; i < iterations; i++) {
-
-				// compute a new point using the strange attractor equations
-				float xnew = sin(y*b) + c*sin(x*b);
-				float ynew = sin(x*a) + d*sin(y*a);
-
-				// save the new point
-				x = xnew;
-				y = ynew;
-
-				// draw the new point
-				glVertex2f(x, y);
-			}
-
-		glEnd();
-		b += 0.001;
-		c -= 0.001;*/
 		NotedComputeRegistrar::get()->endTime(NotedFace::audio()->hopCursor());
 		m_last = wallTime();
 	}
 
-	void stop() { m_suspended = true; }
-	void start() { m_suspended = false; }
+	VizPlugin* viz() const { return m_viz; }
 
 private:
-	PeakGather peaks = PeakGather(ExtractMagnitude(WindowedFourier(AccumulateWave(ComputeRegistrar::feeder()))), 16);
-	PeakTrack tracks = PeakTrack(peaks, 16, 1.f);
-
+	Time m_last;
 	mutable unsigned m_lastCursor = (unsigned)-1;
 	mutable bool m_propertiesChanged = true;
-	GLuint m_texture[2];
-	ExamplePlugin* m_p;
-	Time m_last;
 
 	bool m_suspended = true;
 	bool m_wasSuspended = true;
 
-
-	float	x = 0.1, y = 0.1,		// starting point
-		a = -0.966918,			// coefficients for "The King's Dream"
-		b = 2.879879,
-		c = 0.765145,
-		d = 0.744728;
-	int	initialIterations = 100,	// initial number of iterations
-						// to allow the attractor to settle
-		iterations = 100000;		// number of times to iterate through
-						// the functions and draw a point
+	VizPlugin* m_viz;
 };
 
 class AnalyzeViz: public ComputeAnalysis
 {
 public:
-	AnalyzeViz(GLView* _p): ComputeAnalysis(_p->tasks(), "Precomputing visualization"), m_p(_p) {}
+	AnalyzeViz(VizGLWidgetProxy* _p): ComputeAnalysis(_p->viz()->tasks(), "Precomputing visualization"), m_p(_p) {}
 
 	bool init(bool _r)
 	{
@@ -374,12 +168,396 @@ public:
 	}
 
 private:
-	GLView* m_p;
+	VizGLWidgetProxy* m_p;
+};
+
+class SplitBarsViz: public VizPlugin
+{
+public:
+	virtual vector<ComputeTask> tasks() { return { { tracks, [=](){ return tracks.info().axes(); }, {} }, { peaks, [=](){ return peaks.info().axes(); }, {} } }; }
+
+	virtual void initializeGL()
+	{
+		glDisable(GL_DEPTH_TEST);
+		glGenTextures(1, m_texture);
+		for (int i = 0; i < 1; ++i)
+		{
+			glBindTexture(GL_TEXTURE_1D, m_texture[i]);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		}
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		float f[2] = { 0, 1 };
+		glTexImage1D(GL_TEXTURE_1D, 0, 1, 2, 0, GL_LUMINANCE, GL_FLOAT, &f[0]);
+	}
+
+	virtual void resizeGL(int _w, int _h)
+	{
+		glViewport(0, 0, _w, _h);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(-1, 1, 1, -1, -1, 1);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+	}
+
+	virtual void updateState(StreamEvents const& _ses)
+	{
+		(void)_ses;
+	}
+
+	virtual void paintGL()
+	{
+		auto peaks = this->tracks.get().toVector();
+		sort(peaks.begin(), peaks.end(), [](FreqPeak a, FreqPeak b){return a.band < b.band;});
+		float t = 0;
+		for (auto p: peaks)
+			t += p.mag;
+
+		glLoadIdentity();
+		glEnable(GL_TEXTURE_1D);
+		glBindTexture(GL_TEXTURE_1D, m_texture[0]);
+		glBegin(GL_QUADS);
+		float bands = tracks.info().bands;
+		float y = -1.f;
+		if (t)
+			for (auto p: peaks)
+			{
+				float f = p.band * .2;
+				float ph = p.phase * sqrt(float(p.band) * .01);
+
+				float yf = y;
+				y += 2 * p.mag / t;
+
+				glColor3ubv(Color(p.band / bands * .8 + .07, 1, 1).toRGBA8().data());
+
+				glTexCoord1f(ph);
+				glVertex3f(-1.0f, yf, 0.0f);
+				glTexCoord1f(f + ph);
+				glVertex3f( 1.0f, yf, 0.0f);
+				glTexCoord1f(f + ph);
+				glVertex3f( 1.0f, y, 0.0f);
+				glTexCoord1f(ph);
+				glVertex3f(-1.0f, y, 0.0f);
+			}
+		glEnd();
+		glDisable(GL_TEXTURE_1D);
+	}
+
+private:
+	PeakGather peaks = PeakGather(ExtractMagnitude(WindowedFourier(AccumulateWave(ComputeRegistrar::feeder()))), 16);
+	PeakTrack tracks = PeakTrack(peaks, 16, 1.f);
+
+	GLuint m_texture[1];
+};
+
+class AttractorViz: public VizPlugin
+{
+public:
+	AttractorViz()
+	{
+		for (int i = 0; i < m_initialIterations; i++)
+			iterate();
+	}
+
+	virtual vector<ComputeTask> tasks() { return {}; }
+
+	virtual void initializeGL()
+	{
+		glDisable(GL_DEPTH_TEST);
+		glColor4f(1.0f, 1.0f, 1.0f, 0.02f);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_POINT_SMOOTH);
+		glPointSize(1.0f);
+	}
+
+	virtual void resizeGL(int _w, int _h)
+	{
+		glViewport(0, 0, _w, _h);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(-1, 1, 1, -1, -1, 1);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glScalef(.5f, .5f, 1.f);
+	}
+
+	virtual void updateState(StreamEvents const& _ses)
+	{
+		(void)_ses;
+	}
+
+	virtual void paintGL()
+	{
+		glClearColor(0, 0, 0, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glBegin(GL_POINTS);
+		for (int i = 0; i < m_iterations; i++)
+		{
+			iterate();
+			glVertex2f(x, y);
+		}
+		glEnd();
+	}
+
+private:
+	float x = 0.1;
+	float y = 0.1;
+	float a = -0.966918;
+	float b = 2.879879;
+	float c = 0.765145;
+	float d = 0.744728;
+
+	void iterate()
+	{
+		float xnew = sin(y*b) + c*sin(x*b);
+		float ynew = sin(x*a) + d*sin(y*a);
+		x = xnew;
+		y = ynew;
+	}
+
+
+	int	m_initialIterations = 100;
+	int m_iterations = 100000;
+};
+
+class Coeff
+{
+	friend class Traj;
+public:
+	void randomize()
+	{
+		for (unsigned i = 0; i < 12; ++i)
+			m_a[i] = rand() * 2.f / RAND_MAX - 1.f;
+	}
+
+	fVector2 applied(fVector2 _p) const
+	{
+		return fVector2(m_a[0] + _p.x() * (m_a[1] + m_a[2] * _p.x() + m_a[3] * _p.y()) + _p.y() * (m_a[4] + m_a[5] * _p.y()),
+						m_a[6] + _p.x() * (m_a[7] + m_a[8] * _p.x() + m_a[9] * _p.y()) + _p.y() * (m_a[10] + m_a[11] * _p.y()));
+	}
+
+	float niceness() const
+	{
+		s_lp.resize(0);
+		s_lp.reserve(30);
+		float tol = 1.f / 1024;
+		fVector2 p(0.01, 0.01);
+		for (int i = 0; i < 100 && isFinite(p.x()) && isFinite(p.y()); i++)
+			p = applied(p);
+		for (int i = 0; i < 100 && isFinite(p.x()) && isFinite(p.y()) && tol < 1024; i++)
+		{
+			p = applied(p);
+			for (auto& sp: s_lp)
+				if (p.approximates(sp, tol))
+					goto OK;
+			s_lp.push_back(p);
+			if (s_lp.size() > 4)
+				tol *= 2;
+			OK:;
+		}
+		return isFinite(p.x()) && isFinite(p.y()) ? tol <= 1 ? tol : 1 / tol : 0;
+	}
+
+protected:
+	float m_a[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	static vector<fVector2> s_lp;
+};
+
+vector<fVector2> Coeff::s_lp;
+
+class Traj: public Coeff
+{
+public:
+	void randomize()
+	{
+		float t = 0;
+		for (unsigned i = 0; i < 12; ++i)
+		{
+			m_a[i] = rand() * 2.f / RAND_MAX - 1.f;
+			t += sqr(m_a[i]);
+		}
+		t = 1.f / sqrt(t);
+		for (unsigned i = 0; i < 12; ++i)
+			m_a[i] *= t;
+	}
+	Coeff applied(Coeff _c, float _q) const
+	{
+		Coeff ret;
+		for (unsigned i = 0; i < 12; ++i)
+			ret.m_a[i] = _c.m_a[i] + m_a[i] * _q;
+		return ret;
+	}
+};
+
+class QuadAttractorViz: public VizPlugin
+{
+public:
+	QuadAttractorViz()
+	{
+		m_current.randomize();
+		m_currentDir.randomize();
+	}
+
+	virtual vector<ComputeTask> tasks() { return {}; }
+
+	virtual void initializeGL()
+	{
+		glDisable(GL_DEPTH_TEST);
+		glColor4f(1.0f, 1.0f, 1.0f, .1f);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_POINT_SMOOTH);
+		glPointSize(1.0f);
+	}
+
+	virtual void resizeGL(int _w, int _h)
+	{
+		glViewport(0, 0, _w, _h);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(-1, 1, 1, -1, -1, 1);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glScalef(.5f, .5f, 1.f);
+	}
+
+	virtual void updateState(StreamEvents const& _ses)
+	{
+		(void)_ses;
+
+		Time dt = wallTime() - m_lt;
+		if (dt > FromMsecs<33>::value || dt < 0)
+		{
+			float n = m_current.niceness();
+			for (; n < 0.25; n = m_current.niceness())
+				m_current.randomize();
+			cout << n << endl;
+			Traj rt;
+			rt.randomize();
+
+			Coeff c1 = m_currentDir.applied(m_current, 0.001);
+			Coeff c2 = rt.applied(m_current, 0.001);
+
+			if (c1.niceness() < c2.niceness())
+				m_currentDir = rt;
+
+			m_lastNiceness = n;
+			m_lt = wallTime();
+		}
+
+		m_current = m_currentDir.applied(m_current, m_lastNiceness == .25f ? .01f : m_lastNiceness == .5f ? .001f : .00001f);
+	}
+
+	virtual void paintGL()
+	{
+		glClearColor(0, 0, 0, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glBegin(GL_POINTS);
+		fVector2 pos(0.01, 0.01);
+		for (int i = 0; i < m_iterations; i++)
+		{
+			pos = m_current.applied(pos);
+			if (i > m_initialIterations)
+				glVertex2f(pos.x(), pos.y());
+		}
+		glEnd();
+	}
+
+private:
+	Coeff m_current;
+	Traj m_currentDir;
+	Time m_lt;
+	float m_lastNiceness;
+
+	int	m_initialIterations = 100;
+	int m_iterations = 1000000;
+};
+
+
+class WaveBarsViz: public VizPlugin
+{
+public:
+	virtual vector<ComputeTask> tasks() { return { mag, deltaPhase }; }
+
+	virtual void initializeGL()
+	{
+		glDisable(GL_DEPTH_TEST);
+		glGenTextures(1, m_texture);
+		for (int i = 0; i < 1; ++i)
+		{
+			glBindTexture(GL_TEXTURE_1D, m_texture[i]);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		}
+	}
+
+	virtual void resizeGL(int _w, int _h)
+	{
+		glViewport(0, 0, _w, _h);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(-1, 1, 1, -1, -1, 1);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+	}
+
+	virtual void updateState(StreamEvents const& _ses)
+	{
+		(void)_ses;
+	}
+
+	virtual void paintGL()
+	{
+		glEnable(GL_TEXTURE_1D);
+		glLoadIdentity();
+		auto w = ComputeRegistrar::feeder().get();
+		glBindTexture(GL_TEXTURE_1D, m_texture[0]);
+		glPixelTransferf(GL_RED_SCALE, scale);
+		glPixelTransferf(GL_GREEN_SCALE, scale);
+		glPixelTransferf(GL_BLUE_SCALE, scale);
+		glPixelTransferf(GL_RED_BIAS, bias);
+		glPixelTransferf(GL_GREEN_BIAS, bias);
+		glPixelTransferf(GL_BLUE_BIAS, bias);
+		glTexImage1D(GL_TEXTURE_1D, 0, 1, w.size(), 0, GL_LUMINANCE, GL_FLOAT, w.data());
+
+		auto p = deltaPhase.get();
+		auto s = mag.get();
+		unsigned i = maxInRange(s.begin(), s.end()) - s.begin();
+		float x = p[i];
+		x = min(x, fPi - x);
+		glColor3ubv(Color(x / fHalfPi, 1, 1).toRGBA8().data());
+
+		glBegin(GL_QUADS);
+		glTexCoord1f(0.f);
+		glVertex3f(-1.0f, -1.0f, 0.0f);
+		glTexCoord1f(1.f);
+		glVertex3f( 1.0f, -1.0f, 0.0f);
+		glTexCoord1f(1.f);
+		glVertex3f( 1.0f, 1.0f, 0.0f);
+		glTexCoord1f(0.f);
+		glVertex3f(-1.0f, 1.0f, 0.0f);
+		glEnd();
+		glDisable(GL_TEXTURE_1D);
+	}
+
+	float scale = 2.f;
+	float bias = 0.5f;
+
+	LIGHTBOX_PROPERTIES(scale, bias);
+
+private:
+	ExtractMagnitude mag = ExtractMagnitude(WindowedFourier(AccumulateWave(ComputeRegistrar::feeder())));
+	CycleDelta deltaPhase = CycleDelta(ExtractPhase(WindowedFourier(AccumulateWave(ComputeRegistrar::feeder()))));
+
+	GLuint m_texture[1];
 };
 
 ExamplePlugin::ExamplePlugin()
 {
-	m_glView = new GLView(this);
+	m_glView = new VizGLWidgetProxy(new QuadAttractorViz);
 	m_vizDock = NotedFace::get()->addGLView(m_glView);
 	m_analysis = CausalAnalysisPtr(new AnalyzeViz(m_glView));
 	NotedFace::compute()->registerJobSource(this);
@@ -398,7 +576,15 @@ CausalAnalysisPtrs ExamplePlugin::ripeAnalysis(AcausalAnalysisPtr const& _finish
 	return {};
 }
 
+lb::MemberMap ExamplePlugin::propertyMap() const
+{
+	MemberMap mm = m_glView->viz()->propertyMap();
+	for (auto& m: mm)
+		m.second.offset += (intptr_t)m_glView->viz() - (intptr_t)this;
+	return mm;
+}
+
 void ExamplePlugin::onPropertiesChanged()
 {
-	m_glView->m_propertiesChanged = true;
+	m_glView->viz()->onPropertiesChanged();
 }
