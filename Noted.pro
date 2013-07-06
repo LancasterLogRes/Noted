@@ -4,6 +4,7 @@ include (Common.pri)
 SUBDIRS = \
     Audio
 native: SUBDIRS += \
+	Viz \
 	Grapher \
 	NotedPlugin \
 	ExamplePlugin \

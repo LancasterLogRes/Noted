@@ -27,7 +27,7 @@ class QDockWidget;
 class QWidget;
 class VizGLWidgetProxy;
 class AnalyzeViz;
-class VizPlugin;
+class VizImpl;
 
 class ExamplePlugin: public NotedPlugin, public JobSource
 {

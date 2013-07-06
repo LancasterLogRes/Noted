@@ -63,10 +63,10 @@ inline lb::StreamEvents mergedAtCursor(_EventsStores const& _s, bool _force, boo
 	return ses;
 }
 
-class VizPlugin
+class VizImpl
 {
 public:
-	typedef VizPlugin LIGHTBOX_PROPERTIES_BaseClass;
+	typedef VizImpl LIGHTBOX_PROPERTIES_BaseClass;
 
 	virtual lb::MemberMap propertyMap() const { return lb::NullMemberMap; }
 	virtual void onPropertiesChanged() {}
@@ -83,7 +83,7 @@ class VizGLWidgetProxy: public QGLWidgetProxy
 	friend class ExamplePlugin;
 
 public:
-	VizGLWidgetProxy(VizPlugin* _v): m_viz(_v) {}
+	VizGLWidgetProxy(VizImpl* _v): m_viz(_v) {}
 
 	void stop() { m_suspended = true; }
 	void start() { m_suspended = false; }
@@ -137,7 +137,7 @@ public:
 		m_last = wallTime();
 	}
 
-	VizPlugin* viz() const { return m_viz; }
+	VizImpl* viz() const { return m_viz; }
 
 private:
 	Time m_last;
@@ -147,7 +147,7 @@ private:
 	bool m_suspended = true;
 	bool m_wasSuspended = true;
 
-	VizPlugin* m_viz;
+	VizImpl* m_viz;
 };
 
 class AnalyzeViz: public ComputeAnalysis
@@ -171,7 +171,7 @@ private:
 	VizGLWidgetProxy* m_p;
 };
 
-class SplitBarsViz: public VizPlugin
+class SplitBarsViz: public VizImpl
 {
 public:
 	virtual vector<ComputeTask> tasks() { return { { tracks, [=](){ return tracks.info().axes(); }, {} }, { peaks, [=](){ return peaks.info().axes(); }, {} } }; }
@@ -252,7 +252,7 @@ private:
 	GLuint m_texture[1];
 };
 
-class AttractorViz: public VizPlugin
+class AttractorViz: public VizImpl
 {
 public:
 	AttractorViz()
@@ -392,7 +392,7 @@ public:
 	}
 };
 
-class QuadAttractorViz: public VizPlugin
+class QuadAttractorViz: public VizImpl
 {
 public:
 	QuadAttractorViz()
@@ -434,7 +434,6 @@ public:
 			float n = m_current.niceness();
 			for (; n < 0.25; n = m_current.niceness())
 				m_current.randomize();
-			cout << n << endl;
 			Traj rt;
 			rt.randomize();
 
@@ -477,7 +476,7 @@ private:
 };
 
 
-class WaveBarsViz: public VizPlugin
+class WaveBarsViz: public VizImpl
 {
 public:
 	virtual vector<ComputeTask> tasks() { return { mag, deltaPhase }; }

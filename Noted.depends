@@ -8,3 +8,4 @@ Noted.depends = Grapher EventsEditor Audio NotedPlugin
 TestPlugin.depends = NotedPlugin
 PluginTest.depends = NotedPlugin
 NotedTest.depends = Common NotedPlugin
+Viz.depends = Common EventCompiler Compute
