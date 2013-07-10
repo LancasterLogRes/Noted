@@ -21,6 +21,8 @@ public:
 	void unregisterStore(EventsStore* _es);
 	QSet<EventsStore*> eventsStores() const { return m_stores; }
 
+	virtual lb::SimpleKey hash() const = 0;
+
 	virtual void registerEventsView(EventCompilerView* _ev) = 0;
 	virtual void unregisterEventsView(EventCompilerView* _ev) = 0;
 	virtual QSet<EventCompilerView*> eventsViews() const = 0;
@@ -29,6 +31,8 @@ public:
 
 	virtual CausalAnalysisPtr compileEventsAnalysis() const { return m_compileEventsAnalysis; }
 	virtual CausalAnalysisPtr collateEventsAnalysis() const { return m_collateEventsAnalysis; }
+
+	virtual lb::StreamEvents inWindow(unsigned _i, bool _usePredetermined) const = 0;
 
 public slots:
 	void noteEventCompilersChanged();

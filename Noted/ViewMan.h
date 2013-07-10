@@ -14,5 +14,8 @@ public:
 
 public slots:
 	virtual void normalize();
+
+private slots:
+	void onGutterWidthChanged(int);
 };
 

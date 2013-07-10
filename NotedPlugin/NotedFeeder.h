@@ -1,9 +1,10 @@
 #pragma once
 
+#include <EventCompiler/StreamEvent.h>
 #include <Compute/Compute.h>
 #include "NotedFace.h"
 
-class NotedFeederImpl: public lb::ComputeImpl<lb::PCMInfo, float>
+class NotedFeederImpl: public lb::ComputeImpl<float, lb::PCMInfo>
 {
 public:
 	virtual lb::PCMInfo info()
@@ -20,4 +21,21 @@ public:
 	}
 };
 using NotedFeeder = lb::ComputeBase<NotedFeederImpl>;
+
+class NotedEventFeederImpl: public lb::ComputeImpl<lb::StreamEvent, lb::EventStreamInfo>
+{
+public:
+	virtual lb::EventStreamInfo info()
+	{
+		return {};
+	}
+	virtual char const* name() const { return "NotedEventFeeder"; }
+	virtual lb::SimpleKey hash() const { return NotedFace::events()->hash(); }
+	virtual void compute(std::vector<Element>& _v)
+	{
+		unsigned i = NotedFace::audio()->index(lb::ComputeRegistrar::get()->time());
+		_v = NotedFace::events()->inWindow(i, true);
+	}
+};
+using NotedEventFeeder = lb::ComputeBase<NotedEventFeederImpl>;
 

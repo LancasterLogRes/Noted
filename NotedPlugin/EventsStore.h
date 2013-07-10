@@ -21,6 +21,7 @@
 #pragma once
 
 #include <QString>
+#include <Common/SimpleKey.h>
 #include <EventCompiler/StreamEvent.h>
 
 class EventsStore
@@ -29,6 +30,7 @@ public:
 	EventsStore();
 	virtual ~EventsStore();
 
+	virtual lb::SimpleKey hash() const = 0;
 	virtual QString niceName() const { return QString(); }
 	virtual lb::StreamEvents events(int _i) const;
 	virtual lb::StreamEvents cursorEvents() const;

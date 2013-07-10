@@ -55,7 +55,11 @@ public:
 
 	EventsEditScene* scene() const { return &*m_scene; }
 
+	void beginCleanPopulate() { m_cleanPopulate = true; }
+	void endCleanPopulate() { m_cleanPopulate = false; }
+
 	virtual QString niceName() const { return m_filename; }
+	virtual lb::SimpleKey hash() const { return m_streamEvents ? m_streamEvents->operationKey() : 0; }
 	virtual lb::StreamEvents events(int _i) const;
 	virtual lb::StreamEvents cursorEvents() const;
 	virtual unsigned eventCount() const { return m_eventsCache.size(); }
@@ -118,6 +122,7 @@ private:
 	QPushButton* m_enabled;
 	bool m_lastTimerDirty;
 	bool m_eventsDirty;
+	bool m_cleanPopulate = false;
 };
 
 class EventsEditor: public EventsGraphicsView

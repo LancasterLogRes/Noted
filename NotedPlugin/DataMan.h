@@ -29,12 +29,13 @@ public:
 		}
 		else
 		{
-
 			m_data[_k] = DataSetPtr<_T>(new DataSet<_T>(_k));
 			x_data.unlock();
 			emit inUseChanged();
 			emit footprintChanged();
 			emit changed();
+			if (m_data[_k]->isComplete())
+				emit dataReady(_k);
 			x_data.lock();
 			cdebug << "Creating.";
 		}
@@ -60,6 +61,7 @@ public:
 			x_data.unlock();
 			emit inUseChanged();
 			emit changed();
+			emit dataReady(_k);
 			x_data.lock();
 			return ds;
 		}
@@ -84,6 +86,7 @@ public:
 			x_data.unlock();
 			emit inUseChanged();
 			emit changed();
+			emit dataReady(_k);
 			x_data.lock();
 			return ds;
 		}
@@ -104,6 +107,7 @@ public slots:
 
 signals:
 	void dataComplete(DataKey);
+	void dataReady(DataKey);
 	void footprintChanged();
 	void inUseChanged();
 	void changed();

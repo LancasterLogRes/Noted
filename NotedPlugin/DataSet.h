@@ -60,6 +60,8 @@ public:
 	void ensureHaveDigest(DigestType _type);
 	void done();
 
+	lb::SimpleKey operationKey() const { return m_operationKey; }
+
 	bool isAppendable() const { return m_raw.isOpen() && !isComplete(); }
 	bool isValid() const { return m_elementTypeName.size() && m_elementSize; }
 	bool isComplete() const { return haveRaw(); }
@@ -97,7 +99,7 @@ public:
 		TocRef f = elementIndex(_from);
 		TocRef t = lb::defaultTo(elementIndex(_before), elements(), InvalidTocRef);
 		std::vector<_T> ret(t - f);
-		valcpy(ret.data(), m_raw.data<_T>().data() + _from, ret.size());
+		valcpy(ret.data(), m_raw.data<_T>().data() + f, ret.size());
 		return ret;
 	}
 

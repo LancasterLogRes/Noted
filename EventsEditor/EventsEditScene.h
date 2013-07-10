@@ -22,6 +22,7 @@
 
 #include <QMap>
 #include <QGraphicsScene>
+#include <QMutex>
 
 #include <EventCompiler/StreamEvent.h>
 #include <NotedPlugin/EventsStore.h>
@@ -33,7 +34,7 @@ class NotedFace;
 class Chained;
 class StreamEventItem;
 
-class EventsEditScene: public QGraphicsScene, public EventsStore
+class EventsEditScene: public QGraphicsScene//, public EventsStore
 {
 	Q_OBJECT
 
@@ -52,6 +53,7 @@ public:
 	void saveTo(QString _filename) const;
 	QList<lb::StreamEvents> events(lb::Time _hop) const;
 
+//	virtual lb::SimpleKey hash() const;
 	virtual lb::StreamEvents events(lb::Time _from, lb::Time _before) const;
 
 	virtual void wheelEvent(QGraphicsSceneWheelEvent* _wheelEvent);
@@ -65,4 +67,5 @@ signals:
 private:
 	mutable bool m_isDirty = false;
 	bool m_willRejig = true;
+	mutable QMutex x_events;
 };

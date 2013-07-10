@@ -13,6 +13,7 @@ public:
 	virtual ~ViewManFace();
 
 	inline int width() const { return m_width; }
+	inline int gutterWidth() const { return m_gutterWidth; }
 	inline lb::Time offset() const { return m_offset; }
 	inline lb::Time pitch() const { return m_pitch; }
 	virtual lb::Time globalPitch() const = 0;
@@ -40,10 +41,14 @@ public slots:
 
 signals:
 	void widthChanged(int _w);
+	void gutterWidthChanged(int _gw);
 	void offsetChanged(lb::Time _offset);
 	void pitchChanged(lb::Time _pitch);
 	void globalParametersChanged();
 	void parametersChanged(lb::Time _offset, lb::Time _pitch);
+
+protected:
+	int m_gutterWidth = -1;
 
 private:
 	Q_PROPERTY(int width READ width NOTIFY widthChanged)

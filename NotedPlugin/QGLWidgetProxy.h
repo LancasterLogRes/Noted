@@ -38,6 +38,8 @@ public:
 
 	void update();
 
+	QWidget* widget() const { return m_widget; }
+
 	virtual bool needsRepaint() const { return true; }
 	virtual void initializeGL() {}
 	virtual void resizeGL(int, int) {}

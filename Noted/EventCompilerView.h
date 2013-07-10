@@ -58,6 +58,8 @@ public:
 	void readSettings(QSettings& _s, QString const& _id);
 	void writeSettings(QSettings& _s, QString const& _id);
 
+	virtual lb::SimpleKey hash() const { return m_operationKey; }
+
 	bool isArchived() const { return eventCompiler().isNull(); }
 	lb::SimpleKey operationKey() const { return m_operationKey; }
 	void save();

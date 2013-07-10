@@ -7,6 +7,7 @@ using namespace lb;
 
 DataMan::DataMan()
 {
+	connect(this, SIGNAL(dataComplete(DataKey)), SIGNAL(dataReady(DataKey)));
 }
 
 GenericDataSetPtr DataMan::create(DataKey _k, size_t _elementSize, char const* _elementTypeName)
@@ -19,13 +20,15 @@ GenericDataSetPtr DataMan::create(DataKey _k, size_t _elementSize, char const* _
 	}
 	else
 	{
+		cdebug << "Creating.";
 		m_data[_k] = std::make_shared<GenericDataSet>(_k, _elementSize, _elementTypeName);
 		x_data.unlock();
 		emit inUseChanged();
 		emit footprintChanged();
 		emit changed();
+		if (m_data[_k]->isComplete())
+			emit dataReady(_k);
 		x_data.lock();
-		cdebug << "Creating.";
 	}
 	return m_data[_k];
 }

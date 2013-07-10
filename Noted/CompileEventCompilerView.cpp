@@ -110,6 +110,6 @@ void CompileEventCompilerView::fini(bool _completed, bool _didRecord)
 					ds->done();
 				}
 	}
-	else
+	else if (!m_ev->m_streamEvents->isComplete())
 		m_ev->m_streamEvents.reset();
 }

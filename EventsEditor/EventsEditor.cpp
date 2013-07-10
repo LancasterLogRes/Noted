@@ -59,6 +59,7 @@ EventsGraphicsView::EventsGraphicsView(QWidget* _parent, QString _filename):
 
 	m_scene = make_shared<EventsEditScene>();
 	setScene(&*m_scene);
+	connect(NotedFace::view(), SIGNAL(gutterWidthChanged(int)), SLOT(onViewParamsChanged()));
 	connect(&*m_scene, SIGNAL(newScale()), SLOT(onViewParamsChanged()));
 	connect(NotedFace::view(), SIGNAL(parametersChanged(lb::Time, lb::Time)), SLOT(onViewParamsChanged()));
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -190,9 +191,12 @@ void EventsGraphicsView::onEnableChanged(bool)
 
 void EventsGraphicsView::onChanged(bool _requiresRecompile)
 {
-	if (m_enabled->isChecked())
-		m_lastTimerDirty = false;
-	m_eventsDirty = _requiresRecompile;
+	if (!m_cleanPopulate)
+	{
+		if (m_enabled->isChecked())
+			m_lastTimerDirty = false;
+		m_eventsDirty = _requiresRecompile;
+	}
 }
 
 void EventsGraphicsView::timerEvent(QTimerEvent*)
@@ -298,10 +302,21 @@ QString EventsGraphicsView::queryFilename()
 void EventsGraphicsView::onViewParamsChanged()
 {
 	resetTransform();
-	double hopsInWidth = toSeconds(NotedFace::view()->visibleDuration()) * 1000;
-	double hopsFromBeginning = toSeconds(NotedFace::view()->earliestVisible()) * 1000;
-	setSceneRect(hopsFromBeginning, 0, hopsInWidth, height());
-	scale(NotedFace::view()->width() / hopsInWidth, 1);
+	int w = width();
+	int vw = NotedFace::view()->width();
+	int gutter = w - vw;
+	Time dur = NotedFace::view()->visibleDuration();
+	Time ear = NotedFace::view()->earliestVisible();
+
+	// But there's a gutter...
+	Time gutterTime = gutter * dur / (w - gutter);
+	ear -= gutterTime;
+	dur += gutterTime;
+
+	double msInWidth = toSeconds(dur) * 1000;
+	double msFromBeginning = toSeconds(ear) * 1000;
+	setSceneRect(msFromBeginning, 0, msInWidth, height());
+	scale(w / msInWidth, 1);
 }
 
 void EventsGraphicsView::onSave()

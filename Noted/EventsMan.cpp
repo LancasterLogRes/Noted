@@ -28,6 +28,49 @@ EventsMan::~EventsMan()
 	cnote << "Killed.";
 }
 
+template <class _EventsStores>
+inline lb::StreamEvents mergedAt(_EventsStores const& _s, int _i)
+{
+	StreamEvents ses;
+	for (EventsStore* es: _s)
+		merge(ses, es->events(_i));
+	return ses;
+}
+
+template <class _EventsStores>
+inline lb::StreamEvents mergedAtCursor(_EventsStores const& _s, bool _force, bool _usePre, int _trackPos)
+{
+	StreamEvents ses;
+	for (EventsStore* es: _s)
+		if (_force)
+			merge(ses, es->cursorEvents());
+		else if (_usePre && es->isPredetermined())
+			merge(ses, es->events(_trackPos));
+		else if (!_usePre && !es->isPredetermined())
+			merge(ses, es->cursorEvents());
+	return ses;
+}
+
+StreamEvents EventsMan::inWindow(unsigned _i, bool _usePredetermined) const
+{
+	StreamEvents ses;
+	if (NotedFace::audio()->isImmediate())
+		ses = mergedAtCursor(m_stores, NotedFace::audio()->isCausal(), _usePredetermined, _i);
+	else
+		ses = mergedAt(m_stores, _i);
+	if (ses.size())
+		cerr << "Window " << _i << " yields " << ses << endl;
+	return ses;
+}
+
+lb::SimpleKey EventsMan::hash() const
+{
+	SimpleKey ret = 0;
+	for (auto s: m_stores)
+		ret = generateKey(ret, s->hash());
+	return ret;
+}
+
 void EventsMan::onAnalyzed(AcausalAnalysisPtr _aa)
 {
 	if (_aa == m_collateEventsAnalysis)

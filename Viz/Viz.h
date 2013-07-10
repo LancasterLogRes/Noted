@@ -15,11 +15,10 @@ public:
 
 	Members<VizImpl> properties() const { return m_impl ? Members<VizImpl>(m_impl->propertyMap(), m_impl) : Members<VizImpl>(); }
 	std::string name() const { if (m_impl) return demangled(typeid(*m_impl).name()); else return ""; }
-	std::vector<lb::GenericCompute> tasks() { return m_impl ? m_impl->tasks() : std::vector<lb::GenericCompute>(); }
+	std::vector<lb::GenericCompute> tasks() const { return m_impl ? m_impl->tasks() : std::vector<lb::GenericCompute>(); }
 
 	void initializeGL() const { if (m_impl) m_impl->initializeGL(); }
-	void resizeGL(int _w, int _h) { if (m_impl) m_impl->resizeGL(_w, _h); }
-	void prepGL() { if (m_impl) m_impl->prepGL(); }
+	void prepGL() const { if (m_impl) m_impl->prepGL(); }
 	void paintGL(Time _sinceLast) { if (m_impl) m_impl->paintGL(_sinceLast); }
 
 	bool operator<(Viz const& _c) const { return m_impl < _c.m_impl; }
@@ -27,6 +26,7 @@ public:
 	bool operator!=(Viz const& _c) const { return !operator==(_c); }
 
 	bool isNull() const { return !m_impl; }
+	explicit operator bool() const { return !isNull(); }
 
 	template <class T> bool isA() const { return !!dynamic_cast<T*>(m_impl.get()); }
 	template <class T> T& asA() const { return *dynamic_cast<T*>(m_impl.get()); }

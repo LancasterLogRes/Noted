@@ -22,6 +22,7 @@ class ComputeAnalysis: public CausalAnalysis
 {
 public:
 	ComputeAnalysis(std::vector<ComputeTask> const& _c, std::string const& _name = "ComputeAnalysis");
+	ComputeAnalysis(std::vector<lb::GenericCompute> const& _c, std::string const& _name = "ComputeAnalysis");
 	virtual ~ComputeAnalysis();
 	virtual bool init(bool _willRecord);
 	virtual void fini(bool _completed, bool _didRecord);

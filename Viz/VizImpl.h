@@ -18,10 +18,8 @@ public:
 	virtual std::vector<lb::GenericCompute> tasks() { return {}; }
 
 	virtual void initializeGL() {}
-	virtual void resizeGL(int, int) {}
-	virtual void paintGL() {}	// TODO: KILL
 	virtual void prepGL() {}
-	virtual void paintGL(Time _sinceLast) { (void)_sinceLast; paintGL(); }
+	virtual void paintGL(Time _sinceLast) { (void)_sinceLast; }
 };
 
 }

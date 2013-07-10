@@ -117,6 +117,8 @@ Noted::Noted(QWidget* _p):
 	m_timelinesItem = m_view->rootObject()->findChild<TimelinesItem*>("timelines");
 	qDebug() << m_view->rootObject();
 
+	connect(m_timelinesItem, SIGNAL(onGutterWidthChanged(int)), view(), SLOT(onGutterWidthChanged(int)));
+
 	connect(audio(), SIGNAL(prepareForDataChange()), SLOT(onDataChanging()));
 	connect(audio(), SIGNAL(dataLoaded()), SLOT(onDataLoaded()));
 	connect(audio(), SIGNAL(stateChanged(bool,bool,bool)), SLOT(onPlaybackStatusChanged()));
@@ -462,10 +464,10 @@ void Noted::readSettings()
 	readBaseSettings(settings);
 }
 
-void Noted::closeEvent(QCloseEvent* _event)
+void Noted::closeEvent(QCloseEvent*)
 {
-	writeSettings();
-	QMainWindow::closeEvent(_event);
+//	QMainWindow::closeEvent(_event);
+	on_actQuit_triggered();
 }
 
 void Noted::writeSettings()
@@ -541,6 +543,7 @@ void Noted::on_actNewEventsFrom_triggered()
 
 void Noted::on_actQuit_triggered()
 {
+	writeSettings();
 	QApplication::quit();
 }
 

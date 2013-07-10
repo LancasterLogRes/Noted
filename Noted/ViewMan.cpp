@@ -28,3 +28,9 @@ Time ViewMan::globalPitch() const
 	else
 		return FromMsecs<1>::value;
 }
+
+void ViewMan::onGutterWidthChanged(int _gw)
+{
+	m_gutterWidth = _gw;
+	emit gutterWidthChanged(_gw);
+}

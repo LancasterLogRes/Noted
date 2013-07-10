@@ -42,7 +42,7 @@ EventCompilerView::EventCompilerView(QWidget* _parent, EventCompiler const& _ec)
 {
 	connect(NotedFace::libs(), SIGNAL(eventCompilerFactoryAvailable(QString, unsigned)), SLOT(onFactoryAvailable(QString, unsigned)));
 	connect(NotedFace::libs(), SIGNAL(eventCompilerFactoryUnavailable(QString)), SLOT(onFactoryUnavailable(QString)));
-	connect(NotedFace::data(), SIGNAL(dataComplete(DataKey)), this, SLOT(onDataComplete(DataKey)));
+	connect(NotedFace::data(), SIGNAL(dataReady(DataKey)), this, SLOT(onDataComplete(DataKey)));
 
 	setMaximumHeight(48);
 	setMinimumHeight(48);
@@ -67,11 +67,13 @@ EventCompilerView::EventCompilerView(QWidget* _parent, EventCompiler const& _ec)
 	setObjectName(name());
 
 	NotedFace::events()->registerEventsView(this);
+	NotedFace::events()->registerStore(this);
 }
 
 EventCompilerView::~EventCompilerView()
 {
 	NotedFace::graphs()->unregisterGraphs(objectName());
+	NotedFace::events()->unregisterStore(this);
 	NotedFace::events()->unregisterEventsView(this);
 }
 
@@ -117,15 +119,22 @@ class DataSetEventsStore: public EventsStore
 {
 public:
 	DataSetEventsStore(DataSetPtr<lb::StreamEvent> const& _ses): m_streamEvents(_ses) {}
+	virtual ~DataSetEventsStore();
 
 	virtual lb::StreamEvents events(lb::Time _from, lb::Time _before) const
 	{
 		return m_streamEvents->getInterval(_from, _before);
 	}
+	virtual lb::SimpleKey hash() const { return m_streamEvents->operationKey(); }
 
 private:
 	DataSetPtr<lb::StreamEvent> m_streamEvents;
 };
+
+DataSetEventsStore::~DataSetEventsStore()
+{
+	cnote << "~DataSetEventsStore()";
+}
 
 void EventCompilerView::onDataComplete(DataKey _k)
 {

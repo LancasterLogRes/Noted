@@ -8,7 +8,7 @@ native: SUBDIRS += \
 	Grapher \
 	NotedPlugin \
 	ExamplePlugin \
-	ExampleVizPlugin \
+	VisualizerPlugin \
 	EventsEditor \
     Noted \
     TestPlugin \

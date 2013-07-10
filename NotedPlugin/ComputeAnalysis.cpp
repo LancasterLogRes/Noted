@@ -12,6 +12,15 @@ ComputeAnalysis::ComputeAnalysis(std::vector<ComputeTask> const& _c, std::string
 		m_graphs.push_back(_name + "/" + c.compute.name());
 }
 
+ComputeAnalysis::ComputeAnalysis(std::vector<GenericCompute> const& _c, std::string const& _name):
+	CausalAnalysis("Compute Analyzer")
+{
+	for (auto const& c: _c)
+		m_computes.push_back(c);
+	for (auto const& c: m_computes)
+		m_graphs.push_back(_name + "/" + c.compute.name());
+}
+
 ComputeAnalysis::~ComputeAnalysis()
 {
 	for (auto g: m_graphs)

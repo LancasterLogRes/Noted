@@ -41,6 +41,10 @@ EventsEditScene::EventsEditScene(QObject* _parent):
 
 void EventsEditScene::copyFrom(EventsStore* _ev)
 {
+	{
+	QMutexLocker l(&x_events);
+	view()->beginCleanPopulate();
+
 	int s = NotedFace::audio()->hops();
 	double hs = toSeconds(NotedFace::audio()->hop()) * 1000;
 	for (int i = 0; i < s; ++i)
@@ -63,6 +67,8 @@ void EventsEditScene::copyFrom(EventsStore* _ev)
 			}
 		}
 	}
+	view()->endCleanPopulate();
+	}
 	rejigEvents();
 	m_isDirty = false;
 	emit newScale();
@@ -70,6 +76,7 @@ void EventsEditScene::copyFrom(EventsStore* _ev)
 
 void EventsEditScene::setEvents(QList<lb::StreamEvents> const& _es, int _forceChannel)
 {
+	QMutexLocker l(&x_events);
 	int s = NotedFace::audio()->hops();
 	double hs = toSeconds(NotedFace::audio()->hop()) * 1000;
 	clear();
@@ -104,6 +111,7 @@ void EventsEditScene::setEvents(QList<lb::StreamEvents> const& _es, int _forceCh
 
 void EventsEditScene::rejigEvents()
 {
+	QMutexLocker l(&x_events);
 	m_willRejig = false;
 	QMap<int, StreamEventItem*> lastPSI;
 	QMap<int, StreamEventItem*> lastSI;
@@ -172,6 +180,7 @@ EventsGraphicsView* EventsEditScene::view() const
 
 QList<StreamEvents> EventsEditScene::events(Time _hop) const
 {
+	QMutexLocker l(&x_events);
 	QList<StreamEvents> ret;
 	Time last = UndefinedTime;
 	foreach (QGraphicsItem* it, items(Qt::AscendingOrder))
@@ -192,6 +201,7 @@ QList<StreamEvents> EventsEditScene::events(Time _hop) const
 
 StreamEvents EventsEditScene::events(Time _from, Time _before) const
 {
+	QMutexLocker l(&x_events);
 	StreamEvents ret;
 	for (QGraphicsItem* it: items(Qt::AscendingOrder))
 		if (auto sei = dynamic_cast<StreamEventItem*>(it))
@@ -207,6 +217,7 @@ StreamEvents EventsEditScene::events(Time _from, Time _before) const
 
 void EventsEditScene::saveTo(QString _filename) const
 {
+	QMutexLocker l(&x_events);
 	using boost::property_tree::ptree;
 	ptree pt;
 	Time last = UndefinedTime;
@@ -251,6 +262,8 @@ void EventsEditScene::setDirty(bool _requiresRecompile)
 
 void EventsEditScene::loadFrom(QString _filename)
 {
+	{
+	QMutexLocker l(&x_events);
 	clear();
 	ifstream in;
 	in.open(_filename.toLocal8Bit().data());
@@ -286,6 +299,7 @@ void EventsEditScene::loadFrom(QString _filename)
 						}
 					}
 			}
+	}
 	}
 	rejigEvents();
 	m_isDirty = false;
