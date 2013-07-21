@@ -191,8 +191,9 @@ public:
 			_f(*d);
 	}
 
-private:
 	void init();
+
+private:
 	void populateElements(TocRef _from, lb::foreign_vector<uint8_t> const& _out) const;
 
 	struct Metadata

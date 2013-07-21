@@ -24,7 +24,7 @@ protected:
 	virtual void onInit();
 	virtual void onEndTime(lb::Time _oldTime);
 	virtual void onFini();
-	virtual bool onStore(lb::GenericCompute const& _p);
+	virtual bool onStore(lb::GenericCompute const& _p, bool _precompute);
 	virtual void insertMemo(lb::SimpleKey _operation);
 
 private:

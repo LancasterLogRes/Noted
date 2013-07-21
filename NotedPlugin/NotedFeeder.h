@@ -22,6 +22,24 @@ public:
 };
 using NotedFeeder = lb::ComputeBase<NotedFeederImpl>;
 
+class NotedMultiFeederImpl: public lb::ComputeImpl<float, lb::MultiPCMInfo>
+{
+public:
+	virtual lb::MultiPCMInfo info()
+	{
+		return { NotedFace::audio()->rate(), NotedFace::audio()->hopSamples(), 1 };
+	}
+	virtual char const* name() const { return "NotedMultiFeeder"; }
+	virtual lb::SimpleKey hash() const { return 2; }
+	virtual lb::foreign_vector<float> get()
+	{
+		if (NotedFace::audio()->wave()->isComplete())
+			return NotedFace::audio()->wave()->peek(lb::ComputeRegistrar::get()->time(), NotedFace::audio()->hopSamples());
+		return lb::foreign_vector<float>();
+	}
+};
+using NotedMultiFeeder = lb::ComputeBase<NotedMultiFeederImpl>;
+
 class NotedEventFeederImpl: public lb::ComputeImpl<lb::StreamEvent, lb::EventStreamInfo>
 {
 public:

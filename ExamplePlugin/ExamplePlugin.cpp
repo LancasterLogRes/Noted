@@ -32,11 +32,15 @@ ExamplePlugin::ExamplePlugin()
 {
 	auto mag = ExtractMagnitude(WindowedFourier(AccumulateWave(ComputeRegistrar::feeder())));
 	auto bark = BarkPhon(mag);
+	auto loudness = MeanRecord(bark);
+	auto maxloudness = MaxRecord(bark);
 	auto zc = ZeroCrossings(ComputeRegistrar::feeder());
 	std::vector<ComputeTask> tasks = {
 		{ zc, [=](){return zc.info().axes();}, { MinMaxInOutDigest } },
 		{ mag, [=](){return mag.info().axes();}, { MeanDigest } },
-		{ bark, [=](){return bark.info().axes();}, { MeanDigest } }
+		{ bark, [=](){return bark.info().axes();}, { MeanDigest } },
+		{ loudness, [=](){return GraphMetadata::Axes{ bark.info().axes()[1] };}, { MinMaxInOutDigest } },
+		{ maxloudness, [=](){return GraphMetadata::Axes{ bark.info().axes()[1] };}, { MinMaxInOutDigest } }
 	};
 	m_analysis = CausalAnalysisPtr(new ComputeAnalysis(tasks));
 	NotedFace::compute()->registerJobSource(this);

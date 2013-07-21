@@ -19,7 +19,7 @@ public:
 
 	void initializeGL() const { if (m_impl) m_impl->initializeGL(); }
 	void prepGL() const { if (m_impl) m_impl->prepGL(); }
-	void paintGL(Time _sinceLast) { if (m_impl) m_impl->paintGL(_sinceLast); }
+	void paintGL(Time _sinceLast) const { if (m_impl) m_impl->paintGL(_sinceLast); }
 
 	bool operator<(Viz const& _c) const { return m_impl < _c.m_impl; }
 	bool operator==(Viz const& _c) const { return m_impl == _c.m_impl; }

@@ -40,7 +40,7 @@ bool ComputeAnalysis::init(bool _willRecord)
 		return true;
 	bool shouldCompute = false;
 	for (auto const& c: m_computes)
-		shouldCompute = !lb::ComputeRegistrar::get()->store(c.compute) || shouldCompute;
+		shouldCompute = !lb::ComputeRegistrar::get()->store(c.compute, true) || shouldCompute;
 	return shouldCompute;
 }
 

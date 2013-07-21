@@ -13,7 +13,7 @@ class FileAudioStream: public AudioStream
 {
 public:
 	FileAudioStream(unsigned _hop, std::string const& _fn, unsigned _rate): m_hop(_hop), m_filename(_fn), m_rate(_rate) {}
-	~FileAudioStream() { fini(); }
+	virtual ~FileAudioStream() { fini(); }
 
 	Time duration() { return toBase(m_incomingFrames, m_incomingRate); }
 	void setHop(unsigned _samples) { m_hop = _samples; }
@@ -23,6 +23,7 @@ public:
 	void fini();
 	bool isGood() const;
 
+	virtual unsigned channels() const { return m_incomingChannels; }
 	virtual unsigned rate() const { return m_rate; }
 	virtual unsigned hop() const { return m_hop; }
 	virtual void iterate() { m_fresh = true; }
@@ -30,6 +31,7 @@ public:
 	virtual void copyTo(unsigned _channel, Fixed<16, 16>* _p) { translateTo<Fixed<16, 16>>(_channel, _p); }
 	virtual void copyTo(unsigned _channel, Fixed<1, 15>* _p) { translateTo<float>(_channel, _p); }
 	virtual void copyTo(unsigned _channel, float* _p);
+	virtual void copyTo(float* _p);
 
 private:
 	unsigned m_hop = 64;
@@ -43,7 +45,7 @@ private:
 	struct SNDFILE_tag* m_sndfile = nullptr;
 
 	unsigned m_bufferPos;
-	void* m_resampler = nullptr;
+	std::vector<void*> m_resampler;
 	double m_factor;
 
 	unsigned m_incomingFrames;
@@ -55,6 +57,7 @@ private:
 	unsigned m_outSamples;
 
 	std::vector<float> m_buffer;
+	std::vector<std::vector<float>> m_deintBuffer;
 
 	bool m_partialRead;
 	bool m_atEnd;

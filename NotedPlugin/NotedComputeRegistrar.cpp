@@ -26,13 +26,15 @@ void NotedComputeRegistrar::onFini()
 	m_stored.clear();
 }
 
-bool NotedComputeRegistrar::onStore(lb::GenericCompute const& _p)
+bool NotedComputeRegistrar::onStore(lb::GenericCompute const& _p, bool _precompute)
 {
 	if (!_p)
 		return true;
-	auto h = _p.p()->hash();
+	auto h = _p.hash();
 	auto ds = NotedFace::data()->create(DataKey(NotedFace::audio()->key(), h), _p.p()->elementSize(), _p.p()->elementTypeName());
 	m_stored[h] = ds;
+	if (_p.isVolatile() && _precompute)
+		ds->init();
 	if (!ds->isComplete())
 		cnote << "ComputeRegistrar: Writing" << _p.name() << "to DS" << std::hex << h;
 	assert(ds->isComplete() || ds->isAppendable());
